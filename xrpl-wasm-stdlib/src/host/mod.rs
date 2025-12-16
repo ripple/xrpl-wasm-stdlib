@@ -45,12 +45,8 @@ pub mod host_bindings_trait;
 #[cfg(all(not(test), not(target_arch = "wasm32")))] // <-- e.g., `cargo build`
 include!("host_bindings_empty.rs");
 
-// TODO: DELETE when `host_bindings_for_test.rs` is introduced.
 #[cfg(all(test, not(target_arch = "wasm32")))] // <-- e.g., `cargo test`
-include!("host_bindings_for_testing.rs");
-
-// #[cfg(all(test, not(target_arch = "wasm32")))] // <-- e.g., `cargo test`
-// include!("host_bindings_for_test.rs");
+include!("host_bindings_test.rs");
 
 // host functions defined by the host.
 #[cfg(target_arch = "wasm32")] // <-- e.g., `cargo build --target wasm32v1-none`

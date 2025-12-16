@@ -217,6 +217,9 @@ where
 mod tests {
     use super::*;
     use crate::host::Error;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use mockall::predicate::always;
 
     // #[test]
     // fn test_match_result_code_with_expected_bytes_optional_byte_mismatch() {
@@ -365,6 +368,16 @@ mod tests {
 
     #[test]
     fn test_match_result_code_with_expected_bytes_optional_byte_mismatch() {
+        let mut mock = MockHostBindings::new();
+
+        // Set up expectations for trace_num calls (2 calls in the error path)
+        mock.expect_trace_num()
+            .with(always(), always(), always())
+            .returning(|_, _, _| 0)
+            .times(2);
+
+        let _guard = setup_mock(mock);
+
         let expected_bytes = 20;
         let result = match_result_code_with_expected_bytes_optional(15, expected_bytes, || {
             Some("should_not_execute")
@@ -375,6 +388,15 @@ mod tests {
 
     #[test]
     fn test_match_result_code_with_expected_bytes_optional_other_error() {
+        let mut mock = MockHostBindings::new();
+
+        // Set up expectations for trace_num call (1 call in the error path)
+        mock.expect_trace_num()
+            .with(always(), always(), always())
+            .returning(|_, _, _| 0);
+
+        let _guard = setup_mock(mock);
+
         let expected_bytes = 20;
         let result =
             match_result_code_with_expected_bytes_optional(INVALID_ACCOUNT, expected_bytes, || {
