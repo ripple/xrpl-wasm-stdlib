@@ -218,6 +218,26 @@ mod tests {
     use super::*;
     use crate::host::Error;
 
+    // #[test]
+    // fn test_match_result_code_with_expected_bytes_optional_byte_mismatch() {
+    //     let mut mock = MockHostBindings::new();
+    //
+    //     // Set up expectations for trace_num calls (2 calls in the error path)
+    //     mock.expect_trace_num()
+    //       .with(always(), always(), always())
+    //       .returning(|_, _, _| 0)
+    //       .times(2);
+    //
+    //     let _guard = setup_mock(mock);
+    //
+    //     let expected_bytes = 20;
+    //     let result = match_result_code_with_expected_bytes_optional(15, expected_bytes, || {
+    //         Some("should_not_execute")
+    //     });
+    //     assert!(result.is_err());
+    //     assert_eq!(result.err().unwrap().code(), POINTER_OUT_OF_BOUNDS);
+    // }
+
     #[test]
     fn test_match_result_code_success_positive() {
         let result = match_result_code(5, || "success");

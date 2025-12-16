@@ -1,5 +1,8 @@
 #![doc = include_str!("../../README.md")]
-#![no_std]
+#![cfg_attr(target_arch = "wasm32", no_std)]
+
+#[cfg(not(target_arch = "wasm32"))]
+extern crate std;
 
 // Re-export the r_address macro for convenient access
 pub use xrpl_address_macro::r_address;

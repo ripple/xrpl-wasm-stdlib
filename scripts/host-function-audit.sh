@@ -18,7 +18,7 @@ if ! command -v node &> /dev/null; then
 fi
 
 echo "🔍 Auditing host functions to ensure they match XRPLd host functions..."
-node tools/compareHostFunctions.js https://github.com/XRPLF/rippled/tree/ripple/wamr-host-functions
+node tools/compareHostFunctions.js https://github.com/XRPLF/rippled/tree/ripple/smart-escrow
 
 echo "✅ Host function audit completed!"
 echo "ℹ️  Note: This job should not be 'required' for PRs, as during development there may be temporary discrepancies between craft and rippled"
