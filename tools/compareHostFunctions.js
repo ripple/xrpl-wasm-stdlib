@@ -243,7 +243,7 @@ async function main() {
 
     // Match multiline function declarations - need to match across newlines
     const regex =
-      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gs
+      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gm
     let rustHits = [...rustHostFunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_trait.rs: Regex matched ${rustHits.length} functions`,
@@ -287,7 +287,7 @@ async function main() {
 
     // Match multiline function declarations
     const regex =
-      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gs
+      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gm
     let rustHits = [...rustHostfunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_wasm.rs: Regex matched ${rustHits.length} functions`,
@@ -342,7 +342,7 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gs
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
     let rustTestHits = [...macroContent.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_test.rs: Regex matched ${rustTestHits.length} functions`,
@@ -397,7 +397,7 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gs
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
     let rustEmptyHits = [...macroContent.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_empty.rs: Regex matched ${rustEmptyHits.length} functions`,
