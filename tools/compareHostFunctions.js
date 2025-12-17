@@ -402,11 +402,6 @@ async function main() {
     console.log(
       `\n📝 host_bindings_empty.rs: Regex matched ${rustEmptyHits.length} functions`,
     )
-    if (rustEmptyHits.length < 10) {
-      console.log(
-        `   Matched functions: ${rustEmptyHits.map((h) => h[1]).join(", ")}`,
-      )
-    }
 
     const rustEmptyFuncs = rustEmptyHits.map((hit) => {
       const params = hit[2]
