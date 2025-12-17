@@ -330,7 +330,7 @@ async function main() {
     // Extract only the export_host_functions! macro invocation (not the definition)
     // Look for the pattern that starts with a comment about generating stub functions
     const macroMatch = rustHostFunctionFile.match(
-      /\/\/ Generate all the stub functions\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
+      /\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
     )
     if (!macroMatch) {
       console.error(
@@ -385,7 +385,7 @@ async function main() {
     // Extract only the export_host_functions! macro invocation (not the definition)
     // Look for the pattern that starts with a comment about generating stub functions
     const macroMatch = rustHostFunctionFile.match(
-      /\/\/ Generate all the stub functions\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
+      /^\s*export_host_functions!\s*\{([\s\S]*?)\n\}/m,
     )
     if (!macroMatch) {
       console.error(
