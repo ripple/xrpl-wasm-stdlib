@@ -15,6 +15,11 @@ include = ["src/", "README.md", "docs/**/*"]
 [lib]
 crate-type = ["lib"]
 
+[features]
+# Enable test host bindings for coverage testing.
+# This is equivalent to cfg(test) but can be explicitly enabled for cargo llvm-cov.
+test-host-bindings = []
+
 [dependencies]
 xrpl-address-macro = { version = "0.7.1", path = "xrpl-address-macro" }
 
