@@ -23,6 +23,10 @@
 #[allow(unused)] // To remove warn when compiled for non-WASM targets
 #[cfg_attr(all(test, not(target_arch = "wasm32")), mockall::automock)]
 pub trait HostBindings {
+    // ###############################
+    // Host Function Category: getters
+    // ###############################
+
     /// Retrieves the current ledger sequence number.
     ///
     /// This function populates a provided buffer with the ledger sequence number.
@@ -384,6 +388,10 @@ pub trait HostBindings {
         locator_len: usize,
     ) -> i32;
 
+    // ###################################################
+    // Host Function Category: update current ledger entry
+    // ###################################################
+
     /// Updates a data field of the current ledger entry
     ///
     /// # Parameters
@@ -399,6 +407,10 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     unsafe fn update_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
+
+    // ###################################################
+    // Host Function Category: hash and keylet computation
+    // ###################################################
 
     /// Computes the first 32 bytes (half) of the SHA-512 hash for the given input data.
     ///
@@ -997,6 +1009,10 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
+    // #############################
+    // Host Function Category: NFT
+    // #############################
+
     /// Retrieves the URI details of a specific NFT (Non-Fungible Token) associated with a given account.
     ///
     /// # Parameters
@@ -1138,6 +1154,10 @@ pub trait HostBindings {
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
+
+    // #############################
+    // Host Function Category: FLOAT
+    // #############################
 
     /// Converts a signed 64-bit integer to an opaque float representation
     /// # Parameters
@@ -1365,6 +1385,10 @@ pub trait HostBindings {
         out_buff_len: usize,
         rounding_mode: i32,
     ) -> i32;
+
+    // #############################
+    // Host Function Category: TRACE
+    // #############################
 
     /// Print to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will see this.
     ///
