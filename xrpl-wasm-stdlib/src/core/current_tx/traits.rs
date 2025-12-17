@@ -417,95 +417,518 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 mod tests {
     use super::*;
     use crate::core::current_tx::escrow_finish::EscrowFinish;
+    use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
-    use crate::host::setup_mock;
     use mockall::predicate::{always, eq};
 
-    #[test]
-    fn test_get_condition_returns_some_with_data() {
-        let mut mock = MockHostBindings::new();
+    mod escrow_finish_fields {
+        use super::*;
+        use crate::host::setup_mock;
 
-        // Set up expectations
-        mock.expect_get_tx_field()
-            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
-            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+        #[test]
+        fn test_get_condition_returns_some_with_data() {
+            let mut mock = MockHostBindings::new();
 
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
+            // Set up expectations
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
 
-        // When the mock host function returns a positive value (buffer length),
-        // get_condition should return Ok(Some(ConditionBlob))
-        let escrow = EscrowFinish;
-        let result = escrow.get_condition();
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
 
-        assert!(result.is_ok());
-        let condition_opt = result.unwrap();
-        assert!(condition_opt.is_some());
+            // When the mock host function returns a positive value (buffer length),
+            // get_condition should return Ok(Some(ConditionBlob))
+            let escrow = EscrowFinish;
+            let result = escrow.get_condition();
 
-        let condition = condition_opt.unwrap();
-        assert_eq!(condition.len, CONDITION_BLOB_SIZE);
-        assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
-    }
+            assert!(result.is_ok());
+            let condition_opt = result.unwrap();
+            assert!(condition_opt.is_some());
 
-    #[test]
-    fn test_get_fulfillment_returns_some_with_data() {
-        let mut mock = MockHostBindings::new();
-
-        // Set up expectations
-        mock.expect_get_tx_field()
-            .with(eq(sfield::Fulfillment), always(), eq(256))
-            .returning(|_, _, _| 256);
-
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
-
-        // When the mock host function returns a positive value (buffer length),
-        // get_fulfillment should return Ok(Some(FulfillmentBlob))
-        let escrow = EscrowFinish;
-        let result = escrow.get_fulfillment();
-
-        // The mock returns buffer.len() which is 256 (the size passed to get_tx_field)
-        assert!(result.is_ok());
-        let fulfillment_opt = result.unwrap();
-        assert!(fulfillment_opt.is_some());
-
-        let fulfillment = fulfillment_opt.unwrap();
-        assert_eq!(fulfillment.len, 256);
-        assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
-    }
-
-    #[test]
-    fn test_get_condition_and_fulfillment_independence() {
-        let mut mock = MockHostBindings::new();
-
-        // Set up expectations for both condition and fulfillment
-        mock.expect_get_tx_field()
-            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
-            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
-
-        mock.expect_get_tx_field()
-            .with(eq(sfield::Fulfillment), always(), eq(256))
-            .returning(|_, _, _| 256);
-
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
-
-        // Verify that get_condition and get_fulfillment can be called independently
-        let escrow = EscrowFinish;
-
-        let condition_result = escrow.get_condition();
-        let fulfillment_result = escrow.get_fulfillment();
-
-        assert!(condition_result.is_ok());
-        assert!(fulfillment_result.is_ok());
-
-        // Verify they have different sizes
-        if let (Some(condition), Some(fulfillment)) =
-            (condition_result.unwrap(), fulfillment_result.unwrap())
-        {
+            let condition = condition_opt.unwrap();
+            assert_eq!(condition.len, CONDITION_BLOB_SIZE);
             assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+        }
+
+        #[test]
+        fn test_get_fulfillment_returns_some_with_data() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(|_, _, _| 256);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a positive value (buffer length),
+            // get_fulfillment should return Ok(Some(FulfillmentBlob))
+            let escrow = EscrowFinish;
+            let result = escrow.get_fulfillment();
+
+            // The mock returns buffer.len() which is 256 (the size passed to get_tx_field)
+            assert!(result.is_ok());
+            let fulfillment_opt = result.unwrap();
+            assert!(fulfillment_opt.is_some());
+
+            let fulfillment = fulfillment_opt.unwrap();
+            assert_eq!(fulfillment.len, 256);
             assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
-            assert_ne!(condition.capacity(), fulfillment.capacity());
+        }
+
+        #[test]
+        fn test_get_condition_and_fulfillment_independence() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations for both condition and fulfillment
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(|_, _, _| 256);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // Verify that get_condition and get_fulfillment can be called independently
+            let escrow = EscrowFinish;
+
+            let condition_result = escrow.get_condition();
+            let fulfillment_result = escrow.get_fulfillment();
+
+            assert!(condition_result.is_ok());
+            assert!(fulfillment_result.is_ok());
+
+            // Verify they have different sizes
+            if let (Some(condition), Some(fulfillment)) =
+                (condition_result.unwrap(), fulfillment_result.unwrap())
+            {
+                assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+                assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
+                assert_ne!(condition.capacity(), fulfillment.capacity());
+            }
+        }
+
+        #[test]
+        fn test_get_condition_returns_none_when_field_not_present() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 0 to indicate field not present
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(|_, _, _| 0);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 0,
+            // get_condition should return Ok(None)
+            let escrow = EscrowFinish;
+            let result = escrow.get_condition();
+
+            assert!(result.is_ok());
+            let condition_opt = result.unwrap();
+            assert!(condition_opt.is_none());
+        }
+
+        #[test]
+        fn test_get_condition_returns_error_on_field_not_found() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return FIELD_NOT_FOUND error
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a negative error code,
+            // get_condition should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_condition();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), FIELD_NOT_FOUND);
+        }
+
+        #[test]
+        fn test_get_condition_returns_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return INTERNAL_ERROR
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(|_, _, _| INTERNAL_ERROR);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a negative error code,
+            // get_condition should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_condition();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_get_condition_with_partial_data() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return a smaller size than buffer
+            let partial_size = 20;
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .returning(move |_, _, _| partial_size);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a positive value less than buffer size,
+            // get_condition should return Ok(Some(ConditionBlob)) with the actual length
+            let escrow = EscrowFinish;
+            let result = escrow.get_condition();
+
+            assert!(result.is_ok());
+            let condition_opt = result.unwrap();
+            assert!(condition_opt.is_some());
+
+            let condition = condition_opt.unwrap();
+            assert_eq!(condition.len, partial_size as usize);
+            assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+        }
+
+        #[test]
+        fn test_get_fulfillment_returns_some_with_zero_length() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 0 to indicate empty field
+            // Note: get_fulfillment uses match_result_code_optional which treats 0 as success
+            // and the closure always returns Some(blob), so we get Some with len=0
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(|_, _, _| 0);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 0,
+            // get_fulfillment should return Ok(Some(FulfillmentBlob)) with len=0
+            let escrow = EscrowFinish;
+            let result = escrow.get_fulfillment();
+
+            assert!(result.is_ok());
+            let fulfillment_opt = result.unwrap();
+            assert!(fulfillment_opt.is_some());
+
+            let fulfillment = fulfillment_opt.unwrap();
+            assert_eq!(fulfillment.len, 0);
+            assert_eq!(fulfillment.capacity(), 256);
+        }
+
+        #[test]
+        fn test_get_fulfillment_returns_error_on_field_not_found() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return FIELD_NOT_FOUND error
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a negative error code,
+            // get_fulfillment should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_fulfillment();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), FIELD_NOT_FOUND);
+        }
+
+        #[test]
+        fn test_get_fulfillment_returns_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return INVALID_FIELD error
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(|_, _, _| INVALID_FIELD);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a negative error code,
+            // get_fulfillment should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_fulfillment();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_get_fulfillment_with_partial_data() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return a smaller size than buffer
+            let partial_size = 128;
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .returning(move |_, _, _| partial_size);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns a positive value less than buffer size,
+            // get_fulfillment should return Ok(Some(FulfillmentBlob)) with the actual length
+            let escrow = EscrowFinish;
+            let result = escrow.get_fulfillment();
+
+            assert!(result.is_ok());
+            let fulfillment_opt = result.unwrap();
+            assert!(fulfillment_opt.is_some());
+
+            let fulfillment = fulfillment_opt.unwrap();
+            assert_eq!(fulfillment.len, partial_size as usize);
+            assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
+        }
+
+        #[test]
+        fn test_get_owner_returns_account_id() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 20 bytes for AccountID
+            mock.expect_get_tx_field()
+                .with(
+                    eq(sfield::Owner),
+                    always(),
+                    eq(20), // ACCOUNT_ID_SIZE
+                )
+                .returning(|_, _, _| 20);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 20 bytes,
+            // get_owner should return Ok(AccountID)
+            let escrow = EscrowFinish;
+            let result = escrow.get_owner();
+
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_get_owner_returns_error_on_field_not_found() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return FIELD_NOT_FOUND error
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Owner), always(), eq(20))
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns an error,
+            // get_owner should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_owner();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), FIELD_NOT_FOUND);
+        }
+
+        #[test]
+        fn test_get_offer_sequence_returns_u32() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 4 bytes for u32
+            mock.expect_get_tx_field()
+                .with(
+                    eq(sfield::OfferSequence),
+                    always(),
+                    eq(4), // size of u32
+                )
+                .returning(|_, _, _| 4);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 4 bytes,
+            // get_offer_sequence should return Ok(u32)
+            let escrow = EscrowFinish;
+            let result = escrow.get_offer_sequence();
+
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_get_offer_sequence_returns_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return INTERNAL_ERROR
+            mock.expect_get_tx_field()
+                .with(eq(sfield::OfferSequence), always(), eq(4))
+                .returning(|_, _, _| INTERNAL_ERROR);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns an error,
+            // get_offer_sequence should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_offer_sequence();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), INTERNAL_ERROR);
+        }
+    }
+
+    mod transaction_common_fields {
+        use super::*;
+        use crate::host::setup_mock;
+
+        #[test]
+        fn test_get_account_returns_account_id() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 20 bytes for AccountID
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Account), always(), eq(20))
+                .returning(|_, _, _| 20);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 20 bytes,
+            // get_account should return Ok(AccountID)
+            let escrow = EscrowFinish;
+            let result = escrow.get_account();
+
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_get_account_returns_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return INVALID_FIELD error
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Account), always(), eq(20))
+                .returning(|_, _, _| INVALID_FIELD);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns an error,
+            // get_account should return Err
+            let escrow = EscrowFinish;
+            let result = escrow.get_account();
+
+            assert!(result.is_err());
+            let error = result.err().unwrap();
+            assert_eq!(error.code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_get_sequence_returns_u32() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 4 bytes for u32
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Sequence), always(), eq(4))
+                .returning(|_, _, _| 4);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 4 bytes,
+            // get_sequence should return Ok(u32)
+            let escrow = EscrowFinish;
+            let result = escrow.get_sequence();
+
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_get_flags_returns_some_with_data() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 4 bytes for u32 flags
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .returning(|_, _, _| 4);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 4 bytes,
+            // get_flags should return Ok(Some(u32))
+            let escrow = EscrowFinish;
+            let result = escrow.get_flags();
+
+            assert!(result.is_ok());
+            let flags_opt = result.unwrap();
+            assert!(flags_opt.is_some());
+        }
+
+        #[test]
+        fn test_get_flags_returns_none_when_field_not_found() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return FIELD_NOT_FOUND error
+            // For optional fields, this should return Ok(None)
+            mock.expect_get_tx_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns FIELD_NOT_FOUND,
+            // get_flags should return Ok(None)
+            let escrow = EscrowFinish;
+            let result = escrow.get_flags();
+
+            assert!(result.is_ok());
+            let flags_opt = result.unwrap();
+            assert!(flags_opt.is_none());
+        }
+
+        #[test]
+        fn test_get_last_ledger_sequence_returns_some_with_data() {
+            let mut mock = MockHostBindings::new();
+
+            // Set up expectations - return 4 bytes for u32
+            mock.expect_get_tx_field()
+                .with(eq(sfield::LastLedgerSequence), always(), eq(4))
+                .returning(|_, _, _| 4);
+
+            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+            let _guard = setup_mock(mock);
+
+            // When the mock host function returns 4 bytes,
+            // get_last_ledger_sequence should return Ok(Some(u32))
+            let escrow = EscrowFinish;
+            let result = escrow.get_last_ledger_sequence();
+
+            assert!(result.is_ok());
+            let seq_opt = result.unwrap();
+            assert!(seq_opt.is_some());
         }
     }
 }

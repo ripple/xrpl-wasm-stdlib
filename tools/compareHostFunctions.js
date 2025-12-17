@@ -67,13 +67,15 @@ async function main() {
     process.argv[2],
     "src/xrpld/app/wasm/HostFuncWrapper.h",
   )
-  // Parse WASM host function imports in `WasmVM.cpp`
-  // `&?` before `hfs` makes the ampersand optional, which allows the regex to match both:
-  // WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000); (without &)
-  // WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000); (with &)
-  const importRegex =
-    /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm
-  let importHits = [...wasmImportFile.matchAll(importRegex)]
+  let importHits = [
+    // Parse WASM host function imports in `WasmVM.cpp`
+    // `&?` before `hfs` makes the ampersand optional, which allows the regex to match both:
+    // WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000); (without &)
+    // WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000); (with &)
+    ...wasmImportFile.matchAll(
+      /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
+    ),
+  ]
   console.log(
     `\n📝 WasmVM.cpp: Regex matched ${importHits.length} import functions`,
   )
@@ -82,10 +84,12 @@ async function main() {
     .map((hit) => [hit[1], hit[3] != null ? hit[3] : hit[1]])
     .sort((a, b) => a[0].localeCompare(b[0]))
 
-  // Parse the `proto` functions in `HostFuncWrapper.h`
-  const wrapperRegex =
-    /^ *using ([A-Za-z0-9]+)_proto =[ \n]*([A-Za-z0-9_]+)\(([A-Za-z0-9_\* \n,]*)\);$/gm
-  let wrapperHits = [...hostWrapperFile.matchAll(wrapperRegex)]
+  let wrapperHits = [
+    // Parse the `proto` functions in `HostFuncWrapper.h`
+    ...hostWrapperFile.matchAll(
+      /^ *using ([A-Za-z0-9]+)_proto =[ \n]*([A-Za-z0-9_]+)\(([A-Za-z0-9_\* \n,]*)\);$/gm,
+    ),
+  ]
   console.log(
     `📝 HostFuncWrapper.h: Regex matched ${wrapperHits.length} wrapper functions`,
   )
