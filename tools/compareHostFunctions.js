@@ -69,9 +69,6 @@ async function main() {
   )
   let importHits = [
     // Parse WASM host function imports in `WasmVM.cpp`
-    // `&?` before `hfs` makes the ampersand optional, which allows the regex to match both:
-    // WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000); (without &)
-    // WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000); (with &)
     ...wasmImportFile.matchAll(
       /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
     ),
