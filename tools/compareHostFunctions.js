@@ -69,9 +69,6 @@ async function main() {
   )
   let importHits = [
     // Parse WASM host function imports in `WasmVM.cpp`
-    // `&?` before `hfs` makes the ampersand optional, which allows the regex to match both:
-    // WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000); (without &)
-    // WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000); (with &)
     ...wasmImportFile.matchAll(
       /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
     ),
@@ -246,7 +243,7 @@ async function main() {
 
     // Match multiline function declarations - need to match across newlines
     const regex =
-      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gs
+      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gm
     let rustHits = [...rustHostFunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_trait.rs: Regex matched ${rustHits.length} functions`,
@@ -290,7 +287,7 @@ async function main() {
 
     // Match multiline function declarations
     const regex =
-      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gs
+      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gm
     let rustHits = [...rustHostfunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_wasm.rs: Regex matched ${rustHits.length} functions`,
@@ -333,7 +330,7 @@ async function main() {
     // Extract only the export_host_functions! macro invocation (not the definition)
     // Look for the pattern that starts with a comment about generating stub functions
     const macroMatch = rustHostFunctionFile.match(
-      /\/\/ Generate all the stub functions\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
+      /\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
     )
     if (!macroMatch) {
       console.error(
@@ -345,7 +342,7 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gs
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
     let rustTestHits = [...macroContent.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_test.rs: Regex matched ${rustTestHits.length} functions`,
@@ -388,7 +385,7 @@ async function main() {
     // Extract only the export_host_functions! macro invocation (not the definition)
     // Look for the pattern that starts with a comment about generating stub functions
     const macroMatch = rustHostFunctionFile.match(
-      /\/\/ Generate all the stub functions\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
+      /^\s*export_host_functions!\s*\{([\s\S]*?)\n\}/m,
     )
     if (!macroMatch) {
       console.error(
@@ -400,16 +397,11 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gs
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
     let rustEmptyHits = [...macroContent.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_empty.rs: Regex matched ${rustEmptyHits.length} functions`,
     )
-    if (rustEmptyHits.length < 10) {
-      console.log(
-        `   Matched functions: ${rustEmptyHits.map((h) => h[1]).join(", ")}`,
-      )
-    }
 
     const rustEmptyFuncs = rustEmptyHits.map((hit) => {
       const params = hit[2]

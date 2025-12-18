@@ -157,7 +157,7 @@ export_host_functions! {
     // Host Function Category: TRACE
     fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) -> i32;
     fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) -> i32;
-    fn trace_account(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32 ;
-    fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32 ;
-    fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32 ;
+    fn trace_account(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
+    fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
+    fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
 }
