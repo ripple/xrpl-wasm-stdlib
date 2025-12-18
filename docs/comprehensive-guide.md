@@ -108,19 +108,19 @@ use xrpl_wasm_stdlib::host::Result::{Ok, Err};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-  let tx = EscrowFinish;
+    let tx = EscrowFinish;
 
-  // Get the account trying to finish the escrow
-  let account = match tx.get_account() {
-    Ok(acc) => acc,
-    Err(_) => return 0, // Invalid transaction
-  };
+    // Get the account trying to finish the escrow
+    let account = match tx.get_account() {
+        Ok(acc) => acc,
+        Err(_) => return 0, // Invalid transaction
+    };
 
-  // Check account balance
-  match get_account_balance(&account) {
-    Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1, // Release (>10 XRP)
-    _ => 0, // Keep locked
-  }
+    // Check account balance
+    match get_account_balance(&account) {
+        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1, // Release (>10 XRP)
+        _ => 0, // Keep locked
+    }
 }
 ```
 
@@ -275,10 +275,10 @@ let token_sequence = nft_token.token_sequence()?;
 
 // Check individual flags efficiently (no additional host calls)
 if nft_flags.is_burnable() {
-// NFT can be burned by issuer
+    // NFT can be burned by issuer
 }
 if nft_flags.is_transferable() {
-// NFT can be transferred
+    // NFT can be transferred
 }
 
 // Get NFT URI
@@ -291,8 +291,8 @@ let uri = nft_token.uri(&owner)?;
 
 ```rust ignore
 use xrpl_wasm_stdlib::core::types::{
-  account_id::AccountID,           // 20-byte XRPL account identifier
-  amount::Amount, // Token amounts (XRP, IOU, MPT)
+    account_id::AccountID,           // 20-byte XRPL account identifier
+    amount::Amount, // Token amounts (XRP, IOU, MPT)
 };
 use xrpl_wasm_stdlib::types::NFT;      // [u8; 32] NFT identifier
 
@@ -315,10 +315,10 @@ Keylets are used to locate objects in the ledger:
 
 ```rust ignore
 use xrpl_wasm_stdlib::core::types::keylets::{
-  account_keylet,
-  line_keylet,
-  escrow_keylet,
-  oracle_keylet,
+    account_keylet,
+    line_keylet,
+    escrow_keylet,
+    oracle_keylet,
 };
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::asset::Asset;
@@ -359,16 +359,16 @@ use xrpl_wasm_stdlib::host::Error;
 
 // The correct approach is to use the trait methods
 fn main() {
-  let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-  let account_keylet = account_keylet(&account).unwrap_or_panic();
-  let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
-  if slot < 0 {
-    return;
-  }
+    let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+    let account_keylet = account_keylet(&account).unwrap_or_panic();
+    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    if slot < 0 {
+        return;
+    }
 
-  let account_root = AccountRoot { slot_num: slot };
-  let balance = account_root.balance();  // Returns Option<Amount>
-  let sequence = account_root.sequence(); // Returns u32
+    let account_root = AccountRoot { slot_num: slot };
+    let balance = account_root.balance();  // Returns Option<Amount>
+    let sequence = account_root.sequence(); // Returns u32
 }
 ```
 
