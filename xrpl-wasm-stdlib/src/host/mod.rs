@@ -22,16 +22,40 @@ pub mod error_codes;
 pub mod field_helpers;
 pub mod trace;
 
-//////////////////////////////////////
-// Host functions (defined by the host)
-//////////////////////////////////////
+// Float rounding mode constants (same as in host_bindings.rs)
+#[allow(unused)]
+pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
+#[allow(unused)]
+pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
+#[allow(unused)]
+pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
+#[allow(unused)]
+pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
 
-#[cfg(not(target_arch = "wasm32"))]
+// This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
+// target and build profiles.
+// 1) `host_bindings_trait.rs` defines the trait that specifies the host functions available to WASM smart contracts.
+// 2a) When `cargo test` or with `test-host-bindings` feature, `host_bindings_test.rs` is included,
+//     which provides stub implementations for coverage testing.
+// 2b) When `cargo build` is executed, then `host_bindings_empty.rs` is included, which provides a no-op implementation
+//     that simply allows the build to pass when the target is not Wasm32.
+// 2c) When `cargo build --target wasm32v1-none` (or any Wasm target) is executed, then `host_bindings_wasm.rs` is
+//     included, which provides the actual host function implementations.
+pub mod host_bindings_trait;
+
+#[cfg(all(
+    not(any(test, feature = "test-host-bindings")),
+    not(target_arch = "wasm32")
+))] // <-- e.g., `cargo build`
+include!("host_bindings_empty.rs");
+
+// TODO: UPDATE when `host_bindings_for_test.rs` is introduced.
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))] // <-- e.g., `cargo test` or coverage
 include!("host_bindings_for_testing.rs");
 
 // host functions defined by the host.
-#[cfg(target_arch = "wasm32")]
-include!("host_bindings.rs");
+#[cfg(target_arch = "wasm32")] // <-- e.g., `cargo build --target wasm32v1-none`
+include!("host_bindings_wasm.rs");
 
 /// `Result` is a type that represents either a success ([`Ok`]) or failure ([`Err`]) result from the host.
 #[must_use]
