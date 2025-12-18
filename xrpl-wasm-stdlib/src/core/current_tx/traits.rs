@@ -421,6 +421,18 @@ mod tests {
     use crate::host::host_bindings_trait::MockHostBindings;
     use mockall::predicate::{always, eq};
 
+    // ========================================
+    // Test helper functions
+    // ========================================
+
+    /// Helper to set up a mock expectation for get_tx_field
+    fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
+        mock.expect_get_tx_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
+    }
+
     mod escrow_finish_fields {
         use super::*;
         use crate::host::setup_mock;
@@ -429,12 +441,8 @@ mod tests {
         fn test_get_condition_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
-                .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+            expect_tx_field(&mut mock, sfield::Condition, CONDITION_BLOB_SIZE, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a positive value (buffer length),
@@ -455,12 +463,8 @@ mod tests {
         fn test_get_fulfillment_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
-                .returning(|_, _, _| 256);
+            expect_tx_field(&mut mock, sfield::Fulfillment, 256, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a positive value (buffer length),
@@ -482,16 +486,9 @@ mod tests {
         fn test_get_condition_and_fulfillment_independence() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for both condition and fulfillment
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
-                .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+            expect_tx_field(&mut mock, sfield::Condition, CONDITION_BLOB_SIZE, 1);
+            expect_tx_field(&mut mock, sfield::Fulfillment, 256, 1);
 
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
-                .returning(|_, _, _| 256);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Verify that get_condition and get_fulfillment can be called independently
@@ -517,12 +514,11 @@ mod tests {
         fn test_get_condition_returns_none_when_field_not_present() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 0 to indicate field not present
             mock.expect_get_tx_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .times(1)
                 .returning(|_, _, _| 0);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 0,
@@ -539,12 +535,11 @@ mod tests {
         fn test_get_condition_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_tx_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a negative error code,
@@ -561,12 +556,11 @@ mod tests {
         fn test_get_condition_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_tx_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a negative error code,
@@ -583,13 +577,12 @@ mod tests {
         fn test_get_condition_with_partial_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return a smaller size than buffer
             let partial_size = 20;
             mock.expect_get_tx_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                .times(1)
                 .returning(move |_, _, _| partial_size);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a positive value less than buffer size,
@@ -610,14 +603,11 @@ mod tests {
         fn test_get_fulfillment_returns_some_with_zero_length() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 0 to indicate empty field
-            // Note: get_fulfillment uses match_result_code_optional which treats 0 as success
-            // and the closure always returns Some(blob), so we get Some with len=0
             mock.expect_get_tx_field()
                 .with(eq(sfield::Fulfillment), always(), eq(256))
+                .times(1)
                 .returning(|_, _, _| 0);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 0,
@@ -638,12 +628,11 @@ mod tests {
         fn test_get_fulfillment_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_tx_field()
                 .with(eq(sfield::Fulfillment), always(), eq(256))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a negative error code,
@@ -660,12 +649,11 @@ mod tests {
         fn test_get_fulfillment_returns_error_on_invalid_field() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INVALID_FIELD error
             mock.expect_get_tx_field()
                 .with(eq(sfield::Fulfillment), always(), eq(256))
+                .times(1)
                 .returning(|_, _, _| INVALID_FIELD);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a negative error code,
@@ -682,13 +670,12 @@ mod tests {
         fn test_get_fulfillment_with_partial_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return a smaller size than buffer
             let partial_size = 128;
             mock.expect_get_tx_field()
                 .with(eq(sfield::Fulfillment), always(), eq(256))
+                .times(1)
                 .returning(move |_, _, _| partial_size);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns a positive value less than buffer size,
@@ -709,16 +696,8 @@ mod tests {
         fn test_get_owner_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_tx_field()
-                .with(
-                    eq(sfield::Owner),
-                    always(),
-                    eq(20), // ACCOUNT_ID_SIZE
-                )
-                .returning(|_, _, _| 20);
+            expect_tx_field(&mut mock, sfield::Owner, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -733,12 +712,11 @@ mod tests {
         fn test_get_owner_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_tx_field()
                 .with(eq(sfield::Owner), always(), eq(20))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -755,16 +733,8 @@ mod tests {
         fn test_get_offer_sequence_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_tx_field()
-                .with(
-                    eq(sfield::OfferSequence),
-                    always(),
-                    eq(4), // size of u32
-                )
-                .returning(|_, _, _| 4);
+            expect_tx_field(&mut mock, sfield::OfferSequence, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -779,12 +749,11 @@ mod tests {
         fn test_get_offer_sequence_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_tx_field()
                 .with(eq(sfield::OfferSequence), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -806,12 +775,8 @@ mod tests {
         fn test_get_account_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Account), always(), eq(20))
-                .returning(|_, _, _| 20);
+            expect_tx_field(&mut mock, sfield::Account, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -826,12 +791,11 @@ mod tests {
         fn test_get_account_returns_error_on_invalid_field() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INVALID_FIELD error
             mock.expect_get_tx_field()
                 .with(eq(sfield::Account), always(), eq(20))
+                .times(1)
                 .returning(|_, _, _| INVALID_FIELD);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -848,12 +812,8 @@ mod tests {
         fn test_get_sequence_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Sequence), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_tx_field(&mut mock, sfield::Sequence, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -868,12 +828,8 @@ mod tests {
         fn test_get_flags_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32 flags
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_tx_field(&mut mock, sfield::Flags, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -890,13 +846,11 @@ mod tests {
         fn test_get_flags_returns_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
-            // For optional fields, this should return Ok(None)
             mock.expect_get_tx_field()
                 .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns FIELD_NOT_FOUND,
@@ -913,12 +867,8 @@ mod tests {
         fn test_get_last_ledger_sequence_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_tx_field()
-                .with(eq(sfield::LastLedgerSequence), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_tx_field(&mut mock, sfield::LastLedgerSequence, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,

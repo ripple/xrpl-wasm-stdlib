@@ -535,6 +535,37 @@ mod tests {
     use crate::host::host_bindings_trait::MockHostBindings;
     use mockall::predicate::{always, eq};
 
+    // ========================================
+    // Test helper functions
+    // ========================================
+
+    /// Helper to set up a mock expectation for get_current_ledger_obj_field
+    fn expect_current_field(
+        mock: &mut MockHostBindings,
+        field_code: i32,
+        size: usize,
+        times: usize,
+    ) {
+        mock.expect_get_current_ledger_obj_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
+    }
+
+    /// Helper to set up a mock expectation for get_ledger_obj_field
+    fn expect_ledger_field(
+        mock: &mut MockHostBindings,
+        slot: i32,
+        field_code: i32,
+        size: usize,
+        times: usize,
+    ) {
+        mock.expect_get_ledger_obj_field()
+            .with(eq(slot), eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _, _| size as i32);
+    }
+
     mod ledger_object_common_fields {
         use super::*;
         use crate::host::setup_mock;
@@ -543,12 +574,8 @@ mod tests {
         fn test_get_flags_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32 flags
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::Flags, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -563,12 +590,11 @@ mod tests {
         fn test_get_flags_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -585,12 +611,8 @@ mod tests {
         fn test_get_ledger_entry_type_returns_u16() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 2 bytes for u16
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::LedgerEntryType), always(), eq(2))
-                .returning(|_, _, _| 2);
+            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 2 bytes,
@@ -605,12 +627,11 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::LedgerEntryType), always(), eq(2))
+                .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -634,12 +655,8 @@ mod tests {
         fn test_get_account_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .returning(|_, _, _, _| 20);
+            expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -654,12 +671,11 @@ mod tests {
         fn test_get_account_returns_error_on_invalid_field() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INVALID_FIELD error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -676,12 +692,8 @@ mod tests {
         fn test_owner_count_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::OwnerCount), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::OwnerCount, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -696,12 +708,11 @@ mod tests {
         fn test_owner_count_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::OwnerCount), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -718,12 +729,8 @@ mod tests {
         fn test_previous_txn_id_returns_hash256() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::PreviousTxnID), always(), eq(32))
-                .returning(|_, _, _, _| 32);
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -738,12 +745,8 @@ mod tests {
         fn test_previous_txn_lgr_seq_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::PreviousTxnLgrSeq), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -758,12 +761,8 @@ mod tests {
         fn test_sequence_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Sequence), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::Sequence, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -778,12 +777,8 @@ mod tests {
         fn test_ledger_entry_type_returns_u16() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 2 bytes for u16
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
-                .returning(|_, _, _, _| 2);
+            expect_ledger_field(&mut mock, 1, sfield::LedgerEntryType, 2, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 2 bytes,
@@ -800,12 +795,8 @@ mod tests {
         fn test_account_txn_id_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
-                .returning(|_, _, _, _| 32);
+            expect_ledger_field(&mut mock, 1, sfield::AccountTxnID, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -822,12 +813,11 @@ mod tests {
         fn test_account_txn_id_returns_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
+                .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns FIELD_NOT_FOUND,
@@ -844,12 +834,8 @@ mod tests {
         fn test_amm_id_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::AMMID), always(), eq(32))
-                .returning(|_, _, _, _| 32);
+            expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -866,12 +852,8 @@ mod tests {
         fn test_balance_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 48 bytes for Amount
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Balance), always(), eq(48))
-                .returning(|_, _, _, _| 48);
+            expect_ledger_field(&mut mock, 1, sfield::Balance, 48, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 48 bytes,
@@ -888,12 +870,8 @@ mod tests {
         fn test_burned_nf_tokens_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -910,12 +888,8 @@ mod tests {
         fn test_domain_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 256 bytes for UriBlob
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Domain), always(), eq(256))
-                .returning(|_, _, _, _| 256);
+            expect_ledger_field(&mut mock, 1, sfield::Domain, 256, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 256 bytes,
@@ -932,12 +906,8 @@ mod tests {
         fn test_email_hash_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 16 bytes for Hash128
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::EmailHash), always(), eq(16))
-                .returning(|_, _, _, _| 16);
+            expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 16 bytes,
@@ -954,12 +924,8 @@ mod tests {
         fn test_first_nf_token_sequence_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -976,12 +942,8 @@ mod tests {
         fn test_message_key_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 33 bytes for public key
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::MessageKey), always(), eq(33))
-                .returning(|_, _, _, _| 33);
+            expect_ledger_field(&mut mock, 1, sfield::MessageKey, 33, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 33 bytes,
@@ -998,12 +960,8 @@ mod tests {
         fn test_minted_nf_tokens_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::MintedNFTokens), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1020,12 +978,8 @@ mod tests {
         fn test_nf_token_minter_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::NFTokenMinter), always(), eq(20))
-                .returning(|_, _, _, _| 20);
+            expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1042,12 +996,8 @@ mod tests {
         fn test_regular_key_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::RegularKey), always(), eq(20))
-                .returning(|_, _, _, _| 20);
+            expect_ledger_field(&mut mock, 1, sfield::RegularKey, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1064,12 +1014,8 @@ mod tests {
         fn test_ticket_count_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::TicketCount), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::TicketCount, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1086,12 +1032,8 @@ mod tests {
         fn test_tick_size_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 1 byte for u8
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::TickSize), always(), eq(1))
-                .returning(|_, _, _, _| 1);
+            expect_ledger_field(&mut mock, 1, sfield::TickSize, 1, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 1 byte,
@@ -1108,12 +1050,8 @@ mod tests {
         fn test_transfer_rate_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::TransferRate), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::TransferRate, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1130,12 +1068,8 @@ mod tests {
         fn test_wallet_locator_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::WalletLocator), always(), eq(32))
-                .returning(|_, _, _, _| 32);
+            expect_ledger_field(&mut mock, 1, sfield::WalletLocator, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -1152,12 +1086,11 @@ mod tests {
         fn test_wallet_locator_returns_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::WalletLocator), always(), eq(32))
+                .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns FIELD_NOT_FOUND,
@@ -1180,12 +1113,8 @@ mod tests {
         fn test_get_flags_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32 flags
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::Flags, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1200,12 +1129,11 @@ mod tests {
         fn test_get_flags_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -1222,12 +1150,8 @@ mod tests {
         fn test_get_ledger_entry_type_returns_u16() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 2 bytes for u16
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::LedgerEntryType), always(), eq(2))
-                .returning(|_, _, _| 2);
+            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 2 bytes,
@@ -1242,12 +1166,11 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::LedgerEntryType), always(), eq(2))
+                .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -1271,12 +1194,8 @@ mod tests {
         fn test_get_account_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(20))
-                .returning(|_, _, _| 20);
+            expect_current_field(&mut mock, sfield::Account, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope) (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1291,12 +1210,11 @@ mod tests {
         fn test_get_account_returns_error_on_invalid_field() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INVALID_FIELD error
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Account), always(), eq(20))
+                .times(1)
                 .returning(|_, _, _| INVALID_FIELD);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope) (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -1313,12 +1231,8 @@ mod tests {
         fn test_get_amount_returns_amount() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 48 bytes for Amount
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Amount), always(), eq(48))
-                .returning(|_, _, _| 48);
+            expect_current_field(&mut mock, sfield::Amount, 48, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope) (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 48 bytes,
@@ -1333,12 +1247,8 @@ mod tests {
         fn test_get_destination_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Destination), always(), eq(20))
-                .returning(|_, _, _| 20);
+            expect_current_field(&mut mock, sfield::Destination, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1353,12 +1263,8 @@ mod tests {
         fn test_get_owner_node_returns_u64() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 8 bytes for u64
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::OwnerNode), always(), eq(8))
-                .returning(|_, _, _| 8);
+            expect_current_field(&mut mock, sfield::OwnerNode, 8, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 8 bytes,
@@ -1373,12 +1279,8 @@ mod tests {
         fn test_get_previous_txn_id_returns_hash256() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PreviousTxnID), always(), eq(32))
-                .returning(|_, _, _| 32);
+            expect_current_field(&mut mock, sfield::PreviousTxnID, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -1393,12 +1295,8 @@ mod tests {
         fn test_get_previous_txn_lgr_seq_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PreviousTxnLgrSeq), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::PreviousTxnLgrSeq, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1415,12 +1313,8 @@ mod tests {
         fn test_get_cancel_after_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::CancelAfter), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::CancelAfter, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1437,12 +1331,11 @@ mod tests {
         fn test_get_cancel_after_returns_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::CancelAfter), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns FIELD_NOT_FOUND,
@@ -1459,12 +1352,8 @@ mod tests {
         fn test_get_condition_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 128 bytes for ConditionBlob (CONDITION_BLOB_SIZE)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Condition), always(), eq(128))
-                .returning(|_, _, _| 128);
+            expect_current_field(&mut mock, sfield::Condition, 128, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 128 bytes,
@@ -1481,12 +1370,11 @@ mod tests {
         fn test_get_condition_returns_none_when_result_code_zero() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 0 (no data)
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Condition), always(), eq(128))
+                .times(1)
                 .returning(|_, _, _| 0);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 0,
@@ -1503,12 +1391,8 @@ mod tests {
         fn test_get_destination_node_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 8 bytes for u64
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::DestinationNode), always(), eq(8))
-                .returning(|_, _, _| 8);
+            expect_current_field(&mut mock, sfield::DestinationNode, 8, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 8 bytes,
@@ -1525,12 +1409,8 @@ mod tests {
         fn test_get_destination_tag_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::DestinationTag), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::DestinationTag, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1547,12 +1427,8 @@ mod tests {
         fn test_get_finish_after_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::FinishAfter), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1569,12 +1445,8 @@ mod tests {
         fn test_get_source_tag_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::SourceTag), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1591,12 +1463,8 @@ mod tests {
         fn test_get_finish_function_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 1024 bytes for Blob (DEFAULT_BLOB_SIZE)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::FinishFunction), always(), eq(1024))
-                .returning(|_, _, _| 1024);
+            expect_current_field(&mut mock, sfield::FinishFunction, 1024, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 1024 bytes,
@@ -1613,12 +1481,8 @@ mod tests {
         fn test_get_data_returns_contract_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4096 bytes for ContractData (XRPL_CONTRACT_DATA_SIZE)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Data), always(), eq(4096))
-                .returning(|_, _, _| 4096);
+            expect_current_field(&mut mock, sfield::Data, 4096, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4096 bytes,
@@ -1635,12 +1499,11 @@ mod tests {
         fn test_get_data_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Data), always(), eq(4096))
+                .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -1664,12 +1527,8 @@ mod tests {
         fn test_get_account_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .returning(|_, _, _, _| 20);
+            expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1684,12 +1543,11 @@ mod tests {
         fn test_get_account_returns_error_on_invalid_field() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INVALID_FIELD error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
@@ -1706,12 +1564,8 @@ mod tests {
         fn test_get_amount_returns_amount() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 48 bytes for Amount
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Amount), always(), eq(48))
-                .returning(|_, _, _, _| 48);
+            expect_ledger_field(&mut mock, 1, sfield::Amount, 48, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 48 bytes,
@@ -1726,12 +1580,8 @@ mod tests {
         fn test_get_destination_returns_account_id() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 20 bytes for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Destination), always(), eq(20))
-                .returning(|_, _, _, _| 20);
+            expect_ledger_field(&mut mock, 1, sfield::Destination, 20, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 20 bytes,
@@ -1746,12 +1596,8 @@ mod tests {
         fn test_get_owner_node_returns_u64() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 8 bytes for u64
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::OwnerNode), always(), eq(8))
-                .returning(|_, _, _, _| 8);
+            expect_ledger_field(&mut mock, 1, sfield::OwnerNode, 8, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 8 bytes,
@@ -1766,12 +1612,8 @@ mod tests {
         fn test_get_previous_txn_id_returns_hash256() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 32 bytes for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::PreviousTxnID), always(), eq(32))
-                .returning(|_, _, _, _| 32);
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 32 bytes,
@@ -1786,12 +1628,8 @@ mod tests {
         fn test_get_previous_txn_lgr_seq_returns_u32() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::PreviousTxnLgrSeq), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1808,12 +1646,8 @@ mod tests {
         fn test_get_cancel_after_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::CancelAfter, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1830,12 +1664,11 @@ mod tests {
         fn test_get_cancel_after_returns_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return FIELD_NOT_FOUND error
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
+                .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns FIELD_NOT_FOUND,
@@ -1852,12 +1685,8 @@ mod tests {
         fn test_get_condition_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 128 bytes for ConditionBlob (CONDITION_BLOB_SIZE)
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Condition), always(), eq(128))
-                .returning(|_, _, _, _| 128);
+            expect_ledger_field(&mut mock, 1, sfield::Condition, 128, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 128 bytes,
@@ -1874,12 +1703,11 @@ mod tests {
         fn test_get_condition_returns_none_when_result_code_zero() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 0 (no data)
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Condition), always(), eq(128))
+                .times(1)
                 .returning(|_, _, _, _| 0);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 0,
@@ -1896,12 +1724,8 @@ mod tests {
         fn test_get_destination_node_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 8 bytes for u64
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::DestinationNode), always(), eq(8))
-                .returning(|_, _, _, _| 8);
+            expect_ledger_field(&mut mock, 1, sfield::DestinationNode, 8, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 8 bytes,
@@ -1918,12 +1742,8 @@ mod tests {
         fn test_get_destination_tag_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::DestinationTag), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::DestinationTag, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1940,12 +1760,8 @@ mod tests {
         fn test_get_finish_after_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::FinishAfter), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1962,12 +1778,8 @@ mod tests {
         fn test_get_source_tag_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4 bytes for u32
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1984,12 +1796,8 @@ mod tests {
         fn test_get_finish_function_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 1024 bytes for Blob (DEFAULT_BLOB_SIZE)
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::FinishFunction), always(), eq(1024))
-                .returning(|_, _, _, _| 1024);
+            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 1024, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 1024 bytes,
@@ -2006,12 +1814,8 @@ mod tests {
         fn test_get_data_returns_contract_data() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return 4096 bytes for ContractData (XRPL_CONTRACT_DATA_SIZE)
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Data), always(), eq(4096))
-                .returning(|_, _, _, _| 4096);
+            expect_ledger_field(&mut mock, 1, sfield::Data, 4096, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4096 bytes,
@@ -2028,12 +1832,11 @@ mod tests {
         fn test_get_data_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations - return INTERNAL_ERROR
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Data), always(), eq(4096))
+                .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // When the mock host function returns an error,
