@@ -296,6 +296,38 @@ pub mod ledger_object {
         use crate::host::setup_mock;
         use crate::sfield;
         use mockall::predicate::{always, eq};
+
+        // ========================================
+        // Test helper functions
+        // ========================================
+
+        /// Helper to set up a mock expectation for get_current_ledger_obj_field
+        fn expect_current_field(
+            mock: &mut MockHostBindings,
+            field_code: i32,
+            size: usize,
+            times: usize,
+        ) {
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(field_code), always(), eq(size))
+                .times(times)
+                .returning(move |_, _, _| size as i32);
+        }
+
+        /// Helper to set up a mock expectation for get_ledger_obj_field
+        fn expect_ledger_field(
+            mock: &mut MockHostBindings,
+            slot: i32,
+            field_code: i32,
+            size: usize,
+            times: usize,
+        ) {
+            mock.expect_get_ledger_obj_field()
+                .with(eq(slot), eq(field_code), always(), eq(size))
+                .times(times)
+                .returning(move |_, _, _, _| size as i32);
+        }
+
         // ========================================
         // Basic smoke tests for LedgerObjectFieldGetter implementations
         // These tests verify that the trait implementations compile and work with the test host.
@@ -306,22 +338,10 @@ pub mod ledger_object {
         fn test_field_getter_basic_types() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for u16
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::LedgerEntryType), always(), eq(2))
-                .returning(|_, _, _| 2);
+            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
+            expect_current_field(&mut mock, sfield::Flags, 4, 1);
+            expect_current_field(&mut mock, sfield::Balance, 8, 1);
 
-            // Set up expectations for u32
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _| 4);
-
-            // Set up expectations for u64
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Balance), always(), eq(8))
-                .returning(|_, _, _| 8);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test that all basic integer types work
@@ -334,32 +354,12 @@ pub mod ledger_object {
         fn test_field_getter_xrpl_types() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for AccountID (20 bytes)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _| ACCOUNT_ID_SIZE as i32);
+            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Amount, 48, 1);
+            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey, DEFAULT_BLOB_SIZE, 1);
 
-            // Set up expectations for Amount (48 bytes max)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Amount), always(), eq(48))
-                .returning(|_, _, _| 48);
-
-            // Set up expectations for Hash128 (16 bytes)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::EmailHash), always(), eq(HASH128_SIZE))
-                .returning(|_, _, _| HASH128_SIZE as i32);
-
-            // Set up expectations for Hash256 (32 bytes)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PreviousTxnID), always(), eq(HASH256_SIZE))
-                .returning(|_, _, _| HASH256_SIZE as i32);
-
-            // Set up expectations for Blob
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PublicKey), always(), eq(DEFAULT_BLOB_SIZE))
-                .returning(|_, _, _| DEFAULT_BLOB_SIZE as i32);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test that XRPL-specific types work
@@ -378,17 +378,9 @@ pub mod ledger_object {
         fn test_field_getter_optional_variants() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for u32 Flags
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::Flags, 4, 1);
+            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
 
-            // Set up expectations for AccountID
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval
@@ -406,22 +398,10 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            // Set up expectations for u32 Flags
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
 
-            // Set up expectations for u64 Balance
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Balance), always(), eq(8))
-                .returning(|_, _, _, _| 8);
-
-            // Set up expectations for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test ledger object field retrieval with slot numbers
@@ -435,12 +415,8 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            // Set up expectations for u32 Flags
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _, _| 4);
+            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
 
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval with slot numbers
@@ -457,18 +433,9 @@ pub mod ledger_object {
         fn test_current_ledger_object_module() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for u32 Flags (called twice - once for required, once for optional)
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .times(2)
-                .returning(|_, _, _| 4);
+            expect_current_field(&mut mock, sfield::Flags, 4, 2);
+            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
 
-            // Set up expectations for AccountID
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test the current_ledger_object module's convenience functions
@@ -485,53 +452,15 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            // Set up expectations for u16 LedgerEntryType
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::LedgerEntryType), always(), eq(2))
-                .returning(|_, _, _, _| 2);
+            expect_ledger_field(&mut mock, slot, sfield::LedgerEntryType, 2, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 2);
+            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount, 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::PublicKey, 33, 1);
 
-            // Set up expectations for u32 Flags (called twice - once for required, once for optional)
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Flags), always(), eq(4))
-                .times(2)
-                .returning(|_, _, _, _| 4);
-
-            // Set up expectations for u64 Balance
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Balance), always(), eq(8))
-                .returning(|_, _, _, _| 8);
-
-            // Set up expectations for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set up expectations for Amount
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Amount), always(), eq(48))
-                .returning(|_, _, _, _| 48);
-
-            // Set up expectations for Hash128
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::EmailHash), always(), eq(HASH128_SIZE))
-                .returning(|_, _, _, _| HASH128_SIZE as i32);
-
-            // Set up expectations for Hash256
-            mock.expect_get_ledger_obj_field()
-                .with(
-                    eq(slot),
-                    eq(sfield::PreviousTxnID),
-                    always(),
-                    eq(HASH256_SIZE),
-                )
-                .returning(|_, _, _, _| HASH256_SIZE as i32);
-
-            // Set up expectations for Blob<33>
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::PublicKey), always(), eq(33))
-                .returning(|_, _, _, _| 33);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Test the ledger_object module's convenience functions
@@ -558,27 +487,11 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            // Set up expectations for u64 Balance
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Balance), always(), eq(8))
-                .returning(|_, _, _, _| 8);
+            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Sequence, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
 
-            // Set up expectations for AccountID
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set up expectations for u32 Sequence
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Sequence), always(), eq(4))
-                .returning(|_, _, _, _| 4);
-
-            // Set up expectations for u32 Flags
-            mock.expect_get_ledger_obj_field()
-                .with(eq(slot), eq(sfield::Flags), always(), eq(4))
-                .returning(|_, _, _, _| 4);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Verify type inference works with turbofish syntax
@@ -598,27 +511,11 @@ pub mod ledger_object {
         fn test_type_sizes() {
             let mut mock = MockHostBindings::new();
 
-            // Set up expectations for Hash128
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::EmailHash), always(), eq(HASH128_SIZE))
-                .returning(|_, _, _| HASH128_SIZE as i32);
+            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey, PUBLIC_KEY_BUFFER_SIZE, 1);
 
-            // Set up expectations for Hash256
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PreviousTxnID), always(), eq(HASH256_SIZE))
-                .returning(|_, _, _| HASH256_SIZE as i32);
-
-            // Set up expectations for AccountID
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                .returning(|_, _, _| ACCOUNT_ID_SIZE as i32);
-
-            // Set up expectations for Blob
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::PublicKey), always(), eq(PUBLIC_KEY_BUFFER_SIZE))
-                .returning(|_, _, _| PUBLIC_KEY_BUFFER_SIZE as i32);
-
-            // Set the mock in thread-local storage (automatically cleans up at the end of scope)
             let _guard = setup_mock(mock);
 
             // Verify that returned types have the expected sizes

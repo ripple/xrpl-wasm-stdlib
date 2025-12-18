@@ -353,22 +353,22 @@ Low-level host function access through the `host` module.
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::keylets::{account_keylet, KeyletBytes};
+use xrpl_wasm_stdlib::core::types::keylets::account_keylet;
 use xrpl_wasm_stdlib::host::cache_ledger_obj;
 use xrpl_wasm_stdlib::host::Error;
 
 // The correct approach is to use the trait methods
 fn main() {
-  let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-  let account_keylet = account_keylet(&account).unwrap_or_panic();
-  let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
-  if slot < 0 {
-    return;
-  }
+    let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+    let account_keylet = account_keylet(&account).unwrap_or_panic();
+    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    if slot < 0 {
+        return;
+    }
 
-  let account_root = AccountRoot { slot_num: slot };
-  let balance = account_root.balance();  // Returns Option<Amount>
-  let sequence = account_root.sequence(); // Returns u32
+    let account_root = AccountRoot { slot_num: slot };
+    let balance = account_root.balance();  // Returns Option<Amount>
+    let sequence = account_root.sequence(); // Returns u32
 }
 ```
 
@@ -410,42 +410,42 @@ use xrpl_wasm_stdlib::host::{cache_ledger_obj, Error, Result};
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};
 
 fn process_escrow() -> Result<i32> {
-  let tx = EscrowFinish;
+    let tx = EscrowFinish;
 
-  // Chain operations with ?
-  let account = match tx.get_account() {
-    Ok(acc) => acc,
-    Err(e) => return Err(e), // Invalid transaction
-  };
+    // Chain operations with ?
+    let account = match tx.get_account() {
+        Ok(acc) => acc,
+        Err(e) => return Err(e), // Invalid transaction
+    };
 
-  let balance = get_account_balance(&account);
+    let balance = get_account_balance(&account);
 
-  // Handle specific errors - create AccountRoot to access account fields
-  let account_keylet = match account_keylet(&account) {
-    Ok(keylet) => keylet,
-    Err(e) => return Err(e), // Invalid account
-  };
+    // Handle specific errors - create AccountRoot to access account fields
+    let account_keylet = match account_keylet(&account) {
+        Ok(keylet) => keylet,
+        Err(e) => return Err(e), // Invalid account
+    };
 
-  let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
-  if slot < 0 {
-    return Err(Error::from_code(slot));
-  }
-
-  let account_root = AccountRoot { slot_num: slot };
-  match account_root.sequence() {
-    Ok(sequence) => {
-      // Use sequence
+    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    if slot < 0 {
+        return Err(Error::from_code(slot));
     }
-    Err(e) => {
-      // Handle missing field or other error
-      return Err(e);
-    }
-  }
 
-  return Ok(match balance {
-    Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1,
-    _ => 0,
-  });
+    let account_root = AccountRoot { slot_num: slot };
+    match account_root.sequence() {
+        Ok(sequence) => {
+            // Use sequence
+        },
+        Err(e) => {
+            // Handle missing field or other error
+            return Err(e);
+        },
+    }
+
+    return Ok(match balance {
+        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1,
+        _ => 0,
+    })
 }
 ```
 
@@ -575,14 +575,16 @@ The web UI allows you to:
    ```
 
 2. **Upload your WASM file:**
-   - Open the testing interface in your browser
-   - Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
-   - The contract will be loaded automatically
+
+- Open the testing interface in your browser
+- Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
+- The contract will be loaded automatically
 
 3. **Test your contract:**
-   - Set up test scenarios using the interface
-   - Configure transaction data and ledger state
-   - Execute and see results with debug output
+
+- Set up test scenarios using the interface
+- Configure transaction data and ledger state
+- Execute and see results with debug output
 
 ### Performance Optimization
 

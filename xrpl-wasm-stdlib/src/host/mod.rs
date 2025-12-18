@@ -35,17 +35,21 @@ pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.
 // 1) `host_bindings_trait.rs` defines the trait that specifies the host functions available to WASM smart contracts.
-// 2a) When `cargo test` is executed, then `host_bindings_test.rs` is included, which provides mock implementations.
+// 2a) When cargo is executed with `test` or with the `test-host-bindings` feature, `host_bindings_test.rs` is included,
+//     which provides stub implementations for coverage testing.
 // 2b) When `cargo build` is executed, then `host_bindings_empty.rs` is included, which provides a no-op implementation
 //     that simply allows the build to pass when the target is not Wasm32.
 // 2c) When `cargo build --target wasm32v1-none` (or any Wasm target) is executed, then `host_bindings_wasm.rs` is
 //     included, which provides the actual host function implementations.
 pub mod host_bindings_trait;
 
-#[cfg(all(not(test), not(target_arch = "wasm32")))] // <-- e.g., `cargo build`
+#[cfg(all(
+    not(any(test, feature = "test-host-bindings")),
+    not(target_arch = "wasm32")
+))] // <-- e.g., `cargo build` or `... --features xrpl-wasm-stdlib/test-host-bindings`
 include!("host_bindings_empty.rs");
 
-#[cfg(all(test, not(target_arch = "wasm32")))] // <-- e.g., `cargo test`
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))] // <-- e.g., `cargo test` or cov
 include!("host_bindings_test.rs");
 
 // host functions defined by the host.
@@ -105,11 +109,26 @@ impl<T> Result<T> {
     /// Panics if the value is an [`Err`], with a panic message provided by the
     /// [`Err`]'s value.
     #[inline]
+    #[track_caller]
     pub fn unwrap(self) -> T {
         match self {
             Result::Ok(t) => t,
             Result::Err(error) => {
-                let _ = trace::trace_num("error_code=", error.code() as i64);
+                #[cfg(target_arch = "wasm32")]
+                {
+                    let _ = trace::trace_num("error_code=", error.code() as i64);
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    let location = core::panic::Location::caller();
+                    eprintln!(
+                        "Result::unwrap() failed at {}:{}:{} with error_code={}",
+                        location.file(),
+                        location.line(),
+                        location.column(),
+                        error.code()
+                    );
+                }
                 panic!(
                     "called `Result::unwrap()` on an `Err` with code: {}",
                     error.code()
@@ -137,14 +156,25 @@ impl<T> Result<T> {
     }
 
     #[inline]
+    #[track_caller]
     pub fn unwrap_or_panic(self) -> T {
         self.unwrap_or_else(|error| {
-            let _ = trace::trace_num("error_code=", error.code() as i64);
-            core::panic!(
-                "Failed in {}: error_code={}",
-                core::panic::Location::caller(),
-                error.code()
-            );
+            let location = core::panic::Location::caller();
+            #[cfg(target_arch = "wasm32")]
+            {
+                let _ = trace::trace_num("error_code=", error.code() as i64);
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                eprintln!(
+                    "unwrap_or_panic() failed at {}:{}:{} with error_code={}",
+                    location.file(),
+                    location.line(),
+                    location.column(),
+                    error.code()
+                );
+            }
+            core::panic!("Failed in {}: error_code={}", location, error.code());
         })
     }
 }
