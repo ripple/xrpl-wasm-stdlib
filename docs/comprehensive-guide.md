@@ -79,7 +79,7 @@ npm install
 1. **Clone the repository:**
 
    ```shell
-   git clone https://github.com/XRPLF/xrpl-wasm-stdlib.git
+   git clone https://github.com/ripple/xrpl-wasm-stdlib.git
    cd xrpl-wasm-stdlib
    ```
 
