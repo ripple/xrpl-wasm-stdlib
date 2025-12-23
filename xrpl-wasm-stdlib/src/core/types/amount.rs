@@ -305,44 +305,34 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
 impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        match get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
-        }) {
-            Result::Ok((buffer, _len)) => Result::Ok(Amount::from(buffer)),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        ) {
-            Result::Ok(opt) => Result::Ok(opt.map(|(buffer, _len)| Amount::from(buffer))),
-            Result::Err(e) => Result::Err(e),
-        }
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_current_ledger_obj_field(fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 
     #[inline]
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        match get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
-        }) {
-            Result::Ok((buffer, _len)) => Result::Ok(Amount::from(buffer)),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        match get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        ) {
-            Result::Ok(opt) => Result::Ok(opt.map(|(buffer, _len)| Amount::from(buffer))),
-            Result::Err(e) => Result::Err(e),
-        }
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_ledger_obj_field(register_num, fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
 
@@ -361,23 +351,18 @@ impl LedgerObjectFieldGetter for Amount {
 impl CurrentTxFieldGetter for Amount {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        match get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
             get_tx_field(fc, buf, size)
-        }) {
-            Result::Ok((buffer, _len)) => Result::Ok(Amount::from(buffer)),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            field_code,
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        ) {
-            Result::Ok(opt) => Result::Ok(opt.map(|(buffer, _len)| Amount::from(buffer))),
-            Result::Err(e) => Result::Err(e),
-        }
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_tx_field(fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
 
