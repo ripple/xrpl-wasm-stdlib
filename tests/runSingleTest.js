@@ -9,7 +9,9 @@ const client =
 
 async function submit(tx, wallet, debug = false) {
   const result = await client.submitAndWait(tx, { autofill: true, wallet })
-  console.log("SUBMITTED " + tx.TransactionType)
+  console.log(
+    "SUBMITTED " + tx.TransactionType + "(" + result.result.hash + ")",
+  )
   if (debug) console.log(result.result ?? result)
   else console.log("Result code: " + result.result?.meta?.TransactionResult)
   return result
@@ -112,4 +114,6 @@ async function main() {
   }
 }
 
-main().catch(console.error)
+if (require.main === module) {
+  main().catch(console.error)
+}

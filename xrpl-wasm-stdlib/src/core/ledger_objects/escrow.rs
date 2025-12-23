@@ -13,3 +13,9 @@ impl LedgerObjectCommonFields for Escrow {
 }
 
 impl EscrowFields for Escrow {}
+
+impl Escrow {
+    pub fn new(slot_num: i32) -> Self {
+        Self { slot_num }
+    }
+}

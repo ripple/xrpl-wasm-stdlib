@@ -6,9 +6,6 @@ use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, ge
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
-// Declared here because there is no Memo struct.
-pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
-
 /// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
 /// (see `maxSerializedCondition` in xrpld source code), so we do the same here.
 pub const CONDITION_BLOB_SIZE: usize = 128;
@@ -18,6 +15,9 @@ pub const CONDITION_BLOB_SIZE: usize = 128;
 /// code), so we do the same here.
 pub const FULFILLMENT_BLOB_SIZE: usize = 256;
 
+// Declared here because there is no Memo struct.
+pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
+
 /// Maximum size of a signature in bytes.
 ///
 /// ECDSA signatures can be up to 72 bytes, which is the maximum signature size in XRPL.
@@ -26,6 +26,10 @@ pub const SIGNATURE_BLOB_SIZE: usize = 72;
 
 /// Maximum size of a URI in bytes (applies to DIDs, Oracles, Credentials, NFTs, etc.)
 pub const URI_BLOB_SIZE: usize = 256;
+
+/// Buffer size for WASM bytecode (FinishFunction field)
+/// Set to 4KB to match the maximum allocation limit enforced by the host
+pub const WASM_BLOB_SIZE: usize = 4096;
 
 /// A variable-length binary data container with a fixed maximum size.
 ///
