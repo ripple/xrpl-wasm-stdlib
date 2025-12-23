@@ -21,7 +21,10 @@
 /// my_function(&host);
 /// ```
 #[allow(unused)] // To remove warn when compiled for non-WASM targets
-#[cfg_attr(all(test, not(target_arch = "wasm32")), mockall::automock)]
+#[cfg_attr(
+    all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")),
+    mockall::automock
+)]
 pub trait HostBindings {
     // ###############################
     // Host Function Category: getters

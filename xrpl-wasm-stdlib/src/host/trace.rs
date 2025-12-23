@@ -129,24 +129,49 @@ pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
 mod tests {
     use super::*;
     use crate::core::types::amount::Amount;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use mockall::predicate::always;
 
     #[test]
     fn test_trace_amount_xrp() {
+        let mut mock = MockHostBindings::new();
+
+        let message = "Test XRP amount";
+
+        // Set up expectations for trace_amount call
+        mock.expect_trace_amount()
+            .with(always(), always(), always(), always())
+            .returning(move |_, msg_len, _, _| msg_len as i32);
+
+        let _guard = setup_mock(mock);
+
         // Create a test XRP Amount
         let amount = Amount::XRP {
             num_drops: 1_000_000,
         };
-        let message = "Test XRP amount";
 
         // Call trace_amount function
         let result = trace_amount(message, &amount);
 
-        // Should return Ok
+        // Should return Ok with the message length
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), message.len() as i32);
     }
 
     #[test]
     fn test_trace_amount_mpt() {
+        let mut mock = MockHostBindings::new();
+
+        let message = "Test MPT amount";
+
+        // Set up expectations for trace_amount call
+        mock.expect_trace_amount()
+            .with(always(), always(), always(), always())
+            .returning(move |_, msg_len, _, _| msg_len as i32);
+
+        let _guard = setup_mock(mock);
+
         // Create a test MPT Amount
         use crate::core::types::account_id::AccountID;
         use crate::core::types::mpt_id::MptId;
@@ -163,17 +188,27 @@ mod tests {
             mpt_id,
         };
 
-        let message = "Test MPT amount";
-
         // Call trace_amount function
         let result = trace_amount(message, &amount);
 
-        // Should return Ok
+        // Should return Ok with the message length
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), message.len() as i32);
     }
 
     #[test]
     fn test_trace_amount_iou() {
+        let mut mock = MockHostBindings::new();
+
+        let message = "Test IOU amount";
+
+        // Set up expectations for trace_amount call
+        mock.expect_trace_amount()
+            .with(always(), always(), always(), always())
+            .returning(move |_, msg_len, _, _| msg_len as i32);
+
+        let _guard = setup_mock(mock);
+
         // Create a test IOU Amount
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
@@ -193,28 +228,38 @@ mod tests {
             currency,
         };
 
-        let message = "Test IOU amount";
-
         // Call trace_amount function
         let result = trace_amount(message, &amount);
 
-        // Should return Ok
+        // Should return Ok with the message length
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), message.len() as i32);
     }
 
     #[test]
     fn test_trace_amount_negative_xrp() {
+        let mut mock = MockHostBindings::new();
+
+        let message = "Test negative XRP amount";
+
+        // Set up expectations for trace_amount call
+        mock.expect_trace_amount()
+            .with(always(), always(), always(), always())
+            .returning(move |_, msg_len, _, _| msg_len as i32);
+
+        let _guard = setup_mock(mock);
+
         // Create a test negative XRP Amount
         let amount = Amount::XRP {
             num_drops: -1_000_000,
         };
-        let message = "Test negative XRP amount";
 
         // Call trace_amount function
         let result = trace_amount(message, &amount);
 
-        // Should return Ok
+        // Should return Ok with the message length
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), message.len() as i32);
     }
 
     #[test]
