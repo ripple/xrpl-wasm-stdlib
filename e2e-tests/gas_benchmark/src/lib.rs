@@ -420,7 +420,7 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_for_testing.rs
+        // On non-wasm targets, finish() uses host_bindings_test.rs
         // which provides stub implementations of all host functions.
         let result = finish();
 

@@ -2,45 +2,192 @@
 use crate::host::host_bindings_trait::{HostBindings, MockHostBindings};
 use std::cell::RefCell;
 
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub struct MockGuard;
 
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 impl Drop for MockGuard {
     fn drop(&mut self) {
         clear_mock_host_bindings();
     }
 }
 
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn setup_mock(mock: MockHostBindings) -> MockGuard {
     set_mock_host_bindings(mock);
     MockGuard
 }
 
+// Create a default mock with stub return values matching the old host_bindings_for_testing.rs
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+fn create_default_mock() -> MockHostBindings {
+    let mut mock = MockHostBindings::new();
+
+    // Ledger info functions - return small positive values
+    mock.expect_get_ledger_sqn().returning(|| 1);
+    mock.expect_get_parent_ledger_time().returning(|| 1);
+    mock.expect_get_base_fee().returning(|| 1);
+
+    // Functions that return buffer length
+    mock.expect_get_parent_ledger_hash()
+        .returning(|_, out_buff_len| out_buff_len as i32);
+    mock.expect_amendment_enabled()
+        .returning(|_, amendment_len| amendment_len as i32);
+    mock.expect_cache_ledger_obj()
+        .returning(|_, keylet_len, _| keylet_len as i32);
+    mock.expect_get_tx_field()
+        .returning(|_, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_current_ledger_obj_field()
+        .returning(|_, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_ledger_obj_field()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_tx_nested_field()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_current_ledger_obj_nested_field()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_ledger_obj_nested_field()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+
+    // Array length functions
+    mock.expect_get_tx_array_len().returning(|_| 0);
+    mock.expect_get_current_ledger_obj_array_len()
+        .returning(|_| 0);
+    mock.expect_get_ledger_obj_array_len().returning(|_, _| 0);
+    mock.expect_get_tx_nested_array_len().returning(|_, _| 0);
+    // Note: These two return locator_len, not 0
+    mock.expect_get_current_ledger_obj_nested_array_len()
+        .returning(|_, locator_len| locator_len as i32);
+    mock.expect_get_ledger_obj_nested_array_len()
+        .returning(|_, _, locator_len| locator_len as i32);
+
+    // Update and crypto functions
+    mock.expect_update_data()
+        .returning(|_, data_len| data_len as i32);
+    mock.expect_compute_sha512_half()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_check_sig().returning(|_, _, _, _, _, _| 0);
+
+    // Keylet functions - all return buffer length
+    mock.expect_account_keylet()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_amm_keylet()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_check_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_credential_keylet()
+        .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_delegate_keylet()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_deposit_preauth_keylet()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_did_keylet()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_escrow_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_line_keylet()
+        .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_mpt_issuance_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_mptoken_keylet()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_nft_offer_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_offer_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_oracle_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_paychan_keylet()
+        .returning(|_, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_permissioned_domain_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_signers_keylet()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_ticket_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_vault_keylet()
+        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+
+    // NFT functions
+    mock.expect_get_nft()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_nft_issuer()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_nft_taxon()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_nft_flags()
+        .returning(|_, nft_id_len| nft_id_len as i32);
+    mock.expect_get_nft_transfer_fee()
+        .returning(|_, nft_id_len| nft_id_len as i32);
+    mock.expect_get_nft_serial()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+
+    // Float functions
+    mock.expect_float_from_int()
+        .returning(|_, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_from_uint()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_set()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_compare().returning(|_, _, _, _| 0);
+    mock.expect_float_add()
+        .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_subtract()
+        .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_multiply()
+        .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_divide()
+        .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_pow()
+        .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_root()
+        .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_log()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+
+    // Helper to calculate sum of two lengths, clamping to i32::MAX
+    let sum_lengths = |len1: usize, len2: usize| -> i32 {
+        len1.saturating_add(len2).min(i32::MAX as usize) as i32
+    };
+
+    // Trace functions - return sum of lengths (matching old host_bindings_for_testing.rs)
+    mock.expect_trace()
+        .returning(move |_, msg_len, _, data_len, _| sum_lengths(msg_len, data_len));
+    mock.expect_trace_num()
+        .returning(move |_, msg_len, _| sum_lengths(msg_len, 8));
+    mock.expect_trace_account()
+        .returning(move |_, msg_len, _, acc_len| sum_lengths(msg_len, acc_len));
+    mock.expect_trace_opaque_float()
+        .returning(move |_, msg_len, _, float_len| sum_lengths(msg_len, float_len));
+    mock.expect_trace_amount()
+        .returning(move |_, msg_len, _, amt_len| sum_lengths(msg_len, amt_len));
+
+    mock
+}
+
 // #[cfg(test)]
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 thread_local! {
-    static MOCK_STATE: RefCell<Option<MockHostBindings>> = const { RefCell::new(None) };
+    static MOCK_STATE: RefCell<Option<MockHostBindings>> = RefCell::new(Some(create_default_mock()));
 }
 
 // Helper functions to manage the mock state
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn set_mock_host_bindings(mock: MockHostBindings) {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = Some(mock);
     });
 }
 
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn clear_mock_host_bindings() {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = None;
     });
 }
 
-#[cfg(all(test, not(target_arch = "wasm32")))]
-// Macro to generate stub functions for non-WASM, non-test builds
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+// Macro to generate stub functions for non-WASM targets
+// These functions delegate to the MockHostBindings in MOCK_STATE
 macro_rules! export_host_functions {
     ($(
         $(#[$attr:meta])*
@@ -52,11 +199,11 @@ macro_rules! export_host_functions {
             $(#[$attr])*
             pub unsafe fn $name($($param: $param_ty),*) -> $ret {
                 MOCK_STATE.with(|state|  {
-                    if let Some(ref mock) = *state.borrow() {
-                        unsafe { mock.$name($($param),*) }
-                    } else {
-                        panic!("MockHostBindings not set. Call set_mock_host_bindings() in your test setup.");
-                    }
+                    // The mock should always be present due to default initialization
+                    // If it's not, panic with a clear error message
+                    let mock = state.borrow();
+                    let mock_ref = mock.as_ref().expect("MockHostBindings not initialized");
+                    unsafe { mock_ref.$name($($param),*) }
                 })
             }
         )*
