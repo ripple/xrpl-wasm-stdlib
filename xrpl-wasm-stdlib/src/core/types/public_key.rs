@@ -59,24 +59,19 @@ impl From<&[u8]> for PublicKey {
 impl CurrentTxFieldGetter for PublicKey {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        match get_fixed_size_field_with_expected_bytes::<33, _>(
-            field_code,
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.into()),
-            Result::Err(e) => Result::Err(e),
-        }
+        get_fixed_size_field_with_expected_bytes::<33, _>(field_code, |fc, buf, size| unsafe {
+            get_tx_field(fc, buf, size)
+        })
+        .map(|buffer| buffer.into())
     }
 
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_fixed_size_field_with_expected_bytes_optional::<33, _>(
+        get_fixed_size_field_with_expected_bytes_optional::<33, _>(
             field_code,
             |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.map(|b| b.into())),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.map(|b| b.into()))
     }
 }
 
