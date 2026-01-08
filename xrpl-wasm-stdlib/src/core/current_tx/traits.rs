@@ -355,7 +355,7 @@ pub trait EscrowFinishFields: TransactionCommonFields {
         let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code =
-            unsafe { get_tx_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len()) };
+            unsafe { get_tx_field(sfield::Condition.into(), buffer.as_mut_ptr(), buffer.len()) };
 
         if result_code < 0 {
             Result::Err(Error::from_code(result_code))
@@ -402,7 +402,8 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
         let mut buffer = [0u8; FULFILLMENT_BLOB_SIZE]; // <-- 256 is the current rippled cap.
 
-        let result_code = unsafe { get_tx_field(sfield::Fulfillment, buffer.as_mut_ptr(), 256) };
+        let result_code =
+            unsafe { get_tx_field(sfield::Fulfillment.into(), buffer.as_mut_ptr(), 256) };
         match_result_code_optional(result_code, || {
             let blob = FulfillmentBlob {
                 data: buffer,

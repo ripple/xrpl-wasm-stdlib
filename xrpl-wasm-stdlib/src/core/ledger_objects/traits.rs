@@ -124,7 +124,11 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code = unsafe {
-            get_current_ledger_obj_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len())
+            get_current_ledger_obj_field(
+                sfield::Condition.into(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
         };
 
         match_result_code_optional(result_code, || {
@@ -211,8 +215,9 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_data(&self) -> Result<ContractData> {
         let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
-        let result_code =
-            unsafe { get_current_ledger_obj_field(sfield::Data, data.as_mut_ptr(), data.len()) };
+        let result_code = unsafe {
+            get_current_ledger_obj_field(sfield::Data.into(), data.as_mut_ptr(), data.len())
+        };
 
         match result_code {
             code if code >= 0 => Ok(ContractData {
@@ -264,7 +269,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Amount,
+                sfield::Amount.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -288,7 +293,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Condition,
+                sfield::Condition.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -386,7 +391,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Data,
+                sfield::Data.into(),
                 data.as_mut_ptr(),
                 data.len(),
             )

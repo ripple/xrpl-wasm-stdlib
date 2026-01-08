@@ -8,6 +8,7 @@ pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
 // Declared here because there is no Memo struct.
 pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
+pub const DOMAIN_BLOB_SIZE: usize = 256;
 
 /// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
 /// (see `maxSerializedCondition` in xrpld source code), so we do the same here.
