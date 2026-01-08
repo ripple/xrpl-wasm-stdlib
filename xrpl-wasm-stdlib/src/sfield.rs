@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
 
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::ledger_objects::array_object::{Array, Object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
@@ -27,11 +27,11 @@ use core::marker::PhantomData;
 /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
 /// ```
 #[derive(Copy, Clone)]
-pub struct SField<T: FieldGetter, const CODE: i32> {
+pub struct SField<T: LedgerObjectFieldGetter, const CODE: i32> {
     _phantom: PhantomData<T>,
 }
 
-impl<T: FieldGetter, const CODE: i32> SField<T, CODE> {
+impl<T: LedgerObjectFieldGetter, const CODE: i32> SField<T, CODE> {
     /// Creates a new SField constant.
     ///
     /// This is a const function that can be used to initialize SField constants.
@@ -42,13 +42,13 @@ impl<T: FieldGetter, const CODE: i32> SField<T, CODE> {
     }
 }
 
-impl<T: FieldGetter, const CODE: i32> From<SField<T, CODE>> for i32 {
+impl<T: LedgerObjectFieldGetter, const CODE: i32> From<SField<T, CODE>> for i32 {
     fn from(_: SField<T, CODE>) -> Self {
         CODE
     }
 }
 
-impl<T: FieldGetter, const CODE: i32> Default for SField<T, CODE> {
+impl<T: LedgerObjectFieldGetter, const CODE: i32> Default for SField<T, CODE> {
     fn default() -> Self {
         Self::new()
     }
@@ -60,7 +60,7 @@ pub const hash: SField<u8, -1> = SField::new();
 pub const index: SField<u8, 0> = SField::new();
 
 // Placeholder SField constants for array and object types
-// These types don't have FieldGetter implementations but are represented as SField<Array/Object, CODE>
+// These types don't have LedgerObjectFieldGetter implementations but are represented as SField<Array/Object, CODE>
 pub const LedgerEntryType: SField<u16, 65537> = SField::new();
 pub const TransactionType: SField<u16, 65538> = SField::new();
 pub const SignerWeight: SField<u16, 65539> = SField::new();

@@ -65,15 +65,6 @@ async function main() {
     }, 1000)
   }
 
-  const walletsPath = path.join(__dirname, "wallets.json")
-  const walletsData = JSON.parse(fs.readFileSync(walletsPath, "utf8"))
-
-  const wallets = walletsData.map(({ _address, seed, _pubkey }) => {
-    return xrpl.Wallet.fromSeed(seed)
-  })
-
-  console.log(`Loaded ${wallets.length} wallets`)
-
   // Generate fresh wallets for this test
   const sourceWallet = await fundWallet()
   const destWallet = await fundWallet()
@@ -102,19 +93,22 @@ async function main() {
     submit,
     sourceWallet,
     destWallet,
-    allWallets: wallets,
     fundWallet,
     deploy,
     finish,
   }
+
+  let failed = false
   try {
     await test(testContext)
   } catch (error) {
     console.error("Error:", error.message)
     console.log(error)
+    failed = true
   } finally {
     if (interval) clearInterval(interval)
     await client.disconnect()
+    if (failed) process.exit(1)
   }
 }
 

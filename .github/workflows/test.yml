@@ -11,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  CI: true
+  RIPPLED_DOCKER_IMAGE: rippleci/rippled:ripple_se_supported
 
 jobs:
   pre-commit:
@@ -152,8 +152,16 @@ jobs:
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Run docker in background
+        run: |
+          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/opt/ripple/" --name rippled-service --health-cmd="rippled server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.RIPPLED_DOCKER_IMAGE }} -c "rippled -a"
+
       - name: Run end-to-end tests
         run: ./scripts/run-tests.sh
+
+      - name: Stop docker container
+        if: always()
+        run: docker stop rippled-service
 
   coverage:
     runs-on: ubuntu-latest
@@ -176,7 +184,4 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate code coverage
-        run: |
-          cargo llvm-cov --all-features --workspace -- --nocapture
-          cd e2e-tests
-          cargo llvm-cov --all-features --workspace --ignore-filename-regex "e2e-tests/.*" -- --nocapture
+        run: ./scripts/coverage.sh

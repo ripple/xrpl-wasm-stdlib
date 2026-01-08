@@ -30,9 +30,9 @@ pub struct Object;
 
 // Implement FieldGetter for Array and Object as no-ops
 // These are placeholder types and should not be used for actual field retrieval
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 
-impl FieldGetter for Array {
+impl LedgerObjectFieldGetter for Array {
     #[inline]
     fn get_from_current_ledger_obj(_field_code: i32) -> Result<Self> {
         // This should never be called - Array is a placeholder type
@@ -58,7 +58,7 @@ impl FieldGetter for Array {
     }
 }
 
-impl FieldGetter for Object {
+impl LedgerObjectFieldGetter for Object {
     #[inline]
     fn get_from_current_ledger_obj(_field_code: i32) -> Result<Self> {
         // This should never be called - Object is a placeholder type

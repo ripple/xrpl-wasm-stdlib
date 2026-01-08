@@ -4,7 +4,7 @@
 extern crate std;
 
 use crate::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::core::ledger_objects::FieldGetter;
+use xrpl_wasm_stdlib::core::ledger_objects::LedgerObjectFieldGetter;
 use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::get_current_escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
@@ -18,7 +18,7 @@ use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_account, trace_data, 
 use xrpl_wasm_stdlib::sfield;
 use xrpl_wasm_stdlib::sfield::SField;
 
-pub fn object_exists<T: FieldGetter, const CODE: i32>(
+pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
     keylet_result: Result<keylets::KeyletBytes>,
     keylet_type: &str,
     field: SField<T, CODE>,

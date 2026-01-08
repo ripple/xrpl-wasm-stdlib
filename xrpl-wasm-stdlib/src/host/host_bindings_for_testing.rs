@@ -1,15 +1,14 @@
 // This file exists as a host_binding stand-in for non-WASM targets. For example, this file will
 // be used during unit tests.
 
-// Float rounding mode constants (same as in host_bindings.rs)
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
+#[cfg(not(target_arch = "wasm32"))]
+mod imports {
+    extern crate std;
+    pub use std::{fmt::Write, println, slice, string::String};
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+use imports::*;
 
 #[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
@@ -621,80 +620,92 @@ pub unsafe fn float_log(
 #[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn trace(
-    _msg_read_ptr: *const u8,
-    _msg_read_len: usize,
-    _data_read_ptr: *const u8,
-    _data_read_len: usize,
+    msg_read_ptr: *const u8,
+    msg_read_len: usize,
+    data_read_ptr: *const u8,
+    data_read_len: usize,
     _as_hex: i32,
 ) -> i32 {
-    // Prevent overflow: saturate addition and cast
-    let sum = _data_read_len.saturating_add(_msg_read_len);
-    if sum > i32::MAX as usize {
-        i32::MAX
+    let msg = unsafe { read_message_from_ptr(msg_read_ptr, msg_read_len) };
+    let data_output = if _as_hex == 1 {
+        unsafe { format_bytes_as_hex(data_read_ptr, data_read_len) }
     } else {
-        sum as i32
-    }
+        unsafe { read_message_from_ptr(data_read_ptr, data_read_len) }
+    };
+
+    println!("{} {}", msg, data_output);
+    calculate_return_sum(msg_read_len, data_read_len)
 }
 
-#[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) -> i32 {
-    // Prevent overflow: saturate addition and cast to i32 safely
-    let sum = _msg_read_len.saturating_add(4);
-    if sum > i32::MAX as usize {
-        i32::MAX
-    } else {
-        sum as i32
-    }
+pub unsafe fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32 {
+    let msg = read_message_from_ptr(msg_read_ptr, msg_read_len);
+    println!("{} {}", msg, number);
+    calculate_return_sum(msg_read_len, 8)
 }
 
 #[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn trace_account(
-    _msg_read_ptr: *const u8,
-    _msg_read_len: usize,
-    _account_ptr: *const u8,
-    _account_len: usize,
+    msg_read_ptr: *const u8,
+    msg_read_len: usize,
+    account_ptr: *const u8,
+    account_len: usize,
 ) -> i32 {
-    // Prevent overflow: saturate addition and cast to i32 safely
-    let sum = _msg_read_len.saturating_add(_account_len);
-    if sum > i32::MAX as usize {
-        i32::MAX
-    } else {
-        sum as i32
-    }
+    let msg = read_message_from_ptr(msg_read_ptr, msg_read_len);
+    let account_hex = format_bytes_as_hex(account_ptr, account_len);
+    println!("{} {}", msg, account_hex);
+    calculate_return_sum(msg_read_len, account_len)
 }
 
 #[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn trace_opaque_float(
-    _msg_read_ptr: *const u8,
-    _msg_read_len: usize,
-    _opaque_float_ptr: *const u8,
-    _opaque_float_len: usize,
+    msg_read_ptr: *const u8,
+    msg_read_len: usize,
+    opaque_float_ptr: *const u8,
+    opaque_float_len: usize,
 ) -> i32 {
-    // Prevent overflow: saturate addition and cast to i32 safely
-    let sum = _msg_read_len.saturating_add(_opaque_float_len);
-    if sum > i32::MAX as usize {
-        i32::MAX
-    } else {
-        sum as i32
-    }
+    let msg = read_message_from_ptr(msg_read_ptr, msg_read_len);
+    let float_hex = format_bytes_as_hex(opaque_float_ptr, opaque_float_len);
+    println!("{} {}", msg, float_hex);
+    calculate_return_sum(msg_read_len, opaque_float_len)
 }
 
 #[allow(unused)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn trace_amount(
-    _msg_read_ptr: *const u8,
-    _msg_read_len: usize,
-    _amount_ptr: *const u8,
-    _amount_len: usize,
+    msg_read_ptr: *const u8,
+    msg_read_len: usize,
+    amount_ptr: *const u8,
+    amount_len: usize,
 ) -> i32 {
-    // Prevent overflow: saturate addition and cast to i32 safely
-    let sum = _msg_read_len.saturating_add(_amount_len);
-    if sum > i32::MAX as usize {
-        i32::MAX
-    } else {
-        sum as i32
+    let msg = read_message_from_ptr(msg_read_ptr, msg_read_len);
+    let amount_hex = format_bytes_as_hex(amount_ptr, amount_len);
+    println!("{} {}", msg, amount_hex);
+    calculate_return_sum(msg_read_len, amount_len)
+}
+
+// Private helper functions for trace operations.
+// Note: These are test-only mocks, so we keep them simple.
+
+/// Reads a message from a raw pointer and converts it to a UTF-8 string.
+fn read_message_from_ptr(ptr: *const u8, len: usize) -> String {
+    let slice = unsafe { slice::from_raw_parts(ptr, len) };
+    String::from_utf8_lossy(slice).into_owned()
+}
+
+/// Formats bytes as uppercase hexadecimal string.
+fn format_bytes_as_hex(ptr: *const u8, len: usize) -> String {
+    let slice = unsafe { slice::from_raw_parts(ptr, len) };
+    let mut result = String::with_capacity(len * 2);
+    for &byte in slice {
+        write!(&mut result, "{:02X}", byte).unwrap();
     }
+    result
+}
+
+/// Calculates the sum of two lengths, clamping to i32::MAX on overflow.
+fn calculate_return_sum(len1: usize, len2: usize) -> i32 {
+    len1.saturating_add(len2).min(i32::MAX as usize) as i32
 }

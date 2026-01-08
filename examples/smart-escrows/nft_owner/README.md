@@ -89,7 +89,7 @@ Use the test script to deploy an escrow and test the FinishFunction.
 
 ```shell
 cd ../../..
-CI=1 ./scripts/run-tests.sh examples/smart-escrows/nft_owner
+DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/nft_owner
 ```
 
 This will:

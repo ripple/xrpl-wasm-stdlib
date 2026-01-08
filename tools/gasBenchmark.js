@@ -249,13 +249,11 @@ async function main() {
         allResults.branch = branch
       }
 
-      // Save results - if we already have current results, this becomes previous
-      if (allResults.current && !allResults.previous) {
+      // Save results - move current to previous, then update current
+      if (allResults.current) {
         allResults.previous = allResults.current
-        allResults.current = results
-      } else {
-        allResults.current = results
       }
+      allResults.current = results
 
       fs.writeFileSync(resultsFile, JSON.stringify(allResults, null, 2))
       console.log(`\nResults saved to ${resultsFile}`)

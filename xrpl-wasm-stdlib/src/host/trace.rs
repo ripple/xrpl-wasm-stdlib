@@ -4,7 +4,6 @@ use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
 use crate::host;
 use crate::host::Result;
-use core::ptr;
 
 /// Data representation
 #[derive(Clone, Copy)]
@@ -27,13 +26,15 @@ pub enum DataRepr {
 /// an error (e.g., incorrect buffer sizes).
 #[inline(always)] // <-- Inline because this function is very small
 pub fn trace(msg: &str) -> Result<i32> {
-    let null_ptr: *const u8 = ptr::null::<u8>();
+    // Use an empty slice's pointer instead of null to satisfy Rust's safety requirements
+    // Even for zero-length slices, `slice::from_raw_parts` requires a non-null, aligned pointer
+    let empty_data: &[u8] = &[];
 
     let result_code = unsafe {
         host::trace(
             msg.as_ptr(),
             msg.len(),
-            null_ptr,
+            empty_data.as_ptr(),
             0usize,
             DataRepr::AsUTF8 as _,
         )

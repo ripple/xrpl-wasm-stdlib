@@ -7,30 +7,6 @@ const client =
     ? new xrpl.Client(process.argv[4])
     : new xrpl.Client("ws://127.0.0.1:6006")
 
-function getFinishFunctionFromFile(filePath) {
-  if (!filePath) {
-    console.error("Please provide a file path as a CLI argument.")
-    process.exit(1)
-  }
-
-  let absolutePath = ""
-  if (filePath.endsWith(".wasm")) {
-    absolutePath = path.resolve(filePath)
-  } else {
-    absolutePath = path.resolve(
-      __dirname,
-      `../../projects/target/wasm32v1-none/release/${filePath}.wasm`,
-    )
-  }
-  try {
-    const data = fs.readFileSync(absolutePath)
-    return data.toString("hex")
-  } catch (err) {
-    console.error(`Error reading file at ${absolutePath}:`, err.message)
-    process.exit(1)
-  }
-}
-
 async function submit(tx, wallet, debug = false) {
   const txResult = await client.submitAndWait(tx, { autofill: true, wallet })
   console.log("SUBMITTED " + tx.TransactionType)

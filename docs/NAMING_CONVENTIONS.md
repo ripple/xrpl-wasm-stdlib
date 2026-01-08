@@ -71,28 +71,6 @@ Different file types follow different conventions based on their language ecosys
 - Use **kebab-case** for HTML and CSS files: `index.html`, `styles.css`
 - Rationale: Web development convention
 
-## Migration Notes
-
-The following files were renamed to conform to these conventions:
-
-### JavaScript Files
-
-- `compare_gas_results.js` → `compareGasResults.js`
-- `gas_benchmark.js` → `gasBenchmark.js`
-- `deploy_wasm_code.js` → `deployWasmCode.js`
-- `run_single_test.js` → `runSingleTest.js`
-- `setup_ledger.js` → `setupLedger.js`
-- `run_test.js` → `runTest.js` (in all example and test directories)
-
-### Updated References
-
-All references to these files were updated in:
-
-- Shell scripts (`scripts/*.sh`)
-- Documentation (`docs/*.md`, `CONTRIBUTING.md`)
-- JavaScript files (require/import statements)
-- README files
-
 ## Quick Reference
 
 | File Type               | Convention           | Example                  |

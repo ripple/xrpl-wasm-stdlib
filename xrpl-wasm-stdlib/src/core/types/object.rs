@@ -4,7 +4,7 @@
 /// as complete values. Instead, they are used within `Location` to navigate to
 /// specific object fields.
 ///
-/// This type intentionally does NOT implement `FieldGetter` to prevent compile-time
+/// This type intentionally does NOT implement `LedgerObjectFieldGetter` to prevent compile-time
 /// misuse. If you need to access object fields, use `Location` to navigate to
 /// specific fields within the object.
 ///
