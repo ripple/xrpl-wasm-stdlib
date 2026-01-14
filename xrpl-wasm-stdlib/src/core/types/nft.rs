@@ -349,6 +349,9 @@ impl AsRef<[u8]> for NFToken {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use mockall::predicate::{always, eq};
 
     #[test]
     fn test_nft_creation() {
@@ -524,32 +527,55 @@ mod tests {
     // NFToken method tests
     #[test]
     fn test_nft_flags_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
+        let expected_flags = 0x0001u16; // BURNABLE flag
 
-        // Positive case: should return Ok with flags value
+        // Set up expectations
+        mock.expect_get_nft_flags()
+            .with(always(), eq(NFT_ID_SIZE))
+            .returning(move |_, _| expected_flags as i32);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.flags();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().as_u16(), NFT_ID_SIZE as u16);
+        assert_eq!(result.unwrap().as_u16(), expected_flags);
     }
 
     #[test]
     fn test_nft_transfer_fee_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
+        let expected_fee = 1000u16;
 
-        // Positive case: should return Ok with transfer fee value
+        // Set up expectations
+        mock.expect_get_nft_transfer_fee()
+            .with(always(), eq(NFT_ID_SIZE))
+            .returning(move |_, _| expected_fee as i32);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.transfer_fee();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), NFT_ID_SIZE as u16);
+        assert_eq!(result.unwrap(), expected_fee);
     }
 
     #[test]
     fn test_nft_issuer_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
 
-        // Positive case: should return Ok with issuer account
+        // Set up expectations
+        mock.expect_get_nft_issuer()
+            .with(always(), eq(NFT_ID_SIZE), always(), eq(ACCOUNT_ID_SIZE))
+            .returning(|_, _, _, _| ACCOUNT_ID_SIZE as i32);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.issuer();
         assert!(result.is_ok());
         let issuer = result.unwrap();
@@ -558,10 +584,17 @@ mod tests {
 
     #[test]
     fn test_nft_taxon_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
 
-        // Positive case: should return Ok with taxon value
+        // Set up expectations - taxon is a u32 (4 bytes)
+        mock.expect_get_nft_taxon()
+            .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
+            .returning(|_, _, _, _| 4);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.taxon();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
@@ -569,10 +602,17 @@ mod tests {
 
     #[test]
     fn test_nft_token_sequence_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
 
-        // Positive case: should return Ok with token sequence value
+        // Set up expectations - serial is a u32 (4 bytes)
+        mock.expect_get_nft_serial()
+            .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
+            .returning(|_, _, _, _| 4);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.token_sequence();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
@@ -580,11 +620,26 @@ mod tests {
 
     #[test]
     fn test_nft_uri_method() {
+        let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
-        let nft = NFToken::new(nft_id);
         let owner = AccountID([0u8; ACCOUNT_ID_SIZE]);
+        let expected_uri_len = 10;
 
-        // Positive case: should return Ok with URI blob
+        // Set up expectations
+        mock.expect_get_nft()
+            .with(
+                always(),
+                eq(ACCOUNT_ID_SIZE),
+                always(),
+                eq(NFT_ID_SIZE),
+                always(),
+                eq(URI_BLOB_SIZE),
+            )
+            .returning(move |_, _, _, _, _, _| expected_uri_len);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new(nft_id);
         let result = nft.uri(&owner);
         assert!(result.is_ok());
         let uri = result.unwrap();
