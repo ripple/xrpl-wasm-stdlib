@@ -1013,6 +1013,6 @@ mod coverage_tests {
         // The finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "finish() should return 1 on success");
     }
 }

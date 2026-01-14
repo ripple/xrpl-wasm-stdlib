@@ -1,23 +1,28 @@
-//TODO add docs after discussing the interface
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
-
-// pub enum RippledRoundingModes{
-//     ToNearest = 0,
-//     TowardsZero = 1,
-//     DOWNWARD = 2,
-//     UPWARD = 3
-// }
-
-#[allow(unused)]
-#[link(wasm_import_module = "host_lib")]
-unsafe extern "C" {
+/// Trait defining all host functions available to WASM smart contracts.
+///
+/// This trait can be implemented by:
+/// - `HostBindings`: The production implementation that calls actual host functions
+/// - Mock implementations using `mockall` for testing
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use xrpl_wasm_stdlib::host::{HostFunctions, HostBindings};
+///
+/// fn my_function<H: HostFunctions>(host: &H) {
+///     unsafe {
+///         let sqn = host.get_ledger_sqn();
+///         // ... use sqn
+///     }
+/// }
+///
+/// // In production code:
+/// let host = RealHostFunctions;
+/// my_function(&host);
+/// ```
+#[allow(unused)] // To remove warn when compiled for non-WASM targets
+#[cfg_attr(all(test, not(target_arch = "wasm32")), mockall::automock)]
+pub trait HostBindings {
     // ###############################
     // Host Function Category: getters
     // ###############################
@@ -31,7 +36,10 @@ unsafe extern "C" {
     /// - Returns the current ledger sequence number on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_ledger_sqn() -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_ledger_sqn(&self) -> i32;
 
     /// Retrieves the parent ledger time.
     ///
@@ -43,7 +51,10 @@ unsafe extern "C" {
     /// - Returns the parent ledger time on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_parent_ledger_time() -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_parent_ledger_time(&self) -> i32;
 
     /// Retrieves the hash of the parent ledger.
     ///
@@ -62,7 +73,10 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_parent_ledger_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the current transaction base fee.
     ///
@@ -71,7 +85,10 @@ unsafe extern "C" {
     /// - Returns a positive transaction base fee on success.
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_base_fee() -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_base_fee(&self) -> i32;
 
     /// Retrieves the state of an amendment and whether it's enabled or not.
     ///
@@ -87,7 +104,10 @@ unsafe extern "C" {
     /// - Returns a boolean 0 or 1 (whether the amendment is enabled or not) on success.
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn amendment_enabled(&self, amendment_ptr: *const u8, amendment_len: usize) -> i32;
 
     /// Fetch a ledger entry pointed by the given keylet.
     ///
@@ -108,7 +128,15 @@ unsafe extern "C" {
     ///
     /// - Returns a positive cache number
     /// - Returns a negative error code on failure
-    pub fn cache_ledger_obj(keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn cache_ledger_obj(
+        &self,
+        keylet_ptr: *const u8,
+        keylet_len: usize,
+        cache_num: i32,
+    ) -> i32;
 
     /// Retrieves a specific transaction field and writes it into the provided output buffer.
     ///
@@ -123,7 +151,10 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves a specific field from the current ledger object and writes it into the provided buffer.
     ///
@@ -138,7 +169,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_current_ledger_obj_field(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_current_ledger_obj_field(
+        &self,
         field: i32,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
@@ -158,7 +193,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_ledger_obj_field(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_ledger_obj_field(
+        &self,
         cache_num: i32,
         field: i32,
         out_buff_ptr: *mut u8,
@@ -178,7 +217,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_tx_nested_field(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_tx_nested_field(
+        &self,
         locator_ptr: *const u8,
         locator_len: usize,
         out_buff_ptr: *mut u8,
@@ -203,7 +246,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_current_ledger_obj_nested_field(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_current_ledger_obj_nested_field(
+        &self,
         locator_ptr: *const u8,
         locator_len: usize,
         out_buff_ptr: *mut u8,
@@ -225,7 +272,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_ledger_obj_nested_field(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_ledger_obj_nested_field(
+        &self,
         cache_num: i32,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -243,7 +294,10 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_tx_array_len(field: i32) -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_tx_array_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided field value.
     ///
@@ -255,7 +309,10 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_current_ledger_obj_array_len(field: i32) -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_current_ledger_obj_array_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided cache number and field value.
     ///
@@ -268,7 +325,10 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_ledger_obj_array_len(cache_num: i32, field: i32) -> i32;
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn get_ledger_obj_array_len(&self, cache_num: i32, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
@@ -281,7 +341,10 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_tx_nested_array_len(locator_ptr: *const u8, locator_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_tx_nested_array_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
@@ -294,7 +357,11 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_current_ledger_obj_nested_array_len(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_current_ledger_obj_nested_array_len(
+        &self,
         locator_ptr: *const u8,
         locator_len: usize,
     ) -> i32;
@@ -311,7 +378,11 @@ unsafe extern "C" {
     /// - Returns a positive number of array length on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_ledger_obj_nested_array_len(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_ledger_obj_nested_array_len(
+        &self,
         cache_num: i32,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -320,6 +391,7 @@ unsafe extern "C" {
     // ###################################################
     // Host Function Category: update current ledger entry
     // ###################################################
+
     /// Updates a data field of the current ledger entry
     ///
     /// # Parameters
@@ -331,7 +403,10 @@ unsafe extern "C" {
     ///
     /// - 0 on success
     /// - negative for an error
-    pub fn update_data(data_ptr: *const u8, data_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn update_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
 
     // ###################################################
     // Host Function Category: hash and keylet computation
@@ -351,7 +426,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn compute_sha512_half(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn compute_sha512_half(
+        &self,
         data_ptr: *const u8,
         data_len: usize,
         out_buff_ptr: *mut u8,
@@ -374,7 +453,11 @@ unsafe extern "C" {
     /// - Returns 0 if the signature is invalid.
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn check_sig(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn check_sig(
+        &self,
         message_ptr: *const u8,
         message_len: usize,
         signature_ptr: *const u8,
@@ -401,7 +484,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn account_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn account_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         out_buff_ptr: *mut u8,
@@ -428,7 +515,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn amm_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn amm_keylet(
+        &self,
         issue1_ptr: *const u8,
         issue1_len: usize,
         issue2_ptr: *const u8,
@@ -452,7 +543,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn check_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn check_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -478,7 +573,12 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn credential_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn credential_keylet(
+        &self,
         subject_ptr: *const u8,
         subject_len: usize,
         issuer_ptr: *const u8,
@@ -505,7 +605,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn delegate_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn delegate_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         authorize_ptr: *const u8,
@@ -530,7 +634,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn deposit_preauth_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn deposit_preauth_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         authorize_ptr: *const u8,
@@ -553,7 +661,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn did_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn did_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         out_buff_ptr: *mut u8,
@@ -575,7 +687,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn escrow_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn escrow_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -601,7 +717,12 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn line_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn line_keylet(
+        &self,
         account1_ptr: *const u8,
         account1_len: usize,
         account2_ptr: *const u8,
@@ -627,7 +748,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn mpt_issuance_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn mpt_issuance_keylet(
+        &self,
         issuer_ptr: *const u8,
         issuer_len: usize,
         sequence: i32,
@@ -651,7 +776,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn mptoken_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn mptoken_keylet(
+        &self,
         mptid_ptr: *const u8,
         mptid_len: usize,
         holder_ptr: *const u8,
@@ -675,7 +804,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn nft_offer_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn nft_offer_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -698,7 +831,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn offer_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn offer_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -722,7 +859,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn oracle_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn oracle_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         document_id: i32,
@@ -747,7 +888,12 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn paychan_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn paychan_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         destination_ptr: *const u8,
@@ -772,7 +918,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn permissioned_domain_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn permissioned_domain_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -794,7 +944,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn signers_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn signers_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         out_buff_ptr: *mut u8,
@@ -816,7 +970,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn ticket_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn ticket_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -839,7 +997,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn vault_keylet(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn vault_keylet(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         sequence: i32,
@@ -868,7 +1030,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   `../core/error_codes.rs`
-    pub fn get_nft(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft(
+        &self,
         account_ptr: *const u8,
         account_len: usize,
         nft_id_ptr: *const u8,
@@ -892,7 +1058,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_nft_issuer(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft_issuer(
+        &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
         out_buff_ptr: *mut u8,
@@ -914,7 +1084,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_nft_taxon(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft_taxon(
+        &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
         out_buff_ptr: *mut u8,
@@ -933,7 +1107,10 @@ unsafe extern "C" {
     /// - Returns a positive flags value on success, which is a bitmask representing the NFT's flags
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_nft_flags(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the transfer fee of a specific NFT (Non-Fungible Token).
     ///
@@ -947,7 +1124,10 @@ unsafe extern "C" {
     /// - Returns a positive transfer fee value on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_nft_transfer_fee(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft_transfer_fee(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the serial number of a specific NFT (Non-Fungible Token).
     ///
@@ -964,7 +1144,11 @@ unsafe extern "C" {
     /// - Returns a positive number of bytes wrote to an output buffer on success
     /// - Returns a negative error code on failure. The list of error codes is defined in
     ///   ../core/error_codes.rs
-    pub fn get_nft_serial(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_nft_serial(
+        &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
         out_buff_ptr: *mut u8,
@@ -974,33 +1158,6 @@ unsafe extern "C" {
     // #############################
     // Host Function Category: FLOAT
     // #############################
-    // Float operations for fungible token (IOU) arithmetic.
-    // These functions use rippled's Number class via FFI for exact compatibility.
-    //
-    // ## Architecture
-    // Float computations use the rippled Number class:
-    // WASM Module -> Host Function -> XRPLD Number (rippled via FFI) -> Result
-    //
-    // ## XRPL Amount Types
-    // The XRPL has three amount types:
-    // 1. XRP - 64-bit integer (drops)
-    // 2. Fungible Tokens (IOUs) - Custom 64-bit float format (these functions)
-    // 3. MPTs - 64-bit integer quantity with issuance ID
-    //
-    // ## Float Format (IOUs)
-    // 64-bit custom encoding: [Type:1][Sign:1][Exponent:8][Mantissa:54]
-    // - Type bit: Always 1 for fungible tokens
-    // - Sign bit: 1=positive, 0=negative
-    // - Exponent: 8 bits, biased by 97 (range -96 to +80)
-    // - Mantissa: 54 bits (16 decimal digits precision)
-    // - Zero: Special encoding 0x8000000000000000
-    //
-    // ## Rounding Modes
-    // All functions accept a rounding_mode parameter:
-    // - 0: ToNearest (ties to even)
-    // - 1: TowardsZero (truncate)
-    // - 2: Downward (towards -∞)
-    // - 3: Upward (towards +∞)
 
     /// Converts a signed 64-bit integer to an opaque float representation
     /// # Parameters
@@ -1009,7 +1166,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the conversion
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_from_int(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_from_int(
+        &self,
         in_int: i64,
         out_buff: *mut u8,
         out_buff_len: usize,
@@ -1023,7 +1184,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the conversion
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_from_uint(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_from_uint(
+        &self,
         in_uint_ptr: *const u8,
         in_uint_len: usize,
         out_buff: *mut u8,
@@ -1039,7 +1204,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_set(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_set(
+        &self,
         exponent: i32,
         mantissa: i64,
         out_buff: *mut u8,
@@ -1053,7 +1222,11 @@ unsafe extern "C" {
     /// * `in_buff2` - Pointer to second float value
     /// # Returns
     /// 0 if equal, 1 if first > second, 2 if first < second,
-    pub fn float_compare(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_compare(
+        &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
         in_buff2: *const u8,
@@ -1068,7 +1241,12 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the addition
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_add(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn float_add(
+        &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
         in_buff2: *const u8,
@@ -1086,7 +1264,12 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the subtraction
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_subtract(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn float_subtract(
+        &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
         in_buff2: *const u8,
@@ -1104,7 +1287,12 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the multiplication
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_multiply(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn float_multiply(
+        &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
         in_buff2: *const u8,
@@ -1122,7 +1310,12 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the division
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_divide(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn float_divide(
+        &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
         in_buff2: *const u8,
@@ -1140,7 +1333,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_pow(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_pow(
+        &self,
         in_buff: *const u8,
         in_buff_len: usize,
         in_int: i32,
@@ -1157,7 +1354,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_root(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_root(
+        &self,
         in_buff: *const u8,
         in_buff_len: usize,
         in_int: i32,
@@ -1173,7 +1374,11 @@ unsafe extern "C" {
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
     /// 8 on success, error code otherwise
-    pub fn float_log(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_log(
+        &self,
         in_buff: *const u8,
         in_buff_len: usize,
         out_buff: *mut u8,
@@ -1201,7 +1406,11 @@ unsafe extern "C" {
     /// signifies the number of message bytes that were written to the trace function. Non-zero
     /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
     /// sizes).
-    pub fn trace(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn trace(
+        &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
         data_read_ptr: *const u8,
@@ -1223,7 +1432,10 @@ unsafe extern "C" {
     /// signifies the number of message bytes that were written to the trace function. Non-zero
     /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
     /// sizes).
-    pub fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
 
     /// Print an account to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1240,7 +1452,11 @@ unsafe extern "C" {
     /// signifies the number of message bytes that were written to the trace function. Non-zero
     /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
     /// sizes).
-    pub fn trace_account(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn trace_account(
+        &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
         account_ptr: *const u8,
@@ -1261,7 +1477,11 @@ unsafe extern "C" {
     /// signifies the number of message bytes that were written to the trace function. Non-zero
     /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
     /// sizes).
-    pub fn trace_opaque_float(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn trace_opaque_float(
+        &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
         opaque_float_ptr: *const u8,
@@ -1283,7 +1503,11 @@ unsafe extern "C" {
     /// signifies the number of message bytes that were written to the trace function. Non-zero
     /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
     /// sizes).
-    pub fn trace_amount(
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn trace_amount(
+        &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
         amount_ptr: *const u8,

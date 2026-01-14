@@ -6,7 +6,7 @@ description = "Standard library for XRPL WebAssembly smart contracts"
 license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["xrpl", "wasm", "smart-contracts", "no-std"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 include = ["src/", "README.md", "docs/**/*"]
@@ -15,5 +15,13 @@ include = ["src/", "README.md", "docs/**/*"]
 [lib]
 crate-type = ["lib"]
 
+[features]
+# Enable test host bindings for coverage testing.
+# This is equivalent to cfg(test) but can be explicitly enabled for cargo llvm-cov.
+test-host-bindings = []
+
 [dependencies]
 xrpl-address-macro = { version = "0.7.1", path = "xrpl-address-macro" }
+
+[dev-dependencies]
+mockall = "0.14.0"
