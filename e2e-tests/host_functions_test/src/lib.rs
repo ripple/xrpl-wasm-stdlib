@@ -149,7 +149,7 @@ fn test_transaction_data_functions() -> i32 {
     let mut account_buffer = [0u8; 20];
     let account_len = unsafe {
         host::get_tx_field(
-            sfield::Account,
+            sfield::Account.into(),
             account_buffer.as_mut_ptr(),
             account_buffer.len(),
         )
@@ -167,8 +167,13 @@ fn test_transaction_data_functions() -> i32 {
     // Test with Fee field (XRP amount - 8 bytes in new serialized format)
     // New format: XRP amounts are always 8 bytes (positive: value | cPositive flag, negative: just value)
     let mut fee_buffer = [0u8; 8];
-    let fee_len =
-        unsafe { host::get_tx_field(sfield::Fee, fee_buffer.as_mut_ptr(), fee_buffer.len()) };
+    let fee_len = unsafe {
+        host::get_tx_field(
+            sfield::Fee.into(),
+            fee_buffer.as_mut_ptr(),
+            fee_buffer.len(),
+        )
+    };
 
     if fee_len != 8 {
         let _ = trace_num(
@@ -186,8 +191,13 @@ fn test_transaction_data_functions() -> i32 {
 
     // Test with Sequence field (required, 4 bytes uint32)
     let mut seq_buffer = [0u8; 4];
-    let seq_len =
-        unsafe { host::get_tx_field(sfield::Sequence, seq_buffer.as_mut_ptr(), seq_buffer.len()) };
+    let seq_len = unsafe {
+        host::get_tx_field(
+            sfield::Sequence.into(),
+            seq_buffer.as_mut_ptr(),
+            seq_buffer.len(),
+        )
+    };
 
     if seq_len != 4 {
         let _ = trace_num(
@@ -229,10 +239,10 @@ fn test_transaction_data_functions() -> i32 {
     }
 
     // Test 2.3: get_tx_array_len() - Get array length
-    let signers_len = unsafe { host::get_tx_array_len(sfield::Signers) };
+    let signers_len = unsafe { host::get_tx_array_len(sfield::Signers.into()) };
     let _ = trace_num("Signers array length:", signers_len as i64);
 
-    let memos_len = unsafe { host::get_tx_array_len(sfield::Memos) };
+    let memos_len = unsafe { host::get_tx_array_len(sfield::Memos.into()) };
     let _ = trace_num("Memos array length:", memos_len as i64);
 
     // Test 2.4: get_tx_nested_array_len() - Get nested array length with locator
@@ -262,7 +272,7 @@ fn test_current_ledger_object_functions() -> i32 {
     let mut balance_buffer = [0u8; 8];
     let balance_result = unsafe {
         host::get_current_ledger_obj_field(
-            sfield::Balance,
+            sfield::Balance.into(),
             balance_buffer.as_mut_ptr(),
             balance_buffer.len(),
         )
@@ -300,7 +310,7 @@ fn test_current_ledger_object_functions() -> i32 {
     let mut current_account_buffer = [0u8; 20];
     let current_account_result = unsafe {
         host::get_current_ledger_obj_field(
-            sfield::Account,
+            sfield::Account.into(),
             current_account_buffer.as_mut_ptr(),
             current_account_buffer.len(),
         )
@@ -342,7 +352,8 @@ fn test_current_ledger_object_functions() -> i32 {
     }
 
     // Test 3.3: get_current_ledger_obj_array_len() - Array length in current object
-    let current_array_len = unsafe { host::get_current_ledger_obj_array_len(sfield::Signers) };
+    let current_array_len =
+        unsafe { host::get_current_ledger_obj_array_len(sfield::Signers.into()) };
     let _ = trace_num(
         "Current object Signers array length:",
         current_array_len as i64,
@@ -415,7 +426,7 @@ fn test_any_ledger_object_functions() -> i32 {
         let field_result = unsafe {
             host::get_ledger_obj_field(
                 1,
-                sfield::Balance,
+                sfield::Balance.into(),
                 test_buffer.as_mut_ptr(),
                 test_buffer.len(),
             )
@@ -446,7 +457,7 @@ fn test_any_ledger_object_functions() -> i32 {
         }
 
         // Test get_ledger_obj_array_len with invalid slot
-        let array_result = unsafe { host::get_ledger_obj_array_len(1, sfield::Signers) };
+        let array_result = unsafe { host::get_ledger_obj_array_len(1, sfield::Signers.into()) };
         if array_result < 0 {
             let _ = trace_num(
                 "INFO: get_ledger_obj_array_len failed as expected:",
@@ -477,7 +488,7 @@ fn test_any_ledger_object_functions() -> i32 {
     let cached_balance_result = unsafe {
         host::get_ledger_obj_field(
             slot,
-            sfield::Balance,
+            sfield::Balance.into(),
             cached_balance_buffer.as_mut_ptr(),
             cached_balance_buffer.len(),
         )
@@ -538,7 +549,7 @@ fn test_any_ledger_object_functions() -> i32 {
     }
 
     // Test 4.4: get_ledger_obj_array_len() - Array length from cached object
-    let cached_array_len = unsafe { host::get_ledger_obj_array_len(slot, sfield::Signers) };
+    let cached_array_len = unsafe { host::get_ledger_obj_array_len(slot, sfield::Signers.into()) };
     let _ = trace_num(
         "Cached object Signers array length:",
         cached_array_len as i64,
