@@ -509,9 +509,9 @@ pub mod ledger_object {
             let _guard = setup_mock(mock);
 
             // Test that all basic integer types work
-            assert!(u16::get_from_current_ledger_obj(65537i32).is_ok());
-            assert!(u32::get_from_current_ledger_obj(65538i32).is_ok());
-            assert!(u64::get_from_current_ledger_obj(393216i32).is_ok());
+            assert!(u16::get_from_current_ledger_obj(sfield::LedgerEntryType.into()).is_ok());
+            assert!(u32::get_from_current_ledger_obj(sfield::Flags.into()).is_ok());
+            assert!(u64::get_from_current_ledger_obj(sfield::Balance.into()).is_ok());
         }
 
         #[test]
@@ -527,10 +527,10 @@ pub mod ledger_object {
             let _guard = setup_mock(mock);
 
             // Test that XRPL-specific types work
-            assert!(AccountID::get_from_current_ledger_obj(524289i32).is_ok());
-            assert!(Amount::get_from_current_ledger_obj(393216i32).is_ok());
-            assert!(Hash128::get_from_current_ledger_obj(262145i32).is_ok());
-            assert!(Hash256::get_from_current_ledger_obj(262146i32).is_ok());
+            assert!(AccountID::get_from_current_ledger_obj(sfield::Account.into()).is_ok());
+            assert!(Amount::get_from_current_ledger_obj(sfield::Amount.into()).is_ok());
+            assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).is_ok());
+            assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).is_ok());
 
             let blob: Blob<DEFAULT_BLOB_SIZE> =
                 Blob::get_from_current_ledger_obj(sfield::PublicKey.into()).unwrap();
@@ -548,11 +548,11 @@ pub mod ledger_object {
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval
-            let result = u32::get_from_current_ledger_obj_optional(65538i32);
+            let result = u32::get_from_current_ledger_obj_optional(sfield::Flags.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
-            let result = AccountID::get_from_current_ledger_obj_optional(524289i32);
+            let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -618,7 +618,7 @@ pub mod ledger_object {
 
             expect_ledger_field(&mut mock, slot, sfield::LedgerEntryType.into(), 2, 1);
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 2);
-            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
@@ -657,7 +657,7 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Sequence.into(), 4, 1);
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
@@ -694,13 +694,14 @@ pub mod ledger_object {
             let _guard = setup_mock(mock);
 
             // Verify that returned types have the expected sizes
-            let hash128 = Hash128::get_from_current_ledger_obj(262145i32).unwrap();
+            let hash128 = Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).unwrap();
             assert_eq!(hash128.as_bytes().len(), HASH128_SIZE);
 
-            let hash256 = Hash256::get_from_current_ledger_obj(262146i32).unwrap();
+            let hash256 =
+                Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).unwrap();
             assert_eq!(hash256.as_bytes().len(), HASH256_SIZE);
 
-            let account = AccountID::get_from_current_ledger_obj(524289i32).unwrap();
+            let account = AccountID::get_from_current_ledger_obj(sfield::Account.into()).unwrap();
             assert_eq!(account.0.len(), ACCOUNT_ID_SIZE);
 
             let blob: Blob<{ PUBLIC_KEY_BUFFER_SIZE }> =
