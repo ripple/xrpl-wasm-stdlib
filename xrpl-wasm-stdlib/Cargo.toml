@@ -16,8 +16,11 @@ include = ["src/", "README.md", "docs/**/*"]
 crate-type = ["lib"]
 
 [features]
-# Enable test host bindings for coverage testing.
-# This is equivalent to cfg(test) but can be explicitly enabled for cargo llvm-cov.
+# Enables mock host bindings for coverage testing from external crates (e.g., e2e-tests). Not needed for any downstream
+# application.
+# Note for contributors: mockall cannot simply be a dev-dependency because dev-deps are unavailable when compiled as a
+# regular dependency, which is currently true of e2e-tests. In the future, if e2e-tests are no longer part of coverage
+# reports, this feature can be removed.
 test-host-bindings = ["dep:mockall"]
 
 [dependencies]
