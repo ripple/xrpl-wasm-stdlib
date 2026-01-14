@@ -3,7 +3,7 @@ use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, transpose_option};
 
 /// Struct to represent an Issue of type XRP. Exists so that other structs can restrict type
 /// information to XRP in their declarations (this is not possible with just the `Issue` enum below).
@@ -155,49 +155,33 @@ impl Issue {
 impl LedgerObjectFieldGetter for Issue {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        match get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
-        }) {
-            Result::Ok((buffer, len)) => Issue::from_buffer(buffer, len),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
 
     #[inline]
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
-        }) {
-            Result::Ok(Some((buffer, len))) => match Issue::from_buffer(buffer, len) {
-                Result::Ok(issue) => Result::Ok(Some(issue)),
-                Result::Err(e) => Result::Err(e),
-            },
-            Result::Ok(None) => Result::Ok(None),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
 
     #[inline]
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        match get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
-        }) {
-            Result::Ok((buffer, len)) => Issue::from_buffer(buffer, len),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
 
     #[inline]
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        match get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
+        get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
-        }) {
-            Result::Ok(Some((buffer, len))) => match Issue::from_buffer(buffer, len) {
-                Result::Ok(issue) => Result::Ok(Some(issue)),
-                Result::Err(e) => Result::Err(e),
-            },
-            Result::Ok(None) => Result::Ok(None),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
 }
