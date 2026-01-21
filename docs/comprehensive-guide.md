@@ -79,7 +79,7 @@ npm install
 1. **Clone the repository:**
 
    ```shell
-   git clone https://github.com/XRPLF/xrpl-wasm-stdlib.git
+   git clone https://github.com/ripple/xrpl-wasm-stdlib.git
    cd xrpl-wasm-stdlib
    ```
 
@@ -575,14 +575,16 @@ The web UI allows you to:
    ```
 
 2. **Upload your WASM file:**
-   - Open the testing interface in your browser
-   - Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
-   - The contract will be loaded automatically
+
+- Open the testing interface in your browser
+- Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
+- The contract will be loaded automatically
 
 3. **Test your contract:**
-   - Set up test scenarios using the interface
-   - Configure transaction data and ledger state
-   - Execute and see results with debug output
+
+- Set up test scenarios using the interface
+- Configure transaction data and ledger state
+- Execute and see results with debug output
 
 ### Performance Optimization
 

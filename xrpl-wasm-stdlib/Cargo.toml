@@ -6,7 +6,7 @@ description = "Standard library for XRPL WebAssembly smart contracts"
 license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["xrpl", "wasm", "smart-contracts", "no-std"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 include = ["src/", "README.md", "docs/**/*"]
@@ -15,5 +15,17 @@ include = ["src/", "README.md", "docs/**/*"]
 [lib]
 crate-type = ["lib"]
 
+[features]
+# Enables mock host bindings for coverage testing from external crates (e.g., e2e-tests). Not needed for any downstream
+# application.
+# Note for contributors: mockall cannot simply be a dev-dependency because dev-deps are unavailable when compiled as a
+# regular dependency, which is currently true of e2e-tests. In the future, if e2e-tests are no longer part of coverage
+# reports, this feature can be removed.
+test-host-bindings = ["dep:mockall"]
+
 [dependencies]
 xrpl-address-macro = { version = "0.7.1", path = "xrpl-address-macro" }
+mockall = { version = "0.14.0", optional = true }
+
+[dev-dependencies]
+mockall = "0.14.0"

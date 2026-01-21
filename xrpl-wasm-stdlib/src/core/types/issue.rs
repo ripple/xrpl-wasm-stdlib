@@ -1,4 +1,4 @@
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
@@ -138,7 +138,7 @@ impl Issue {
     }
 }
 
-/// Implementation of `FieldGetter` for XRPL issues.
+/// Implementation of `LedgerObjectFieldGetter` for XRPL issues.
 ///
 /// This implementation handles issue fields in XRPL ledger objects.
 /// Supports all three Issue variants: XRP, IOU, and MPT.
@@ -152,7 +152,7 @@ impl Issue {
 ///
 /// The implementation detects the Issue type based on the number of bytes returned
 /// from the host function.
-impl FieldGetter for Issue {
+impl LedgerObjectFieldGetter for Issue {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {

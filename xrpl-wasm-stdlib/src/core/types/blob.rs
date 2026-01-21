@@ -1,6 +1,5 @@
 use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::FieldGetter;
-use crate::core::types::nft::NFT_URI_MAX_SIZE;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 
@@ -9,6 +8,24 @@ pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
 // Declared here because there is no Memo struct.
 pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
+
+/// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
+/// (see `maxSerializedCondition` in xrpld source code), so we do the same here.
+pub const CONDITION_BLOB_SIZE: usize = 128;
+
+/// The maximum number of bytes in a Fulfillment. Theoretically, the crypto-condition format allows for much larger
+/// fulfillments, but xrpld currently caps this value at 256 bytes (see `maxSerializedFulfillment` in xrpld source
+/// code), so we do the same here.
+pub const FULFILLMENT_BLOB_SIZE: usize = 256;
+
+/// Maximum size of a signature in bytes.
+///
+/// ECDSA signatures can be up to 72 bytes, which is the maximum signature size in XRPL.
+/// EdDSA signatures are always 64 bytes.
+pub const SIGNATURE_BLOB_SIZE: usize = 72;
+
+/// Maximum size of a URI in bytes (applies to DIDs, Oracles, Credentials, NFTs, etc.)
+pub const URI_BLOB_SIZE: usize = 256;
 
 /// A variable-length binary data container with a fixed maximum size.
 ///
@@ -23,14 +40,16 @@ pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
 /// # Examples
 ///
 /// ```
-/// use xrpl_wasm_stdlib::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
-/// use xrpl_wasm_stdlib::core::types::nft::NFT_URI_MAX_SIZE;
+/// use xrpl_wasm_stdlib::core::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
 ///
 /// // Create a standard 1024-byte blob
-/// let large_blob: Blob<DEFAULT_BLOB_SIZE> = Blob::new();
+/// let standard_blob: Blob<DEFAULT_BLOB_SIZE> = Blob::new();
+///
+/// // Create a standard 1024-byte blob
+/// let standard_blob_typed: StandardBlob = StandardBlob::new();
 ///
 /// // Create a smaller 256-byte blob for URIs
-/// let uri_blob: Blob<NFT_URI_MAX_SIZE> = Blob::new();
+/// let uri_blob: UriBlob = UriBlob::new();
 /// ```
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
@@ -100,11 +119,23 @@ impl<const N: usize> Default for Blob<N> {
     }
 }
 
-/// Type alias for the standard 1024-byte blob (for memos and general use)
+/// Type alias for the standard 1024-byte blob.
 pub type StandardBlob = Blob<DEFAULT_BLOB_SIZE>;
 
-/// Type alias for 256-byte blob (for URIs and smaller fields)
-pub type UriBlob = Blob<{ NFT_URI_MAX_SIZE }>;
+/// Type alias for 128-byte blob (for Condition fields)
+pub type ConditionBlob = Blob<CONDITION_BLOB_SIZE>;
+
+/// Type alias for 256-byte blob (for Fulfillment fields)
+pub type FulfillmentBlob = Blob<FULFILLMENT_BLOB_SIZE>;
+
+/// Type alias for 1024-byte blob (for Memo fields).
+pub type MemoBlob = Blob<MEMO_BLOB_SIZE>;
+
+/// Type alias for 72-byte blob (for Signature fields).
+pub type SignatureBlob = Blob<SIGNATURE_BLOB_SIZE>;
+
+/// Type alias for 256-byte blob (applies to DIDs, Oracles, Credentials, NFTs, etc.)
+pub type UriBlob = Blob<URI_BLOB_SIZE>;
 
 pub type EmptyBlob = Blob<0>;
 
@@ -114,7 +145,7 @@ pub const EMPTY_BLOB: EmptyBlob = Blob {
     len: 0usize,
 };
 
-/// Implementation of `FieldGetter` for variable-length binary data.
+/// Implementation of `LedgerObjectFieldGetter` for variable-length binary data.
 ///
 /// This implementation handles blob fields in XRPL ledger objects, which can contain
 /// arbitrary binary data such as memos, signatures, public keys, and other
@@ -130,7 +161,7 @@ pub const EMPTY_BLOB: EmptyBlob = Blob {
 /// # Type Parameters
 ///
 /// * `N` - The maximum capacity of the blob buffer in bytes
-impl<const N: usize> FieldGetter for Blob<N> {
+impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
@@ -310,15 +341,36 @@ mod tests {
 
     #[test]
     fn test_standard_blob_type_alias() {
-        let blob: StandardBlob = Blob::new();
+        let blob: StandardBlob = StandardBlob::new();
         assert_eq!(blob.capacity(), DEFAULT_BLOB_SIZE);
         assert_eq!(blob.capacity(), 1024);
     }
 
     #[test]
+    fn test_condition_blob_type_alias() {
+        let blob: ConditionBlob = ConditionBlob::new();
+        assert_eq!(blob.capacity(), CONDITION_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 128);
+    }
+
+    #[test]
+    fn test_fulfillment_blob_type_alias() {
+        let blob: FulfillmentBlob = FulfillmentBlob::new();
+        assert_eq!(blob.capacity(), FULFILLMENT_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 256);
+    }
+
+    #[test]
+    fn test_signature_blob_type_alias() {
+        let blob: SignatureBlob = SignatureBlob::new();
+        assert_eq!(blob.capacity(), SIGNATURE_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 72);
+    }
+
+    #[test]
     fn test_uri_blob_type_alias() {
-        let blob: UriBlob = Blob::new();
-        assert_eq!(blob.capacity(), NFT_URI_MAX_SIZE);
+        let blob: UriBlob = UriBlob::new();
+        assert_eq!(blob.capacity(), URI_BLOB_SIZE);
         assert_eq!(blob.capacity(), 256);
     }
 

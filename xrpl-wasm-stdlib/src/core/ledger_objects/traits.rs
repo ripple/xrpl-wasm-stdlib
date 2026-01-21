@@ -1,20 +1,20 @@
 use crate::core::ledger_objects::{current_ledger_object, ledger_object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
+use crate::core::types::blob::{
+    Blob, CONDITION_BLOB_SIZE, ConditionBlob, DEFAULT_BLOB_SIZE, UriBlob,
+};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use crate::core::types::crypto_condition::Condition;
-use crate::core::types::nft::NFT_URI_MAX_SIZE;
 use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
 use crate::core::types::uint::{Hash128, Hash256};
+
 /// This module provides traits for interacting with XRP Ledger objects.
 ///
 /// It defines common interfaces for accessing and manipulating different types of ledger objects,
 /// particularly focusing on Escrow objects. The traits provide methods to get and set various
 /// fields of ledger objects, with separate traits for current ledger objects and general ledger objects.
 use crate::host::error_codes::{
-    match_result_code, match_result_code_with_expected_bytes,
-    match_result_code_with_expected_bytes_optional,
+    match_result_code, match_result_code_optional, match_result_code_with_expected_bytes,
 };
 use crate::host::{Error, get_current_ledger_obj_field, get_ledger_obj_field, update_data};
 use crate::host::{Result, Result::Err, Result::Ok};
@@ -118,16 +118,26 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::CancelAfter)
     }
 
-    /// A PREIMAGE-SHA-256 crypto-condition, as hexadecimal. If present, the EscrowFinish
+    /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
-    fn get_condition(&self) -> Result<Option<Condition>> {
-        let mut buffer = [0u8; 32];
+    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
+        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code = unsafe {
             get_current_ledger_obj_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len())
         };
 
-        match_result_code_with_expected_bytes_optional(result_code, 32, || Some(buffer.into()))
+        match_result_code_optional(result_code, || {
+            if result_code > 0 {
+                let blob = ConditionBlob {
+                    data: buffer,
+                    len: result_code as usize,
+                };
+                Some(blob)
+            } else {
+                None
+            }
+        })
     }
 
     /// The destination address where the XRP is paid if the escrow is successful.
@@ -270,10 +280,10 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
     }
 
-    /// A PREIMAGE-SHA-256 crypto-condition, as hexadecimal. If present, the EscrowFinish
+    /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
-    fn get_condition(&self) -> Result<Option<Condition>> {
-        let mut buffer = [0u8; 32];
+    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
+        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -284,7 +294,17 @@ pub trait EscrowFields: LedgerObjectCommonFields {
             )
         };
 
-        match_result_code_with_expected_bytes_optional(result_code, 32, || Some(buffer.into()))
+        match_result_code_optional(result_code, || {
+            if result_code > 0 {
+                let blob = ConditionBlob {
+                    data: buffer,
+                    len: result_code as usize,
+                };
+                Some(blob)
+            } else {
+                None
+            }
+        })
     }
 
     /// The destination address where the XRP is paid if the escrow is successful.
@@ -418,7 +438,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
 
     /// A domain associated with this account. In JSON, this is the hexadecimal for the ASCII representation of the
     /// domain. Cannot be more than 256 bytes in length.
-    fn domain(&self) -> Result<Option<Blob<NFT_URI_MAX_SIZE>>> {
+    fn domain(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Domain)
     }
 
@@ -505,9 +525,9 @@ pub trait AccountFields: LedgerObjectCommonFields {
     fn wallet_locator(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::WalletLocator)
     }
+}
 
-    /// Unused. (The code supports this field but there is no way to set it.)
-    fn wallet_size(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::WalletSize)
-    }
+#[cfg(test)]
+mod tests {
+    // NOTE: Will be replaced fully by the next PR that adds new unit tests.
 }

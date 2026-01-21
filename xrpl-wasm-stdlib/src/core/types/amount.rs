@@ -1,5 +1,5 @@
 use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
@@ -291,7 +291,7 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
     }
 }
 
-/// Implementation of `FieldGetter` for XRPL amount values.
+/// Implementation of `LedgerObjectFieldGetter` for XRPL amount values.
 ///
 /// This implementation handles amount fields in XRPL ledger objects, which can represent
 /// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
@@ -302,7 +302,7 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
 /// Uses a 48-byte buffer to accommodate the largest possible amount representation.
 /// The Amount type handles the parsing of different amount formats internally.
 /// No strict byte count validation is performed since amounts can vary in size.
-impl FieldGetter for Amount {
+impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {

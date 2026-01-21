@@ -4,7 +4,7 @@
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
 use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
@@ -33,7 +33,7 @@ impl From<[u8; ACCOUNT_ID_SIZE]> for AccountID {
     }
 }
 
-/// Implementation of `FieldGetter` for XRPL account identifiers.
+/// Implementation of `LedgerObjectFieldGetter` for XRPL account identifiers.
 ///
 /// This implementation handles 20-byte account ID fields in XRPL ledger objects.
 /// Account IDs uniquely identify accounts on the XRPL network and are derived
@@ -44,7 +44,7 @@ impl From<[u8; ACCOUNT_ID_SIZE]> for AccountID {
 /// Uses a 20-byte buffer (ACCOUNT_ID_SIZE) and validates that exactly 20 bytes
 /// are returned from the host function. The buffer is converted to an AccountID
 /// using the `From<[u8; 20]>` implementation.
-impl FieldGetter for AccountID {
+impl LedgerObjectFieldGetter for AccountID {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<ACCOUNT_ID_SIZE, _>(

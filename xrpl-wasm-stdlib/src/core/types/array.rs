@@ -4,7 +4,7 @@
 /// as complete values. Instead, they are used within `Location` to navigate to
 /// specific array elements.
 ///
-/// This type intentionally does NOT implement `FieldGetter` to prevent compile-time
+/// This type intentionally does NOT implement `LedgerObjectFieldGetter` to prevent compile-time
 /// misuse. If you need to access array elements, use `Locator` to navigate to
 /// specific fields within the array.
 ///

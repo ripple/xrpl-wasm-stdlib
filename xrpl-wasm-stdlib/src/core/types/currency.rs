@@ -1,4 +1,4 @@
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
@@ -49,7 +49,7 @@ impl From<[u8; STANDARD_CURRENCY_SIZE]> for Currency {
     }
 }
 
-/// Implementation of `FieldGetter` for XRPL currency codes.
+/// Implementation of `LedgerObjectFieldGetter` for XRPL currency codes.
 ///
 /// This implementation handles 20-byte currency code fields in XRPL ledger objects.
 /// Currency codes uniquely identify different currencies and assets on the XRPL.
@@ -58,7 +58,7 @@ impl From<[u8; STANDARD_CURRENCY_SIZE]> for Currency {
 ///
 /// Uses a 20-byte buffer and validates that exactly 20 bytes are returned
 /// from the host function to ensure data integrity.
-impl FieldGetter for Currency {
+impl LedgerObjectFieldGetter for Currency {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(

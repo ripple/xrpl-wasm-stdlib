@@ -1,5 +1,8 @@
-#![doc = include_str!("../../README.md")]
-#![no_std]
+#![doc = include_str!("../README.md")]
+#![cfg_attr(target_arch = "wasm32", no_std)]
+
+#[cfg(not(target_arch = "wasm32"))]
+extern crate std;
 
 // Re-export the r_address macro for convenient access
 pub use xrpl_address_macro::r_address;
@@ -16,7 +19,7 @@ pub mod types;
 ///
 /// All internal links work properly within this single documentation page.
 #[cfg(doc)]
-#[doc = include_str!("../../docs/comprehensive-guide.md")]
+#[doc = include_str!("../docs/comprehensive-guide.md")]
 pub mod guide {}
 
 /// This function is called on panic but only in the WASM architecture. In non-WASM (e.g., in the

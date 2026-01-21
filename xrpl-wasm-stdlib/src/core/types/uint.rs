@@ -1,7 +1,7 @@
 //! Generic unsigned integer types with configurable bit sizes
 
 use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::FieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
@@ -64,7 +64,7 @@ pub type Hash160 = UInt160;
 pub type Hash192 = UInt192;
 pub type Hash256 = UInt256;
 
-/// Implementation of `FieldGetter` for 128-bit cryptographic hashes.
+/// Implementation of `LedgerObjectFieldGetter` for 128-bit cryptographic hashes.
 ///
 /// This implementation handles 16-byte hash fields in XRPL ledger objects.
 /// Hash128 values are commonly used for shorter identifiers and checksums
@@ -74,7 +74,7 @@ pub type Hash256 = UInt256;
 ///
 /// Uses a 16-byte buffer (HASH128_SIZE) and validates that exactly 16 bytes
 /// are returned from the host function to ensure data integrity.
-impl FieldGetter for Hash128 {
+impl LedgerObjectFieldGetter for Hash128 {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH128_SIZE, _>(
@@ -112,7 +112,7 @@ impl FieldGetter for Hash128 {
     }
 }
 
-/// Implementation of `FieldGetter` for 256-bit cryptographic hashes.
+/// Implementation of `LedgerObjectFieldGetter` for 256-bit cryptographic hashes.
 ///
 /// This implementation handles 32-byte hash fields in XRPL ledger objects.
 /// Hash256 values are widely used throughout XRPL for transaction IDs,
@@ -122,7 +122,7 @@ impl FieldGetter for Hash128 {
 ///
 /// Uses a 32-byte buffer (HASH256_SIZE) and validates that exactly 32 bytes
 /// are returned from the host function to ensure data integrity.
-impl FieldGetter for Hash256 {
+impl LedgerObjectFieldGetter for Hash256 {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(

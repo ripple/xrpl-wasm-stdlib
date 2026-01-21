@@ -420,13 +420,13 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_for_testing.rs
+        // On non-wasm targets, finish() uses host_bindings_test.rs
         // which provides stub implementations of all host functions.
         let result = finish();
 
         // The finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "finish() should return 1 on success");
     }
 }

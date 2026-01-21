@@ -58,6 +58,9 @@
 //! let _flags = tx.get_flags().unwrap_or_panic();
 //! ```
 
+pub mod escrow_finish;
+pub mod traits;
+
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
@@ -85,7 +88,7 @@ use crate::host::{Result, get_tx_field};
 /// use xrpl_wasm_stdlib::core::current_tx::{get_field, get_field_optional};
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::core::types::blob::{Blob, MEMO_BLOB_SIZE};
+/// use xrpl_wasm_stdlib::core::types::blob::{MemoBlob, MEMO_BLOB_SIZE};
 /// use xrpl_wasm_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
@@ -95,7 +98,7 @@ use crate::host::{Result, get_tx_field};
 ///
 ///   // Get optional fields from the current transaction
 ///   let flags: Option<u32> = get_field_optional(sfield::Flags).unwrap();
-///   let memo: Option<Blob<{MEMO_BLOB_SIZE}>> = get_field_optional(sfield::Memo).unwrap();
+///   let memo: Option<MemoBlob> = get_field_optional(sfield::Memo).unwrap();
 /// # }
 /// ```
 ///
@@ -251,6 +254,3 @@ pub fn get_field<T: CurrentTxFieldGetter>(field_code: i32) -> Result<T> {
 pub fn get_field_optional<T: CurrentTxFieldGetter>(field_code: i32) -> Result<Option<T>> {
     T::get_from_current_tx_optional(field_code)
 }
-
-pub mod escrow_finish;
-pub mod traits;
