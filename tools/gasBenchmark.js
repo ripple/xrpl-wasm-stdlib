@@ -183,11 +183,11 @@ async function measureGas(contractName) {
       // Deploy escrow with contract
       console.log(`Run ${i + 1}/${NUM_RUNS}...`)
       console.log("  Deploying escrow with contract...")
-      let offerSequence = await deployEscrow(sourceWallet, destWallet, wasmHex)
+      let { sequence } = await deployEscrow(sourceWallet, destWallet, wasmHex)
       console.log(`  Escrow created with sequence: ${offerSequence}`)
 
       // Execute escrow and measure gas
-      const gas = await executeEscrow(sourceWallet, destWallet, offerSequence)
+      const gas = await executeEscrow(sourceWallet, destWallet, sequence)
       gasReadings.push(gas)
       console.log(`  Gas used: ${gas}`)
     }
