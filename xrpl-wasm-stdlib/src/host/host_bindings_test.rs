@@ -215,10 +215,10 @@ macro_rules! export_host_functions {
 // Generate all the stub functions
 export_host_functions! {
     // Host Function Category: ledger and transaction info
-    fn get_ledger_sqn() -> i32;
-    fn get_parent_ledger_time() -> i32;
+    fn get_ledger_sqn() -> i64;
+    fn get_parent_ledger_time() -> i64;
     fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn get_base_fee() -> i32;
+    fn get_base_fee() -> i64;
     fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
     fn cache_ledger_obj(keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
     fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;

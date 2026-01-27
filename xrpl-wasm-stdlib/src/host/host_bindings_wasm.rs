@@ -986,21 +986,8 @@ impl HostBindings for WasmHostBindings {
         }
     }
 
-    unsafe fn get_nft_taxon(
-        &self,
-        nft_id_ptr: *const u8,
-        nft_id_len: usize,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::get_nft_taxon(
-                nft_id_ptr,
-                nft_id_len,
-                out_buff_ptr,
-                out_buff_len,
-            )
-        }
+    unsafe fn get_nft_taxon(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i64 {
+        unsafe { host_defined_functions::get_nft_taxon(nft_id_ptr, nft_id_len) }
     }
 
     unsafe fn get_nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32 {
@@ -1011,21 +998,8 @@ impl HostBindings for WasmHostBindings {
         unsafe { host_defined_functions::get_nft_transfer_fee(nft_id_ptr, nft_id_len) }
     }
 
-    unsafe fn get_nft_serial(
-        &self,
-        nft_id_ptr: *const u8,
-        nft_id_len: usize,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::get_nft_serial(
-                nft_id_ptr,
-                nft_id_len,
-                out_buff_ptr,
-                out_buff_len,
-            )
-        }
+    unsafe fn get_nft_serial(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i64 {
+        unsafe { host_defined_functions::get_nft_serial(nft_id_ptr, nft_id_len) }
     }
 
     unsafe fn float_from_int(
@@ -1382,10 +1356,10 @@ export_host_functions! {
     // Host Function Category: NFT
     fn get_nft(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_nft_issuer(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn get_nft_taxon(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_nft_taxon(nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
     fn get_nft_flags(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
     fn get_nft_transfer_fee(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
-    fn get_nft_serial(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_nft_serial(nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
 
     // Host Function Category: FLOAT
     fn float_from_int(in_int: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;

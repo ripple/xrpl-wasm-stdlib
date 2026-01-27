@@ -13,7 +13,7 @@ use xrpl_wasm_stdlib::r_address;
 use xrpl_wasm_stdlib::{host, sfield};
 
 const ORACLE_OWNER: AccountID = AccountID(r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
-const ORACLE_DOCUMENT_ID: i32 = 1;
+const ORACLE_DOCUMENT_ID: i64 = 1;
 
 // TODO: Update this function to handle errors and return a Result<u64> instead.
 pub fn get_u64_from_buffer(bytes: &[u8]) -> u64 {

@@ -10,7 +10,7 @@ use xrpl_wasm_stdlib::host::trace::trace_num;
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
     unsafe {
-        let result_code = host::get_ledger_sqn();
+        let result_code = host::get_ledger_sqn() as i32;
 
         let ledger_sequence = match_result_code(result_code, || {
             Some(result_code) // <-- Move the value into a buffer
