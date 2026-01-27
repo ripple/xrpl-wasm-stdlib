@@ -112,14 +112,12 @@ fn create_default_mock() -> MockHostBindings {
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_get_nft_issuer()
         .returning(|_, _, _, out_buff_len| out_buff_len as i32);
-    mock.expect_get_nft_taxon()
-        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_nft_taxon().returning(|_, _| 1);
     mock.expect_get_nft_flags()
         .returning(|_, nft_id_len| nft_id_len as i32);
     mock.expect_get_nft_transfer_fee()
         .returning(|_, nft_id_len| nft_id_len as i32);
-    mock.expect_get_nft_serial()
-        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_nft_serial().returning(|_, _| 1);
 
     // Float functions
     mock.expect_float_from_int()
@@ -244,31 +242,31 @@ export_host_functions! {
     fn check_sig(message_ptr: *const u8, message_len: usize, signature_ptr: *const u8, signature_len: usize, pubkey_ptr: *const u8, pubkey_len: usize) -> i32;
     fn account_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn amm_keylet(issue1_ptr: *const u8, issue1_len: usize, issue2_ptr: *const u8, issue2_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn check_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn check_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn credential_keylet(subject_ptr: *const u8, subject_len: usize, issuer_ptr: *const u8, issuer_len: usize, cred_type_ptr: *const u8, cred_type_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn delegate_keylet(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn deposit_preauth_keylet(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn did_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn escrow_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn escrow_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn line_keylet(account1_ptr: *const u8, account1_len: usize, account2_ptr: *const u8, account2_len: usize, currency_ptr: *const u8, currency_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn mpt_issuance_keylet(issuer_ptr: *const u8, issuer_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn mpt_issuance_keylet(issuer_ptr: *const u8, issuer_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn mptoken_keylet(mptid_ptr: *const u8, mptid_len: usize, holder_ptr: *const u8, holder_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn oracle_keylet(account_ptr: *const u8, account_len: usize, document_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn paychan_keylet(account_ptr: *const u8, account_len: usize, destination_ptr: *const u8, destination_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn permissioned_domain_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn nft_offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn oracle_keylet(account_ptr: *const u8, account_len: usize, document_id: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn paychan_keylet(account_ptr: *const u8, account_len: usize, destination_ptr: *const u8, destination_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn permissioned_domain_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn signers_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn ticket_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn vault_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn ticket_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn vault_keylet(account_ptr: *const u8, account_len: usize, sequence: i64, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn get_nft(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_nft_issuer(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn get_nft_taxon(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_nft_taxon(nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
     fn get_nft_flags(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
     fn get_nft_transfer_fee(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
-    fn get_nft_serial(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_nft_serial(nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
 
     // Host Function Category: FLOAT
     fn float_from_int(in_int: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
@@ -449,7 +447,7 @@ mod tests {
     #[test]
     fn test_generic_function_with_mock() {
         // Example of testing a function that takes HostBindings as a parameter
-        fn get_ledger_info<H: HostBindings>(host: &H) -> (i32, i32, i32) {
+        fn get_ledger_info<H: HostBindings>(host: &H) -> (i64, i64, i64) {
             unsafe {
                 let sqn = host.get_ledger_sqn();
                 let time = host.get_parent_ledger_time();

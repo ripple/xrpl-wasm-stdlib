@@ -42,7 +42,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_ledger_sqn(&self) -> i32;
+    unsafe fn get_ledger_sqn(&self) -> i64;
 
     /// Retrieves the parent ledger time.
     ///
@@ -57,7 +57,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_parent_ledger_time(&self) -> i32;
+    unsafe fn get_parent_ledger_time(&self) -> i64;
 
     /// Retrieves the hash of the parent ledger.
     ///
@@ -91,7 +91,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_base_fee(&self) -> i32;
+    unsafe fn get_base_fee(&self) -> i64;
 
     /// Retrieves the state of an amendment and whether it's enabled or not.
     ///
@@ -553,7 +553,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -697,7 +697,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -758,7 +758,7 @@ pub trait HostBindings {
         &self,
         issuer_ptr: *const u8,
         issuer_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -814,7 +814,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -841,7 +841,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -869,7 +869,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        document_id: i32,
+        document_id: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -901,7 +901,7 @@ pub trait HostBindings {
         account_len: usize,
         destination_ptr: *const u8,
         destination_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -928,7 +928,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -980,7 +980,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -1007,7 +1007,7 @@ pub trait HostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence: i64,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
@@ -1090,13 +1090,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_taxon(
-        &self,
-        nft_id_ptr: *const u8,
-        nft_id_len: usize,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32;
+    unsafe fn get_nft_taxon(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
 
     /// Retrieves the flags of a specific NFT (Non-Fungible Token).
     ///
@@ -1150,13 +1144,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_serial(
-        &self,
-        nft_id_ptr: *const u8,
-        nft_id_len: usize,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32;
+    unsafe fn get_nft_serial(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i64;
 
     // #############################
     // Host Function Category: FLOAT

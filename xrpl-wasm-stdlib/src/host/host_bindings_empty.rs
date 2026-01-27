@@ -70,7 +70,7 @@ macro_rules! export_host_functions {
     // Base case 2: One parameter remaining
     // We've found the last parameter! Return its value cast to i32
     (@return_value $last_param:ident) => {
-        $last_param as i32
+        ($last_param as i32).into()
     };
 
     // Recursive case: Multiple parameters
@@ -88,10 +88,10 @@ macro_rules! export_host_functions {
 // Generate all the stub functions
 export_host_functions! {
     // Host Function Category: ledger and transaction info
-    fn get_ledger_sqn() -> i32;
-    fn get_parent_ledger_time() -> i32;
+    fn get_ledger_sqn() -> i64;
+    fn get_parent_ledger_time() -> i64;
     fn get_parent_ledger_hash(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_base_fee() -> i32;
+    fn get_base_fee() -> i64;
     fn amendment_enabled(_amendment_ptr: *const u8, _amendment_len: usize) -> i32;
     fn cache_ledger_obj(_keylet_ptr: *const u8, _keylet_len: usize, _cache_num: i32) -> i32;
     fn get_tx_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
@@ -115,31 +115,31 @@ export_host_functions! {
     fn check_sig(_message_ptr: *const u8, _message_len: usize, _signature_ptr: *const u8, _signature_len: usize, _pubkey_ptr: *const u8, _pubkey_len: usize) -> i32;
     fn account_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn amm_keylet(_issue1_ptr: *const u8, _issue1_len: usize, _issue2_ptr: *const u8, _issue2_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn check_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn check_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn credential_keylet(_subject_ptr: *const u8, _subject_len: usize, _issuer_ptr: *const u8, _issuer_len: usize, _cred_type_ptr: *const u8, _cred_type_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn delegate_keylet(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn deposit_preauth_keylet(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn did_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn escrow_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn escrow_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn line_keylet(_account1_ptr: *const u8, _account1_len: usize, _account2_ptr: *const u8, _account2_len: usize, _currency_ptr: *const u8, _currency_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn mpt_issuance_keylet(_issuer_ptr: *const u8, _issuer_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn mpt_issuance_keylet(_issuer_ptr: *const u8, _issuer_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn mptoken_keylet(_mptid_ptr: *const u8, _mptid_len: usize, _holder_ptr: *const u8, _holder_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn nft_offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn oracle_keylet(_account_ptr: *const u8, _account_len: usize, _document_id: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn paychan_keylet(_account_ptr: *const u8, _account_len: usize, _destination_ptr: *const u8, _destination_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn permissioned_domain_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn oracle_keylet(_account_ptr: *const u8, _account_len: usize, _document_id: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn paychan_keylet(_account_ptr: *const u8, _account_len: usize, _destination_ptr: *const u8, _destination_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn permissioned_domain_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn signers_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn ticket_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn vault_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn ticket_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn vault_keylet(_account_ptr: *const u8, _account_len: usize, _sequence: i64, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn get_nft(_account_ptr: *const u8, _account_len: usize, _nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn get_nft_issuer(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_nft_taxon(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn get_nft_taxon(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i64;
     fn get_nft_flags(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
     fn get_nft_transfer_fee(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
-    fn get_nft_serial(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn get_nft_serial(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i64;
 
     // Host Function Category: FLOAT
     fn float_from_int(_in_int: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
