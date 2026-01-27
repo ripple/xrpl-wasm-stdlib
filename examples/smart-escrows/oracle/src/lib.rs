@@ -67,7 +67,7 @@ pub extern "C" fn finish() -> i32 {
             );
             let _ = trace_num(
                 "Failed to get oracle_keylet for document_id=",
-                ORACLE_DOCUMENT_ID as i64,
+                ORACLE_DOCUMENT_ID,
             );
             return error.code(); // <-- Do not execute the escrow; return the error code instead.
         }

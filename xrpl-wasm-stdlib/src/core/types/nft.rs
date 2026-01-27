@@ -253,7 +253,7 @@ impl NFToken {
         let result = unsafe { host::get_nft_taxon(self.as_ptr(), self.len()) };
 
         match result {
-            code if code > 0 => Result::Ok(code as u32),
+            code if code >= 0 => Result::Ok(code as u32),
             code => Result::Err(Error::from_code(code as i32)),
         }
     }
@@ -273,7 +273,7 @@ impl NFToken {
         let result = unsafe { host::get_nft_serial(self.as_ptr(), self.len()) };
 
         match result {
-            code if code > 0 => Result::Ok(code as u32),
+            code if code >= 0 => Result::Ok(code as u32),
             code => Result::Err(Error::from_code(code as i32)),
         }
     }
