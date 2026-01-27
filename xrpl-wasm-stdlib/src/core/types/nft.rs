@@ -250,23 +250,11 @@ impl NFToken {
     /// * `Err(Error)` - If the host function fails
     ///
     pub fn taxon(&self) -> Result<u32> {
-        let mut taxon_buf = [0u8; 4];
-        let result = unsafe {
-            host::get_nft_taxon(
-                self.as_ptr(),
-                self.len(),
-                taxon_buf.as_mut_ptr(),
-                taxon_buf.len(),
-            )
-        };
+        let result = unsafe { host::get_nft_taxon(self.as_ptr(), self.len()) };
 
         match result {
-            code if code > 0 => {
-                // Convert big-endian bytes to u32
-                let taxon = u32::from_be_bytes(taxon_buf);
-                Result::Ok(taxon)
-            }
-            code => Result::Err(Error::from_code(code)),
+            code if code > 0 => Result::Ok(code as u32),
+            code => Result::Err(Error::from_code(code as i32)),
         }
     }
 
@@ -282,23 +270,11 @@ impl NFToken {
     /// * `Err(Error)` - If the host function fails
     ///
     pub fn token_sequence(&self) -> Result<u32> {
-        let mut serial_buf = [0u8; 4];
-        let result = unsafe {
-            host::get_nft_serial(
-                self.as_ptr(),
-                self.len(),
-                serial_buf.as_mut_ptr(),
-                serial_buf.len(),
-            )
-        };
+        let result = unsafe { host::get_nft_serial(self.as_ptr(), self.len()) };
 
         match result {
-            code if code > 0 => {
-                // Convert big-endian bytes to u32
-                let serial = u32::from_be_bytes(serial_buf);
-                Result::Ok(serial)
-            }
-            code => Result::Err(Error::from_code(code)),
+            code if code > 0 => Result::Ok(code as u32),
+            code => Result::Err(Error::from_code(code as i32)),
         }
     }
 
@@ -589,8 +565,8 @@ mod tests {
 
         // Set up expectations - taxon is a u32 (4 bytes)
         mock.expect_get_nft_taxon()
-            .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
-            .returning(|_, _, _, _| 4);
+            .with(always(), eq(NFT_ID_SIZE))
+            .returning(|_, _| 0);
 
         let _guard = setup_mock(mock);
 
@@ -607,8 +583,8 @@ mod tests {
 
         // Set up expectations - serial is a u32 (4 bytes)
         mock.expect_get_nft_serial()
-            .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
-            .returning(|_, _, _, _| 4);
+            .with(always(), eq(NFT_ID_SIZE))
+            .returning(|_, _| 0);
 
         let _guard = setup_mock(mock);
 

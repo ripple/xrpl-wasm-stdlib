@@ -166,7 +166,7 @@ pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn check_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn check_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::check_keylet(
             owner.0.as_ptr(),
@@ -444,7 +444,7 @@ pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn escrow_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn escrow_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::escrow_keylet(
             owner.0.as_ptr(),
@@ -563,7 +563,7 @@ pub fn line_keylet(
 ///   Ok(())
 ///}
 /// ```
-pub fn mpt_issuance_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn mpt_issuance_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::mpt_issuance_keylet(
             owner.0.as_ptr(),
@@ -674,7 +674,7 @@ pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> 
 ///   Ok(())
 ///}
 /// ```
-pub fn nft_offer_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn nft_offer_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::nft_offer_keylet(
             owner.0.as_ptr(),
@@ -729,7 +729,7 @@ pub fn nft_offer_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn offer_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn offer_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::offer_keylet(
             owner.0.as_ptr(),
@@ -784,7 +784,7 @@ pub fn offer_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn oracle_keylet(owner: &AccountID, document_id: i32) -> Result<KeyletBytes> {
+pub fn oracle_keylet(owner: &AccountID, document_id: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::oracle_keylet(
             owner.0.as_ptr(),
@@ -845,7 +845,7 @@ pub fn oracle_keylet(owner: &AccountID, document_id: i32) -> Result<KeyletBytes>
 pub fn paychan_keylet(
     account: &AccountID,
     destination: &AccountID,
-    seq: i32,
+    seq: i64,
 ) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::paychan_keylet(
@@ -903,7 +903,7 @@ pub fn paychan_keylet(
 ///   Ok(())
 ///}
 /// ```
-pub fn permissioned_domain_keylet(account: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn permissioned_domain_keylet(account: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::permissioned_domain_keylet(
             account.0.as_ptr(),
@@ -1011,7 +1011,7 @@ pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn ticket_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn ticket_keylet(owner: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::ticket_keylet(
             owner.0.as_ptr(),
@@ -1066,7 +1066,7 @@ pub fn ticket_keylet(owner: &AccountID, seq: i32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn vault_keylet(account: &AccountID, seq: i32) -> Result<KeyletBytes> {
+pub fn vault_keylet(account: &AccountID, seq: i64) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::vault_keylet(
             account.0.as_ptr(),
