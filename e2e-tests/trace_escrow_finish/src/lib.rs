@@ -132,7 +132,7 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // Memos array (optional) - require at least one memo for testing
-        let array_len = unsafe { host::get_tx_array_len(sfield::Memos) };
+        let array_len = unsafe { host::get_tx_array_len(sfield::Memos.into()) };
         test_utils::assert!(
             array_len > 0,
             "At least one Memo should be present for testing"
@@ -200,7 +200,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Signers array (optional) - require at least one signer for testing
         // TODO: Use this logic to fix https://github.com/ripple/xrpl-wasm-stdlib/issues/90
-        let array_len = unsafe { host::get_tx_array_len(sfield::Signers) };
+        let array_len = unsafe { host::get_tx_array_len(sfield::Signers.into()) };
         #[cfg(target_arch = "wasm32")]
         assert!(
             array_len > 0,
