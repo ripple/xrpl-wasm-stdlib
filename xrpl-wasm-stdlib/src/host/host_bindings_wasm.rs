@@ -1406,14 +1406,15 @@ export_host_functions! {
     fn float_subtract(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_multiply(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_divide(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_pow(in_buff: *const u8,in_buff_len: usize,in_int: i32,out_buff: *mut u8,out_buff_len: usize,rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, n: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_pow(in_buff: *const u8, in_buff_len: usize, in_int: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_root(in_buff: *const u8, in_buff_len: usize, in_int: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_log(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8,msg_read_len: usize,data_read_ptr: *const u8,data_read_len: usize,as_hex: i32) -> i32;
-    fn trace_num( msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-    fn trace_account(msg_read_ptr: *const u8,msg_read_len: usize,account_ptr: *const u8,account_len: usize) -> i32 ;
-    fn trace_opaque_float(msg_read_ptr: *const u8,msg_read_len: usize,opaque_float_ptr: *const u8,opaque_float_len: usize) -> i32 ;
-    fn trace_amount(msg_read_ptr: *const u8,msg_read_len: usize,amount_ptr: *const u8,amount_len: usize) -> i32 ;
+    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> i32;
+    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
+    fn trace_account(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> i32;
+    fn trace_opaque_float(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
+    fn trace_amount(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
+
 }

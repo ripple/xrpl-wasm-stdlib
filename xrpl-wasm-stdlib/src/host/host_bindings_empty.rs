@@ -107,7 +107,7 @@ export_host_functions! {
     fn get_current_ledger_obj_nested_array_len(_locator_ptr: *const u8, _locator_len: usize) -> i32;
     fn get_ledger_obj_nested_array_len(_cache_num: i32, _locator_ptr: *const u8, _locator_len: usize) -> i32;
 
-    // // Host Function Category: update current ledger entry
+    // Host Function Category: update current ledger entry
     fn update_data(_data_ptr: *const u8, _data_len: usize) -> i32;
 
     // Host Function Category: hash and keylet computation
@@ -151,7 +151,7 @@ export_host_functions! {
     fn float_multiply(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_divide(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _in_int: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_root(_in_buff: *const u8, _in_buff_len: usize, _n: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_root(_in_buff: *const u8, _in_buff_len: usize, _in_int: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_log(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
@@ -160,4 +160,5 @@ export_host_functions! {
     fn trace_account(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
     fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
     fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
+
 }
