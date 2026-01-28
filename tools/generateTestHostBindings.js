@@ -321,13 +321,17 @@ function generateImplBlockContent(methods) {
 
     // Format based on parameter count for readability
     if (method.params.length <= 2) {
-      lines.push(`    unsafe fn ${method.name}(${selfParams}) -> ${method.returnType} {`)
+      lines.push(
+        `    unsafe fn ${method.name}(${selfParams}) -> ${method.returnType} {`,
+      )
       if (paramNames) {
         lines.push(
           `        unsafe { host_defined_functions::${method.name}(${paramNames}) }`,
         )
       } else {
-        lines.push(`        unsafe { host_defined_functions::${method.name}() }`)
+        lines.push(
+          `        unsafe { host_defined_functions::${method.name}() }`,
+        )
       }
       lines.push(`    }`)
     } else {
