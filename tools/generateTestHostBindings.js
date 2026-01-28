@@ -272,6 +272,152 @@ function generateExportMacroContent(methods, withUnderscorePrefix = false) {
 }
 
 /**
+ * Generate the extern "C" block content for host_bindings_wasm.rs.
+ * Each function is declared with pub(super) visibility.
+ * @param {Array<{name: string, params: Array<{name: string, type: string}>, returnType: string}>} methods - Parsed methods from trait
+ * @returns {string} The formatted extern block content
+ */
+function generateExternBlockContent(methods) {
+  const lines = []
+
+  for (const method of methods) {
+    const params = method.params.map((p) => `${p.name}: ${p.type}`).join(", ")
+
+    // Format based on parameter count for readability
+    if (method.params.length <= 2) {
+      lines.push(
+        `        pub(super) fn ${method.name}(${params}) -> ${method.returnType};`,
+      )
+    } else {
+      // Multi-line format for functions with many parameters
+      lines.push(`        pub(super) fn ${method.name}(`)
+      for (let i = 0; i < method.params.length; i++) {
+        const p = method.params[i]
+        const comma = i < method.params.length - 1 ? "," : ","
+        lines.push(`            ${p.name}: ${p.type}${comma}`)
+      }
+      lines.push(`        ) -> ${method.returnType};`)
+    }
+  }
+
+  return lines.join("\n")
+}
+
+/**
+ * Generate the impl HostBindings for WasmHostBindings block content.
+ * Each method calls the corresponding host_defined_functions function.
+ * @param {Array<{name: string, params: Array<{name: string, type: string}>, returnType: string}>} methods - Parsed methods from trait
+ * @returns {string} The formatted impl block content
+ */
+function generateImplBlockContent(methods) {
+  const lines = []
+
+  for (const method of methods) {
+    const params = method.params.map((p) => `${p.name}: ${p.type}`).join(", ")
+    const paramNames = method.params.map((p) => p.name).join(", ")
+
+    // Signature with &self
+    const selfParams = params ? `&self, ${params}` : "&self"
+
+    // Format based on parameter count for readability
+    if (method.params.length <= 2) {
+      lines.push(`    unsafe fn ${method.name}(${selfParams}) -> ${method.returnType} {`)
+      if (paramNames) {
+        lines.push(
+          `        unsafe { host_defined_functions::${method.name}(${paramNames}) }`,
+        )
+      } else {
+        lines.push(`        unsafe { host_defined_functions::${method.name}() }`)
+      }
+      lines.push(`    }`)
+    } else {
+      // Multi-line format for functions with many parameters
+      lines.push(`    unsafe fn ${method.name}(`)
+      lines.push(`        &self,`)
+      for (let i = 0; i < method.params.length; i++) {
+        const p = method.params[i]
+        const comma = i < method.params.length - 1 ? "," : ","
+        lines.push(`        ${p.name}: ${p.type}${comma}`)
+      }
+      lines.push(`    ) -> ${method.returnType} {`)
+      lines.push(`        unsafe {`)
+      lines.push(`            host_defined_functions::${method.name}(`)
+      for (let i = 0; i < method.params.length; i++) {
+        const p = method.params[i]
+        const comma = i < method.params.length - 1 ? "," : ","
+        lines.push(`                ${p.name}${comma}`)
+      }
+      lines.push(`            )`)
+      lines.push(`        }`)
+      lines.push(`    }`)
+    }
+    lines.push("")
+  }
+
+  return lines.join("\n")
+}
+
+/**
+ * Update host_bindings_wasm.rs by replacing the extern block, impl block, and export macro.
+ * @param {Array<{name: string, params: Array<{name: string, type: string}>, returnType: string}>} methods - Parsed methods from trait
+ */
+async function updateWasmBindings(methods) {
+  let content = await readFile(FILES.wasm)
+
+  // 1. Update extern "C" block
+  const externRegex =
+    /(#\[link\(wasm_import_module = "host_lib"\)\]\s*unsafe extern "C" \{)([\s\S]*?)(\n    \})/
+  const externMatch = content.match(externRegex)
+  if (!externMatch) {
+    throw new Error("Could not find extern block in host_bindings_wasm.rs")
+  }
+  const newExternContent = generateExternBlockContent(methods)
+  content =
+    content.substring(0, externMatch.index) +
+    `${externMatch[1]}\n${newExternContent}\n    }` +
+    content.substring(externMatch.index + externMatch[0].length)
+
+  // 2. Update impl HostBindings for WasmHostBindings block
+  const implRegex =
+    /(\/\/\/ WASM implementation of HostBindings\.\nimpl HostBindings for WasmHostBindings \{)([\s\S]*?)(\n\})/
+  const implMatch = content.match(implRegex)
+  if (!implMatch) {
+    throw new Error(
+      "Could not find impl HostBindings for WasmHostBindings in host_bindings_wasm.rs",
+    )
+  }
+  const newImplContent = generateImplBlockContent(methods)
+  content =
+    content.substring(0, implMatch.index) +
+    `${implMatch[1]}\n${newImplContent}}` +
+    content.substring(implMatch.index + implMatch[0].length)
+
+  // 3. Update export_host_functions! macro (reuse existing logic)
+  const macroRegex = /(export_host_functions!\s*\{)([\s\S]*?)(\n\})/g
+  const matches = [...content.matchAll(macroRegex)]
+  let targetMatch = null
+  let targetIndex = -1
+  for (const match of matches) {
+    if (!match[2].includes("$name:ident")) {
+      targetMatch = match
+      targetIndex = match.index
+    }
+  }
+  if (!targetMatch) {
+    throw new Error(
+      "No export_host_functions! invocation found in host_bindings_wasm.rs",
+    )
+  }
+  const newMacroContent = generateExportMacroContent(methods, false)
+  content =
+    content.substring(0, targetIndex) +
+    `${targetMatch[1]}\n${newMacroContent}\n}` +
+    content.substring(targetIndex + targetMatch[0].length)
+
+  await writeFile(FILES.wasm, content)
+}
+
+/**
  * Update a file by replacing the export_host_functions! macro content.
  * Finds the macro invocation (not definition) and replaces its content with generated signatures.
  * @param {string} filename - The file to update (relative to HOST_DIR)
@@ -324,7 +470,7 @@ async function updateExportMacro(
 /**
  * Main entry point.
  * Reads the trait file as source of truth and updates the 3 derived files:
- * - host_bindings_wasm.rs: export macro (impl block must be updated manually)
+ * - host_bindings_wasm.rs: extern block, impl block, and export macro
  * - host_bindings_empty.rs: stub implementations with underscore-prefixed params
  * - host_bindings_test.rs: test implementations
  */
@@ -339,8 +485,8 @@ async function main() {
 
   console.log("\nUpdating derived files...")
 
-  // Update host_bindings_wasm.rs (export macro only, impl is manually maintained)
-  await updateExportMacro(FILES.wasm, traitMethods, false)
+  // Update host_bindings_wasm.rs (extern block, impl block, and export macro)
+  await updateWasmBindings(traitMethods)
 
   // Update host_bindings_empty.rs (with underscore prefix for unused params)
   await updateExportMacro(FILES.empty, traitMethods, true)
@@ -350,9 +496,6 @@ async function main() {
 
   console.log(
     `\n✅ Successfully updated ${traitMethods.length} function signatures in 3 files.`,
-  )
-  console.log(
-    "\nNote: The impl block in host_bindings_wasm.rs must be updated manually if needed.",
   )
 }
 
