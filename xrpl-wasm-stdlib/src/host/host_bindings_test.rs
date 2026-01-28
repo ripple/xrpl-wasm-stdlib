@@ -24,9 +24,12 @@ fn create_default_mock() -> MockHostBindings {
     let mut mock = MockHostBindings::new();
 
     // Ledger info functions - return small positive values
-    mock.expect_get_ledger_sqn().returning(|| 1);
-    mock.expect_get_parent_ledger_time().returning(|| 1);
-    mock.expect_get_base_fee().returning(|| 1);
+    mock.expect_get_ledger_sqn()
+        .returning(|_, out_buff_len| out_buff_len as i32);
+    mock.expect_get_parent_ledger_time()
+        .returning(|_, out_buff_len| out_buff_len as i32);
+    mock.expect_get_base_fee()
+        .returning(|_, out_buff_len| out_buff_len as i32);
 
     // Functions that return buffer length
     mock.expect_get_parent_ledger_hash()
@@ -73,7 +76,7 @@ fn create_default_mock() -> MockHostBindings {
     mock.expect_amm_keylet()
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_check_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_credential_keylet()
         .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_delegate_keylet()
@@ -83,29 +86,29 @@ fn create_default_mock() -> MockHostBindings {
     mock.expect_did_keylet()
         .returning(|_, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_escrow_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_line_keylet()
         .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_mpt_issuance_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_mptoken_keylet()
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_nft_offer_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_offer_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_oracle_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_paychan_keylet()
-        .returning(|_, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_permissioned_domain_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_signers_keylet()
         .returning(|_, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_ticket_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_vault_keylet()
-        .returning(|_, _, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
 
     // NFT functions
     mock.expect_get_nft()
@@ -300,21 +303,27 @@ mod tests {
     fn test_ledger_functions_with_mock() {
         let mut mock = MockHostBindings::new();
 
-        // Set up expectations
-        mock.expect_get_ledger_sqn().times(1).returning(|| 12345);
+        // Set up expectations - these functions now take buffer parameters
+        mock.expect_get_ledger_sqn()
+            .times(1)
+            .returning(|_, _| 12345);
         mock.expect_get_parent_ledger_time()
             .times(1)
-            .returning(|| 1234567890);
-        mock.expect_get_base_fee().times(1).returning(|| 10);
+            .returning(|_, _| 1234567890);
+        mock.expect_get_base_fee().times(1).returning(|_, _| 10);
 
         // Set the mock in thread-local storage
         set_mock_host_bindings(mock);
 
         // Test the exported functions (they will use the mock)
+        let mut buffer = [0u8; 32];
         unsafe {
-            assert_eq!(get_ledger_sqn(), 12345);
-            assert_eq!(get_parent_ledger_time(), 1234567890);
-            assert_eq!(get_base_fee(), 10);
+            assert_eq!(get_ledger_sqn(buffer.as_mut_ptr(), buffer.len()), 12345);
+            assert_eq!(
+                get_parent_ledger_time(buffer.as_mut_ptr(), buffer.len()),
+                1234567890
+            );
+            assert_eq!(get_base_fee(buffer.as_mut_ptr(), buffer.len()), 10);
         }
 
         // Clean up
@@ -431,7 +440,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
 
         // Mock a function to return an error code
-        mock.expect_get_ledger_sqn().times(1).returning(|| -1); // Return error
+        mock.expect_get_ledger_sqn().times(1).returning(|_, _| -1); // Return error
 
         mock.expect_get_parent_ledger_hash()
             .times(1)
@@ -439,10 +448,11 @@ mod tests {
 
         unsafe {
             // Test error conditions
-            assert_eq!(mock.get_ledger_sqn(), -1);
+            let mut buffer = [0u8; 32];
+            assert_eq!(mock.get_ledger_sqn(buffer.as_mut_ptr(), buffer.len()), -1);
 
-            let mut buffer = [0u8; 16]; // Too small buffer
-            let result = mock.get_parent_ledger_hash(buffer.as_mut_ptr(), buffer.len());
+            let mut small_buffer = [0u8; 16]; // Too small buffer
+            let result = mock.get_parent_ledger_hash(small_buffer.as_mut_ptr(), small_buffer.len());
             assert_eq!(result, -2);
         }
     }
@@ -451,19 +461,20 @@ mod tests {
     fn test_generic_function_with_mock() {
         // Example of testing a function that takes HostBindings as a parameter
         fn get_ledger_info<H: HostBindings>(host: &H) -> (i32, i32, i32) {
+            let mut buffer = [0u8; 32];
             unsafe {
-                let sqn = host.get_ledger_sqn();
-                let time = host.get_parent_ledger_time();
-                let fee = host.get_base_fee();
+                let sqn = host.get_ledger_sqn(buffer.as_mut_ptr(), buffer.len());
+                let time = host.get_parent_ledger_time(buffer.as_mut_ptr(), buffer.len());
+                let fee = host.get_base_fee(buffer.as_mut_ptr(), buffer.len());
                 (sqn, time, fee)
             }
         }
 
         let mut mock = MockHostBindings::new();
 
-        mock.expect_get_ledger_sqn().returning(|| 999);
-        mock.expect_get_parent_ledger_time().returning(|| 888);
-        mock.expect_get_base_fee().returning(|| 777);
+        mock.expect_get_ledger_sqn().returning(|_, _| 999);
+        mock.expect_get_parent_ledger_time().returning(|_, _| 888);
+        mock.expect_get_base_fee().returning(|_, _| 777);
 
         let (sqn, time, fee) = get_ledger_info(&mock);
         assert_eq!(sqn, 999);
