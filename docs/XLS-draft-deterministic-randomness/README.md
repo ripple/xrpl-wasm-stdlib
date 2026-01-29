@@ -415,28 +415,11 @@ For applications requiring perfect uniformity, rejection sampling should be impl
 | VRF Oracles            | 1+ round  | Oracle        | Requires oracle           | High       | Strong               |
 | Threshold Signatures   | 1+ round  | Committee     | Requires committee        | High       | Strong               |
 
-## 9.2. Test Vectors
+## 9.2. FAQ
 
-Given:
+### 9.2.1. What's the difference between this and Xahau's RNG?
 
-- `parent_ledger_hash`: `0x0000...0001` (32 bytes, value 1)
-- `previous_txn_id`: `0x0000...0002` (32 bytes, value 2)
-- `domain`: `b"test"`
-- `counter`: `0`
-
-Expected seed (SHA512-Half of concatenated input):
-
-```
-[Implementation-specific - to be computed]
-```
-
-## 9.3. FAQ
-
-### Q: What's the difference between this and Xahau's RNG?
-
-**A:** Xahau has implemented a protocol-level amendment called
-`featureRNG` ([PR #659](https://github.com/Xahau/xahaud/pull/659)) that provides significantly stronger security
-guarantees. Here's how they compare:
+Xahau has implemented a protocol-level amendment called `featureRNG` ([PR #659](https://github.com/Xahau/xahaud/pull/659)) that provides significantly stronger security guarantees. Here's how they compare:
 
 | Aspect                       | This Standard                            | Xahau's `featureRNG`                                     |
 | ---------------------------- | ---------------------------------------- | -------------------------------------------------------- |
@@ -455,44 +438,33 @@ guarantees. Here's how they compare:
 2. Reveal `nextRandomValue` in ledger N+1
 3. Contributions are rejected if the reveal doesn't match the commitment
 
-Additionally, `ttSHUFFLE` pseudo-transactions shuffle the transaction ordering based on proposal signatures, preventing
-ordering-based attacks.
+Additionally, `ttSHUFFLE` pseudo-transactions shuffle the transaction ordering based on proposal signatures, preventing ordering-based attacks.
 
 **When to use which:**
 
 - Use **this standard** for low-stakes applications where simplicity is preferred and front-running cost exceeds benefit
-- Use **Xahau's `featureRNG`** (when available) for high-stakes applications requiring strong unpredictability
-  guarantees
+- Use **Xahau's `featureRNG`** (when available) for high-stakes applications requiring strong unpredictability guarantees
 
-If `featureRNG` becomes available on your target network, prefer its `dice()` and `random()` host functions over this
-library-based approach.
+If `featureRNG` becomes available on your target network, prefer its `dice()` and `random()` host functions over this library-based approach.
 
-### Q: Can I use this for a lottery?
+### 9.2.2. Can I use this for a lottery?
 
-**A:** It depends on the stakes. For low-value lotteries where the cost of front-running (monitoring the network,
-submitting competing transactions) exceeds the expected value, this approach is acceptable. For high-value lotteries,
-use Xahau's `featureRNG`, commit-reveal schemes, or VRF-based approaches.
+It depends on the stakes. For low-value lotteries where the cost of front-running (monitoring the network, submitting competing transactions) exceeds the expected value, this approach is acceptable. For high-value lotteries, use Xahau's `featureRNG`, commit-reveal schemes, or VRF-based approaches.
 
-### Q: Why not use block timestamps?
+### 9.2.3. Why not use block timestamps?
 
-**A:** Block timestamps on XRPL have limited precision and can be slightly manipulated by validators. The parent ledger
-hash provides much higher entropy and is harder to influence.
+Block timestamps on XRPL have limited precision and can be slightly manipulated by validators. The parent ledger hash provides much higher entropy and is harder to influence.
 
-### Q: Can two escrows get the same random values?
+### 9.2.4. Can two escrows get the same random values?
 
-**A:** No, because each escrow has a unique `PreviousTxnID`. Even if executed in the same ledger with the same domain
-separator, different escrows will produce different random values.
+No, because each escrow has a unique `PreviousTxnID`. Even if executed in the same ledger with the same domain separator, different escrows will produce different random values.
 
-### Q: What if I need more than 2^64 random values?
+### 9.2.5. What if I need more than 2^64 random values?
 
-**A:** The counter is a 64-bit integer, allowing for 2^64 values per domain. If you need more, use different domain
-separators to create independent streams.
+The counter is a 64-bit integer, allowing for 2^64 values per domain. If you need more, use different domain separators to create independent streams.
 
-### Q: Can validators predict or manipulate the random values?
+### 9.2.6. Can validators predict or manipulate the random values?
 
-**A:** With this standard, yes—validators can predict values at execution time since they know the parent ledger hash.
-They could theoretically influence results by choosing which transactions to include, though this is detectable and
-economically disincentivized on XRPL.
+With this standard, yes—validators can predict values at execution time since they know the parent ledger hash. They could theoretically influence results by choosing which transactions to include, though this is detectable and economically disincentivized on XRPL.
 
-With Xahau's `featureRNG`, manipulation requires collusion of 5+ validators who all submitted entropy contributions,
-making it significantly harder.
+With Xahau's `featureRNG`, manipulation requires collusion of 5+ validators who all submitted entropy contributions, making it significantly harder.
