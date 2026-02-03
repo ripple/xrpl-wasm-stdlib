@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "smart-escrows/atomic_swap1",
-    "smart-escrows/atomic_swap2",
+    "smart-escrows/atomic_swap/atomic_swap1",
+    "smart-escrows/atomic_swap/atomic_swap2",
     "smart-escrows/hello_world",
     "smart-escrows/kyc",
     "smart-escrows/ledger_sqn",
