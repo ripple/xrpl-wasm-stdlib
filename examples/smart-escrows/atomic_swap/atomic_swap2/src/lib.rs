@@ -294,17 +294,9 @@ pub extern "C" fn finish() -> i32 {
 
         // PRODUCTION CONSIDERATION: Re-validate first 32 bytes match first escrow keylet
         // This ensures the data field hasn't been modified between Phase 1 and Phase 2
-        // Extract first escrow keylet from data field for logging/validation
-        let first_escrow_id: [u8; XRPL_KEYLET_SIZE] = current_data.data[0..32].try_into().unwrap();
-        let _ = trace_data(
-            "First escrow ID from data (Phase 2):",
-            &first_escrow_id,
-            DataRepr::AsHex,
-        );
-
         // Note: We don't re-verify the first escrow exists in Phase 2 because:
         // 1. It was already verified in Phase 1
-        // 2. The first escrow may have been consumed by atomic_swap1 in the meantime
+        // 2. The first escrow may have been finished by atomic_swap1 in the meantime
         // 3. We only need to verify the timing data hasn't been tampered with
 
         // Extract the CancelAfter timestamp from the last 4 bytes of data field

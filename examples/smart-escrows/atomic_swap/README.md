@@ -20,6 +20,30 @@ An atomic swap is a trustless exchange mechanism where two parties can swap asse
 | [atomic_swap1](./atomic_swap1/) | Memo-based validation with keylet references    |
 | [atomic_swap2](./atomic_swap2/) | Data field-based validation with timing control |
 
+## System Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Alice
+    participant Escrow1 as Escrow A (atomic_swap1)<br/>Alice→Bob
+    participant Escrow2 as Escrow B (atomic_swap2)<br/>Bob→Alice
+    participant Bob
+
+    Alice->>Escrow1: 1. EscrowCreate (with atomic_swap1 WASM)
+    Note over Escrow1: Records keylet K1
+
+    Bob->>Escrow2: 2. EscrowCreate (with atomic_swap2 WASM)<br/>Data field = K1 (Escrow A's keylet)
+    Note over Escrow2: Records keylet K2
+
+    Bob->>Escrow2: 3. EscrowFinish Phase 1
+    Note over Escrow2: Validates Escrow A exists<br/>Appends CancelAfter to data<br/>Returns 0 (wait)
+
+    Alice->>Escrow1: 4. EscrowFinish (memo = K2)
+    Note over Escrow1: Validates Escrow B exists<br/>Checks account reversal<br/>Returns 1 (success) ✓
+    Bob->>Escrow2: 5. EscrowFinish Phase 2
+    Note over Escrow2: Checks timing deadline<br/>Returns 1 (success) ✓
+```
+
 ## System State Diagram
 
 This diagram shows the complete atomic swap flow with all 4 transactions:

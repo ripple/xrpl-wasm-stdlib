@@ -3,21 +3,24 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
+use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{self, CurrentEscrow};
 use xrpl_wasm_stdlib::core::ledger_objects::escrow::Escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::{CurrentEscrowFields, EscrowFields};
 use xrpl_wasm_stdlib::core::locator::Locator;
+use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_wasm_stdlib::core::types::keylets::XRPL_KEYLET_SIZE;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::Error::InternalError;
+use xrpl_wasm_stdlib::host::error_codes::match_result_code;
 use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::sfield;
-use xrpl_wasm_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_wasm_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
+const KEYLET_PLUS_TIMESTAMP_SIZE: usize = 36;
 
 /*
 /// Validates if the provided WASM bytes represent a compatible atomic_swap2 contract.
@@ -37,23 +40,7 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
         return false;
     }
 
-    // Check WASM magic number (0x00 0x61 0x73 0x6D)
-    if wasm_bytes[0..4] != [0x00, 0x61, 0x73, 0x6D] {
-        return false;
-    }
-
-    // Check WASM version (0x01 0x00 0x00 0x00)
-    if wasm_bytes[4..8] != [0x01, 0x00, 0x00, 0x00] {
-        return false;
-    }
-
-    // Additional validation: Check reasonable size range for atomic_swap2 contracts
-    // Typical atomic_swap2 WASM should be between 1KB and 100KB
-    if wasm_bytes.len() < 1024 || wasm_bytes.len() > 102400 {
-        return false;
-    }
-
-    // TODO: In production, implement proper hash-based validation:
+    // PRODUCTION CONSIDERATION: In production, implement proper hash-based validation:
     // let expected_hash = sha256(wasm_bytes);
     // expected_hash == KNOWN_ATOMIC_SWAP2_HASH
 
@@ -69,7 +56,7 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// - Used to get the 32-byte keylet of the counterpart escrow
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
-    let mut data: ContractData = [0; XRPL_CONTRACT_DATA_SIZE];
+    let mut data: ContractData = [0; TX_CONTRACT_DATA_SIZE];
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
@@ -90,28 +77,30 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
     }
 }
 
-/// Main finish function for memo-based atomic swap validation.
+/// Phase 1: Initialization - validate counterpart escrow and set timing deadline.
 ///
-/// This function implements the core atomic swap logic:
+/// This function:
 /// 1. Extracts counterpart escrow keylet from transaction memo
-/// 2. Loads the counterpart escrow from the ledger using cache_ledger_obj
-/// 3. Verifies account reversal: current.account == counterpart.destination
-/// 4. Returns 1 (success) only if all atomic swap conditions are met
-///
-/// The atomic swap property is enforced by requiring mutual validation:
-/// - Escrow A (Alice→Bob) references Escrow B's keylet in memo
-/// - Escrow B (Bob→Alice) references Escrow A's keylet in memo
-/// - Both must validate their counterpart before completing
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+/// 2. Loads and validates the counterpart escrow from the ledger
+/// 3. Verifies account reversal (A→B references B→A)
+/// 4. Retrieves CancelAfter as the swap deadline
+/// 5. Stores the counterpart keylet + deadline in the data field
+/// 6. Returns 0 to wait for Phase 2
+fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
+    let _ = trace_num("Phase 1: Initialization", 0);
+
     // Extract the counterpart escrow keylet from transaction memo
     let (memo, memo_len) = match get_first_memo() {
-        Ok(v) => {
-            match v {
-                Some(v) => v,
-                None => return 0, // No memo provided - atomic swap requires counterpart reference
+        Ok(v) => match v {
+            Some(v) => v,
+            None => {
+                let _ = trace_num(
+                    "No memo provided - atomic swap requires counterpart reference",
+                    0,
+                );
+                return VALIDATION_FAILED;
             }
-        }
+        },
         Err(e) => {
             let _ = trace_num("Error getting first memo:", e.code() as i64);
             return e.code();
@@ -119,26 +108,27 @@ pub extern "C" fn finish() -> i32 {
     };
 
     // Validate memo contains a full 32-byte keylet
-    if memo_len < XRPL_KEYLET_SIZE {
-        let _ = trace_num(
-            "Memo too short, expected at least 32 bytes, got:",
-            memo_len as i64,
-        );
+    if memo_len != XRPL_KEYLET_SIZE {
+        let _ = trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
         return VALIDATION_FAILED;
     }
 
     // Extract the counterpart escrow keylet (first 32 bytes of memo)
-    let escrow_id: [u8; XRPL_KEYLET_SIZE] = memo[0..32].try_into().unwrap();
+    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo[0..32].try_into().unwrap();
     let _ = trace_data(
         "Counterpart escrow ID from memo:",
-        &escrow_id,
+        &counterpart_escrow_id,
         DataRepr::AsHex,
     );
 
     // Load the counterpart escrow from the ledger
-    // This will fail if the escrow doesn't exist or has been consumed
-    let counterpart_slot =
-        unsafe { host::cache_ledger_obj(escrow_id.as_ptr(), escrow_id.len(), 0) };
+    let counterpart_slot = unsafe {
+        host::cache_ledger_obj(
+            counterpart_escrow_id.as_ptr(),
+            counterpart_escrow_id.len(),
+            0,
+        )
+    };
     if counterpart_slot < 0 {
         let _ = trace_num(
             "Failed to cache counterpart escrow, error:",
@@ -148,41 +138,9 @@ pub extern "C" fn finish() -> i32 {
     }
 
     let counterpart_escrow = Escrow::new(counterpart_slot);
-
-    // ENHANCED SECURITY VALIDATION: Verify counterpart escrow properties
     let _ = trace_num("Starting counterpart security validation", 0);
 
-    // 1. WASM Validation: TEMPORARILY DISABLED
-    // The FinishFunction field can be larger than the 4KB buffer limit enforced by the host.
-    // TODO: Implement hash-based validation instead of retrieving the full WASM bytecode.
-    // For now, we skip WASM validation and rely on other security checks.
-    /*
-    let counterpart_finish_function = match counterpart_escrow.get_finish_function() {
-        Ok(Some(wasm)) => wasm,
-        Ok(None) => {
-            let _ = trace_num(
-                "Counterpart escrow has no FinishFunction - security fail",
-                0,
-            );
-            return VALIDATION_FAILED;
-        }
-        Err(e) => {
-            let _ = trace_num("Error getting counterpart FinishFunction:", e.code() as i64);
-            return e.code();
-        }
-    };
-
-    // Validate that the counterpart uses a compatible WASM contract
-    if !is_valid_atomic_swap2_wasm(
-        &counterpart_finish_function.data[..counterpart_finish_function.len],
-    ) {
-        let _ = trace_num("Counterpart WASM validation failed - not atomic_swap2", 0);
-        return VALIDATION_FAILED;
-    }
-    let _ = trace_num("Counterpart WASM validation passed", 0);
-    */
-
-    // 2. Data Field Validation: Verify counterpart's data field structure
+    // Data Field Validation: Verify counterpart's data field structure
     let counterpart_data = match counterpart_escrow.get_data() {
         Ok(data) => data,
         Err(e) => {
@@ -191,10 +149,10 @@ pub extern "C" fn finish() -> i32 {
         }
     };
 
-    // For atomic_swap2 Phase 1: data must be exactly 32 bytes (first escrow keylet)
-    // For atomic_swap2 Phase 2: data must be 36 bytes (keylet + timestamp)
-    // We'll accept both as valid states since the counterpart might be in either phase
-    if counterpart_data.len != XRPL_KEYLET_SIZE && counterpart_data.len != (XRPL_KEYLET_SIZE + 4) {
+    // For atomic_swap2: data must be 32 bytes (Phase 1) or 36 bytes (Phase 2)
+    if counterpart_data.len != XRPL_KEYLET_SIZE
+        && counterpart_data.len != KEYLET_PLUS_TIMESTAMP_SIZE
+    {
         let _ = trace_num(
             "Counterpart data field invalid length, expected 32 or 36 bytes, got:",
             counterpart_data.len as i64,
@@ -208,14 +166,7 @@ pub extern "C" fn finish() -> i32 {
         DataRepr::AsHex,
     );
 
-    // TODO: Ideally, we would validate that counterpart_data contains current escrow's keylet
-    // This requires calculating current escrow's keylet from account + sequence
-    // For now, we rely on the existing account reversal validation below
-
-    let _ = trace_num("All counterpart security validations passed", 0);
-
     // Get current escrow's account and destination fields
-    let current_escrow = current_escrow::get_current_escrow();
     let current_account = match current_escrow.get_account() {
         Ok(account) => account,
         Err(e) => {
@@ -252,11 +203,7 @@ pub extern "C" fn finish() -> i32 {
         }
     };
 
-    // ATOMIC SWAP VALIDATION: Verify account reversal
-    // For a valid atomic swap:
-    // - Current escrow (A→B) should reference counterpart escrow (B→A)
-    // - current.account should equal counterpart.destination
-    // - current.destination should equal counterpart.account
+    // ATOMIC SWAP VALIDATION: Verify inverted account correlations
     if current_account.0 != counterpart_destination.0 {
         let _ = trace_data("Current account:", &current_account.0, DataRepr::AsHex);
         let _ = trace_data(
@@ -281,6 +228,158 @@ pub extern "C" fn finish() -> i32 {
         return VALIDATION_FAILED;
     }
 
-    // All atomic swap conditions verified - allow escrow to complete
-    1
+    let _ = trace_num("All counterpart security validations passed", 0);
+
+    // Get current escrow's CancelAfter field - this becomes our swap deadline
+    let cancel_after = match current_escrow.get_cancel_after() {
+        Ok(Some(cancel_after)) => cancel_after,
+        Ok(None) => {
+            let _ = trace_num("Current escrow has no CancelAfter field", 0);
+            return VALIDATION_FAILED;
+        }
+        Err(e) => {
+            let _ = trace_num("Error getting CancelAfter:", e.code() as i64);
+            return e.code();
+        }
+    };
+
+    let _ = trace_num("Current escrow CancelAfter:", cancel_after as i64);
+
+    // Build new data field: counterpart keylet (32 bytes) + CancelAfter (4 bytes)
+    let mut new_data = xrpl_wasm_stdlib::core::types::contract_data::ContractData {
+        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
+        len: 0,
+    };
+    new_data.data[0..XRPL_KEYLET_SIZE].copy_from_slice(&counterpart_escrow_id);
+    let cancel_after_bytes = cancel_after.to_le_bytes();
+    new_data.data[XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
+        .copy_from_slice(&cancel_after_bytes);
+    new_data.len = KEYLET_PLUS_TIMESTAMP_SIZE;
+
+    let _ = trace_num("Updated data length:", new_data.len as i64);
+    let _ = trace_data(
+        "Updated data:",
+        &new_data.data[0..new_data.len],
+        DataRepr::AsHex,
+    );
+
+    // Persist the updated data field to the escrow object
+    match <CurrentEscrow as CurrentEscrowFields>::update_current_escrow_data(new_data) {
+        Ok(()) => {
+            let _ = trace_num("Successfully updated escrow data", 0);
+        }
+        Err(e) => {
+            let _ = trace_num("Error updating escrow data:", e.code() as i64);
+            return e.code();
+        }
+    }
+
+    // Return 0 (failure) to indicate phase 1 complete, wait for phase 2
+    let _ = trace_num("Phase 1 complete - waiting for Phase 2", 0);
+    0
+}
+
+/// Phase 2: Timing validation - check if we're within the deadline.
+///
+/// This function:
+/// 1. Extracts the CancelAfter timestamp from the data field
+/// 2. Gets the current ledger time
+/// 3. Validates that current time < CancelAfter (within deadline)
+/// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
+fn phase2_complete(
+    current_data: &xrpl_wasm_stdlib::core::types::contract_data::ContractData,
+) -> i32 {
+    let _ = trace_num("Phase 2: Timing validation", 0);
+
+    // Validate data field contains at least 36 bytes (32 bytes keylet + 4 bytes timing)
+    if current_data.len < KEYLET_PLUS_TIMESTAMP_SIZE {
+        let _ = trace_num(
+            "Invalid data length for Phase 2, expected at least 36 bytes, got:",
+            current_data.len as i64,
+        );
+        return VALIDATION_FAILED;
+    }
+
+    // Extract the CancelAfter timestamp from the last 4 bytes of data field
+    let cancel_after_bytes: [u8; 4] = current_data.data
+        [XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
+        .try_into()
+        .unwrap();
+    let cancel_after = u32::from_le_bytes(cancel_after_bytes);
+    let _ = trace_num("Extracted CancelAfter:", cancel_after as i64);
+
+    // Get current ledger time for deadline comparison
+    let current_time = unsafe {
+        let result_code = host::get_parent_ledger_time();
+        match_result_code(result_code, || Some(result_code as u32))
+    };
+
+    let current_time = match current_time {
+        Ok(Some(time)) => time,
+        Ok(None) => {
+            let _ = trace_num("Failed to get parent ledger time", 0);
+            return VALIDATION_FAILED;
+        }
+        Err(e) => {
+            let _ = trace_num("Error getting parent ledger time:", e.code() as i64);
+            return e.code();
+        }
+    };
+
+    let _ = trace_num("Current ledger time:", current_time as i64);
+
+    // ATOMIC SWAP TIMING VALIDATION
+    if current_time < cancel_after {
+        let _ = trace_num("Atomic swap executed before CancelAfter - success!", 0);
+        1 // Success - escrow completes within deadline
+    } else {
+        let _ = trace_num("Atomic swap attempted after CancelAfter - failed", 0);
+        0 // Failure - deadline exceeded, swap expired
+    }
+}
+
+/// Main finish function for memo-based atomic swap validation with two-phase execution.
+///
+/// This function implements a stateful atomic swap using the escrow's data field:
+///
+/// PHASE 1 (data.len == 0):
+/// 1. Extracts counterpart escrow keylet from transaction memo
+/// 2. Validates the counterpart escrow exists and accounts are reversed
+/// 3. Stores counterpart keylet + CancelAfter timestamp in data field
+/// 4. Returns 0 (failure) to wait for the second execution
+///
+/// PHASE 2 (data.len > 0):
+/// 1. Extracts the CancelAfter timestamp from the data field
+/// 2. Gets the current ledger time
+/// 3. Validates that current time < CancelAfter (within deadline)
+/// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
+#[unsafe(no_mangle)]
+pub extern "C" fn finish() -> i32 {
+    let current_escrow = current_escrow::get_current_escrow();
+
+    // Get the current data field - this stores the atomic swap state
+    // FIELD_NOT_FOUND (-2) means no data field exists yet, which indicates Phase 1
+    let current_data = match current_escrow.get_data() {
+        Ok(data) => data,
+        Err(e) => {
+            // If the data field doesn't exist, this is Phase 1
+            if e.code() == xrpl_wasm_stdlib::host::error_codes::FIELD_NOT_FOUND {
+                let _ = trace_num("No data field found - this is Phase 1", 0);
+                return phase1_initialize(&current_escrow);
+            }
+            let _ = trace_num("Error getting current escrow data:", e.code() as i64);
+            return e.code();
+        }
+    };
+
+    let _ = trace_num("Current data length:", current_data.len as i64);
+
+    // STATE MACHINE: Determine execution phase based on data field length
+    // Phase 1: data.len == 0 (no state stored yet)
+    // Phase 2: data.len >= 36 (contains counterpart keylet + timing data)
+    if current_data.len == 0 {
+        phase1_initialize(&current_escrow)
+    } else {
+        phase2_complete(&current_data)
+    }
 }

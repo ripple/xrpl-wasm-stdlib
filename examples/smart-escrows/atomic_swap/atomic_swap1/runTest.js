@@ -12,7 +12,7 @@ async function test(testContext) {
   // Load atomic_swap2 WASM for the counterpart escrow
   const atomicSwap2Path = path.resolve(
     __dirname,
-    "../../target/wasm32v1-none/release/atomic_swap2.wasm",
+    "../../../target/wasm32v1-none/release/atomic_swap2.wasm",
   )
   let atomicSwap2Wasm
   try {
@@ -157,8 +157,8 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Execute atomic_swap1 BEFORE Phase 2 (while counterpart still exists)
-  const txFinalSwap1 = {
+  // Execute atomic_swap1 Phase 1 BEFORE atomic_swap2 Phase 2 (while counterpart still exists)
+  const txFinalSwap1Phase1 = {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
@@ -174,21 +174,62 @@ async function test(testContext) {
     ],
   }
 
-  const responseFinalSwap1 = await submit(txFinalSwap1, sourceWallet)
-  if (responseFinalSwap1.result.meta.TransactionResult !== "tesSUCCESS") {
+  const responseFinalSwap1Phase1 = await submit(
+    txFinalSwap1Phase1,
+    sourceWallet,
+  )
+  // Phase 1 should return tecWASM_REJECTED (contract returns 0) but data update persists
+  if (
+    responseFinalSwap1Phase1.result.meta.TransactionResult !==
+    "tecWASM_REJECTED"
+  ) {
     console.error(
-      "Final atomic_swap1 failed:",
-      responseFinalSwap1.result.meta.TransactionResult,
+      "Final atomic_swap1 Phase 1 expected tecWASM_REJECTED, got:",
+      responseFinalSwap1Phase1.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  // Verify escrow still exists (Phase 1 should not consume it)
+  const finalSwap1StillExists =
+    !responseFinalSwap1Phase1.result.meta.AffectedNodes.some(
+      (node) =>
+        node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
+    )
+  if (!finalSwap1StillExists) {
+    console.error("ERROR: atomic_swap1 Phase 1 incorrectly consumed the escrow")
+    process.exit(1)
+  }
+
+  // Execute atomic_swap1 Phase 2
+  const txFinalSwap1Phase2 = {
+    TransactionType: "EscrowFinish",
+    Account: sourceWallet.address,
+    Owner: sourceWallet.address,
+    OfferSequence: parseInt(finalSwap1Result.sequence),
+    ComputationAllowance: 1000000,
+  }
+
+  const responseFinalSwap1Phase2 = await submit(
+    txFinalSwap1Phase2,
+    sourceWallet,
+  )
+  if (responseFinalSwap1Phase2.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error(
+      "Final atomic_swap1 Phase 2 failed:",
+      responseFinalSwap1Phase2.result.meta.TransactionResult,
     )
     process.exit(1)
   }
 
   // Verify atomic_swap1 escrow was consumed
-  const finalSwap1Consumed = responseFinalSwap1.result.meta.AffectedNodes.some(
-    (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
-  )
+  const finalSwap1Consumed =
+    responseFinalSwap1Phase2.result.meta.AffectedNodes.some(
+      (node) =>
+        node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
+    )
   if (!finalSwap1Consumed) {
-    console.error("ERROR: atomic_swap1 should have consumed the escrow")
+    console.error("ERROR: atomic_swap1 Phase 2 should have consumed the escrow")
     process.exit(1)
   }
 
