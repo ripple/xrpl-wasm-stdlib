@@ -61,46 +61,38 @@ impl From<[u8; STANDARD_CURRENCY_SIZE]> for Currency {
 impl LedgerObjectFieldGetter for Currency {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        match get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
+        get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
             field_code,
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.into()),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.into())
     }
 
     #[inline]
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
+        get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
             field_code,
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.map(|b| b.into())),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.map(|b| b.into()))
     }
 
     #[inline]
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        match get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
+        get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
             field_code,
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.into()),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.into())
     }
 
     #[inline]
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        match get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
+        get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
             field_code,
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.map(|b| b.into())),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.map(|b| b.into()))
     }
 }
 
