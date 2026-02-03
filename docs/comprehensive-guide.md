@@ -568,7 +568,7 @@ These examples demonstrate:
 - Cross-escrow reference patterns (memo-based and data field-based)
 - Account validation between related escrows
 - Timing coordination and deadline management
-- Atomic failure handling when escrows are consumed
+- Atomic failure handling when escrows are finished
 - Multi-phase execution patterns
 
 **📁 [`examples/smart-escrows/atomic_swap1/`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/atomic_swap1/) - Memo-Based Atomic Swap**
@@ -596,10 +596,10 @@ Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation
 
 ### Key Testing Considerations
 
-- Always create fresh escrows for each test to avoid consumption issues
+- Always create fresh escrows for each test to avoid finishing issues
 - Use extensive trace output to debug coordination timing issues (you can access these traces by running rippled locally)
 - Test both success and failure paths for atomic behavior
-- Understand that escrow consumption affects subsequent tests
+- Understand that escrow finishing affects subsequent tests
 
 ### Test Using the Web UI
 

@@ -59,12 +59,12 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify escrow still exists (Phase 1 should not consume it)
+  // Verify escrow still exists (Phase 1 should not finish it)
   const swap2StillExists = !responseSwap2Phase1.result.meta.AffectedNodes.some(
     (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
   )
   if (!swap2StillExists) {
-    console.error("ERROR: atomic_swap2 Phase 1 incorrectly consumed the escrow")
+    console.error("ERROR: atomic_swap2 Phase 1 incorrectly finished the escrow")
     process.exit(1)
   }
 
@@ -86,17 +86,17 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify escrow was consumed
+  // Verify escrow was finished
   const swap2Consumed = responseSwap2Phase2.result.meta.AffectedNodes.some(
     (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
   )
   if (!swap2Consumed) {
-    console.error("ERROR: atomic_swap2 Phase 2 should have consumed the escrow")
+    console.error("ERROR: atomic_swap2 Phase 2 should have finished the escrow")
     process.exit(1)
   }
 
-  // Attempt to execute atomic_swap1 after counterpart consumed
-  // This should fail because atomic_swap2 was already consumed in Phase 2
+  // Attempt to execute atomic_swap1 after counterpart finished
+  // This should fail because atomic_swap2 was already finished in Phase 2
   // This demonstrates the atomic nature - once one escrow completes, the counterpart cannot validate it
   const txSwap1 = {
     TransactionType: "EscrowFinish",
@@ -117,7 +117,7 @@ async function test(testContext) {
   const responseSwap1 = await submit(txSwap1, sourceWallet)
   if (responseSwap1.result.meta.TransactionResult !== "tecWASM_REJECTED") {
     console.error(
-      "Expected atomic_swap1 to fail after counterpart consumed, but got:",
+      "Expected atomic_swap1 to fail after counterpart finished, but got:",
       responseSwap1.result.meta.TransactionResult,
     )
     process.exit(1)
@@ -190,14 +190,14 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify escrow still exists (Phase 1 should not consume it)
+  // Verify escrow still exists (Phase 1 should not finish it)
   const finalSwap1StillExists =
     !responseFinalSwap1Phase1.result.meta.AffectedNodes.some(
       (node) =>
         node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
     )
   if (!finalSwap1StillExists) {
-    console.error("ERROR: atomic_swap1 Phase 1 incorrectly consumed the escrow")
+    console.error("ERROR: atomic_swap1 Phase 1 incorrectly finished the escrow")
     process.exit(1)
   }
 
@@ -222,14 +222,14 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify atomic_swap1 escrow was consumed
+  // Verify atomic_swap1 escrow was finished
   const finalSwap1Consumed =
     responseFinalSwap1Phase2.result.meta.AffectedNodes.some(
       (node) =>
         node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
     )
   if (!finalSwap1Consumed) {
-    console.error("ERROR: atomic_swap1 Phase 2 should have consumed the escrow")
+    console.error("ERROR: atomic_swap1 Phase 2 should have finished the escrow")
     process.exit(1)
   }
 
@@ -251,14 +251,14 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify atomic_swap2 escrow was consumed
+  // Verify atomic_swap2 escrow was finished
   const finalSwap2Consumed =
     responseFinalSwap2Phase2.result.meta.AffectedNodes.some(
       (node) =>
         node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
     )
   if (!finalSwap2Consumed) {
-    console.error("ERROR: atomic_swap2 Phase 2 should have consumed the escrow")
+    console.error("ERROR: atomic_swap2 Phase 2 should have finished the escrow")
     process.exit(1)
   }
 }

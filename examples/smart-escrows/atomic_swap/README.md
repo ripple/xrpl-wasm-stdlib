@@ -96,11 +96,11 @@ stateDiagram-v2
 | Wrong keylet reference         | Escrow fails       |
 | Counterpart escrow not found   | Escrow fails       |
 | Accounts not properly reversed | Escrow fails       |
-| One escrow already consumed    | Other escrow fails |
+| One escrow already finished    | Other escrow fails |
 
 ## Important Notes
 
-⚠️ **Timing**: Both escrows should be finished quickly after each other. Once one escrow is consumed, the counterpart becomes unreferenceable.
+⚠️ **Timing**: Both escrows should be finished quickly after each other. Once one escrow is finished, the counterpart becomes unreferenceable.
 
 ⚠️ **Coordination**: In practice, both parties should submit their `EscrowFinish` transactions in the same ledger or use coordination mechanisms.
 

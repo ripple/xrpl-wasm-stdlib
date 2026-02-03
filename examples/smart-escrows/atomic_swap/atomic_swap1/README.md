@@ -89,12 +89,12 @@ This guide shows how to manually create and execute an atomic swap using the WAS
 **Expected Result:**
 
 - Transaction succeeds with `tesSUCCESS`
-- Escrow 1 is consumed and Alice receives Bob's funds
+- Escrow 1 is finished and Alice receives Bob's funds
 - Trace shows successful counterpart validation
 
 ### Step 4: Execute Atomic Swap - Second Escrow (Optional)
 
-⚠️ **Important**: This will likely fail because Escrow 1 was already consumed in Step 3.
+⚠️ **Important**: This will likely fail because Escrow 1 was already finished in Step 3.
 
 **EscrowFinish Transaction:**
 
@@ -120,7 +120,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
 
 - Transaction fails with `tecWASM_REJECTED`
 - Trace shows "Failed to cache counterpart escrow, error: -10"
-- This demonstrates the atomic nature - once one escrow is consumed, the other cannot complete
+- This demonstrates the atomic nature - once one escrow is finished, the other cannot complete
 
 ## Configuration
 

@@ -37,13 +37,13 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify the escrow still exists (wasn't consumed)
+  // Verify the escrow still exists (wasn't finished)
   const escrowStillExists = !responsePhase1.result.meta.AffectedNodes.some(
     (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
   )
   if (!escrowStillExists) {
     console.error(
-      "\nPhase 1 incorrectly consumed the escrow - it should still exist",
+      "\nPhase 1 incorrectly finished the escrow - it should still exist",
     )
     process.exit(1)
   }
@@ -59,7 +59,7 @@ async function test(testContext) {
 
   const responsePhase2 = await submit(txPhase2, destWallet)
 
-  // Phase 2 should succeed and consume the escrow (since we're within deadline)
+  // Phase 2 should succeed and finish the escrow (since we're within deadline)
   if (responsePhase2.result.meta.TransactionResult !== "tesSUCCESS") {
     console.error(
       "\nPhase 2 failed unexpectedly:",
@@ -68,12 +68,12 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Verify the escrow was consumed
+  // Verify the escrow was finished
   const escrowConsumed = responsePhase2.result.meta.AffectedNodes.some(
     (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
   )
   if (!escrowConsumed) {
-    console.error("\nPhase 2 should have consumed the escrow but didn't")
+    console.error("\nPhase 2 should have finished the escrow but didn't")
     process.exit(1)
   }
 

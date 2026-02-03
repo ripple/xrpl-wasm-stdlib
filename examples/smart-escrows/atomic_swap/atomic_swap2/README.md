@@ -109,7 +109,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
 **Expected Result (if within deadline):**
 
 - Transaction succeeds with `tesSUCCESS`
-- Escrow 2 is consumed and Alice receives Bob's funds
+- Escrow 2 is finished and Alice receives Bob's funds
 - Trace shows "Phase 2: Completed within deadline"
 
 **Expected Result (if deadline exceeded):**
