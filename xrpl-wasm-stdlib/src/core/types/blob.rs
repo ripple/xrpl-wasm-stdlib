@@ -141,6 +141,9 @@ pub type SignatureBlob = Blob<SIGNATURE_BLOB_SIZE>;
 /// Type alias for 256-byte blob (applies to DIDs, Oracles, Credentials, NFTs, etc.)
 pub type UriBlob = Blob<URI_BLOB_SIZE>;
 
+/// Type alias for 4KB blob (for WASM bytecode)
+pub type WasmBlob = Blob<WASM_BLOB_SIZE>;
+
 pub type EmptyBlob = Blob<0>;
 
 /// Empty blob constant.
@@ -439,5 +442,19 @@ mod tests {
         // Capacity should always be N regardless of actual data
         assert_eq!(blob1.capacity(), 10);
         assert_eq!(blob2.capacity(), 10);
+    }
+
+    #[test]
+    fn test_memo_blob_type_alias() {
+        let blob: MemoBlob = MemoBlob::new();
+        assert_eq!(blob.capacity(), MEMO_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 1024);
+    }
+
+    #[test]
+    fn test_wasm_blob_type_alias() {
+        let blob: WasmBlob = WasmBlob::new();
+        assert_eq!(blob.capacity(), WASM_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 4096);
     }
 }
