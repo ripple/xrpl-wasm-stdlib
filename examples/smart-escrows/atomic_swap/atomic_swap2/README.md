@@ -11,13 +11,6 @@ This escrow enables atomic swaps using a two-phase execution model with automati
 
 This approach provides built-in timing coordination and prevents stale swap attempts.
 
-## When to use it?
-
-- **Timed exchanges** that must complete within a deadline
-- **Coordinated settlements** requiring automatic timing validation
-- **Sequential workflows** where you need state persistence between executions
-- **Deadline-sensitive trades** that should expire after a certain time
-
 ## How it works
 
 **Setup**: Create an escrow with the first escrow's keylet in the data field.
@@ -145,59 +138,19 @@ Length: 36 bytes
 
 _Phase 2 reads the last 4 bytes as deadline timestamp_
 
-## Transaction Structure Reference
-
-### EscrowCreate (Setup)
-
-```json
-{
-  "TransactionType": "EscrowCreate",
-  "Account": "[SENDER_ADDRESS]",
-  "Destination": "[RECEIVER_ADDRESS]",
-  "Amount": "[AMOUNT_IN_DROPS]",
-  "CancelAfter": "[UNIX_TIMESTAMP]",
-  "FinishFunction": "[ATOMIC_SWAP2_WASM_HEX]",
-  "Data": "[FIRST_ESCROW_KEYLET_32_BYTES_HEX]"
-}
-```
-
-### EscrowFinish (Execution)
-
-```json
-{
-  "TransactionType": "EscrowFinish",
-  "Account": "[FINISHER_ADDRESS]",
-  "Owner": "[ESCROW_OWNER_ADDRESS]",
-  "OfferSequence": "[ESCROW_SEQUENCE_NUMBER]",
-  "ComputationAllowance": 1000000
-}
-```
-
 ## Building
 
-### Prerequisites
-
-- Rust with `wasm32v1-none` target
-- XRPL WASM standard library
-
-### Build Commands
-
 ```shell
-cargo build --target wasm32v1-none
 cargo build --target wasm32v1-none --release
 ```
 
-The resulting WASM file will be located at:
-
-```
-./target/wasm32v1-none/release/atomic_swap2.wasm
-```
+The resulting WASM file will be located at `./target/wasm32v1-none/release/atomic_swap2.wasm`
 
 ## Testing
 
 ```shell
-cd ../../../
-CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap2
+cd ../../../../
+CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap/atomic_swap2
 ```
 
 ## How It Works - Implementation Details
@@ -297,42 +250,3 @@ flowchart TD
 | Referenced escrow not found | 1     | Escrow fails |
 | Missing CancelAfter field   | 1     | Escrow fails |
 | Deadline exceeded           | 2     | Escrow fails |
-
-## Complete Atomic Swap
-
-This escrow is designed to work **with other escrows** to create complete atomic swaps. For example:
-
-- **Escrow A** (Alice→Bob): Uses any contract (including atomic_swap1)
-- **Escrow B** (Bob→Alice): Uses this data field-based contract, references Escrow A's keylet
-
-The atomic_swap1 example shows a different validation approach using memos, but both examples demonstrate the same principle: **one escrow validates the other exists before completing**.
-
-## Production Considerations
-
-To make this example production-grade, you would want to implement:
-
-### Enhanced Validation
-
-- **Phase 2 data consistency**: Re-validate that the first 32 bytes of the data field still match the first escrow's keylet to detect tampering between phases
-- **Counterpart data field validation**: Verify that the first escrow's data field contains the expected values (e.g., this escrow's keylet for bidirectional validation)
-- **Stricter data format validation**: Reject data fields with unexpected lengths or formats
-
-### Cryptographic Security
-
-- **Hash-based WASM validation**: Replace the current magic number check with SHA256 hash verification against known good versions, preventing acceptance of wrong WASM with correct headers
-- **Signature verification**: Consider requiring cryptographic signatures from both parties to prevent unauthorized escrow creation
-- **Keylet validation**: Implement cryptographic verification that keylets are properly formatted and valid
-
-### Robustness
-
-- **Ledger time sanity checks**: Validate that current_time is reasonable (not 0, not in far future) to catch unexpected ledger state
-- **CancelAfter validation**: Verify that CancelAfter is in the future during Phase 1 to prevent accepting already-expired deadlines
-- **Comprehensive error recovery**: Implement retry logic and state recovery procedures for edge cases
-- **Timeout handling**: Implement mechanisms to handle cases where Phase 2 is never executed
-
-### Operational
-
-- **Failure scenario documentation**: Document what happens if one escrow expires before the other completes, and implement recovery procedures
-- **Monitoring and alerting**: Add metrics for swap success/failure rates, phase execution times, and alert on anomalies
-- **Rate limiting**: Implement rate limiting to prevent abuse of the atomic swap mechanism
-- **Audit logging**: Log all phase transitions and validation failures for compliance and debugging

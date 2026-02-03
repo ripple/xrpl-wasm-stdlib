@@ -12,13 +12,6 @@ This escrow enables trustless atomic swaps between two parties. Each escrow must
 
 This ensures both escrows complete together or neither completes at all.
 
-## When to use it?
-
-- **Token exchanges** between parties who don't trust each other
-- **Cross-chain coordination** where you need atomic completion
-- **Trustless trading** without intermediaries
-- **Simple atomic swaps** that don't require complex timing logic
-
 ## Step-by-Step Transaction Guide
 
 This guide shows how to manually create and execute an atomic swap using the WASM Devnet or direct transaction submission.
@@ -129,41 +122,6 @@ This guide shows how to manually create and execute an atomic swap using the WAS
 - Trace shows "Failed to cache counterpart escrow, error: -10"
 - This demonstrates the atomic nature - once one escrow is consumed, the other cannot complete
 
-### Transaction Structure Reference
-
-**EscrowCreate Format:**
-
-```json
-{
-  "TransactionType": "EscrowCreate",
-  "Account": "[SENDER_ADDRESS]",
-  "Destination": "[RECEIVER_ADDRESS]",
-  "Amount": "[AMOUNT_IN_DROPS]",
-  "CancelAfter": "[UNIX_TIMESTAMP]",
-  "FinishFunction": "[WASM_HEX]"
-}
-```
-
-**EscrowFinish Format:**
-
-```json
-{
-  "TransactionType": "EscrowFinish",
-  "Account": "[FINISHER_ADDRESS]",
-  "Owner": "[ESCROW_OWNER_ADDRESS]",
-  "OfferSequence": "[ESCROW_SEQUENCE_NUMBER]",
-  "ComputationAllowance": 1000000,
-  "Memos": [
-    {
-      "Memo": {
-        "MemoType": "636F756E746572706172745F657363726F77",
-        "MemoData": "[COUNTERPART_ESCROW_KEYLET_HEX]"
-      }
-    }
-  ]
-}
-```
-
 ## Configuration
 
 The contract expects:
@@ -174,29 +132,17 @@ The contract expects:
 
 ## Building
 
-### Prerequisites
-
-- Rust with `wasm32v1-none` target
-- XRPL WASM standard library
-
-### Build Commands
-
 ```shell
-cargo build --target wasm32v1-none
 cargo build --target wasm32v1-none --release
 ```
 
-The resulting WASM file will be located at:
-
-```
-./target/wasm32v1-none/release/atomic_swap1.wasm
-```
+The resulting WASM file will be located at `./target/wasm32v1-none/release/atomic_swap1.wasm`
 
 ## Testing
 
 ```shell
-cd ../../../
-CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap1
+cd ../../../../
+CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap/atomic_swap1
 ```
 
 ## How It Works - Implementation Details
@@ -218,23 +164,6 @@ CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap1
 - **WASM Verification**: Prevents accepting wrong contracts with correct headers
 - **Account Reversal Check**: Ensures escrows are properly paired (A→B with B→A)
 - **Keylet-Based References**: Uses immutable ledger object identifiers for precise targeting
-
-## System State Diagram
-
-This diagram shows the complete atomic swap flow with all 4 transactions:
-
-```mermaid
-stateDiagram-v2
-    [*] --> EscrowACreated: 1. EscrowCreate A (Alice→Bob)
-    EscrowACreated --> EscrowBCreated: 2. EscrowCreate B (Bob→Alice) with A's keylet
-    EscrowBCreated --> EscrowAFinished: 3. EscrowFinish A (validates B exists)
-    EscrowAFinished --> EscrowBFinished: 4. EscrowFinish B (validates A exists)
-    EscrowBFinished --> [*]: Swap complete!
-
-    EscrowAFinished --> Failed: Validation failed
-    EscrowBFinished --> Failed: Validation failed
-    Failed --> [*]: Swap failed
-```
 
 ## Execution Flow Diagram
 
@@ -271,54 +200,4 @@ flowchart TD
 
 ## Important Notes
 
-⚠️ **Timing**: Both escrows should be finished quickly after each other. Once one escrow is consumed, the counterpart becomes unreferenceable.
-
-⚠️ **Coordination**: In practice, both parties should submit their `EscrowFinish` transactions in the same ledger or use coordination mechanisms.
-
 ⚠️ **Memo Format**: The memo must contain exactly the 32-byte keylet of the counterpart escrow. Extra data is ignored but should be avoided.
-
-## What can go wrong?
-
-| Scenario                       | Result             |
-| ------------------------------ | ------------------ |
-| Missing memo                   | Escrow fails       |
-| Wrong keylet in memo           | Escrow fails       |
-| Counterpart escrow not found   | Escrow fails       |
-| Accounts not properly reversed | Escrow fails       |
-| One escrow already consumed    | Other escrow fails |
-
-## Complete Atomic Swap
-
-This escrow is designed to work **with other escrows** to create complete atomic swaps. For example:
-
-- **Escrow A** (Alice→Bob): Uses this memo-based contract, references Escrow B's keylet
-- **Escrow B** (Bob→Alice): Uses any contract (including atomic_swap2), both validate each other
-
-The atomic_swap2 example shows a different validation approach using data fields and timing, but both examples demonstrate the same principle: **mutual validation between escrows**.
-
-## Production Considerations
-
-To make this example production-grade, you would want to implement:
-
-### Enhanced Validation
-
-- **CancelAfter validation**: Verify that the counterpart's CancelAfter is in the future to prevent accepting already-expired escrows
-- **Counterpart data field validation**: Verify that the counterpart's data field contains the expected keylet, adding a layer of defense against misconfigured escrows
-- **Stricter memo format validation**: Reject memos with extra bytes to prevent accidental data corruption
-
-### Cryptographic Security
-
-- **Hash-based WASM validation**: Replace the current magic number check with SHA256 hash verification against known good versions, preventing acceptance of wrong WASM with correct headers
-- **Signature verification**: Consider requiring cryptographic signatures from both parties to prevent unauthorized escrow creation
-
-### Robustness
-
-- **Ledger time sanity checks**: Validate that current_time is reasonable (not 0, not in far future) to catch unexpected ledger state
-- **Comprehensive error recovery**: Implement retry logic and state recovery procedures for edge cases
-- **Timeout handling**: Implement mechanisms to handle cases where one party never submits their EscrowFinish
-
-### Operational
-
-- **Failure scenario documentation**: Document what happens if one escrow expires before the other completes, and implement recovery procedures
-- **Monitoring and alerting**: Add metrics for swap success/failure rates and alert on anomalies
-- **Rate limiting**: Implement rate limiting to prevent abuse of the atomic swap mechanism
