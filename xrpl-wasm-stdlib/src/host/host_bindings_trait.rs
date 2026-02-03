@@ -1387,7 +1387,7 @@ pub trait HostBindings {
     /// # Parameters
     /// * `in_buff` - Pointer to input float value
     /// * `in_buff_len` - The length of the input float value in bytes
-    /// * `in_int` - The power to calculate (e.g., 2 for square)
+    /// * `pow` - The power to calculate (e.g., 2 for square)
     /// * `out_buff` - Pointer to output buffer where result will be written
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
@@ -1400,7 +1400,7 @@ pub trait HostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        pow: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,
@@ -1410,7 +1410,7 @@ pub trait HostBindings {
     /// # Parameters
     /// * `in_buff` - Pointer to input float value
     /// * `in_buff_len` - The length of the input float value in bytes
-    /// * `in_int` - The root to calculate (e.g., 2 for square root)
+    /// * `root` - The root to calculate (e.g., 2 for square root)
     /// * `out_buff` - Pointer to output buffer where result will be written
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
@@ -1423,7 +1423,7 @@ pub trait HostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        root: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,

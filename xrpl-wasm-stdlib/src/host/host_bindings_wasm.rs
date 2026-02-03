@@ -326,7 +326,7 @@ mod host_defined_functions {
         pub(super) fn float_pow(
             in_buff: *const u8,
             in_buff_len: usize,
-            in_int: i32,
+            pow: i32,
             out_buff: *mut u8,
             out_buff_len: usize,
             rounding_mode: i32,
@@ -334,7 +334,7 @@ mod host_defined_functions {
         pub(super) fn float_root(
             in_buff: *const u8,
             in_buff_len: usize,
-            in_int: i32,
+            root: i32,
             out_buff: *mut u8,
             out_buff_len: usize,
             rounding_mode: i32,
@@ -1212,7 +1212,7 @@ impl HostBindings for WasmHostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        pow: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,
@@ -1221,7 +1221,7 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::float_pow(
                 in_buff,
                 in_buff_len,
-                in_int,
+                pow,
                 out_buff,
                 out_buff_len,
                 rounding_mode,
@@ -1233,7 +1233,7 @@ impl HostBindings for WasmHostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        root: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,
@@ -1242,7 +1242,7 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::float_root(
                 in_buff,
                 in_buff_len,
-                in_int,
+                root,
                 out_buff,
                 out_buff_len,
                 rounding_mode,
@@ -1422,8 +1422,8 @@ export_host_functions! {
     fn float_subtract(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_multiply(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_divide(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_pow(in_buff: *const u8, in_buff_len: usize, in_int: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, in_int: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_log(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
