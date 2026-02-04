@@ -12,12 +12,11 @@ mod host_defined_functions {
 
     #[link(wasm_import_module = "host_lib")]
     unsafe extern "C" {
-        pub(super) fn get_ledger_sqn() -> i32;
-        pub(super) fn get_parent_ledger_time() -> i32;
+        pub(super) fn get_ledger_sqn(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+        pub(super) fn get_parent_ledger_time(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
         pub(super) fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-        pub(super) fn get_base_fee() -> i32;
+        pub(super) fn get_base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
         pub(super) fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
-
         pub(super) fn cache_ledger_obj(
             keylet_ptr: *const u8,
             keylet_len: usize,
@@ -35,7 +34,6 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn get_tx_nested_field(
             locator_ptr: *const u8,
             locator_len: usize,
@@ -55,7 +53,6 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn get_tx_array_len(field: i32) -> i32;
         pub(super) fn get_current_ledger_obj_array_len(field: i32) -> i32;
         pub(super) fn get_ledger_obj_array_len(cache_num: i32, field: i32) -> i32;
@@ -69,7 +66,6 @@ mod host_defined_functions {
             locator_ptr: *const u8,
             locator_len: usize,
         ) -> i32;
-
         pub(super) fn update_data(data_ptr: *const u8, data_len: usize) -> i32;
         pub(super) fn compute_sha512_half(
             data_ptr: *const u8,
@@ -85,7 +81,6 @@ mod host_defined_functions {
             pubkey_ptr: *const u8,
             pubkey_len: usize,
         ) -> i32;
-
         pub(super) fn account_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -103,11 +98,11 @@ mod host_defined_functions {
         pub(super) fn check_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn credential_keylet(
             subject_ptr: *const u8,
             subject_len: usize,
@@ -134,7 +129,6 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn did_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -144,7 +138,8 @@ mod host_defined_functions {
         pub(super) fn escrow_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
@@ -158,11 +153,11 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn mpt_issuance_keylet(
             issuer_ptr: *const u8,
             issuer_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
@@ -177,22 +172,24 @@ mod host_defined_functions {
         pub(super) fn nft_offer_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn offer_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
         pub(super) fn oracle_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            document_id: i32,
+            document_id_ptr: *const u8,
+            document_id_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
@@ -201,15 +198,16 @@ mod host_defined_functions {
             account_len: usize,
             destination_ptr: *const u8,
             destination_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn permissioned_domain_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
@@ -222,18 +220,19 @@ mod host_defined_functions {
         pub(super) fn ticket_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
         pub(super) fn vault_keylet(
             account_ptr: *const u8,
             account_len: usize,
-            sequence: i32,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn get_nft(
             account_ptr: *const u8,
             account_len: usize,
@@ -262,7 +261,6 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
-
         pub(super) fn float_from_int(
             in_int: i64,
             out_buff: *mut u8,
@@ -325,11 +323,10 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
-
         pub(super) fn float_pow(
             in_buff: *const u8,
             in_buff_len: usize,
-            in_int: i32,
+            pow: i32,
             out_buff: *mut u8,
             out_buff_len: usize,
             rounding_mode: i32,
@@ -337,7 +334,7 @@ mod host_defined_functions {
         pub(super) fn float_root(
             in_buff: *const u8,
             in_buff_len: usize,
-            in_int: i32,
+            root: i32,
             out_buff: *mut u8,
             out_buff_len: usize,
             rounding_mode: i32,
@@ -349,7 +346,6 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
-
         pub(super) fn trace(
             msg_read_ptr: *const u8,
             msg_read_len: usize,
@@ -384,20 +380,20 @@ pub struct WasmHostBindings;
 
 /// WASM implementation of HostBindings.
 impl HostBindings for WasmHostBindings {
-    unsafe fn get_ledger_sqn(&self) -> i32 {
-        unsafe { host_defined_functions::get_ledger_sqn() }
+    unsafe fn get_ledger_sqn(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
+        unsafe { host_defined_functions::get_ledger_sqn(out_buff_ptr, out_buff_len) }
     }
 
-    unsafe fn get_parent_ledger_time(&self) -> i32 {
-        unsafe { host_defined_functions::get_parent_ledger_time() }
+    unsafe fn get_parent_ledger_time(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
+        unsafe { host_defined_functions::get_parent_ledger_time(out_buff_ptr, out_buff_len) }
     }
 
     unsafe fn get_parent_ledger_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
         unsafe { host_defined_functions::get_parent_ledger_hash(out_buff_ptr, out_buff_len) }
     }
 
-    unsafe fn get_base_fee(&self) -> i32 {
-        unsafe { host_defined_functions::get_base_fee() }
+    unsafe fn get_base_fee(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
+        unsafe { host_defined_functions::get_base_fee(out_buff_ptr, out_buff_len) }
     }
 
     unsafe fn amendment_enabled(&self, amendment_ptr: *const u8, amendment_len: usize) -> i32 {
@@ -626,7 +622,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -634,7 +631,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::check_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -724,7 +722,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -732,7 +731,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::escrow_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -768,7 +768,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         issuer_ptr: *const u8,
         issuer_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -776,7 +777,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::mpt_issuance_keylet(
                 issuer_ptr,
                 issuer_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -808,7 +810,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -816,7 +819,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::nft_offer_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -827,7 +831,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -835,7 +840,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::offer_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -846,7 +852,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        document_id: i32,
+        document_id_ptr: *const u8,
+        document_id_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -854,7 +861,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::oracle_keylet(
                 account_ptr,
                 account_len,
-                document_id,
+                document_id_ptr,
+                document_id_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -867,7 +875,8 @@ impl HostBindings for WasmHostBindings {
         account_len: usize,
         destination_ptr: *const u8,
         destination_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -877,7 +886,8 @@ impl HostBindings for WasmHostBindings {
                 account_len,
                 destination_ptr,
                 destination_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -888,7 +898,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -896,7 +907,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::permissioned_domain_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -924,7 +936,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -932,7 +945,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::ticket_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -943,7 +957,8 @@ impl HostBindings for WasmHostBindings {
         &self,
         account_ptr: *const u8,
         account_len: usize,
-        sequence: i32,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32 {
@@ -951,7 +966,8 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::vault_keylet(
                 account_ptr,
                 account_len,
-                sequence,
+                sequence_ptr,
+                sequence_len,
                 out_buff_ptr,
                 out_buff_len,
             )
@@ -1196,7 +1212,7 @@ impl HostBindings for WasmHostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        pow: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,
@@ -1205,7 +1221,7 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::float_pow(
                 in_buff,
                 in_buff_len,
-                in_int,
+                pow,
                 out_buff,
                 out_buff_len,
                 rounding_mode,
@@ -1217,7 +1233,7 @@ impl HostBindings for WasmHostBindings {
         &self,
         in_buff: *const u8,
         in_buff_len: usize,
-        in_int: i32,
+        root: i32,
         out_buff: *mut u8,
         out_buff_len: usize,
         rounding_mode: i32,
@@ -1226,7 +1242,7 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::float_root(
                 in_buff,
                 in_buff_len,
-                in_int,
+                root,
                 out_buff,
                 out_buff_len,
                 rounding_mode,
@@ -1344,10 +1360,10 @@ macro_rules! export_host_functions {
 // Generate all the re-export functions
 export_host_functions! {
     // Host Function Category: ledger and transaction info
-    fn get_ledger_sqn() -> i32;
-    fn get_parent_ledger_time() -> i32;
+    fn get_ledger_sqn(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_parent_ledger_time(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn get_base_fee() -> i32;
+    fn get_base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
     fn cache_ledger_obj(keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
     fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
@@ -1371,23 +1387,23 @@ export_host_functions! {
     fn check_sig(message_ptr: *const u8, message_len: usize, signature_ptr: *const u8, signature_len: usize, pubkey_ptr: *const u8, pubkey_len: usize) -> i32;
     fn account_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn amm_keylet(issue1_ptr: *const u8, issue1_len: usize, issue2_ptr: *const u8, issue2_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn check_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn check_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn credential_keylet(subject_ptr: *const u8, subject_len: usize, issuer_ptr: *const u8, issuer_len: usize, cred_type_ptr: *const u8, cred_type_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn delegate_keylet(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn deposit_preauth_keylet(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn did_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn escrow_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn escrow_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn line_keylet(account1_ptr: *const u8, account1_len: usize, account2_ptr: *const u8, account2_len: usize, currency_ptr: *const u8, currency_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn mpt_issuance_keylet(issuer_ptr: *const u8, issuer_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn mpt_issuance_keylet(issuer_ptr: *const u8, issuer_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn mptoken_keylet(mptid_ptr: *const u8, mptid_len: usize, holder_ptr: *const u8, holder_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn offer_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn oracle_keylet(account_ptr: *const u8, account_len: usize, document_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn paychan_keylet(account_ptr: *const u8, account_len: usize, destination_ptr: *const u8, destination_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn permissioned_domain_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn nft_offer_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn offer_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn oracle_keylet(account_ptr: *const u8, account_len: usize, document_id_ptr: *const u8, document_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn paychan_keylet(account_ptr: *const u8, account_len: usize, destination_ptr: *const u8, destination_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn permissioned_domain_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn signers_keylet(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn ticket_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn vault_keylet(account_ptr: *const u8, account_len: usize, sequence: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn ticket_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn vault_keylet(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn get_nft(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
@@ -1406,14 +1422,15 @@ export_host_functions! {
     fn float_subtract(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_multiply(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_divide(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_pow(in_buff: *const u8,in_buff_len: usize,in_int: i32,out_buff: *mut u8,out_buff_len: usize,rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, n: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_log(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8,msg_read_len: usize,data_read_ptr: *const u8,data_read_len: usize,as_hex: i32) -> i32;
-    fn trace_num( msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-    fn trace_account(msg_read_ptr: *const u8,msg_read_len: usize,account_ptr: *const u8,account_len: usize) -> i32 ;
-    fn trace_opaque_float(msg_read_ptr: *const u8,msg_read_len: usize,opaque_float_ptr: *const u8,opaque_float_len: usize) -> i32 ;
-    fn trace_amount(msg_read_ptr: *const u8,msg_read_len: usize,amount_ptr: *const u8,amount_len: usize) -> i32 ;
+    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> i32;
+    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
+    fn trace_account(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> i32;
+    fn trace_opaque_float(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
+    fn trace_amount(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
+
 }
