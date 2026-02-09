@@ -42,20 +42,20 @@ echo ""
 # Run coverage on unit tests
 cargo llvm-cov clean --workspace # Clean previous coverage data
 cargo llvm-cov \
-      --features xrpl-wasm-stdlib/test-host-bindings \
-      --workspace \
-      --tests \
-      -- --nocapture
+    --features xrpl-wasm-stdlib/test-host-bindings \
+    --workspace \
+    --tests \
+    -- --nocapture
 
 # Change to e2e-tests directory, run coverage on e2e tests
 cd e2e-tests
 cargo llvm-cov clean --workspace # Clean previous coverage data
 cargo llvm-cov \
-      --features xrpl-wasm-stdlib/test-host-bindings \
-      --workspace \
-      --tests \
-      --ignore-filename-regex "e2e-tests/.*" \
-      -- --nocapture
+    --features xrpl-wasm-stdlib/test-host-bindings \
+    --workspace \
+    --tests \
+    --ignore-filename-regex "e2e-tests/.*" \
+    -- --nocapture
 
 echo ""
 echo "=== Coverage Summary ==="
