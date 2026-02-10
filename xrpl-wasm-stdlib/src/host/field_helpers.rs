@@ -38,14 +38,14 @@ use crate::host::error_codes::{
 /// ```
 #[inline]
 pub fn get_fixed_size_field_with_expected_bytes<const N: usize, F>(
-    field_code: i32,
+    field_code: impl Into<i32>,
     host_fn: F,
 ) -> Result<[u8; N]>
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code, buffer.as_mut_ptr().cast(), N);
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_with_expected_bytes(result_code, N, || unsafe { buffer.assume_init() })
 }
 
@@ -80,14 +80,14 @@ where
 /// ```
 #[inline]
 pub fn get_fixed_size_field_with_expected_bytes_optional<const N: usize, F>(
-    field_code: i32,
+    field_code: impl Into<i32>,
     host_fn: F,
 ) -> Result<Option<[u8; N]>>
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code, buffer.as_mut_ptr().cast(), N);
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_with_expected_bytes_optional(result_code, N, || {
         Some(unsafe { buffer.assume_init() })
     })
@@ -129,14 +129,14 @@ where
 /// ```
 #[inline]
 pub fn get_variable_size_field<const N: usize, F>(
-    field_code: i32,
+    field_code: impl Into<i32>,
     host_fn: F,
 ) -> Result<([u8; N], usize)>
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code, buffer.as_mut_ptr().cast(), N);
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code(result_code, || {
         let len = result_code as usize;
         (unsafe { buffer.assume_init() }, len)
@@ -174,14 +174,14 @@ where
 /// ```
 #[inline]
 pub fn get_variable_size_field_optional<const N: usize, F>(
-    field_code: i32,
+    field_code: impl Into<i32>,
     host_fn: F,
 ) -> Result<Option<([u8; N], usize)>>
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code, buffer.as_mut_ptr().cast(), N);
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_optional(result_code, || {
         let len = result_code as usize;
         Some((unsafe { buffer.assume_init() }, len))
