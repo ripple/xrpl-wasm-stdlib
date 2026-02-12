@@ -6,6 +6,6 @@
     "test": "./scripts/run-tests.sh"
   },
   "dependencies": {
-    "xrpl": "^4.5.0-smartescrow.4"
+    "xrpl": "^4.6.0-smartescrow.0"
   }
 }
