@@ -11,7 +11,7 @@ use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_wasm_stdlib::core::types::keylets::XRPL_KEYLET_SIZE;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::Error::InternalError;
-use xrpl_wasm_stdlib::host::error_codes::match_result_code;
+use xrpl_wasm_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
@@ -305,24 +305,21 @@ fn phase2_complete(
         [XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
         .try_into()
         .unwrap();
-    let cancel_after = u32::from_le_bytes(cancel_after_bytes);
+    let cancel_after = u32::from_be_bytes(cancel_after_bytes);
     let _ = trace_num("Extracted CancelAfter:", cancel_after as i64);
 
     // Get current ledger time for deadline comparison
-    let current_time = unsafe {
-        let result_code = host::get_parent_ledger_time();
-        match_result_code(result_code, || Some(result_code as u32))
-    };
+    let mut time_buffer = [0u8; 4];
+    let time_result =
+        unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
-    let current_time = match current_time {
-        Ok(Some(time)) => time,
-        Ok(None) => {
-            let _ = trace_num("Failed to get parent ledger time", 0);
-            return VALIDATION_FAILED;
-        }
+    let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
+        u32::from_be_bytes(time_buffer)
+    }) {
+        Ok(time) => time,
         Err(e) => {
-            let _ = trace_num("Error getting parent ledger time:", e.code() as i64);
-            return e.code();
+            let _ = trace_num("Failed to get parent ledger time:", e.code() as i64);
+            return VALIDATION_FAILED;
         }
     };
 
