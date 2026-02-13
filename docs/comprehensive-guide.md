@@ -36,8 +36,10 @@ This comprehensive guide covers everything you need to develop smart escrows usi
       - [Multi-Signature Notary](#multi-signature-notary)
       - [NFT Ownership Verification](#nft-ownership-verification)
       - [Time-Based Ledger Sequence](#time-based-ledger-sequence)
+      - [Atomic Swap Examples](#atomic-swap-examples)
   - [Testing and Debugging](#testing-and-debugging)
     - [Test Networks](#test-networks)
+    - [Key Testing Considerations](#key-testing-considerations)
     - [Test Using the Web UI](#test-using-the-web-ui)
     - [Performance Optimization](#performance-optimization)
       - [Binary Size Optimization](#binary-size-optimization)
@@ -457,6 +459,20 @@ fn process_escrow() -> Result<i32> {
 - `WasmError::BufferTooSmall` - Output buffer insufficient
 - `WasmError::CacheSlotNotFound` - Cached object evicted
 
+**Error Code Debugging:**
+
+Host functions return negative integers for errors. You can use trace functions to log error codes for debugging:
+
+```rust ignore
+use xrpl_wasm_stdlib::host::trace::trace_num;
+
+let result = unsafe { some_host_function(params) };
+if result < 0 {
+    let _ = trace_num("Host function failed with error:", result as i64);
+    return result; // or handle appropriately
+}
+```
+
 ---
 
 ## Examples
@@ -545,6 +561,28 @@ A compliance-focused escrow that requires credential verification.
 - Implements time-locked escrows
 - Shows sequence-based logic
 
+#### Atomic Swap Examples
+
+These examples demonstrate:
+
+- Cross-escrow reference patterns (memo-based and data field-based)
+- Account validation between related escrows
+- Timing coordination and deadline management
+- Atomic failure handling when escrows are finished
+- Multi-phase execution patterns
+
+**📁 [`examples/smart-escrows/atomic_swap1/`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/atomic_swap1/) - Memo-Based Atomic Swap**
+
+- Stateless atomic swap using transaction memos
+- Cross-escrow validation and account reversal
+- Demonstrates mutual escrow validation patterns
+
+**📁 [`examples/smart-escrows/atomic_swap2/`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/atomic_swap2/) - Data Field-Based Atomic Swap**
+
+- Stateful atomic swap using escrow data fields
+- Two-phase execution with built-in timing validation
+- Shows state persistence and deadline management
+
 ## Testing and Debugging
 
 ### Test Networks
@@ -555,6 +593,13 @@ A compliance-focused escrow that requires credential verification.
 | **Local Node**  | `ws://localhost:6006`                    | Local Development   |
 
 Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/se/supported) if you would like to build and run rippled locally.
+
+### Key Testing Considerations
+
+- Always create fresh escrows for each test to avoid finishing issues
+- Use extensive trace output to debug coordination timing issues (you can access these traces by running rippled locally)
+- Test both success and failure paths for atomic behavior
+- Understand that escrow finishing affects subsequent tests
 
 ### Test Using the Web UI
 

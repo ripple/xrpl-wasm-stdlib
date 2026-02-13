@@ -8,7 +8,7 @@ async function test(testContext) {
   const { deploy, finish, client, submit, sourceWallet, destWallet } =
     testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   const closeTime = (
     await client.request({
@@ -48,7 +48,7 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
   }
 
@@ -96,7 +96,7 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
   }
 
