@@ -57,60 +57,65 @@ function getFinishFunctionFromFile(filePath) {
 }
 
 async function main() {
-  await client.connect()
-  console.log("connected")
-
-  let interval
-  if (client.url.includes("localhost") || client.url.includes("127.0.0.1")) {
-    interval = setInterval(() => {
-      if (client.isConnected()) client.request({ command: "ledger_accept" })
-    }, 1000)
-  }
-
-  // Generate fresh wallets for this test
-  const sourceWallet = await fundWallet()
-  const destWallet = await fundWallet()
-  console.log(`Source wallet: ${sourceWallet.address}`)
-
-  const args = process.argv.slice(2)
-  if (args.length === 0) {
-    throw new Error(
-      "Please provide a directory path as a command line argument.",
-    )
-  }
-  const targetDir = args[0]
-  const wasmSource = args[1]
-  const finish = getFinishFunctionFromFile(wasmSource)
-
-  const { deploy } = require("./deployWasmCode.js")
-
-  console.log(`Running test in directory: ${targetDir}`)
-  const runTestPath = path.resolve(targetDir, "runTest.js")
-  const { test } = require(runTestPath)
-
-  // Dynamically import the test function from the target directory
-
-  const testContext = {
-    client,
-    submit,
-    sourceWallet,
-    destWallet,
-    fundWallet,
-    deploy,
-    finish,
-  }
-
-  let failed = false
   try {
-    await test(testContext)
+    await client.connect()
+    console.log("connected")
+
+    let interval
+    if (client.url.includes("localhost") || client.url.includes("127.0.0.1")) {
+      interval = setInterval(() => {
+        if (client.isConnected()) client.request({ command: "ledger_accept" })
+      }, 1000)
+    }
+
+    // Generate fresh wallets for this test
+    const sourceWallet = await fundWallet()
+    const destWallet = await fundWallet()
+    console.log(`Source wallet: ${sourceWallet.address}`)
+
+    const args = process.argv.slice(2)
+    if (args.length === 0) {
+      throw new Error(
+        "Please provide a directory path as a command line argument.",
+      )
+    }
+    const targetDir = args[0]
+    const wasmSource = args[1]
+    const finish = getFinishFunctionFromFile(wasmSource)
+
+    const { deploy } = require("./deployWasmCode.js")
+
+    console.log(`Running test in directory: ${targetDir}`)
+    const runTestPath = path.resolve(targetDir, "runTest.js")
+    const { test } = require(runTestPath)
+
+    // Dynamically import the test function from the target directory
+
+    const testContext = {
+      client,
+      submit,
+      sourceWallet,
+      destWallet,
+      fundWallet,
+      deploy,
+      finish,
+    }
+
+    let failed = false
+    try {
+      await test(testContext)
+    } catch (error) {
+      console.error("Error:", error.message)
+      console.log(error)
+      failed = true
+    } finally {
+      if (interval) clearInterval(interval)
+      await client.disconnect()
+      if (failed) process.exit(1)
+    }
   } catch (error) {
     console.error("Error:", error.message)
-    console.log(error)
-    failed = true
-  } finally {
-    if (interval) clearInterval(interval)
-    await client.disconnect()
-    if (failed) process.exit(1)
+    process.exit(1)
   }
 }
 
