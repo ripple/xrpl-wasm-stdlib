@@ -137,6 +137,8 @@ async function test(testContext) {
     )
     process.exit(1)
   }
+
+  console.log("Success!")
 }
 
 module.exports = { test }

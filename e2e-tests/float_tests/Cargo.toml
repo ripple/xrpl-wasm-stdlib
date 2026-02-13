@@ -1,6 +1,6 @@
 [package]
 name = "float_tests"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 edition = "2024"
 description = "Test suite for XRPL floating-point operations including arithmetic, comparison, and mathematical functions"
 license = "ISC"

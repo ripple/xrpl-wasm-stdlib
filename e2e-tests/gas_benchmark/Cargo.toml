@@ -1,6 +1,6 @@
 [package]
 name = "gas_benchmark"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 edition = "2024"
 description = "Gas benchmark contract for measuring optimization impact"
 license = "ISC"

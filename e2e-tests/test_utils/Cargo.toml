@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 edition = "2024"
 description = "Test utilities for XRPL WASM e2e tests"
 license = "ISC"
