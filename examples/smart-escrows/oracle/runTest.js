@@ -56,7 +56,7 @@ async function test(testContext) {
   const responseFail = await submit(txFail, sourceWallet)
 
   if (responseFail.result.meta.TransactionResult !== "tecWASM_REJECTED") {
-    console.error("\nEscrow finished successfully????")
+    console.error("\nEscrow finished successfully when it should have failed")
     process.exit(1)
   }
 

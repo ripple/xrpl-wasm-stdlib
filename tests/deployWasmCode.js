@@ -9,7 +9,9 @@ const client =
 
 async function submit(tx, wallet, debug = false) {
   const txResult = await client.submitAndWait(tx, { autofill: true, wallet })
-  console.log("SUBMITTED " + tx.TransactionType)
+  console.log(
+    "SUBMITTED " + tx.TransactionType + "(" + txResult.result.hash + ")",
+  )
 
   if (debug) console.log(txResult.result ?? txResult)
   else console.log("Result code: " + txResult.result?.meta?.TransactionResult)
