@@ -57,14 +57,14 @@ dependencies = [
 
 [[package]]
 name = "float_tests"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "gas_benchmark"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "xrpl-wasm-stdlib",
 ]
@@ -81,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "host_functions_test"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "xrpl-wasm-stdlib",
 ]
@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "test_utils"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "xrpl-wasm-stdlib",
 ]
@@ -163,7 +163,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "trace_escrow_account"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "test_utils",
  "xrpl-wasm-stdlib",
@@ -171,7 +171,7 @@ dependencies = [
 
 [[package]]
 name = "trace_escrow_finish"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "test_utils",
  "xrpl-wasm-stdlib",
@@ -179,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "trace_escrow_ledger_object"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 dependencies = [
  "test_utils",
  "xrpl-wasm-stdlib",
@@ -215,7 +215,7 @@ dependencies = [
 
 [[package]]
 name = "xrpl-wasm-stdlib"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
  "xrpl-macros",
 ]

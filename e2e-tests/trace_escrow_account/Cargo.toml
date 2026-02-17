@@ -1,6 +1,6 @@
 [package]
 name = "trace_escrow_account"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 edition = "2024"
 description = "End-to-end test that validates AccountRoot ledger object field access and tracing functionality"
 license = "ISC"

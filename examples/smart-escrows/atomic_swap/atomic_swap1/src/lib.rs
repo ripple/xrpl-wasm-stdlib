@@ -305,7 +305,7 @@ fn phase2_complete(
         [XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
         .try_into()
         .unwrap();
-    let cancel_after = u32::from_be_bytes(cancel_after_bytes);
+    let cancel_after = u32::from_le_bytes(cancel_after_bytes);
     let _ = trace_num("Extracted CancelAfter:", cancel_after as i64);
 
     // Get current ledger time for deadline comparison
@@ -314,7 +314,7 @@ fn phase2_complete(
         unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
     let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
-        u32::from_be_bytes(time_buffer)
+        u32::from_le_bytes(time_buffer)
     }) {
         Ok(time) => time,
         Err(e) => {
