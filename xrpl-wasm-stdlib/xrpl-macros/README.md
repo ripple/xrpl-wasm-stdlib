@@ -1,4 +1,4 @@
-# xrpl-address-macro
+# xrpl-macros
 
 ⚠️ **INTERNAL CRATE - DO NOT USE DIRECTLY** ⚠️
 

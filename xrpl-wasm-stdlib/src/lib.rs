@@ -5,7 +5,7 @@
 extern crate std;
 
 // Re-export the r_address macro for convenient access
-pub use xrpl_address_macro::r_address;
+pub use xrpl_macros::r_address;
 
 pub mod core;
 pub mod host;
