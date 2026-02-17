@@ -1,5 +1,5 @@
 [package]
-name = "xrpl-address-macro"
+name = "xrpl-macros"
 version = "0.1.0"
 edition = "2024"
 description = "Internal proc macro for xrpl-wasm-stdlib - use xrpl-wasm-stdlib instead"
