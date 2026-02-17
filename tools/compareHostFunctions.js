@@ -70,7 +70,7 @@ async function main() {
   let importHits = [
     // Parse WASM host function imports in `WasmVM.cpp`
     ...wasmImportFile.matchAll(
-      /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
+      /^ *WASM_IMPORT_FUNC2? *\(\*?i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
     ),
   ]
   console.log(

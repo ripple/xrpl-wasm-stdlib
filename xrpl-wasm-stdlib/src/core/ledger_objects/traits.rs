@@ -1,9 +1,7 @@
 use crate::core::ledger_objects::{current_ledger_object, ledger_object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{
-    Blob, CONDITION_BLOB_SIZE, ConditionBlob, DEFAULT_BLOB_SIZE, UriBlob,
-};
+use crate::core::types::blob::{Blob, CONDITION_BLOB_SIZE, ConditionBlob, UriBlob, WasmBlob};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
 use crate::core::types::uint::{Hash128, Hash256};
@@ -13,9 +11,7 @@ use crate::core::types::uint::{Hash128, Hash256};
 /// It defines common interfaces for accessing and manipulating different types of ledger objects,
 /// particularly focusing on Escrow objects. The traits provide methods to get and set various
 /// fields of ledger objects, with separate traits for current ledger objects and general ledger objects.
-use crate::host::error_codes::{
-    match_result_code, match_result_code_optional, match_result_code_with_expected_bytes,
-};
+use crate::host::error_codes::{match_result_code, match_result_code_optional};
 use crate::host::{Error, get_current_ledger_obj_field, get_ledger_obj_field, update_data};
 use crate::host::{Result, Result::Err, Result::Ok};
 use crate::sfield;
@@ -194,7 +190,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<Blob<{ DEFAULT_BLOB_SIZE }>>> {
+    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
         current_ledger_object::get_field_optional(sfield::FinishFunction)
     }
 
@@ -239,7 +235,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         // length to be `data.len` (e.g., if the developer writes 2 bytes, then that's the new
         // length and any old bytes are lost).
         let result_code = unsafe { update_data(data.data.as_ptr(), data.len) };
-        match_result_code_with_expected_bytes(result_code, data.len, || ())
+        match_result_code(result_code, || ())
     }
 }
 
@@ -361,7 +357,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<Blob<{ DEFAULT_BLOB_SIZE }>>> {
+    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 

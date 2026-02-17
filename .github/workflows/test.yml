@@ -11,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  RIPPLED_DOCKER_IMAGE: rippleci/rippled:ripple_se_supported
+  XRPLD_DOCKER_IMAGE: rippleci/xrpld:smart_escrow_supported
 
 jobs:
   pre-commit:
@@ -115,7 +115,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    # needs: build_and_test
+    needs: build_and_test
     steps:
       - uses: actions/checkout@v5
 
@@ -154,17 +154,33 @@ jobs:
 
       - name: Run docker in background
         run: |
-          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/opt/ripple/" --name rippled-service --health-cmd="rippled server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.RIPPLED_DOCKER_IMAGE }} -c "rippled -a"
+          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/opt/ripple/" --name xrpld-service --health-cmd="xrpld server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.XRPLD_DOCKER_IMAGE }} -c "xrpld -a"
+
+      - name: Wait for xrpld to be healthy
+        run: |
+          echo "Waiting for xrpld container to be healthy..."
+          timeout 120 bash -c 'until docker inspect --format="{{.State.Health.Status}}" xrpld-service 2>/dev/null | grep -q "healthy"; do echo "Still waiting..."; docker logs --tail 10 xrpld-service 2>&1 || true; sleep 5; done'
+          echo "xrpld is healthy!"
+          docker logs xrpld-service
 
       - name: Run end-to-end tests
         run: ./scripts/run-tests.sh
 
+      - name: Show docker logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker container logs ==="
+          docker logs xrpld-service 2>&1 || echo "Could not get logs"
+          echo "=== Docker container status ==="
+          docker inspect xrpld-service 2>&1 || echo "Could not inspect container"
+
       - name: Stop docker container
         if: always()
-        run: docker stop rippled-service
+        run: docker stop xrpld-service
 
   coverage:
     runs-on: ubuntu-latest
+    needs: e2e-tests
     env:
       CARGO_TERM_COLOR: always
     steps:

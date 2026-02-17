@@ -168,22 +168,18 @@ impl From<TransactionType> for [u8; 2] {
 impl CurrentTxFieldGetter for TransactionType {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        match get_fixed_size_field_with_expected_bytes::<2, _>(field_code, |fc, buf, size| unsafe {
+        get_fixed_size_field_with_expected_bytes::<2, _>(field_code, |fc, buf, size| unsafe {
             get_tx_field(fc, buf, size)
-        }) {
-            Result::Ok(buffer) => Result::Ok(i16::from_le_bytes(buffer).into()),
-            Result::Err(e) => Result::Err(e),
-        }
+        })
+        .map(|buffer| i16::from_le_bytes(buffer).into())
     }
 
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        match get_fixed_size_field_with_expected_bytes_optional::<2, _>(
+        get_fixed_size_field_with_expected_bytes_optional::<2, _>(
             field_code,
             |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        ) {
-            Result::Ok(buffer) => Result::Ok(buffer.map(|b| i16::from_le_bytes(b).into())),
-            Result::Err(e) => Result::Err(e),
-        }
+        )
+        .map(|buffer| buffer.map(|b| i16::from_le_bytes(b).into()))
     }
 }

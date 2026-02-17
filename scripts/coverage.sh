@@ -30,12 +30,6 @@ fi
 echo "Running coverage for e2e-tests..."
 echo ""
 
-# Change to e2e-tests directory
-cd e2e-tests
-
-# Clean previous coverage data
-cargo llvm-cov clean --workspace
-
 # Run tests with coverage instrumentation and display summary in terminal
 # --workspace: Include all workspace members
 # --tests: Run in test mode
@@ -44,6 +38,18 @@ cargo llvm-cov clean --workspace
 # --ignore-filename-regex: Exclude test files from coverage report
 echo "Running tests with coverage instrumentation..."
 echo ""
+
+# Run coverage on unit tests
+cargo llvm-cov clean --workspace # Clean previous coverage data
+cargo llvm-cov \
+    --features xrpl-wasm-stdlib/test-host-bindings \
+    --workspace \
+    --tests \
+    -- --nocapture
+
+# Change to e2e-tests directory, run coverage on e2e tests
+cd e2e-tests
+cargo llvm-cov clean --workspace # Clean previous coverage data
 cargo llvm-cov \
     --features xrpl-wasm-stdlib/test-host-bindings \
     --workspace \
