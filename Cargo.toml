@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "xrpl-wasm-stdlib",
-    "xrpl-wasm-stdlib/xrpl-address-macro",
+    "xrpl-wasm-stdlib/xrpl-macros",
 ]
 exclude = [
     "examples",
@@ -10,7 +10,6 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.8.0"
 license = "ISC"
 repository = "https://github.com/ripple/xrpl-wasm-stdlib"
 
