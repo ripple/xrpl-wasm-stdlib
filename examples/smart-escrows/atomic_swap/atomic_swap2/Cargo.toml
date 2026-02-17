@@ -1,0 +1,14 @@
+[package]
+name = "atomic_swap2"
+version = "0.1.0"
+edition = "2024"
+description = "Smart Escrow example that implements atomic swaps using data field-based two-phase execution"
+license = "ISC"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+xrpl-wasm-stdlib = { path = "../../../../xrpl-wasm-stdlib" }
