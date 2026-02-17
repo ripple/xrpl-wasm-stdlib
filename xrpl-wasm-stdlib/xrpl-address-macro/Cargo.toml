@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-address-macro"
-version.workspace = true
+version = "0.1.0"
 edition = "2024"
 description = "Internal proc macro for xrpl-wasm-stdlib - use xrpl-wasm-stdlib instead"
 license.workspace = true
