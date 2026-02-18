@@ -1119,3 +1119,285 @@ where
 
     match_result_code_with_expected_bytes(result_code, XRPL_KEYLET_SIZE, || keylet_buffer)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::types::issue::{IouIssue, MptIssue, XrpIssue};
+
+    // Helper to create a test account ID
+    fn test_account() -> AccountID {
+        AccountID::from([0xAB; 20])
+    }
+
+    fn test_account2() -> AccountID {
+        AccountID::from([0xCD; 20])
+    }
+
+    fn test_currency() -> Currency {
+        Currency::from([0xEF; 20])
+    }
+
+    // Test account_keylet
+    #[test]
+    fn test_account_keylet() {
+        let account = test_account();
+        let result = account_keylet(&account);
+        assert!(result.is_ok());
+        let keylet = result.unwrap();
+        assert_eq!(keylet.len(), XRPL_KEYLET_SIZE);
+    }
+
+    #[test]
+    fn test_account_keylet_different_accounts() {
+        let account1 = AccountID::from([0x00; 20]);
+        let account2 = AccountID::from([0xFF; 20]);
+
+        let result1 = account_keylet(&account1);
+        let result2 = account_keylet(&account2);
+
+        assert!(result1.is_ok());
+        assert!(result2.is_ok());
+    }
+
+    // Test amm_keylet
+    #[test]
+    fn test_amm_keylet_xrp_iou() {
+        let issue1 = Issue::XRP(XrpIssue {});
+        let issue2 = Issue::IOU(IouIssue::new(test_account(), test_currency()));
+
+        let result = amm_keylet(&issue1, &issue2);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    #[test]
+    fn test_amm_keylet_two_ious() {
+        let issuer1 = AccountID::from([0x01; 20]);
+        let issuer2 = AccountID::from([0x02; 20]);
+        let currency1 = Currency::from(
+            *b"USD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        );
+        let currency2 = Currency::from(
+            *b"EUR\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        );
+
+        let issue1 = Issue::IOU(IouIssue::new(issuer1, currency1));
+        let issue2 = Issue::IOU(IouIssue::new(issuer2, currency2));
+
+        let result = amm_keylet(&issue1, &issue2);
+        assert!(result.is_ok());
+    }
+
+    // Test check_keylet
+    #[test]
+    fn test_check_keylet() {
+        let owner = test_account();
+        let result = check_keylet(&owner, 12345);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    #[test]
+    fn test_check_keylet_different_sequences() {
+        let owner = test_account();
+        let result1 = check_keylet(&owner, 0);
+        let result2 = check_keylet(&owner, u32::MAX);
+
+        assert!(result1.is_ok());
+        assert!(result2.is_ok());
+    }
+
+    // Test credential_keylet
+    #[test]
+    fn test_credential_keylet() {
+        let subject = test_account();
+        let issuer = test_account2();
+        let cred_type = b"termsandconditions";
+
+        let result = credential_keylet(&subject, &issuer, cred_type);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    #[test]
+    fn test_credential_keylet_empty_type() {
+        let subject = test_account();
+        let issuer = test_account2();
+        let cred_type: &[u8] = &[];
+
+        let result = credential_keylet(&subject, &issuer, cred_type);
+        assert!(result.is_ok());
+    }
+
+    // Test delegate_keylet
+    #[test]
+    fn test_delegate_keylet() {
+        let account = test_account();
+        let authorize = test_account2();
+
+        let result = delegate_keylet(&account, &authorize);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test deposit_preauth_keylet
+    #[test]
+    fn test_deposit_preauth_keylet() {
+        let account = test_account();
+        let authorize = test_account2();
+
+        let result = deposit_preauth_keylet(&account, &authorize);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test did_keylet
+    #[test]
+    fn test_did_keylet() {
+        let account = test_account();
+        let result = did_keylet(&account);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test escrow_keylet
+    #[test]
+    fn test_escrow_keylet() {
+        let owner = test_account();
+        let result = escrow_keylet(&owner, 12345);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    #[test]
+    fn test_escrow_keylet_zero_sequence() {
+        let owner = test_account();
+        let result = escrow_keylet(&owner, 0);
+        assert!(result.is_ok());
+    }
+
+    // Test line_keylet (trustline)
+    #[test]
+    fn test_line_keylet() {
+        let account1 = test_account();
+        let account2 = test_account2();
+        let currency = test_currency();
+
+        let result = line_keylet(&account1, &account2, &currency);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test mpt_issuance_keylet
+    #[test]
+    fn test_mpt_issuance_keylet() {
+        let owner = test_account();
+        let result = mpt_issuance_keylet(&owner, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test mptoken_keylet
+    #[test]
+    fn test_mptoken_keylet() {
+        let issuer = test_account();
+        let mpt_id = MptId::new(12345, issuer);
+        let holder = test_account2();
+
+        let result = mptoken_keylet(&mpt_id, &holder);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test nft_offer_keylet
+    #[test]
+    fn test_nft_offer_keylet() {
+        let owner = test_account();
+        let result = nft_offer_keylet(&owner, 54321);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test offer_keylet
+    #[test]
+    fn test_offer_keylet() {
+        let owner = test_account();
+        let result = offer_keylet(&owner, 99999);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test oracle_keylet
+    #[test]
+    fn test_oracle_keylet() {
+        let owner = test_account();
+        let result = oracle_keylet(&owner, 42);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test paychan_keylet
+    #[test]
+    fn test_paychan_keylet() {
+        let account = test_account();
+        let destination = test_account2();
+        let result = paychan_keylet(&account, &destination, 12345);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test permissioned_domain_keylet
+    #[test]
+    fn test_permissioned_domain_keylet() {
+        let account = test_account();
+        let result = permissioned_domain_keylet(&account, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test signers_keylet
+    #[test]
+    fn test_signers_keylet() {
+        let account = test_account();
+        let result = signers_keylet(&account);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test ticket_keylet
+    #[test]
+    fn test_ticket_keylet() {
+        let owner = test_account();
+        let result = ticket_keylet(&owner, 5);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test vault_keylet
+    #[test]
+    fn test_vault_keylet() {
+        let account = test_account();
+        let result = vault_keylet(&account, 1);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), XRPL_KEYLET_SIZE);
+    }
+
+    // Test keylet size constant
+    #[test]
+    fn test_keylet_size_constant() {
+        assert_eq!(XRPL_KEYLET_SIZE, 32);
+    }
+
+    // Test with MPT issue in amm_keylet
+    #[test]
+    fn test_amm_keylet_with_mpt() {
+        let issuer = test_account();
+        let mpt_id = MptId::new(100, issuer);
+        let issue1 = Issue::MPT(MptIssue::new(mpt_id));
+        let issue2 = Issue::XRP(XrpIssue {});
+
+        let result = amm_keylet(&issue1, &issue2);
+        assert!(result.is_ok());
+    }
+}
