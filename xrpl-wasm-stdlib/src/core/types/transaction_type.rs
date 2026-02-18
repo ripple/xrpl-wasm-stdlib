@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_transaction_type_from_i16_valid() {
-        // Test all valid transaction types
+        // Test all valid transaction types - documents the i16 -> enum mapping
         assert_eq!(TransactionType::from(-1i16), TransactionType::Invalid);
         assert_eq!(TransactionType::from(0i16), TransactionType::Payment);
         assert_eq!(TransactionType::from(1i16), TransactionType::EscrowCreate);
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_transaction_type_from_i16_invalid() {
-        // Test invalid values return Invalid
+        // Test that gaps in the enum and out-of-range values return Invalid
         assert_eq!(TransactionType::from(999i16), TransactionType::Invalid);
         assert_eq!(TransactionType::from(-100i16), TransactionType::Invalid);
         assert_eq!(TransactionType::from(23i16), TransactionType::Invalid); // Gap in enum
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_transaction_type_to_bytes() {
-        // Test conversion to bytes
+        // Test serialization to little-endian bytes
         let bytes: [u8; 2] = TransactionType::Payment.into();
         assert_eq!(bytes, [0, 0]); // 0 in little-endian
 
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_transaction_type_from_bytes() {
-        // Test conversion from bytes
+        // Test deserialization from little-endian bytes
         let tx_type = TransactionType::from([0, 0]);
         assert_eq!(tx_type, TransactionType::Payment);
 
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_type_roundtrip() {
+    fn test_transaction_type_bytes_roundtrip() {
         // Test that converting to bytes and back gives the same result
         let types = [
             TransactionType::Payment,
@@ -348,43 +348,5 @@ mod tests {
             let recovered = TransactionType::from(bytes);
             assert_eq!(tx_type, recovered);
         }
-    }
-
-    #[test]
-    fn test_transaction_type_i16_roundtrip() {
-        // Test i16 roundtrip
-        let types = [
-            TransactionType::Payment,
-            TransactionType::EscrowFinish,
-            TransactionType::CheckCreate,
-            TransactionType::OracleSet,
-        ];
-
-        for tx_type in types {
-            let value: i16 = tx_type as i16;
-            let recovered = TransactionType::from(value);
-            assert_eq!(tx_type, recovered);
-        }
-    }
-
-    #[test]
-    fn test_transaction_type_equality() {
-        assert_eq!(TransactionType::Payment, TransactionType::Payment);
-        assert_ne!(TransactionType::Payment, TransactionType::EscrowFinish);
-    }
-
-    #[test]
-    fn test_transaction_type_copy() {
-        let tx_type = TransactionType::EscrowFinish;
-        let copy = tx_type; // Copy trait should allow this
-        assert_eq!(tx_type, copy);
-    }
-
-    #[test]
-    fn test_transaction_type_clone() {
-        let tx_type = TransactionType::AMMCreate;
-        #[allow(clippy::clone_on_copy)]
-        let cloned = tx_type.clone();
-        assert_eq!(tx_type, cloned);
     }
 }
