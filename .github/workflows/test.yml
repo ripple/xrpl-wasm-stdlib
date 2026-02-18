@@ -1,4 +1,6 @@
 name: Test
+permissions:
+  contents: read
 
 on:
   push:
@@ -9,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  CI: true
+  XRPLD_DOCKER_IMAGE: rippleci/xrpld:smart_escrow_supported
 
 jobs:
   pre-commit:
@@ -76,6 +78,14 @@ jobs:
       - name: Run host function audit
         run: ./scripts/host-function-audit.sh
 
+  validate_ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate UI
+        run: ./scripts/validate-ui.sh
+
   build_and_test:
     runs-on: ubuntu-latest
     steps:
@@ -105,7 +115,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    # needs: build_and_test
+    needs: build_and_test
     steps:
       - uses: actions/checkout@v5
 
@@ -142,5 +152,52 @@ jobs:
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Run docker in background
+        run: |
+          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/opt/ripple/" --name xrpld-service --health-cmd="xrpld server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.XRPLD_DOCKER_IMAGE }} -c "xrpld -a"
+
+      - name: Wait for xrpld to be healthy
+        run: |
+          echo "Waiting for xrpld container to be healthy..."
+          timeout 120 bash -c 'until docker inspect --format="{{.State.Health.Status}}" xrpld-service 2>/dev/null | grep -q "healthy"; do echo "Still waiting..."; docker logs --tail 10 xrpld-service 2>&1 || true; sleep 5; done'
+          echo "xrpld is healthy!"
+          docker logs xrpld-service
+
       - name: Run end-to-end tests
         run: ./scripts/run-tests.sh
+
+      - name: Show docker logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker container logs ==="
+          docker logs xrpld-service 2>&1 || echo "Could not get logs"
+          echo "=== Docker container status ==="
+          docker inspect xrpld-service 2>&1 || echo "Could not inspect container"
+
+      - name: Stop docker container
+        if: always()
+        run: docker stop xrpld-service
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install Rust
+        run: rustup update stable
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: ./scripts/coverage.sh

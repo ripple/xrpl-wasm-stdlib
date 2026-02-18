@@ -36,7 +36,7 @@ Use the test script to deploy an escrow and test the FinishFunction.
 
 ```shell
 cd ../../..
-CI=1 ./scripts/run-tests.sh examples/smart-escrows/hello_world
+DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/hello_world
 ```
 
 This will:

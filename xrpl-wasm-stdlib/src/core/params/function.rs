@@ -315,7 +315,10 @@ impl FuncParamBytes for Amount {
     }
 
     fn from_param_bytes(bytes: &[u8]) -> Result<Self, ParamError> {
-        Amount::from_bytes(bytes).map_err(|_| ParamError::InvalidData)
+        match Amount::from_bytes(bytes) {
+            crate::host::Result::Ok(amount) => Ok(amount),
+            crate::host::Result::Err(_) => Err(ParamError::InvalidData),
+        }
     }
 
     fn default_value() -> Self {

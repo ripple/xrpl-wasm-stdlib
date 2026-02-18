@@ -4,7 +4,7 @@ async function test(testContext) {
   const { deploy, finish, client, submit, sourceWallet, destWallet } =
     testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   // Mint NFT
   const nftMint = {
@@ -29,7 +29,7 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
     Memos: [
       {
@@ -90,7 +90,7 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
     Memos: [
       {

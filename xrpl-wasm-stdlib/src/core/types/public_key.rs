@@ -1,3 +1,9 @@
+use crate::core::current_tx::CurrentTxFieldGetter;
+use crate::host::field_helpers::{
+    get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
+};
+use crate::host::{Result, get_tx_field};
+
 pub const PUBLIC_KEY_BUFFER_SIZE: usize = 33;
 
 /// A 33-byte public key for secp256k1 and ed25519 DSA types.
@@ -36,6 +42,36 @@ impl From<&[u8]> for PublicKey {
         key_bytes[..bytes.len().min(PUBLIC_KEY_BUFFER_SIZE)]
             .copy_from_slice(&bytes[..bytes.len().min(PUBLIC_KEY_BUFFER_SIZE)]);
         PublicKey(key_bytes)
+    }
+}
+
+/// Implementation of `CurrentTxFieldGetter` for XRPL public keys.
+///
+/// This implementation handles 33-byte compressed public key fields in XRPL transactions.
+/// Public keys are used for cryptographic signature verification and are commonly found
+/// in the SigningPubKey field and various other cryptographic contexts.
+///
+/// # Buffer Management
+///
+/// Uses a 33-byte buffer and validates that exactly 33 bytes are returned
+/// from the host function. The buffer is converted to a PublicKey using
+/// the `From<[u8; 33]>` implementation.
+impl CurrentTxFieldGetter for PublicKey {
+    #[inline]
+    fn get_from_current_tx(field_code: i32) -> Result<Self> {
+        get_fixed_size_field_with_expected_bytes::<33, _>(field_code, |fc, buf, size| unsafe {
+            get_tx_field(fc, buf, size)
+        })
+        .map(|buffer| buffer.into())
+    }
+
+    #[inline]
+    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
+        get_fixed_size_field_with_expected_bytes_optional::<33, _>(
+            field_code,
+            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+        )
+        .map(|buffer| buffer.map(|b| b.into()))
     }
 }
 

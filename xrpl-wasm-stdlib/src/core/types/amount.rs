@@ -1,3 +1,5 @@
+use crate::core::current_tx::CurrentTxFieldGetter;
+use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
@@ -5,7 +7,10 @@ use crate::core::types::opaque_float::OpaqueFloat;
 use crate::core::types::transaction_type::TransactionType;
 use crate::host;
 use crate::host::Error::InternalError;
+use crate::host::Result::{Err, Ok};
+use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::trace::trace_num;
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 use crate::host::{add_txn_field, build_txn, emit_built_txn, float_from_int};
 use crate::sfield;
 
@@ -185,7 +190,9 @@ impl Amount {
     /// - IOU: 48 bytes
     ///
     /// Returns None if the byte array is not a valid Amount.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, host::Error> {
+    pub fn from_bytes(bytes: &[u8]) -> host::Result<Self> {
+        // TODO: Move to trait!
+
         if bytes.len() != 48 {
             return Err(InternalError);
         }
@@ -399,6 +406,81 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
                 panic!("Invalid Amount byte array");
             }
         }
+    }
+}
+
+/// Implementation of `LedgerObjectFieldGetter` for XRPL amount values.
+///
+/// This implementation handles amount fields in XRPL ledger objects, which can represent
+/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
+/// and issuer information).
+///
+/// # Buffer Management
+///
+/// Uses a 48-byte buffer to accommodate the largest possible amount representation.
+/// The Amount type handles the parsing of different amount formats internally.
+/// No strict byte count validation is performed since amounts can vary in size.
+impl LedgerObjectFieldGetter for Amount {
+    #[inline]
+    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_current_ledger_obj_field(fc, buf, size)
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
+    }
+
+    #[inline]
+    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_current_ledger_obj_field(fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
+    }
+
+    #[inline]
+    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_ledger_obj_field(register_num, fc, buf, size)
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
+    }
+
+    #[inline]
+    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_ledger_obj_field(register_num, fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
+    }
+}
+
+/// Implementation of `CurrentTxFieldGetter` for XRPL amount values.
+///
+/// This implementation handles amount fields in XRPL transactions, which can represent
+/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
+/// and issuer information). Common uses include transaction fees, payment amounts,
+/// offer amounts, and escrow amounts.
+///
+/// # Buffer Management
+///
+/// Uses a 48-byte buffer (AMOUNT_SIZE) to accommodate the largest possible amount
+/// representation. The Amount type handles the parsing of different amount formats
+/// internally. No strict byte count validation is performed since amounts can vary in size.
+impl CurrentTxFieldGetter for Amount {
+    #[inline]
+    fn get_from_current_tx(field_code: i32) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_tx_field(fc, buf, size)
+        })
+        .map(|(buffer, _len)| Amount::from(buffer))
+    }
+
+    #[inline]
+    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+            get_tx_field(fc, buf, size)
+        })
+        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
 

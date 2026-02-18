@@ -183,11 +183,11 @@ async function measureGas(contractName) {
       // Deploy escrow with contract
       console.log(`Run ${i + 1}/${NUM_RUNS}...`)
       console.log("  Deploying escrow with contract...")
-      let offerSequence = await deployEscrow(sourceWallet, destWallet, wasmHex)
+      let { sequence } = await deployEscrow(sourceWallet, destWallet, wasmHex)
       console.log(`  Escrow created with sequence: ${offerSequence}`)
 
       // Execute escrow and measure gas
-      const gas = await executeEscrow(sourceWallet, destWallet, offerSequence)
+      const gas = await executeEscrow(sourceWallet, destWallet, sequence)
       gasReadings.push(gas)
       console.log(`  Gas used: ${gas}`)
     }
@@ -249,13 +249,11 @@ async function main() {
         allResults.branch = branch
       }
 
-      // Save results - if we already have current results, this becomes previous
-      if (allResults.current && !allResults.previous) {
+      // Save results - move current to previous, then update current
+      if (allResults.current) {
         allResults.previous = allResults.current
-        allResults.current = results
-      } else {
-        allResults.current = results
       }
+      allResults.current = results
 
       fs.writeFileSync(resultsFile, JSON.stringify(allResults, null, 2))
       console.log(`\nResults saved to ${resultsFile}`)

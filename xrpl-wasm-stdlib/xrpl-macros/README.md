@@ -1,4 +1,4 @@
-# xrpl-address-macro
+# xrpl-macros
 
 ⚠️ **INTERNAL CRATE - DO NOT USE DIRECTLY** ⚠️
 
@@ -12,12 +12,7 @@ alongside `xrpl-wasm-stdlib` but is not intended for direct use. The macro is re
 
 ## For Users
 
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-xrpl-wasm-stdlib = "0.7.1"
-```
+Add the [xrpl-wasm-stdlib crate](https://crates.io/crates/xrpl-wasm-stdlib) to your `Cargo.toml`.
 
 Then use the macro:
 

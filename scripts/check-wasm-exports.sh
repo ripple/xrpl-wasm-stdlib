@@ -14,6 +14,7 @@ echo "🔍 Checking WASM contract exports..."
 check_src_dir_exports() {
     local src_dir="$1"
     local dir=$(dirname "$src_dir")
+    [[ "$dir" == *"test_utils"* ]] && return 0
     echo "🔧 Checking exports in $dir"
     if [[ -f "$src_dir/lib.rs" ]]; then
         grep -q "finish() -> i32" "$src_dir/lib.rs" || {

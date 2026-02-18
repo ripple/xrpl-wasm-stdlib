@@ -41,15 +41,14 @@
 use crate::core::current_tx::{get_field, get_field_optional};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::crypto_condition::{Condition, Fulfillment};
+use crate::core::types::blob::{
+    CONDITION_BLOB_SIZE, ConditionBlob, FULFILLMENT_BLOB_SIZE, FulfillmentBlob, SignatureBlob,
+};
 use crate::core::types::public_key::PublicKey;
-use crate::core::types::signature::Signature;
 use crate::core::types::transaction_type::TransactionType;
 use crate::core::types::uint::Hash256;
-use crate::host::error_codes::{
-    match_result_code_optional, match_result_code_with_expected_bytes_optional,
-};
-use crate::host::{Result, get_tx_field};
+use crate::host::error_codes::match_result_code_optional;
+use crate::host::{Error, Result, get_tx_field};
 use crate::sfield;
 
 /// Trait providing access to common fields present in all XRPL transactions.
@@ -286,7 +285,7 @@ pub trait TransactionCommonFields {
     /// The signature is validated by the XRPL network before transaction execution.
     /// In the programmability context, you can access the signature for logging or
     /// analysis purposes, but signature validation has already been performed.
-    fn get_txn_signature(&self) -> Result<Signature> {
+    fn get_txn_signature(&self) -> Result<SignatureBlob> {
         get_field(sfield::TxnSignature)
     }
 }
@@ -338,24 +337,37 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
     /// Retrieves the cryptographic condition from the current EscrowFinish transaction.
     ///
-    /// This optional field contains the cryptographic condition specified in the
-    /// original EscrowCreate transaction. If present, a valid `Fulfillment` must be provided
-    /// in the `Fulfillment` field for the escrow to be successfully finished. Conditions
-    /// enable complex release criteria beyond simple time-based locks.
+    /// This optional field contains the cryptographic condition in full crypto-condition format.
+    /// For PREIMAGE-SHA-256 conditions, this is 39 bytes:
+    /// - 2 bytes: type tag (A025)
+    /// - 2 bytes: fingerprint length tag (8020)
+    /// - 32 bytes: SHA-256 hash (fingerprint)
+    /// - 2 bytes: cost length tag (8101)
+    /// - 1 byte: cost value (00)
     ///
     /// # Returns
     ///
     /// Returns a `Result<Option<Condition>>` where:
-    /// * `Ok(Some(Condition))` - The 32-byte condition hash if the escrow is conditional
+    /// * `Ok(Some(Condition))` - The full crypto-condition if the escrow is conditional
     /// * `Ok(None)` - If the escrow has no cryptographic condition (time-based only)
     /// * `Err(Error)` - If an error occurred during field retrieval
-    fn get_condition(&self) -> Result<Option<Condition>> {
-        let mut buffer = [0u8; 32];
+    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
+        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code =
             unsafe { get_tx_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len()) };
 
-        match_result_code_with_expected_bytes_optional(result_code, 32, || Some(buffer.into()))
+        if result_code < 0 {
+            Result::Err(Error::from_code(result_code))
+        } else if result_code == 0 {
+            Result::Ok(None)
+        } else {
+            let blob = ConditionBlob {
+                data: buffer,
+                len: result_code as usize,
+            };
+            Result::Ok(Some(blob))
+        }
     }
 
     /// Retrieves the cryptographic fulfillment from the current EscrowFinish transaction.
@@ -384,23 +396,21 @@ pub trait EscrowFinishFields: TransactionCommonFields {
     /// Fulfillments are limited to 256 bytes in the current XRPL implementation.
     /// This limit ensures network performance while supporting the most practical
     /// cryptographic proof scenarios.
-    fn get_fulfillment(&self) -> Result<Option<Fulfillment>> {
+    fn get_fulfillment(&self) -> Result<Option<FulfillmentBlob>> {
         // Fulfillment fields are limited in rippled to 256 bytes, so we don't use `get_blob_field`
         // but instead just use a smaller buffer directly.
 
-        let mut buffer = [0u8; 256]; // <-- 256 is the current rippled cap.
+        let mut buffer = [0u8; FULFILLMENT_BLOB_SIZE]; // <-- 256 is the current rippled cap.
 
         let result_code = unsafe { get_tx_field(sfield::Fulfillment, buffer.as_mut_ptr(), 256) };
         match_result_code_optional(result_code, || {
-            Some(Fulfillment {
+            let blob = FulfillmentBlob {
                 data: buffer,
                 len: result_code as usize,
-            })
+            };
+            Some(blob)
         })
     }
-
-    // TODO: credential IDS
-    // TODO: Signers
 }
 
 pub trait ContractCallFields: TransactionCommonFields {
@@ -410,5 +420,102 @@ pub trait ContractCallFields: TransactionCommonFields {
 
     fn get_id(&self) -> Result<Hash256> {
         get_field(sfield::hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::current_tx::escrow_finish::EscrowFinish;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use mockall::predicate::{always, eq};
+
+    #[test]
+    fn test_get_condition_returns_some_with_data() {
+        let mut mock = MockHostBindings::new();
+
+        // Set up expectations
+        mock.expect_get_tx_field()
+            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+
+        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+        let _guard = setup_mock(mock);
+
+        // When the mock host function returns a positive value (buffer length),
+        // get_condition should return Ok(Some(ConditionBlob))
+        let escrow = EscrowFinish;
+        let result = escrow.get_condition();
+
+        assert!(result.is_ok());
+        let condition_opt = result.unwrap();
+        assert!(condition_opt.is_some());
+
+        let condition = condition_opt.unwrap();
+        assert_eq!(condition.len, CONDITION_BLOB_SIZE);
+        assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+    }
+
+    #[test]
+    fn test_get_fulfillment_returns_some_with_data() {
+        let mut mock = MockHostBindings::new();
+
+        // Set up expectations
+        mock.expect_get_tx_field()
+            .with(eq(sfield::Fulfillment), always(), eq(256))
+            .returning(|_, _, _| 256);
+
+        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+        let _guard = setup_mock(mock);
+
+        // When the mock host function returns a positive value (buffer length),
+        // get_fulfillment should return Ok(Some(FulfillmentBlob))
+        let escrow = EscrowFinish;
+        let result = escrow.get_fulfillment();
+
+        // The mock returns buffer.len() which is 256 (the size passed to get_tx_field)
+        assert!(result.is_ok());
+        let fulfillment_opt = result.unwrap();
+        assert!(fulfillment_opt.is_some());
+
+        let fulfillment = fulfillment_opt.unwrap();
+        assert_eq!(fulfillment.len, 256);
+        assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
+    }
+
+    #[test]
+    fn test_get_condition_and_fulfillment_independence() {
+        let mut mock = MockHostBindings::new();
+
+        // Set up expectations for both condition and fulfillment
+        mock.expect_get_tx_field()
+            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+
+        mock.expect_get_tx_field()
+            .with(eq(sfield::Fulfillment), always(), eq(256))
+            .returning(|_, _, _| 256);
+
+        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
+        let _guard = setup_mock(mock);
+
+        // Verify that get_condition and get_fulfillment can be called independently
+        let escrow = EscrowFinish;
+
+        let condition_result = escrow.get_condition();
+        let fulfillment_result = escrow.get_fulfillment();
+
+        assert!(condition_result.is_ok());
+        assert!(fulfillment_result.is_ok());
+
+        // Verify they have different sizes
+        if let (Some(condition), Some(fulfillment)) =
+            (condition_result.unwrap(), fulfillment_result.unwrap())
+        {
+            assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+            assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
+            assert_ne!(condition.capacity(), fulfillment.capacity());
+        }
     }
 }

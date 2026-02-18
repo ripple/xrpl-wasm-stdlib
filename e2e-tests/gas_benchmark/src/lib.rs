@@ -315,8 +315,8 @@ fn benchmark_blob_creation() -> u64 {
     for _ in 0..ITERATIONS {
         use xrpl_wasm_stdlib::core::types::blob::Blob;
         let blob = Blob {
-            data: [0u8; 1024],
-            len: 1024,
+            data: [0u8; 102400],
+            len: 102400,
         };
         if blob.len > 0 {
             count += 1;
@@ -403,4 +403,30 @@ fn benchmark_optional_field_none(escrow_finish: &EscrowFinish) -> u64 {
         }
     }
     count
+}
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    /// Coverage test: exercises all host function categories via finish()
+    ///
+    /// This test runs the same logic as the integration test, but on native
+    /// targets with stub host functions. It's used to measure code coverage
+    /// of xrpl-wasm-stdlib.
+    ///
+    /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
+    /// so this test verifies that the code *runs*, not that it's *correct*.
+    /// Correctness is verified by the real integration tests against rippled.
+    #[test]
+    fn test_finish_exercises_all_host_functions() {
+        // On non-wasm targets, finish() uses host_bindings_test.rs
+        // which provides stub implementations of all host functions.
+        let result = finish();
+
+        // The finish() function returns 1 on success, or a negative error code.
+        // With stub host functions, we expect success (though the actual
+        // behavior depends on the stub implementations).
+        core::assert_eq!(result, 1, "finish() should return 1 on success");
+    }
 }

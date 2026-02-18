@@ -1,6 +1,6 @@
 [package]
 name = "trace_escrow_finish"
-version = "0.5.1-devnet5"
+version = "0.8.0"
 edition = "2024"
 description = "End-to-end test that validates EscrowFinish transaction field access and tracing functionality"
 license = "ISC"
@@ -9,4 +9,5 @@ license = "ISC"
 crate-type = ["cdylib"]
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../../xrpl-wasm-stdlib" }
+xrpl-wasm-stdlib = { workspace = true }
+test_utils = { workspace = true }
