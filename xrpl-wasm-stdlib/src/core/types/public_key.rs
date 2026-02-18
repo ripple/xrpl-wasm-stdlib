@@ -77,39 +77,52 @@ impl CurrentTxFieldGetter for PublicKey {
 
 #[cfg(test)]
 mod test_public_key {
-    use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
-
-    // secp256k1
-    const PUBKEY_SECP256K1: [u8; PUBLIC_KEY_BUFFER_SIZE] = [
-        0x02, 0xC7, 0x38, 0x7F, 0xFC, 0x25, 0xC1, 0x56, 0xCA, 0x7F, 0x8A, 0x6D, 0x76, 0x0C, 0x8D,
-        0x01, 0xEF, 0x64, 0x2C, 0xEE, 0x9C, 0xE4, 0x68, 0x0C, 0x33, 0xFF, 0xB3, 0xFF, 0x39, 0xAF,
-        0xEC, 0xFE, 0x70,
-    ];
-
-    // ed25519
-    const PUBKEY_ED25519: [u8; PUBLIC_KEY_BUFFER_SIZE] = [
-        0xED, 0xD9, 0xB3, 0x59, 0x98, 0x02, 0xB2, 0x14, 0xA9, 0x9D, 0x75, 0x77, 0x12, 0xD6, 0xAB,
-        0xDF, 0x72, 0xF8, 0x3C, 0x63, 0xBB, 0xD5, 0x38, 0x61, 0x41, 0x17, 0x90, 0xB1, 0x3D, 0x04,
-        0xB2, 0xC5, 0xC9,
-    ];
-
-    // uint8_t sig_ed[] =
-    // {
-    // 0x56,0x68,0x80,0x76,0x70,0xFE,0xCE,0x60,0x34,0xAF,
-    // 0xD6,0xCD,0x1B,0xB4,0xC6,0x60,0xAE,0x08,0x39,0x6D,
-    // 0x6D,0x8B,0x7D,0x22,0x71,0x3B,0xDA,0x26,0x43,0xC1,
-    // 0xE1,0x91,0xC4,0xE4,0x4D,0x8E,0x02,0xE8,0x57,0x8B,
-    // 0x20,0x45,0xDA,0xD4,0x8F,0x97,0xFC,0x16,0xF8,0x92,
-    // 0x5B,0x6B,0x51,0xFB,0x3B,0xE5,0x0F,0xB0,0x4B,0x3A,
-    // 0x20,0x4C,0x53,0x04U
-    // };
+    use super::*;
 
     #[test]
-    fn test_get_ref() {
-        let pubkey_secp256k1_ref: &[u8] = PUBKEY_SECP256K1.as_slice();
+    fn test_from_64_byte_array_truncates() {
+        // Test From<[u8; 64]> - should take first 33 bytes
+        let mut bytes_64 = [0xAAu8; 64];
+        // Put distinct values in first 33 bytes
+        for (i, byte) in bytes_64.iter_mut().enumerate().take(33) {
+            *byte = i as u8;
+        }
 
-        assert_eq!(pubkey_secp256k1_ref.len(), PUBLIC_KEY_BUFFER_SIZE);
-        assert_eq!(pubkey_secp256k1_ref, PUBKEY_SECP256K1);
-        assert_ne!(pubkey_secp256k1_ref, PUBKEY_ED25519);
+        let pubkey = PublicKey::from(bytes_64);
+
+        // Verify first 33 bytes are preserved
+        for i in 0..33 {
+            assert_eq!(pubkey.0[i], i as u8);
+        }
+    }
+
+    #[test]
+    fn test_from_slice_shorter_than_33_bytes() {
+        // Test From<&[u8]> with fewer than 33 bytes - should zero-pad
+        let short_slice: &[u8] = &[0x02, 0xAA, 0xBB, 0xCC, 0xDD];
+        let pubkey = PublicKey::from(short_slice);
+
+        // First 5 bytes should match input
+        assert_eq!(&pubkey.0[..5], short_slice);
+        // Remaining bytes should be zero
+        assert_eq!(&pubkey.0[5..], &[0u8; 28]);
+    }
+
+    #[test]
+    fn test_from_slice_longer_than_33_bytes_truncates() {
+        // Test From<&[u8]> with more than 33 bytes - should truncate
+        let long_slice: &[u8] = &[0xFFu8; 50];
+        let pubkey = PublicKey::from(long_slice);
+
+        // Should only contain first 33 bytes
+        assert_eq!(pubkey.0, [0xFFu8; 33]);
+    }
+
+    #[test]
+    fn test_from_empty_slice() {
+        // Test From<&[u8]> with empty slice - should be all zeros
+        let empty_slice: &[u8] = &[];
+        let pubkey = PublicKey::from(empty_slice);
+        assert_eq!(pubkey.0, [0u8; 33]);
     }
 }
