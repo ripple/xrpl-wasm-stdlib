@@ -5,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Escrow Testing UI</title>
     <script src="https://unpkg.com/xrpl@4.5.0-smartescrow.4/build/xrpl-latest-min.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <script src="accountSync.js"></script>
+    <script src="escrowSync.js"></script>
+    <link rel="stylesheet" href="stylesDark.css" />
   </head>
   <body>
     <div class="container">
       <div class="header">
         <h1>Smart Escrow Testing UI</h1>
         <p>Deploy and test XRPL Smart Escrows with ease</p>
+        <button
+          id="themeToggle"
+          class="btn btn-small btn-info"
+          onclick="toggleTheme()"
+          style="position: absolute; top: 20px; right: 20px"
+        >
+          ☀️ Light
+        </button>
         <div class="status-bar">
           <div
             id="connectionStatus"
@@ -183,15 +193,30 @@
                 class="btn btn-success"
                 onclick="generateAccount()"
               >
-                Generate New Account
+                Generate Account
               </button>
               <button
                 id="fundBtn"
                 class="btn btn-warning"
                 onclick="fundSelectedAccount()"
-                style="display: none"
               >
                 Fund Selected
+              </button>
+              <button
+                id="downloadAccountsBtn"
+                class="btn btn-info"
+                onclick="downloadAllAccounts()"
+                title="Download all accounts as JSON"
+              >
+                Download All
+              </button>
+              <button
+                id="clearAccountsBtn"
+                class="btn btn-danger"
+                onclick="clearAccountsStorage()"
+                title="Clear all accounts from storage"
+              >
+                Clear All
               </button>
             </div>
             <div
@@ -487,11 +512,41 @@
       // Global state
       let client = null
       let currentWasm = null
+      let currentWasmName = null
       let accounts = []
       let escrows = []
       let selectedAccount = null
       let lastOfferSequence = null
       let ledgerInterval = null
+      let selectedNetwork = "wss://wasm.devnet.rippletest.net:51233"
+
+      // Theme Management
+      function toggleTheme() {
+        const currentTheme = localStorage.getItem("theme") || "dark"
+        const newTheme = currentTheme === "dark" ? "light" : "dark"
+
+        localStorage.setItem("theme", newTheme)
+        applyTheme(newTheme)
+      }
+
+      function applyTheme(theme) {
+        const link = document.querySelector('link[rel="stylesheet"]')
+        const themeToggleBtn = document.getElementById("themeToggle")
+
+        if (theme === "dark") {
+          link.href = "stylesDark.css"
+          themeToggleBtn.innerHTML = "☀️ Light"
+        } else {
+          link.href = "styles.css"
+          themeToggleBtn.innerHTML = "🌙 Dark"
+        }
+      }
+
+      // Initialize theme on load
+      window.addEventListener("DOMContentLoaded", () => {
+        const savedTheme = localStorage.getItem("theme") || "dark"
+        applyTheme(savedTheme)
+      })
 
       // Utility Functions
       function log(message, isHtml = false) {
@@ -674,7 +729,7 @@
           return
         }
 
-        const selectedNetwork = document.querySelector(
+        selectedNetwork = document.querySelector(
           'input[name="network"]:checked',
         ).value
 
@@ -705,6 +760,26 @@
 
           await client.connect()
 
+          if (typeof AccountSync !== "undefined") {
+            const result = AccountSync.initialize()
+            if (result.message) {
+              showToast(result.message, "success")
+              log(result.message)
+            } else {
+              log(
+                "No accounts found for this network. Generate accounts to get started.",
+              )
+            }
+            await updateAccountsList()
+          }
+
+          if (typeof EscrowSync !== "undefined") {
+            const result = EscrowSync.initialize()
+            if (result.message) {
+              log(result.message)
+            }
+          }
+
           // Start ledger acceptance for local nodes
           if (
             selectedNetwork.includes("localhost") ||
@@ -733,17 +808,15 @@
             await client.disconnect()
           }
 
-          // Clear accounts and escrows
           accounts = []
           escrows = []
           selectedAccount = null
 
-          // Update UI to reflect cleared state
           await updateAccountsList()
           await updateEscrowsList()
 
           updateConnectionStatus(false)
-          log("Disconnected from network")
+          log("Disconnected from network - accounts hidden until reconnected")
         } catch (error) {
           log(`Error disconnecting: ${error.message}`)
           updateConnectionStatus(false)
@@ -763,6 +836,7 @@
             .map((b) => b.toString(16).padStart(2, "0"))
             .join("")
 
+          currentWasmName = file.name
           const wasmInfo = `${file.name} (${Math.round(arrayBuffer.byteLength / 1024)}KB)`
           document.getElementById("currentWasm").textContent = wasmInfo
           document.getElementById("deployWasmStatus").textContent = wasmInfo
@@ -783,6 +857,7 @@
         }
 
         currentWasm = hex.replace(/\s/g, "")
+        currentWasmName = "Custom Hex"
         const wasmInfo = `Hex data (${Math.round(currentWasm.length / 2 / 1024)}KB)`
         document.getElementById("currentWasm").textContent = wasmInfo
         document.getElementById("deployWasmStatus").textContent = wasmInfo
@@ -864,6 +939,7 @@
           const wasmHex = EMBEDDED_WASM[exampleName]
           if (wasmHex) {
             currentWasm = wasmHex
+            currentWasmName = exampleName
             const wasmInfo = `${exampleName} example (${Math.round(wasmHex.length / 2 / 1024)}KB)`
             document.getElementById("currentWasm").textContent = wasmInfo
             document.getElementById("deployWasmStatus").textContent = wasmInfo
@@ -942,6 +1018,9 @@
           }
 
           accounts.push(fundedWallet)
+          if (typeof AccountSync !== "undefined") {
+            AccountSync.sync()
+          }
           await updateAccountsList()
           log(`Generated and funded account: ${fundedWallet.address}`)
           showToast("Account generated and funded successfully!", "success")
@@ -950,7 +1029,7 @@
         } finally {
           // Hide loading state
           generateBtn.disabled = false
-          generateBtn.textContent = "Generate New Account"
+          generateBtn.textContent = "Generate Account"
           accountLoading.style.display = "none"
         }
       }
@@ -1011,7 +1090,6 @@
 
       async function updateAccountsList() {
         const accountsList = document.getElementById("accountsList")
-        const fundBtn = document.getElementById("fundBtn")
 
         if (accounts.length === 0) {
           accountsList.innerHTML = `
@@ -1019,12 +1097,8 @@
                         No accounts loaded. Generate or load accounts to get started.
                     </div>
                 `
-          fundBtn.style.display = "none"
           return
         }
-
-        // Show the fund button when there are accounts
-        fundBtn.style.display = "inline-block"
 
         let html = ""
         for (let i = 0; i < accounts.length; i++) {
@@ -1050,16 +1124,25 @@
                                 <strong>Account ${i + 1}</strong>
                                 <div class="account-balance">${balance}</div>
                             </div>
-                            <button class="btn btn-small" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📋</button>
+                            <div>
+                                <button class="btn btn-small btn-success" onclick="openAccountInExplorer('${account.address}'); event.stopPropagation();" title="View in Explorer">🔍</button>
+                                <button class="btn btn-small btn-warning" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📄</button>
+                                <button class="btn btn-small btn-primary" id="seed-btn-${i}" onclick="toggleSeedVisibility(${i}); event.stopPropagation();" title="Show/Hide Seed">🔑</button>
+                                <button class="btn btn-small btn-danger" onclick="removeAccount(${i}); event.stopPropagation();" title="Remove account">✕</button>
+                            </div>
                         </div>
                         <div class="account-address">${account.address}</div>
+                        <div class="account-seed" id="seed-${i}" style="display: none;">
+                            <strong>⚠️ Secret Seed:</strong>
+                            <span class="seed-value">${account.seed}</span>
+                            <button class="btn btn-small btn-warning" onclick="copyToClipboard('${account.seed}'); event.stopPropagation();" title="Copy seed">📋 Copy</button>
+                        </div>
                     </div>
                 `
         }
 
         accountsList.innerHTML = html
 
-        // Update dropdowns
         updateAccountDropdowns()
         await updateEscrowsList()
       }
@@ -1068,6 +1151,38 @@
         selectedAccount = accounts[index]
         updateAccountsList()
         log(`Selected account: ${selectedAccount.address}`)
+      }
+
+      function toggleSeedVisibility(index) {
+        const seedDiv = document.getElementById(`seed-${index}`)
+        const button = document.getElementById(`seed-btn-${index}`)
+        if (seedDiv.style.display === "none") {
+          seedDiv.style.display = "flex"
+          button.textContent = "🔒"
+          button.title = "Hide Seed"
+        } else {
+          seedDiv.style.display = "none"
+          button.textContent = "🔑"
+          button.title = "Show Seed"
+        }
+      }
+
+      function openAccountInExplorer(address) {
+        if (!selectedNetwork) {
+          showToast("Please connect to a network first", "warning")
+          return
+        }
+
+        // Extract the hostname from the WebSocket URL
+        let explorerHost = selectedNetwork
+          .replace("wss://", "")
+          .replace("ws://", "")
+          .split(":")[0] // Remove port
+          .split("/")[0] // Remove any path
+
+        const explorerUrl = `http://custom.xrpl.org/${explorerHost}/accounts/${address}`
+        window.open(explorerUrl, "_blank")
+        log(`Opening account in explorer: ${explorerUrl}`)
       }
 
       function copyToClipboard(text) {
@@ -1084,6 +1199,68 @@
       // Backwards compatibility
       function copyAddress(address) {
         copyToClipboard(address)
+      }
+
+      function downloadAllAccounts() {
+        try {
+          const jsonData = AccountSync.exportAccounts()
+          const blob = new Blob([jsonData], { type: "application/json" })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement("a")
+          a.href = url
+          a.download = `xrpl_accounts_${Date.now()}.json`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          showToast("Accounts downloaded successfully!", "success")
+          log(`Downloaded ${accounts.length} accounts`)
+        } catch (error) {
+          logError(`Failed to download accounts: ${error.message}`)
+          showToast("Failed to download accounts", "error")
+        }
+      }
+
+      function clearAccountsStorage() {
+        if (
+          confirm(
+            "Are you sure you want to clear all accounts? This cannot be undone.",
+          )
+        ) {
+          try {
+            AccountSync.clearAccounts()
+            accounts = []
+            selectedAccount = null
+            updateAccountsList()
+            showToast("All accounts cleared!", "success")
+            log("Cleared all accounts from storage")
+          } catch (error) {
+            logError(`Failed to clear accounts: ${error.message}`)
+            showToast("Failed to clear accounts", "error")
+          }
+        }
+      }
+
+      function removeAccount(index) {
+        if (confirm(`Are you sure you want to remove Account ${index + 1}?`)) {
+          try {
+            const removedAccount = accounts[index]
+            AccountSync.removeAccount(index)
+            accounts.splice(index, 1)
+
+            // Clear selection if we removed the selected account
+            if (selectedAccount === removedAccount) {
+              selectedAccount = null
+            }
+
+            updateAccountsList()
+            showToast(`Account ${index + 1} removed`, "success")
+            log(`Removed account: ${removedAccount.address}`)
+          } catch (error) {
+            logError(`Failed to remove account: ${error.message}`)
+            showToast("Failed to remove account", "error")
+          }
+        }
       }
 
       function updateAccountDropdowns() {
@@ -1146,32 +1323,39 @@
                         <div class="item-header">
                             <div>
                                 <strong>Escrow ${i + 1}</strong>
-                                ${
-                                  escrow.id
-                                    ? `<div class="item-meta">
-                                  ID: ${escrow.id.substring(0, 16)}...
-                                  <button class="btn btn-small" onclick="copyToClipboard('${escrow.id}'); event.stopPropagation();" title="Copy escrow ID">📋</button>
-                                </div>`
-                                    : ""
-                                }
-                                <div class="item-meta">
-                                  Sequence: ${escrow.sequence}
-                                </div>
+                                ${escrow.wasmName ? `<div class="wasm-label">WASM: ${escrow.wasmName}</div>` : ""}
                             </div>
-                            <div class="item-meta-right">
-                                <div><strong>${escrow.amount} drops</strong></div>
-                                <div class="item-meta">${new Date(escrow.timestamp).toLocaleString()}</div>
+                            <div>
+                                <button class="btn btn-small btn-success" onclick="openEscrowInExplorer('${escrow.hash}'); event.stopPropagation();" title="View in Explorer">🔍</button>
+                                ${escrow.id ? `<button class="btn btn-small btn-warning" onclick="copyToClipboard('${escrow.id}'); event.stopPropagation();" title="Copy escrow ID">📄</button>` : ""}
                             </div>
                         </div>
                         <div class="item-details">
-                            <div>Owner: ${escrow.owner.substring(0, 15)}...</div>
-                            <div>Destination: ${escrow.destination.substring(0, 15)}...</div>
+                            <div>Owner: ${escrow.owner.substring(0, 25)}...</div>
+                            <div>Destination: ${escrow.destination.substring(0, 25)}...</div>
+                        </div>
+                        <div class="item-details">
+                            <div><strong>${escrow.amount} drops</strong></div>
+                        </div>
+                        <div class="item-details">
+                            <div class="item-meta">Sequence: ${escrow.sequence}</div>
+                            <div class="item-meta">${new Date(escrow.timestamp).toLocaleString()}</div>
                         </div>
                     </div>
                 `
         }
 
         escrowsList.innerHTML = html
+
+        // Update escrow dropdown when escrows change
+        const escrowSelect = document.getElementById("escrowSelect")
+        if (escrowSelect) {
+          escrowSelect.innerHTML =
+            '<option value="">Select an escrow to finish...</option>'
+          escrows.forEach((escrow, index) => {
+            escrowSelect.innerHTML += `<option value="${index}">Escrow ${index + 1} (Seq: ${escrow.sequence}, ${escrow.amount} drops)</option>`
+          })
+        }
       }
 
       function selectEscrow(index) {
@@ -1188,6 +1372,24 @@
         if (finishTab) {
           finishTab.click()
         }
+      }
+
+      function openEscrowInExplorer(txHash) {
+        if (!selectedNetwork) {
+          showToast("Please connect to a network first", "warning")
+          return
+        }
+
+        // Extract the hostname from the WebSocket URL
+        let explorerHost = selectedNetwork
+          .replace("wss://", "")
+          .replace("ws://", "")
+          .split(":")[0] // Remove port
+          .split("/")[0] // Remove any path
+
+        const explorerUrl = `http://custom.xrpl.org/${explorerHost}/transactions/${txHash}`
+        window.open(explorerUrl, "_blank")
+        log(`Opening escrow transaction in explorer: ${explorerUrl}`)
       }
 
       function updateFinishFormFromEscrow() {
@@ -1343,6 +1545,12 @@
             escrows = escrows.filter(
               (escrow) => escrow.sequence !== sequenceNum,
             )
+
+            // Sync to storage to remove the finished escrow
+            if (typeof EscrowSync !== "undefined") {
+              EscrowSync.sync()
+            }
+
             await updateEscrowsList()
 
             // Clear the finish form
@@ -1587,7 +1795,13 @@
               timestamp: Date.now(),
               hash: result.result.hash,
               id: escrowId,
+              wasmName: currentWasmName || "Unknown WASM", // Track which WASM was used
             })
+
+            // Save escrows to storage
+            if (typeof EscrowSync !== "undefined") {
+              EscrowSync.sync()
+            }
 
             // Update escrows list
             await updateEscrowsList()
@@ -1650,6 +1864,41 @@
       document.addEventListener("DOMContentLoaded", function () {
         log("Smart Escrow Testing UI loaded")
 
+        // Initialize selectedNetwork from checked radio button
+        const checkedRadio = document.querySelector(
+          'input[name="network"]:checked',
+        )
+        if (checkedRadio) {
+          selectedNetwork = checkedRadio.value
+        }
+
+        // Setup network switch listeners
+        document.querySelectorAll('input[name="network"]').forEach((radio) => {
+          radio.addEventListener("change", async function () {
+            const wasConnected = client && client.isConnected()
+            selectedNetwork = this.value
+
+            if (typeof AccountSync !== "undefined") {
+              AccountSync.setNetwork(selectedNetwork, false)
+            }
+
+            if (typeof EscrowSync !== "undefined") {
+              EscrowSync.setNetwork(selectedNetwork, false)
+            }
+
+            log(`Network selection changed to ${selectedNetwork}`)
+
+            // If already connected, disconnect and reconnect to new network
+            if (wasConnected) {
+              log("Reconnecting to new network...")
+              await disconnectFromNetwork()
+              await connectToNetwork()
+            } else {
+              log("Connect to load accounts for this network")
+            }
+          })
+        })
+
         // Check if XRPL library is available
         if (typeof xrpl === "undefined") {
           log("⚠️ XRPL library is loading...")
@@ -1661,11 +1910,69 @@
               )
             } else {
               log("✅ XRPL library loaded successfully")
+
+              // Initialize AccountSync
+              if (typeof AccountSync !== "undefined") {
+                AccountSync.init(xrpl, selectedNetwork)
+                AccountSync.autoSync(
+                  () => accounts,
+                  (newAccounts) => {
+                    accounts = newAccounts
+                    updateAccountsList()
+                  },
+                )
+              } else {
+                logError("AccountSync.js failed to load")
+              }
+              // Initialize EscrowSync
+              if (typeof EscrowSync !== "undefined") {
+                EscrowSync.init(selectedNetwork)
+                EscrowSync.autoSync(
+                  () => escrows,
+                  (newEscrows) => {
+                    escrows = newEscrows
+                    updateEscrowsList()
+                  },
+                )
+              } else {
+                logError("EscrowSync.js failed to load")
+              }
+
               log("Connect to a network and generate accounts to get started")
             }
           }, 2000)
         } else {
           log("✅ XRPL library loaded successfully")
+
+          console.log("AccountSync type:", typeof AccountSync)
+          console.log("AccountSync value:", AccountSync)
+          if (typeof AccountSync !== "undefined" && AccountSync.init) {
+            AccountSync.init(xrpl, selectedNetwork)
+            AccountSync.autoSync(
+              () => accounts,
+              (newAccounts) => {
+                accounts = newAccounts
+                updateAccountsList()
+              },
+            )
+          } else {
+            logError("AccountSync.js failed to load or init method not found")
+          }
+
+          // Initialize EscrowSync
+          if (typeof EscrowSync !== "undefined" && EscrowSync.init) {
+            EscrowSync.init(selectedNetwork)
+            EscrowSync.autoSync(
+              () => escrows,
+              (newEscrows) => {
+                escrows = newEscrows
+                updateEscrowsList()
+              },
+            )
+          } else {
+            logError("EscrowSync.js failed to load or init method not found")
+          }
+
           log("Connect to a network and generate accounts to get started")
         }
       })
