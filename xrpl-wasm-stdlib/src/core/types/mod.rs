@@ -5,7 +5,6 @@ pub mod blob;
 pub mod contract_data;
 pub mod currency;
 pub mod issue;
-pub mod keylets;
 pub mod mpt_id;
 pub mod nft;
 pub mod object;
