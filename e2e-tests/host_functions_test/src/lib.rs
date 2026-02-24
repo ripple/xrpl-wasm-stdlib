@@ -403,7 +403,7 @@ fn test_any_ledger_object_functions() -> i32 {
     }
 
     let cache_result =
-        unsafe { host::cache_ledger_obj(keylet_buffer.as_ptr(), keylet_result as usize, 0) };
+        unsafe { host::cache_ledger_obj(keylet_buffer.as_ptr(), 0) };
 
     if cache_result <= 0 {
         let _ = trace_num(

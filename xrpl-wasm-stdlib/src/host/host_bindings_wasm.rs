@@ -19,7 +19,6 @@ mod host_defined_functions {
         pub(super) fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
         pub(super) fn cache_ledger_obj(
             keylet_ptr: *const u8,
-            keylet_len: usize,
             cache_num: i32,
         ) -> i32;
         pub(super) fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
@@ -403,10 +402,9 @@ impl HostBindings for WasmHostBindings {
     unsafe fn cache_ledger_obj(
         &self,
         keylet_ptr: *const u8,
-        keylet_len: usize,
         cache_num: i32,
     ) -> i32 {
-        unsafe { host_defined_functions::cache_ledger_obj(keylet_ptr, keylet_len, cache_num) }
+        unsafe { host_defined_functions::cache_ledger_obj(keylet_ptr, cache_num) }
     }
 
     unsafe fn get_tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
@@ -1365,7 +1363,7 @@ export_host_functions! {
     fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
-    fn cache_ledger_obj(keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
+    fn cache_ledger_obj(keylet_ptr: *const u8, cache_num: i32) -> i32;
     fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_current_ledger_obj_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_ledger_obj_field(cache_num: i32, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;

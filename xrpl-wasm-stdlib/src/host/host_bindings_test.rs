@@ -37,7 +37,7 @@ fn create_default_mock() -> MockHostBindings {
     mock.expect_amendment_enabled()
         .returning(|_, amendment_len| amendment_len as i32);
     mock.expect_cache_ledger_obj()
-        .returning(|_, keylet_len, _| keylet_len as i32);
+        .returning(|_, _| 1);
     mock.expect_get_tx_field()
         .returning(|_, _, out_buff_len| out_buff_len as i32);
     mock.expect_get_current_ledger_obj_field()
@@ -225,7 +225,7 @@ export_host_functions! {
     fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
-    fn cache_ledger_obj(keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
+    fn cache_ledger_obj(keylet_ptr: *const u8, cache_num: i32) -> i32;
     fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_current_ledger_obj_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn get_ledger_obj_field(cache_num: i32, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;

@@ -363,7 +363,7 @@ use xrpl_wasm_stdlib::host::Error;
 fn main() {
     let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
     let account_keylet = account_keylet(&account).unwrap_or_panic();
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 0) };
     if slot < 0 {
         return;
     }
@@ -428,7 +428,7 @@ fn process_escrow() -> Result<i32> {
         Err(e) => return Err(e), // Invalid account
     };
 
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 0) };
     if slot < 0 {
         return Err(Error::from_code(slot));
     }
@@ -691,7 +691,7 @@ let sequence = account_root.sequence();
 // Cache ledger objects for multiple field access using traits
 let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 let account_keylet = account_keylet(&account).unwrap_or_panic();
-let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 0) };
 let account_root = AccountRoot { slot_num: slot };
 
 // Use trait methods to access fields efficiently

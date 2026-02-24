@@ -44,7 +44,7 @@ pub extern "C" fn finish() -> i32 {
         let account_keylet = account_keylet(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled
-        let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 32, 0) };
+        let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 0) };
         if slot < 0 {
             let _ = trace_num("Error slotting Account object", slot as i64);
             panic!()

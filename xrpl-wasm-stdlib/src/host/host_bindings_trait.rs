@@ -138,9 +138,8 @@ pub trait HostBindings {
     ///
     /// # Parameters
     ///
-    /// - `keylet_ptr`: A raw pointer to the keylet, which is a unique identifier used to
-    ///   locate or store data in the ledger.
-    /// - `keylet_len`: The length of the keylet specified by `keylet_ptr`.
+    /// - `keylet_ptr`: A raw pointer to a 32-byte keylet, which is a unique identifier used to
+    ///   locate or store data in the ledger. Keylets are always 32 bytes.
     /// - `cache_num`: The cache number to which the keylet will be placed in.
     ///   If 0, the host will assign a new cache space.
     ///
@@ -150,11 +149,10 @@ pub trait HostBindings {
     /// - Returns a negative error code on failure
     ///
     /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
+    /// Caller must ensure `keylet_ptr` points to at least 32 bytes of valid memory
     unsafe fn cache_ledger_obj(
         &self,
         keylet_ptr: *const u8,
-        keylet_len: usize,
         cache_num: i32,
     ) -> i32;
 

@@ -93,7 +93,7 @@ export_host_functions! {
     fn get_parent_ledger_hash(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn get_base_fee(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn amendment_enabled(_amendment_ptr: *const u8, _amendment_len: usize) -> i32;
-    fn cache_ledger_obj(_keylet_ptr: *const u8, _keylet_len: usize, _cache_num: i32) -> i32;
+    fn cache_ledger_obj(_keylet_ptr: *const u8, _cache_num: i32) -> i32;
     fn get_tx_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn get_current_ledger_obj_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn get_ledger_obj_field(_cache_num: i32, _field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;

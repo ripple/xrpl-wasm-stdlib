@@ -125,7 +125,6 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let counterpart_slot = unsafe {
         host::cache_ledger_obj(
             counterpart_escrow_id.as_ptr(),
-            counterpart_escrow_id.len(),
             0,
         )
     };

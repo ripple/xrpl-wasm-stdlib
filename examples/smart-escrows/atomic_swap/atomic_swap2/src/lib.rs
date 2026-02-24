@@ -124,7 +124,7 @@ pub extern "C" fn finish() -> i32 {
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
         let first_escrow_slot =
-            unsafe { host::cache_ledger_obj(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
+            unsafe { host::cache_ledger_obj(first_escrow_id.as_ptr(), 0) };
         if first_escrow_slot < 0 {
             let _ = trace_num(
                 "Failed to cache first escrow, error:",

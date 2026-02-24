@@ -59,7 +59,7 @@ pub extern "C" fn finish() -> i32 {
 
     let slot: i32;
     unsafe {
-        slot = host::cache_ledger_obj(oracle_keylet.as_ptr(), oracle_keylet.len(), 0);
+        slot = host::cache_ledger_obj(oracle_keylet.as_ptr(), 0);
         let _ = trace_num("finish: cache_ledger_obj slot=", slot as i64);
 
         if slot < 0 {
