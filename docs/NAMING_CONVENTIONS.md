@@ -21,7 +21,7 @@ Different file types follow different conventions based on their language ecosys
 **Crate/Package Names**
 
 - Use **kebab-case** for crate names in `Cargo.toml` and top-level crate directories
-- Examples: `xrpl-wasm-stdlib`, `xrpl-address-macro`
+- Examples: `xrpl-wasm-stdlib`, `xrpl-macros`
 - Rationale: Cargo convention for package names
 
 **Module Directories**

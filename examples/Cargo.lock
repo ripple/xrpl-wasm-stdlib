@@ -3,6 +3,20 @@
 version = 4
 
 [[package]]
+name = "atomic_swap1"
+version = "0.1.0"
+dependencies = [
+ "xrpl-wasm-stdlib",
+]
+
+[[package]]
+name = "atomic_swap2"
+version = "0.1.0"
+dependencies = [
+ "xrpl-wasm-stdlib",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -187,8 +201,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "xrpl-address-macro"
-version = "0.7.1"
+name = "xrpl-macros"
+version = "0.1.0"
 dependencies = [
  "bs58",
  "quote",
@@ -198,7 +212,7 @@ dependencies = [
 
 [[package]]
 name = "xrpl-wasm-stdlib"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
- "xrpl-address-macro",
+ "xrpl-macros",
 ]

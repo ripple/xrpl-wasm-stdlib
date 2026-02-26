@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-wasm-stdlib"
-version.workspace = true
+version = "0.8.0"
 edition = "2024"
 description = "Standard library for XRPL WebAssembly smart contracts"
 license.workspace = true
@@ -24,7 +24,7 @@ crate-type = ["lib"]
 test-host-bindings = ["dep:mockall"]
 
 [dependencies]
-xrpl-address-macro = { version = "0.7.1", path = "xrpl-address-macro" }
+xrpl-macros = { version = "0.1.0", path = "xrpl-macros" }
 mockall = { version = "0.14.0", optional = true }
 
 [dev-dependencies]

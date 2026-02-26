@@ -105,7 +105,7 @@ async function main() {
     UINT256: "Hash256",
     AMOUNT: "Amount",
     ACCOUNT: "AccountID",
-    VL: "Blob",
+    VL: "StandardBlob",
     CURRENCY: "Currency",
     ISSUE: "Issue",
     ARRAY: "Array",

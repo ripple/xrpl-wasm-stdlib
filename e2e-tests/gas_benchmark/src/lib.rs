@@ -315,8 +315,8 @@ fn benchmark_blob_creation() -> u64 {
     for _ in 0..ITERATIONS {
         use xrpl_wasm_stdlib::core::types::blob::Blob;
         let blob = Blob {
-            data: [0u8; 1024],
-            len: 1024,
+            data: [0u8; 102400],
+            len: 102400,
         };
         if blob.len > 0 {
             count += 1;

@@ -629,7 +629,13 @@ pub mod ledger_object {
                 HASH256_SIZE,
                 1,
             );
-            expect_ledger_field(&mut mock, slot, sfield::PublicKey.into(), 33, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PublicKey.into(),
+                DEFAULT_BLOB_SIZE,
+                1,
+            );
 
             let _guard = setup_mock(mock);
 

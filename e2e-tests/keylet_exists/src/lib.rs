@@ -142,7 +142,7 @@ pub extern "C" fn finish() -> i32 {
     seq += 1;
 
     let mpt_issuance_keylet = keylets::mpt_issuance_keylet(&account, seq);
-    let mpt_id = MptId::new(seq.try_into().unwrap(), account);
+    let mpt_id = MptId::new(seq, account);
     check_object_exists!(mpt_issuance_keylet, "MPTIssuance", sfield::Issuer);
     seq += 1;
 

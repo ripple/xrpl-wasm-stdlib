@@ -7,13 +7,13 @@ const notary = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
 async function test(testContext) {
   const { submit, sourceWallet, deploy, finish, destWallet } = testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   const txFail = {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
   }
 
@@ -30,7 +30,7 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: notary.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
+    OfferSequence: parseInt(escrowResult.sequence),
     ComputationAllowance: 1000000,
   }
 

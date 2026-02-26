@@ -6,8 +6,6 @@ use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, ge
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
-// Declared here because there is no Memo struct.
-pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
 pub const DOMAIN_BLOB_SIZE: usize = 256;
 
 /// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
@@ -19,6 +17,9 @@ pub const CONDITION_BLOB_SIZE: usize = 128;
 /// code), so we do the same here.
 pub const FULFILLMENT_BLOB_SIZE: usize = 256;
 
+// Declared here because there is no Memo struct.
+pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
+
 /// Maximum size of a signature in bytes.
 ///
 /// ECDSA signatures can be up to 72 bytes, which is the maximum signature size in XRPL.
@@ -27,6 +28,10 @@ pub const SIGNATURE_BLOB_SIZE: usize = 72;
 
 /// Maximum size of a URI in bytes (applies to DIDs, Oracles, Credentials, NFTs, etc.)
 pub const URI_BLOB_SIZE: usize = 256;
+
+/// Buffer size for WASM bytecode (FinishFunction field)
+/// Set to 4KB to match the maximum allocation limit enforced by the host
+pub const WASM_BLOB_SIZE: usize = 4096;
 
 /// A variable-length binary data container with a fixed maximum size.
 ///
@@ -137,6 +142,9 @@ pub type SignatureBlob = Blob<SIGNATURE_BLOB_SIZE>;
 
 /// Type alias for 256-byte blob (applies to DIDs, Oracles, Credentials, NFTs, etc.)
 pub type UriBlob = Blob<URI_BLOB_SIZE>;
+
+/// Type alias for 4KB blob (for WASM bytecode)
+pub type WasmBlob = Blob<WASM_BLOB_SIZE>;
 
 pub type EmptyBlob = Blob<0>;
 
@@ -436,5 +444,19 @@ mod tests {
         // Capacity should always be N regardless of actual data
         assert_eq!(blob1.capacity(), 10);
         assert_eq!(blob2.capacity(), 10);
+    }
+
+    #[test]
+    fn test_memo_blob_type_alias() {
+        let blob: MemoBlob = MemoBlob::new();
+        assert_eq!(blob.capacity(), MEMO_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 1024);
+    }
+
+    #[test]
+    fn test_wasm_blob_type_alias() {
+        let blob: WasmBlob = WasmBlob::new();
+        assert_eq!(blob.capacity(), WASM_BLOB_SIZE);
+        assert_eq!(blob.capacity(), 4096);
     }
 }
