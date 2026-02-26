@@ -76,7 +76,7 @@ impl CurrentTxFieldGetter for PublicKey {
 }
 
 #[cfg(test)]
-mod test_public_key {
+mod tests {
     use super::*;
 
     #[test]
