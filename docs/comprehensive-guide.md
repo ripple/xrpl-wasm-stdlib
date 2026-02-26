@@ -316,7 +316,7 @@ let nft: NFT = [0u8; 32];
 Keylets are used to locate objects in the ledger:
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::types::keylets::{
+use xrpl_wasm_stdlib::core::keylets::{
     account_keylet,
     line_keylet,
     escrow_keylet,
@@ -355,7 +355,7 @@ Low-level host function access through the `host` module.
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::keylets::account_keylet;
+use xrpl_wasm_stdlib::core::keylets::account_keylet;
 use xrpl_wasm_stdlib::host::cache_ledger_obj;
 use xrpl_wasm_stdlib::host::Error;
 
@@ -407,7 +407,7 @@ use xrpl_wasm_stdlib::core::ledger_objects::account_root::{get_account_balance, 
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::types::keylets::account_keylet;
+use xrpl_wasm_stdlib::core::keylets::account_keylet;
 use xrpl_wasm_stdlib::host::{cache_ledger_obj, Error, Result};
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};
 
