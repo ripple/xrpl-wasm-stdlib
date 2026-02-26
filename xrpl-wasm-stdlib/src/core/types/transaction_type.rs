@@ -183,3 +183,170 @@ impl CurrentTxFieldGetter for TransactionType {
         .map(|buffer| buffer.map(|b| i16::from_le_bytes(b).into()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transaction_type_from_i16_valid() {
+        // Test all valid transaction types - documents the i16 -> enum mapping
+        assert_eq!(TransactionType::from(-1i16), TransactionType::Invalid);
+        assert_eq!(TransactionType::from(0i16), TransactionType::Payment);
+        assert_eq!(TransactionType::from(1i16), TransactionType::EscrowCreate);
+        assert_eq!(TransactionType::from(2i16), TransactionType::EscrowFinish);
+        assert_eq!(TransactionType::from(3i16), TransactionType::AccountSet);
+        assert_eq!(TransactionType::from(4i16), TransactionType::EscrowCancel);
+        assert_eq!(TransactionType::from(5i16), TransactionType::SetRegularKey);
+        assert_eq!(TransactionType::from(6i16), TransactionType::NickNameSet);
+        assert_eq!(TransactionType::from(7i16), TransactionType::OfferCreate);
+        assert_eq!(TransactionType::from(8i16), TransactionType::OfferCancel);
+        assert_eq!(TransactionType::from(9i16), TransactionType::Contract);
+        assert_eq!(TransactionType::from(10i16), TransactionType::TicketCreate);
+        assert_eq!(TransactionType::from(11i16), TransactionType::TicketCancel);
+        assert_eq!(TransactionType::from(12i16), TransactionType::SignerListSet);
+        assert_eq!(
+            TransactionType::from(13i16),
+            TransactionType::PaymentChannelCreate
+        );
+        assert_eq!(
+            TransactionType::from(14i16),
+            TransactionType::PaymentChannelFund
+        );
+        assert_eq!(
+            TransactionType::from(15i16),
+            TransactionType::PaymentChannelClaim
+        );
+        assert_eq!(TransactionType::from(16i16), TransactionType::CheckCreate);
+        assert_eq!(TransactionType::from(17i16), TransactionType::CheckCash);
+        assert_eq!(TransactionType::from(18i16), TransactionType::CheckCancel);
+        assert_eq!(
+            TransactionType::from(19i16),
+            TransactionType::DepositPreauth
+        );
+        assert_eq!(TransactionType::from(20i16), TransactionType::TrustSet);
+        assert_eq!(TransactionType::from(21i16), TransactionType::AccountDelete);
+        assert_eq!(TransactionType::from(22i16), TransactionType::SetHook);
+        assert_eq!(TransactionType::from(25i16), TransactionType::NFTokenMint);
+        assert_eq!(TransactionType::from(26i16), TransactionType::NFTokenBurn);
+        assert_eq!(
+            TransactionType::from(27i16),
+            TransactionType::NFTokenCreateOffer
+        );
+        assert_eq!(
+            TransactionType::from(28i16),
+            TransactionType::NFTokenCancelOffer
+        );
+        assert_eq!(
+            TransactionType::from(29i16),
+            TransactionType::NFTokenAcceptOffer
+        );
+        assert_eq!(TransactionType::from(30i16), TransactionType::Clawback);
+        assert_eq!(TransactionType::from(35i16), TransactionType::AMMCreate);
+        assert_eq!(TransactionType::from(36i16), TransactionType::AMMDeposit);
+        assert_eq!(TransactionType::from(37i16), TransactionType::AMMWithdraw);
+        assert_eq!(TransactionType::from(38i16), TransactionType::AMMVote);
+        assert_eq!(TransactionType::from(39i16), TransactionType::AMMBid);
+        assert_eq!(TransactionType::from(40i16), TransactionType::AMMDelete);
+        assert_eq!(
+            TransactionType::from(41i16),
+            TransactionType::XChainCreateClaimID
+        );
+        assert_eq!(TransactionType::from(42i16), TransactionType::XChainCommit);
+        assert_eq!(TransactionType::from(43i16), TransactionType::XChainClaim);
+        assert_eq!(
+            TransactionType::from(44i16),
+            TransactionType::XChainAccountCreateCommit
+        );
+        assert_eq!(
+            TransactionType::from(45i16),
+            TransactionType::XChainAddClaimAttestation
+        );
+        assert_eq!(
+            TransactionType::from(46i16),
+            TransactionType::XChainAddAccountCreateAttestation
+        );
+        assert_eq!(
+            TransactionType::from(47i16),
+            TransactionType::XChainModifyBridge
+        );
+        assert_eq!(
+            TransactionType::from(48i16),
+            TransactionType::XChainCreateBridge
+        );
+        assert_eq!(TransactionType::from(49i16), TransactionType::DIDSet);
+        assert_eq!(TransactionType::from(50i16), TransactionType::DIDDelete);
+        assert_eq!(TransactionType::from(51i16), TransactionType::OracleSet);
+        assert_eq!(TransactionType::from(52i16), TransactionType::OracleDelete);
+        assert_eq!(
+            TransactionType::from(100i16),
+            TransactionType::EnableAmendment
+        );
+        assert_eq!(TransactionType::from(101i16), TransactionType::SetFee);
+        assert_eq!(TransactionType::from(102i16), TransactionType::UNLModify);
+    }
+
+    #[test]
+    fn test_transaction_type_from_i16_invalid() {
+        // Test that gaps in the enum and out-of-range values return Invalid
+        assert_eq!(TransactionType::from(999i16), TransactionType::Invalid);
+        assert_eq!(TransactionType::from(-100i16), TransactionType::Invalid);
+        assert_eq!(TransactionType::from(23i16), TransactionType::Invalid); // Gap in enum
+        assert_eq!(TransactionType::from(24i16), TransactionType::Invalid); // Gap in enum
+        assert_eq!(TransactionType::from(31i16), TransactionType::Invalid); // Gap in enum
+    }
+
+    #[test]
+    fn test_transaction_type_to_bytes() {
+        // Test serialization to little-endian bytes
+        let bytes: [u8; 2] = TransactionType::Payment.into();
+        assert_eq!(bytes, [0, 0]); // 0 in little-endian
+
+        let bytes: [u8; 2] = TransactionType::EscrowFinish.into();
+        assert_eq!(bytes, [2, 0]); // 2 in little-endian
+
+        let bytes: [u8; 2] = TransactionType::Invalid.into();
+        assert_eq!(bytes, [0xff, 0xff]); // -1 in little-endian (two's complement)
+
+        let bytes: [u8; 2] = TransactionType::EnableAmendment.into();
+        assert_eq!(bytes, [100, 0]); // 100 in little-endian
+    }
+
+    #[test]
+    fn test_transaction_type_from_bytes() {
+        // Test deserialization from little-endian bytes
+        let tx_type = TransactionType::from([0, 0]);
+        assert_eq!(tx_type, TransactionType::Payment);
+
+        let tx_type = TransactionType::from([2, 0]);
+        assert_eq!(tx_type, TransactionType::EscrowFinish);
+
+        let tx_type = TransactionType::from([0xff, 0xff]);
+        assert_eq!(tx_type, TransactionType::Invalid);
+
+        let tx_type = TransactionType::from([100, 0]);
+        assert_eq!(tx_type, TransactionType::EnableAmendment);
+    }
+
+    #[test]
+    fn test_transaction_type_bytes_roundtrip() {
+        // Test that converting to bytes and back gives the same result
+        let types = [
+            TransactionType::Payment,
+            TransactionType::EscrowCreate,
+            TransactionType::EscrowFinish,
+            TransactionType::AccountSet,
+            TransactionType::TrustSet,
+            TransactionType::AMMCreate,
+            TransactionType::NFTokenMint,
+            TransactionType::Clawback,
+            TransactionType::EnableAmendment,
+        ];
+
+        for tx_type in types {
+            let bytes: [u8; 2] = tx_type.into();
+            let recovered = TransactionType::from(bytes);
+            assert_eq!(tx_type, recovered);
+        }
+    }
+}
