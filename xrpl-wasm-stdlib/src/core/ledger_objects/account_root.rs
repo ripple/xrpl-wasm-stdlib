@@ -1,7 +1,7 @@
+use crate::core::keylets::account_keylet;
 use crate::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::keylets::account_keylet;
 use crate::host;
 use host::Error;
 
