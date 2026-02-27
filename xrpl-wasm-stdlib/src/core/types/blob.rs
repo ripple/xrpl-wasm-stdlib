@@ -6,6 +6,8 @@ use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, ge
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
+pub const DOMAIN_BLOB_SIZE: usize = 256;
+
 /// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
 /// (see `maxSerializedCondition` in xrpld source code), so we do the same here.
 pub const CONDITION_BLOB_SIZE: usize = 128;

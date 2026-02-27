@@ -355,7 +355,7 @@ pub trait EscrowFinishFields: TransactionCommonFields {
         let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code =
-            unsafe { get_tx_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len()) };
+            unsafe { get_tx_field(sfield::Condition.into(), buffer.as_mut_ptr(), buffer.len()) };
 
         if result_code < 0 {
             Result::Err(Error::from_code(result_code))
@@ -402,7 +402,8 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
         let mut buffer = [0u8; FULFILLMENT_BLOB_SIZE]; // <-- 256 is the current rippled cap.
 
-        let result_code = unsafe { get_tx_field(sfield::Fulfillment, buffer.as_mut_ptr(), 256) };
+        let result_code =
+            unsafe { get_tx_field(sfield::Fulfillment.into(), buffer.as_mut_ptr(), 256) };
         match_result_code_optional(result_code, || {
             let blob = FulfillmentBlob {
                 data: buffer,
@@ -427,7 +428,11 @@ mod tests {
 
         // Set up expectations
         mock.expect_get_tx_field()
-            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+            .with(
+                eq::<i32>(sfield::Condition.into()),
+                always(),
+                eq(CONDITION_BLOB_SIZE),
+            )
             .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
 
         // Set the mock in thread-local storage (automatically cleans up at the end of scope)
@@ -453,7 +458,7 @@ mod tests {
 
         // Set up expectations
         mock.expect_get_tx_field()
-            .with(eq(sfield::Fulfillment), always(), eq(256))
+            .with(eq::<i32>(sfield::Fulfillment.into()), always(), eq(256))
             .returning(|_, _, _| 256);
 
         // Set the mock in thread-local storage (automatically cleans up at the end of scope)
@@ -480,11 +485,15 @@ mod tests {
 
         // Set up expectations for both condition and fulfillment
         mock.expect_get_tx_field()
-            .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+            .with(
+                eq::<i32>(sfield::Condition.into()),
+                always(),
+                eq(CONDITION_BLOB_SIZE),
+            )
             .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
 
         mock.expect_get_tx_field()
-            .with(eq(sfield::Fulfillment), always(), eq(256))
+            .with(eq::<i32>(sfield::Fulfillment.into()), always(), eq(256))
             .returning(|_, _, _| 256);
 
         // Set the mock in thread-local storage (automatically cleans up at the end of scope)

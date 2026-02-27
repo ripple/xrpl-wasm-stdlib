@@ -29,8 +29,14 @@ fn test_float_from_host() {
         decode_hex_32(b"97DD92D4F3A791254A530BA769F6669DEBF6B2FC8CCA46842B9031ADCD4D1ADA").unwrap();
     let slot = unsafe { cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
     let mut buf = [0x00; 48];
-    let output_len =
-        unsafe { get_ledger_obj_field(slot, sfield::LPTokenBalance, buf.as_mut_ptr(), buf.len()) };
+    let output_len = unsafe {
+        get_ledger_obj_field(
+            slot,
+            sfield::LPTokenBalance.into(),
+            buf.as_mut_ptr(),
+            buf.len(),
+        )
+    };
     let f_lptokenbalance: [u8; 8] = buf[0..8].try_into().unwrap();
     let _ = trace_float("  LPTokenBalance value:", &f_lptokenbalance);
 
@@ -53,8 +59,9 @@ fn test_float_from_host() {
         decode_hex_32(b"D0A063DEE0B0EC9522CF35CD55771B5DCAFA19A133EE46A0295E4D089AF86438").unwrap();
     let slot = unsafe { cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
     let mut buf = [0x00; 48];
-    let output_len =
-        unsafe { get_ledger_obj_field(slot, sfield::TakerPays, buf.as_mut_ptr(), buf.len()) };
+    let output_len = unsafe {
+        get_ledger_obj_field(slot, sfield::TakerPays.into(), buf.as_mut_ptr(), buf.len())
+    };
     let f_takerpays: [u8; 8] = buf[0..8].try_into().unwrap();
     let _ = trace_float("  TakerPays:", &f_takerpays);
 }
