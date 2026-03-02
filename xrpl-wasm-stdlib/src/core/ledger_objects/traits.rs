@@ -1459,7 +1459,7 @@ mod tests {
         fn test_get_finish_function_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::FinishFunction, 1024, 1);
+            expect_current_field(&mut mock, sfield::FinishFunction, 4096, 1);
 
             let _guard = setup_mock(mock);
 
@@ -1776,6 +1776,7 @@ mod tests {
 
             expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
 
+            // Auto cleanup when _guard is dropped.
             let _guard = setup_mock(mock);
 
             // When the mock host function returns 4 bytes,
@@ -1792,7 +1793,7 @@ mod tests {
         fn test_get_finish_function_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 1024, 1);
+            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 4096, 1);
 
             let _guard = setup_mock(mock);
 
