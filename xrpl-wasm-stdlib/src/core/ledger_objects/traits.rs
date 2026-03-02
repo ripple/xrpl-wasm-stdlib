@@ -1463,7 +1463,7 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 1024 bytes,
+            // When the mock host function returns 4096 bytes,
             // get_finish_function should return Ok(Some(Blob))
             let escrow = CurrentEscrow;
             let result = escrow.get_finish_function();
