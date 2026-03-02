@@ -530,7 +530,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), always())
+                .with(eq(sfield::Condition), always(), eq(128))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
