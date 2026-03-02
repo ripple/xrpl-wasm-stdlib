@@ -404,11 +404,11 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
         let result_code = unsafe { get_tx_field(sfield::Fulfillment, buffer.as_mut_ptr(), 256) };
         match_result_code_optional(result_code, || {
-            let blob = FulfillmentBlob {
+            // Use .then to avoid creating the Blob if the result_code is not positive
+            (result_code > 0).then_some(FulfillmentBlob {
                 data: buffer,
                 len: result_code as usize,
-            };
-            Some(blob)
+            })
         })
     }
 }
@@ -617,11 +617,7 @@ mod tests {
 
             assert!(result.is_ok());
             let fulfillment_opt = result.unwrap();
-            assert!(fulfillment_opt.is_some());
-
-            let fulfillment = fulfillment_opt.unwrap();
-            assert_eq!(fulfillment.len, 0);
-            assert_eq!(fulfillment.capacity(), 256);
+            assert!(fulfillment_opt.is_none());
         }
 
         #[test]
