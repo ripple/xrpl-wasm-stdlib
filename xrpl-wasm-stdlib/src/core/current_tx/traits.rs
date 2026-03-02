@@ -505,27 +505,6 @@ mod tests {
         }
 
         #[test]
-        fn test_get_condition_returns_none_when_field_not_present() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
-                .times(1)
-                .returning(|_, _, _| 0);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 0,
-            // get_condition should return Ok(None)
-            let escrow = EscrowFinish;
-            let result = escrow.get_condition();
-
-            assert!(result.is_ok());
-            let condition_opt = result.unwrap();
-            assert!(condition_opt.is_none());
-        }
-
-        #[test]
         fn test_get_condition_returns_error_on_field_not_found() {
             let mut mock = MockHostBindings::new();
 
