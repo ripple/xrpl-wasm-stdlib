@@ -457,7 +457,7 @@ mod tests {
         fn test_get_fulfillment_returns_some_with_data() {
             let mut mock = MockHostBindings::new();
 
-            expect_tx_field(&mut mock, sfield::Fulfillment, 256, 1);
+            expect_tx_field(&mut mock, sfield::Fulfillment, FULFILLMENT_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -472,7 +472,7 @@ mod tests {
             assert!(fulfillment_opt.is_some());
 
             let fulfillment = fulfillment_opt.unwrap();
-            assert_eq!(fulfillment.len, 256);
+            assert_eq!(fulfillment.len, FULFILLMENT_BLOB_SIZE);
             assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
         }
 
@@ -480,8 +480,8 @@ mod tests {
         fn test_get_condition_and_fulfillment_independence() {
             let mut mock = MockHostBindings::new();
 
-            expect_tx_field(&mut mock, sfield::Condition, 128, 1);
-            expect_tx_field(&mut mock, sfield::Fulfillment, 256, 1);
+            expect_tx_field(&mut mock, sfield::Condition, CONDITION_BLOB_SIZE, 1);
+            expect_tx_field(&mut mock, sfield::Fulfillment, FULFILLMENT_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -530,7 +530,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), eq(128))
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
@@ -598,7 +598,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Condition), always(), eq(128))
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
 
@@ -619,7 +619,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
 
@@ -640,7 +640,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
 
@@ -661,7 +661,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| INVALID_FIELD);
 
@@ -683,7 +683,7 @@ mod tests {
 
             let partial_size = 128;
             mock.expect_get_tx_field()
-                .with(eq(sfield::Fulfillment), always(), eq(256))
+                .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                 .times(1)
                 .returning(move |_, _, _| partial_size);
 
