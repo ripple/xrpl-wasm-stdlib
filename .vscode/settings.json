@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["keylet", "keylets"]
+  "cSpell.words": [
+    "clippy",
+    "Dwarnings",
+    "keylet",
+    "keylets",
+    "nodemodules",
+    "RUSTFLAGS",
+    "rustup",
+    "sfield",
+    "uninit"
+  ]
 }
