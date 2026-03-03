@@ -117,22 +117,19 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
+        let mut buffer = ConditionBlob::new();
 
         let result_code = unsafe {
-            get_current_ledger_obj_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len())
+            get_current_ledger_obj_field(
+                sfield::Condition,
+                buffer.data.as_mut_ptr(),
+                buffer.capacity(),
+            )
         };
 
         match_result_code_optional(result_code, || {
-            if result_code > 0 {
-                let blob = ConditionBlob {
-                    data: buffer,
-                    len: result_code as usize,
-                };
-                Some(blob)
-            } else {
-                None
-            }
+            buffer.len = result_code as usize;
+            (result_code > 0).then_some(buffer)
         })
     }
 
@@ -567,56 +564,40 @@ mod tests {
         use crate::host::setup_mock;
 
         #[test]
-        fn test_get_flags_returns_u32() {
+        fn test_mandatory_fields_return_ok() {
             let mut mock = MockHostBindings::new();
 
+            // get_flags
             expect_ledger_field(&mut mock, 1, sfield::Flags, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_flags should return Ok(u32)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_flags();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_flags_returns_error_on_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Flags), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // get_flags should return Err
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_flags();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), FIELD_NOT_FOUND);
-        }
-
-        #[test]
-        fn test_get_ledger_entry_type_returns_u16() {
-            let mut mock = MockHostBindings::new();
-
+            // get_ledger_entry_type
             expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 2 bytes,
-            // get_ledger_entry_type should return Ok(u16)
             let account = AccountRoot { slot_num: 1 };
-            let result = account.get_ledger_entry_type();
 
-            assert!(result.is_ok());
+            // All mandatory fields should return Ok
+            assert!(account.get_flags().is_ok());
+            assert!(account.get_ledger_entry_type().is_ok());
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INTERNAL_ERROR
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
         }
 
         #[test]
@@ -630,14 +611,30 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns an error,
-            // get_ledger_entry_type should return Err
             let account = AccountRoot { slot_num: 1 };
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INVALID_FIELD
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
 
@@ -645,443 +642,168 @@ mod tests {
         use super::*;
         use crate::host::setup_mock;
 
-        // Tests for mandatory fields
-
         #[test]
-        fn test_get_account_returns_account_id() {
+        fn test_mandatory_fields_return_ok() {
             let mut mock = MockHostBindings::new();
 
+            // get_account
             expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // get_account should return Ok(AccountID)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_account();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_account_returns_error_on_invalid_field() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INVALID_FIELD);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // get_account should return Err
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_account();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INVALID_FIELD);
-        }
-
-        #[test]
-        fn test_owner_count_returns_u32() {
-            let mut mock = MockHostBindings::new();
-
+            // owner_count
             expect_ledger_field(&mut mock, 1, sfield::OwnerCount, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // owner_count should return Ok(u32)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.owner_count();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_owner_count_returns_error_on_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::OwnerCount), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // owner_count should return Err
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.owner_count();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), FIELD_NOT_FOUND);
-        }
-
-        #[test]
-        fn test_previous_txn_id_returns_hash256() {
-            let mut mock = MockHostBindings::new();
-
+            // previous_txn_id
             expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 32 bytes,
-            // previous_txn_id should return Ok(Hash256)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.previous_txn_id();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_previous_txn_lgr_seq_returns_u32() {
-            let mut mock = MockHostBindings::new();
-
+            // previous_txn_lgr_seq
             expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // previous_txn_lgr_seq should return Ok(u32)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.previous_txn_lgr_seq();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_sequence_returns_u32() {
-            let mut mock = MockHostBindings::new();
-
+            // sequence
             expect_ledger_field(&mut mock, 1, sfield::Sequence, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // sequence should return Ok(u32)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.sequence();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_ledger_entry_type_returns_u16() {
-            let mut mock = MockHostBindings::new();
-
+            // ledger_entry_type
             expect_ledger_field(&mut mock, 1, sfield::LedgerEntryType, 2, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 2 bytes,
-            // ledger_entry_type should return Ok(u16)
             let account = AccountRoot { slot_num: 1 };
-            let result = account.ledger_entry_type();
 
-            assert!(result.is_ok());
+            // All mandatory fields should return Ok
+            assert!(account.get_account().is_ok());
+            assert!(account.owner_count().is_ok());
+            assert!(account.previous_txn_id().is_ok());
+            assert!(account.previous_txn_lgr_seq().is_ok());
+            assert!(account.sequence().is_ok());
+            assert!(account.ledger_entry_type().is_ok());
         }
 
-        // Tests for optional fields
-
         #[test]
-        fn test_account_txn_id_returns_some_with_data() {
+        fn test_optional_fields_return_some() {
             let mut mock = MockHostBindings::new();
 
+            // account_txn_id
             expect_ledger_field(&mut mock, 1, sfield::AccountTxnID, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 32 bytes,
-            // account_txn_id should return Ok(Some(Hash256))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.account_txn_id();
-
-            assert!(result.is_ok());
-            let hash_opt = result.unwrap();
-            assert!(hash_opt.is_some());
-        }
-
-        #[test]
-        fn test_account_txn_id_returns_none_when_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns FIELD_NOT_FOUND,
-            // account_txn_id should return Ok(None)
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.account_txn_id();
-
-            assert!(result.is_ok());
-            let hash_opt = result.unwrap();
-            assert!(hash_opt.is_none());
-        }
-
-        #[test]
-        fn test_amm_id_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // amm_id
             expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 32 bytes,
-            // amm_id should return Ok(Some(Hash256))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.amm_id();
-
-            assert!(result.is_ok());
-            let hash_opt = result.unwrap();
-            assert!(hash_opt.is_some());
-        }
-
-        #[test]
-        fn test_balance_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // balance
             expect_ledger_field(&mut mock, 1, sfield::Balance, 48, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 48 bytes,
-            // balance should return Ok(Some(Amount))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.balance();
-
-            assert!(result.is_ok());
-            let amount_opt = result.unwrap();
-            assert!(amount_opt.is_some());
-        }
-
-        #[test]
-        fn test_burned_nf_tokens_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // burned_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // burned_nf_tokens should return Ok(Some(u32))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.burned_nf_tokens();
-
-            assert!(result.is_ok());
-            let count_opt = result.unwrap();
-            assert!(count_opt.is_some());
-        }
-
-        #[test]
-        fn test_domain_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // domain
             expect_ledger_field(&mut mock, 1, sfield::Domain, 256, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 256 bytes,
-            // domain should return Ok(Some(UriBlob))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.domain();
-
-            assert!(result.is_ok());
-            let domain_opt = result.unwrap();
-            assert!(domain_opt.is_some());
-        }
-
-        #[test]
-        fn test_email_hash_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // email_hash
             expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 16 bytes,
-            // email_hash should return Ok(Some(Hash128))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.email_hash();
-
-            assert!(result.is_ok());
-            let hash_opt = result.unwrap();
-            assert!(hash_opt.is_some());
-        }
-
-        #[test]
-        fn test_first_nf_token_sequence_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // first_nf_token_sequence
             expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // first_nf_token_sequence should return Ok(Some(u32))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.first_nf_token_sequence();
-
-            assert!(result.is_ok());
-            let seq_opt = result.unwrap();
-            assert!(seq_opt.is_some());
-        }
-
-        #[test]
-        fn test_message_key_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // message_key
             expect_ledger_field(&mut mock, 1, sfield::MessageKey, 33, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 33 bytes,
-            // message_key should return Ok(Some(Blob))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.message_key();
-
-            assert!(result.is_ok());
-            let key_opt = result.unwrap();
-            assert!(key_opt.is_some());
-        }
-
-        #[test]
-        fn test_minted_nf_tokens_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // minted_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // minted_nf_tokens should return Ok(Some(u32))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.minted_nf_tokens();
-
-            assert!(result.is_ok());
-            let count_opt = result.unwrap();
-            assert!(count_opt.is_some());
-        }
-
-        #[test]
-        fn test_nf_token_minter_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // nf_token_minter
             expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // nf_token_minter should return Ok(Some(AccountID))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.nf_token_minter();
-
-            assert!(result.is_ok());
-            let minter_opt = result.unwrap();
-            assert!(minter_opt.is_some());
-        }
-
-        #[test]
-        fn test_regular_key_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // regular_key
             expect_ledger_field(&mut mock, 1, sfield::RegularKey, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // regular_key should return Ok(Some(AccountID))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.regular_key();
-
-            assert!(result.is_ok());
-            let key_opt = result.unwrap();
-            assert!(key_opt.is_some());
-        }
-
-        #[test]
-        fn test_ticket_count_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // ticket_count
             expect_ledger_field(&mut mock, 1, sfield::TicketCount, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // ticket_count should return Ok(Some(u32))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.ticket_count();
-
-            assert!(result.is_ok());
-            let count_opt = result.unwrap();
-            assert!(count_opt.is_some());
-        }
-
-        #[test]
-        fn test_tick_size_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // tick_size
             expect_ledger_field(&mut mock, 1, sfield::TickSize, 1, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 1 byte,
-            // tick_size should return Ok(Some(u8))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.tick_size();
-
-            assert!(result.is_ok());
-            let size_opt = result.unwrap();
-            assert!(size_opt.is_some());
-        }
-
-        #[test]
-        fn test_transfer_rate_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // transfer_rate
             expect_ledger_field(&mut mock, 1, sfield::TransferRate, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // transfer_rate should return Ok(Some(u32))
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.transfer_rate();
-
-            assert!(result.is_ok());
-            let rate_opt = result.unwrap();
-            assert!(rate_opt.is_some());
-        }
-
-        #[test]
-        fn test_wallet_locator_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
+            // wallet_locator
             expect_ledger_field(&mut mock, 1, sfield::WalletLocator, 32, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 32 bytes,
-            // wallet_locator should return Ok(Some(Hash256))
             let account = AccountRoot { slot_num: 1 };
-            let result = account.wallet_locator();
 
-            assert!(result.is_ok());
-            let locator_opt = result.unwrap();
-            assert!(locator_opt.is_some());
+            // All optional fields should return Ok(Some(...))
+            assert!(account.account_txn_id().unwrap().is_some());
+            assert!(account.amm_id().unwrap().is_some());
+            assert!(account.balance().unwrap().is_some());
+            assert!(account.burned_nf_tokens().unwrap().is_some());
+            assert!(account.domain().unwrap().is_some());
+            assert!(account.email_hash().unwrap().is_some());
+            assert!(account.first_nf_token_sequence().unwrap().is_some());
+            assert!(account.message_key().unwrap().is_some());
+            assert!(account.minted_nf_tokens().unwrap().is_some());
+            assert!(account.nf_token_minter().unwrap().is_some());
+            assert!(account.regular_key().unwrap().is_some());
+            assert!(account.ticket_count().unwrap().is_some());
+            assert!(account.tick_size().unwrap().is_some());
+            assert!(account.transfer_rate().unwrap().is_some());
+            assert!(account.wallet_locator().unwrap().is_some());
         }
 
         #[test]
-        fn test_wallet_locator_returns_none_when_field_not_found() {
+        fn test_optional_fields_return_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
+            // account_txn_id
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // amm_id
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::AMMID), always(), eq(32))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // balance - variable size field, returns 0 for empty (Some with len=0)
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Balance), always(), eq(48))
+                .times(1)
+                .returning(|_, _, _, _| 0);
+            // burned_nf_tokens
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // domain - variable size field, returns 0 for empty (Some with len=0)
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Domain), always(), eq(256))
+                .times(1)
+                .returning(|_, _, _, _| 0);
+            // email_hash
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::EmailHash), always(), eq(16))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // first_nf_token_sequence
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // message_key - variable size field, returns 0 for empty (Some with len=0)
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::MessageKey), always(), eq(33))
+                .times(1)
+                .returning(|_, _, _, _| 0);
+            // minted_nf_tokens
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::MintedNFTokens), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // nf_token_minter
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::NFTokenMinter), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // regular_key
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::RegularKey), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // ticket_count
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::TicketCount), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // tick_size
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::TickSize), always(), eq(1))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // transfer_rate
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::TransferRate), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // wallet_locator
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::WalletLocator), always(), eq(32))
                 .times(1)
@@ -1089,14 +811,70 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns FIELD_NOT_FOUND,
-            // wallet_locator should return Ok(None)
             let account = AccountRoot { slot_num: 1 };
-            let result = account.wallet_locator();
 
-            assert!(result.is_ok());
-            let locator_opt = result.unwrap();
-            assert!(locator_opt.is_none());
+            // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
+            assert!(account.account_txn_id().unwrap().is_none());
+            assert!(account.amm_id().unwrap().is_none());
+            assert!(account.burned_nf_tokens().unwrap().is_none());
+            assert!(account.email_hash().unwrap().is_none());
+            assert!(account.first_nf_token_sequence().unwrap().is_none());
+            assert!(account.minted_nf_tokens().unwrap().is_none());
+            assert!(account.nf_token_minter().unwrap().is_none());
+            assert!(account.regular_key().unwrap().is_none());
+            assert!(account.ticket_count().unwrap().is_none());
+            assert!(account.tick_size().unwrap().is_none());
+            assert!(account.transfer_rate().unwrap().is_none());
+            assert!(account.wallet_locator().unwrap().is_none());
+
+            // Variable-size optional fields return Some with len=0 when not found
+            // (they cannot distinguish between "not present" and "present with 0 bytes")
+            let balance = account.balance().unwrap();
+            assert!(balance.is_some());
+            let domain = account.domain().unwrap();
+            assert!(domain.is_some());
+            assert_eq!(domain.unwrap().len, 0);
+            let message_key = account.message_key().unwrap();
+            assert!(message_key.is_some());
+            assert_eq!(message_key.unwrap().len, 0);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // get_account with INTERNAL_ERROR
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_account with INVALID_FIELD
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
 
@@ -1106,56 +884,40 @@ mod tests {
         use crate::host::setup_mock;
 
         #[test]
-        fn test_get_flags_returns_u32() {
+        fn test_mandatory_fields_return_ok() {
             let mut mock = MockHostBindings::new();
 
+            // get_flags
             expect_current_field(&mut mock, sfield::Flags, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_flags should return Ok(u32)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_flags();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_flags_returns_error_on_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Flags), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // get_flags should return Err
-            let escrow = CurrentEscrow;
-            let result = escrow.get_flags();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), FIELD_NOT_FOUND);
-        }
-
-        #[test]
-        fn test_get_ledger_entry_type_returns_u16() {
-            let mut mock = MockHostBindings::new();
-
+            // get_ledger_entry_type
             expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 2 bytes,
-            // get_ledger_entry_type should return Ok(u16)
             let escrow = CurrentEscrow;
-            let result = escrow.get_ledger_entry_type();
 
-            assert!(result.is_ok());
+            // All mandatory fields should return Ok
+            assert!(escrow.get_flags().is_ok());
+            assert!(escrow.get_ledger_entry_type().is_ok());
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INTERNAL_ERROR
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = CurrentEscrow;
+            let result = escrow.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
         }
 
         #[test]
@@ -1169,14 +931,30 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns an error,
-            // get_ledger_entry_type should return Err
             let escrow = CurrentEscrow;
             let result = escrow.get_ledger_entry_type();
 
             assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INVALID_FIELD
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = CurrentEscrow;
+            let result = escrow.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
 
@@ -1184,311 +962,148 @@ mod tests {
         use super::*;
         use crate::core::ledger_objects::current_escrow::CurrentEscrow;
         use crate::host::setup_mock;
-        // Tests for mandatory fields
 
         #[test]
-        fn test_get_account_returns_account_id() {
+        fn test_mandatory_fields_return_ok() {
             let mut mock = MockHostBindings::new();
 
+            // get_account
             expect_current_field(&mut mock, sfield::Account, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // get_account should return Ok(AccountID)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_account();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_account_returns_error_on_invalid_field() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _| INVALID_FIELD);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // get_account should return Err
-            let escrow = CurrentEscrow;
-            let result = escrow.get_account();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INVALID_FIELD);
-        }
-
-        #[test]
-        fn test_get_amount_returns_amount() {
-            let mut mock = MockHostBindings::new();
-
+            // get_amount
             expect_current_field(&mut mock, sfield::Amount, 48, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 48 bytes,
-            // get_amount should return Ok(Amount)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_amount();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_destination_returns_account_id() {
-            let mut mock = MockHostBindings::new();
-
+            // get_destination
             expect_current_field(&mut mock, sfield::Destination, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // get_destination should return Ok(AccountID)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_destination();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_owner_node_returns_u64() {
-            let mut mock = MockHostBindings::new();
-
+            // get_owner_node
             expect_current_field(&mut mock, sfield::OwnerNode, 8, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 8 bytes,
-            // get_owner_node should return Ok(u64)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_owner_node();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_previous_txn_id_returns_hash256() {
-            let mut mock = MockHostBindings::new();
-
+            // get_previous_txn_id
             expect_current_field(&mut mock, sfield::PreviousTxnID, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 32 bytes,
-            // get_previous_txn_id should return Ok(Hash256)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_previous_txn_id();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_previous_txn_lgr_seq_returns_u32() {
-            let mut mock = MockHostBindings::new();
-
+            // get_previous_txn_lgr_seq
             expect_current_field(&mut mock, sfield::PreviousTxnLgrSeq, 4, 1);
+            // get_data (mandatory for escrow)
+            expect_current_field(&mut mock, sfield::Data, 4096, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 4 bytes,
-            // get_previous_txn_lgr_seq should return Ok(u32)
             let escrow = CurrentEscrow;
-            let result = escrow.get_previous_txn_lgr_seq();
 
-            assert!(result.is_ok());
+            // All mandatory fields should return Ok
+            assert!(escrow.get_account().is_ok());
+            assert!(escrow.get_amount().is_ok());
+            assert!(escrow.get_destination().is_ok());
+            assert!(escrow.get_owner_node().is_ok());
+            assert!(escrow.get_previous_txn_id().is_ok());
+            assert!(escrow.get_previous_txn_lgr_seq().is_ok());
+            assert!(escrow.get_data().is_ok());
         }
 
-        // Tests for optional fields
-
         #[test]
-        fn test_get_cancel_after_returns_some_with_data() {
+        fn test_optional_fields_return_some() {
             let mut mock = MockHostBindings::new();
 
+            // get_cancel_after
             expect_current_field(&mut mock, sfield::CancelAfter, 4, 1);
+            // get_condition
+            expect_current_field(&mut mock, sfield::Condition, 128, 1);
+            // get_destination_node
+            expect_current_field(&mut mock, sfield::DestinationNode, 8, 1);
+            // get_destination_tag
+            expect_current_field(&mut mock, sfield::DestinationTag, 4, 1);
+            // get_finish_after
+            expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
+            // get_source_tag
+            expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
+            // get_finish_function
+            expect_current_field(&mut mock, sfield::FinishFunction, 4096, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 4 bytes,
-            // get_cancel_after should return Ok(Some(u32))
             let escrow = CurrentEscrow;
-            let result = escrow.get_cancel_after();
 
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_some());
+            // All optional fields should return Ok(Some(...))
+            assert!(escrow.get_cancel_after().unwrap().is_some());
+            assert!(escrow.get_condition().unwrap().is_some());
+            assert!(escrow.get_destination_node().unwrap().is_some());
+            assert!(escrow.get_destination_tag().unwrap().is_some());
+            assert!(escrow.get_finish_after().unwrap().is_some());
+            assert!(escrow.get_source_tag().unwrap().is_some());
+            assert!(escrow.get_finish_function().unwrap().is_some());
         }
 
         #[test]
-        fn test_get_cancel_after_returns_none_when_field_not_found() {
+        fn test_optional_fields_return_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
+            // get_cancel_after
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns FIELD_NOT_FOUND,
-            // get_cancel_after should return Ok(None)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_cancel_after();
-
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_none());
-        }
-
-        #[test]
-        fn test_get_condition_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::Condition, 128, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 128 bytes,
-            // get_condition should return Ok(Some(ConditionBlob))
-            let escrow = CurrentEscrow;
-            let result = escrow.get_condition();
-
-            assert!(result.is_ok());
-            let cond_opt = result.unwrap();
-            assert!(cond_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_condition_returns_none_when_result_code_zero() {
-            let mut mock = MockHostBindings::new();
-
+            // get_condition - returns 0 for None
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Condition), always(), eq(128))
+                .times(1)
+                .returning(|_, _, _| 0);
+            // get_destination_node
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::DestinationNode), always(), eq(8))
+                .times(1)
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+            // get_destination_tag
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::DestinationTag), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+            // get_finish_after
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::FinishAfter), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+            // get_source_tag
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::SourceTag), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| FIELD_NOT_FOUND);
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::FinishFunction), always(), eq(4096))
                 .times(1)
                 .returning(|_, _, _| 0);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 0,
-            // get_condition should return Ok(None)
             let escrow = CurrentEscrow;
-            let result = escrow.get_condition();
 
-            assert!(result.is_ok());
-            let cond_opt = result.unwrap();
-            assert!(cond_opt.is_none());
+            // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
+            assert!(escrow.get_cancel_after().unwrap().is_none());
+            assert!(escrow.get_condition().unwrap().is_none());
+            assert!(escrow.get_destination_node().unwrap().is_none());
+            assert!(escrow.get_destination_tag().unwrap().is_none());
+            assert!(escrow.get_finish_after().unwrap().is_none());
+            assert!(escrow.get_source_tag().unwrap().is_none());
+
+            // Variable-size optional fields return Some with len=0 when not found
+            let finish_function = escrow.get_finish_function().unwrap();
+            assert!(finish_function.is_some());
+            assert_eq!(finish_function.unwrap().len, 0);
         }
 
         #[test]
-        fn test_get_destination_node_returns_some_with_data() {
+        fn test_mandatory_fields_return_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::DestinationNode, 8, 1);
+            // get_account with INTERNAL_ERROR
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _| INTERNAL_ERROR);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 8 bytes,
-            // get_destination_node should return Ok(Some(u64))
             let escrow = CurrentEscrow;
-            let result = escrow.get_destination_node();
+            let result = escrow.get_account();
 
-            assert!(result.is_ok());
-            let node_opt = result.unwrap();
-            assert!(node_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_destination_tag_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::DestinationTag, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_destination_tag should return Ok(Some(u32))
-            let escrow = CurrentEscrow;
-            let result = escrow.get_destination_tag();
-
-            assert!(result.is_ok());
-            let tag_opt = result.unwrap();
-            assert!(tag_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_finish_after_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_finish_after should return Ok(Some(u32))
-            let escrow = CurrentEscrow;
-            let result = escrow.get_finish_after();
-
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_source_tag_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_source_tag should return Ok(Some(u32))
-            let escrow = CurrentEscrow;
-            let result = escrow.get_source_tag();
-
-            assert!(result.is_ok());
-            let tag_opt = result.unwrap();
-            assert!(tag_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_finish_function_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::FinishFunction, 4096, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4096 bytes,
-            // get_finish_function should return Ok(Some(Blob))
-            let escrow = CurrentEscrow;
-            let result = escrow.get_finish_function();
-
-            assert!(result.is_ok());
-            let func_opt = result.unwrap();
-            assert!(func_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_data_returns_contract_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_current_field(&mut mock, sfield::Data, 4096, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4096 bytes,
-            // get_data should return Ok(ContractData)
-            let escrow = CurrentEscrow;
-            let result = escrow.get_data();
-
-            assert!(result.is_ok());
-            let data = result.unwrap();
-            assert_eq!(data.len, 4096);
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
         }
 
         #[test]
@@ -1502,14 +1117,30 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns an error,
-            // get_data should return Err
             let escrow = CurrentEscrow;
             let result = escrow.get_data();
 
             assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_account with INVALID_FIELD
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = CurrentEscrow;
+            let result = escrow.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
 
@@ -1517,312 +1148,148 @@ mod tests {
         use super::*;
         use crate::core::ledger_objects::escrow::Escrow;
         use crate::host::setup_mock;
-        // Tests for mandatory fields
 
         #[test]
-        fn test_get_account_returns_account_id() {
+        fn test_mandatory_fields_return_ok() {
             let mut mock = MockHostBindings::new();
 
+            // get_account
             expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // get_account should return Ok(AccountID)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_account();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_account_returns_error_on_invalid_field() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INVALID_FIELD);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns an error,
-            // get_account should return Err
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_account();
-
-            assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INVALID_FIELD);
-        }
-
-        #[test]
-        fn test_get_amount_returns_amount() {
-            let mut mock = MockHostBindings::new();
-
+            // get_amount
             expect_ledger_field(&mut mock, 1, sfield::Amount, 48, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 48 bytes,
-            // get_amount should return Ok(Amount)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_amount();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_destination_returns_account_id() {
-            let mut mock = MockHostBindings::new();
-
+            // get_destination
             expect_ledger_field(&mut mock, 1, sfield::Destination, 20, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 20 bytes,
-            // get_destination should return Ok(AccountID)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_destination();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_owner_node_returns_u64() {
-            let mut mock = MockHostBindings::new();
-
+            // get_owner_node
             expect_ledger_field(&mut mock, 1, sfield::OwnerNode, 8, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 8 bytes,
-            // get_owner_node should return Ok(u64)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_owner_node();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_previous_txn_id_returns_hash256() {
-            let mut mock = MockHostBindings::new();
-
+            // get_previous_txn_id
             expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 32 bytes,
-            // get_previous_txn_id should return Ok(Hash256)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_previous_txn_id();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn test_get_previous_txn_lgr_seq_returns_u32() {
-            let mut mock = MockHostBindings::new();
-
+            // get_previous_txn_lgr_seq
             expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
+            // get_data (mandatory for escrow)
+            expect_ledger_field(&mut mock, 1, sfield::Data, 4096, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 4 bytes,
-            // get_previous_txn_lgr_seq should return Ok(u32)
             let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_previous_txn_lgr_seq();
 
-            assert!(result.is_ok());
+            // All mandatory fields should return Ok
+            assert!(escrow.get_account().is_ok());
+            assert!(escrow.get_amount().is_ok());
+            assert!(escrow.get_destination().is_ok());
+            assert!(escrow.get_owner_node().is_ok());
+            assert!(escrow.get_previous_txn_id().is_ok());
+            assert!(escrow.get_previous_txn_lgr_seq().is_ok());
+            assert!(escrow.get_data().is_ok());
         }
 
-        // Tests for optional fields
-
         #[test]
-        fn test_get_cancel_after_returns_some_with_data() {
+        fn test_optional_fields_return_some() {
             let mut mock = MockHostBindings::new();
 
+            // get_cancel_after
             expect_ledger_field(&mut mock, 1, sfield::CancelAfter, 4, 1);
+            // get_condition
+            expect_ledger_field(&mut mock, 1, sfield::Condition, 128, 1);
+            // get_destination_node
+            expect_ledger_field(&mut mock, 1, sfield::DestinationNode, 8, 1);
+            // get_destination_tag
+            expect_ledger_field(&mut mock, 1, sfield::DestinationTag, 4, 1);
+            // get_finish_after
+            expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
+            // get_source_tag
+            expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
+            // get_finish_function
+            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 4096, 1);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 4 bytes,
-            // get_cancel_after should return Ok(Some(u32))
             let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_cancel_after();
 
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_some());
+            // All optional fields should return Ok(Some(...))
+            assert!(escrow.get_cancel_after().unwrap().is_some());
+            assert!(escrow.get_condition().unwrap().is_some());
+            assert!(escrow.get_destination_node().unwrap().is_some());
+            assert!(escrow.get_destination_tag().unwrap().is_some());
+            assert!(escrow.get_finish_after().unwrap().is_some());
+            assert!(escrow.get_source_tag().unwrap().is_some());
+            assert!(escrow.get_finish_function().unwrap().is_some());
         }
 
         #[test]
-        fn test_get_cancel_after_returns_none_when_field_not_found() {
+        fn test_optional_fields_return_none_when_field_not_found() {
             let mut mock = MockHostBindings::new();
 
+            // get_cancel_after
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns FIELD_NOT_FOUND,
-            // get_cancel_after should return Ok(None)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_cancel_after();
-
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_none());
-        }
-
-        #[test]
-        fn test_get_condition_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::Condition, 128, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 128 bytes,
-            // get_condition should return Ok(Some(ConditionBlob))
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_condition();
-
-            assert!(result.is_ok());
-            let cond_opt = result.unwrap();
-            assert!(cond_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_condition_returns_none_when_result_code_zero() {
-            let mut mock = MockHostBindings::new();
-
+            // get_condition - returns 0 for None
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Condition), always(), eq(128))
+                .times(1)
+                .returning(|_, _, _, _| 0);
+            // get_destination_node
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::DestinationNode), always(), eq(8))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // get_destination_tag
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::DestinationTag), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // get_finish_after
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::FinishAfter), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // get_source_tag
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::FinishFunction), always(), eq(4096))
                 .times(1)
                 .returning(|_, _, _, _| 0);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 0,
-            // get_condition should return Ok(None)
             let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_condition();
 
-            assert!(result.is_ok());
-            let cond_opt = result.unwrap();
-            assert!(cond_opt.is_none());
+            // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
+            assert!(escrow.get_cancel_after().unwrap().is_none());
+            assert!(escrow.get_condition().unwrap().is_none());
+            assert!(escrow.get_destination_node().unwrap().is_none());
+            assert!(escrow.get_destination_tag().unwrap().is_none());
+            assert!(escrow.get_finish_after().unwrap().is_none());
+            assert!(escrow.get_source_tag().unwrap().is_none());
+
+            // Variable-size optional fields return Some with len=0 when not found
+            let finish_function = escrow.get_finish_function().unwrap();
+            assert!(finish_function.is_some());
+            assert_eq!(finish_function.unwrap().len, 0);
         }
 
         #[test]
-        fn test_get_destination_node_returns_some_with_data() {
+        fn test_mandatory_fields_return_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            expect_ledger_field(&mut mock, 1, sfield::DestinationNode, 8, 1);
+            // get_account with INTERNAL_ERROR
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| INTERNAL_ERROR);
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns 8 bytes,
-            // get_destination_node should return Ok(Some(u64))
             let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_destination_node();
+            let result = escrow.get_account();
 
-            assert!(result.is_ok());
-            let node_opt = result.unwrap();
-            assert!(node_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_destination_tag_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::DestinationTag, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_destination_tag should return Ok(Some(u32))
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_destination_tag();
-
-            assert!(result.is_ok());
-            let tag_opt = result.unwrap();
-            assert!(tag_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_finish_after_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_finish_after should return Ok(Some(u32))
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_finish_after();
-
-            assert!(result.is_ok());
-            let time_opt = result.unwrap();
-            assert!(time_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_source_tag_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
-
-            // Auto cleanup when _guard is dropped.
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4 bytes,
-            // get_source_tag should return Ok(Some(u32))
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_source_tag();
-
-            assert!(result.is_ok());
-            let tag_opt = result.unwrap();
-            assert!(tag_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_finish_function_returns_some_with_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 4096, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4096 bytes,
-            // get_finish_function should return Ok(Some(Blob))
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_finish_function();
-
-            assert!(result.is_ok());
-            let func_opt = result.unwrap();
-            assert!(func_opt.is_some());
-        }
-
-        #[test]
-        fn test_get_data_returns_contract_data() {
-            let mut mock = MockHostBindings::new();
-
-            expect_ledger_field(&mut mock, 1, sfield::Data, 4096, 1);
-
-            let _guard = setup_mock(mock);
-
-            // When the mock host function returns 4096 bytes,
-            // get_data should return Ok(ContractData)
-            let escrow = Escrow { slot_num: 1 };
-            let result = escrow.get_data();
-
-            assert!(result.is_ok());
-            let data = result.unwrap();
-            assert_eq!(data.len, 4096);
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
         }
 
         #[test]
@@ -1836,14 +1303,30 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            // When the mock host function returns an error,
-            // get_data should return Err
             let escrow = Escrow { slot_num: 1 };
             let result = escrow.get_data();
 
             assert!(result.is_err());
-            let error = result.err().unwrap();
-            assert_eq!(error.code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_account with INVALID_FIELD
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(20))
+                .times(1)
+                .returning(|_, _, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = Escrow { slot_num: 1 };
+            let result = escrow.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
 }

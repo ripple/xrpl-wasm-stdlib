@@ -151,7 +151,7 @@ pub trait CurrentTxFieldGetter: Sized {
     ///
     /// Returns a `Result<Option<Self>>` where:
     /// * `Ok(Some(Self))` - The field value for the specified field
-    /// * `Ok(None)` - If the field is not present in the transaction
+    /// * `Ok(None)` - If the field is not present in the transaction (i.e., result_code == FIELD_NOT_FOUND)
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>>;
 }
@@ -248,7 +248,7 @@ pub fn get_field<T: CurrentTxFieldGetter>(field_code: i32) -> Result<T> {
 ///
 /// Returns a `Result<Option<T>>` where:
 /// * `Ok(Some(T))` - The field value for the specified field
-/// * `Ok(None)` - If the field is not present
+/// * `Ok(None)` - If the field is not present (i.e., result_code == FIELD_NOT_FOUND)
 /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
 #[inline]
 pub fn get_field_optional<T: CurrentTxFieldGetter>(field_code: i32) -> Result<Option<T>> {
