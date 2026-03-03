@@ -611,7 +611,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let account = AccountRoot { slot_num: 1 };
+            // Note: slot is ignored for this test, but required to instantiate the struct.
+            let account = AccountRoot { slot_num: -1 };
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
