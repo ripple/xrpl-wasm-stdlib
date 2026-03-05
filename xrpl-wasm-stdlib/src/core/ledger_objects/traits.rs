@@ -3,7 +3,6 @@ use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
 use crate::core::types::blob::{Blob, CONDITION_BLOB_SIZE, ConditionBlob, UriBlob, WasmBlob};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
 use crate::core::types::uint::{Hash128, Hash256};
 
 /// This module provides traits for interacting with XRP Ledger objects.
@@ -121,7 +120,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
 
         let result_code = unsafe {
             get_current_ledger_obj_field(
-                sfield::Condition,
+                sfield::Condition.into(),
                 buffer.data.as_mut_ptr(),
                 buffer.capacity(),
             )
@@ -204,8 +203,9 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_data(&self) -> Result<ContractData> {
         let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
-        let result_code =
-            unsafe { get_current_ledger_obj_field(sfield::Data, data.as_mut_ptr(), data.len()) };
+        let result_code = unsafe {
+            get_current_ledger_obj_field(sfield::Data.into(), data.as_mut_ptr(), data.len())
+        };
 
         match result_code {
             code if code >= 0 => Ok(ContractData {
@@ -257,7 +257,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Amount,
+                sfield::Amount.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -281,7 +281,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Condition,
+                sfield::Condition.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -379,7 +379,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Data,
+                sfield::Data.into(),
                 data.as_mut_ptr(),
                 data.len(),
             )
@@ -454,7 +454,8 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// A public key that may be used to send encrypted messages to this account. In JSON, uses hexadecimal.
     /// Must be exactly 33 bytes, with the first byte indicating the key type: 0x02 or 0x03 for secp256k1 keys,
     /// 0xED for Ed25519 keys.
-    fn message_key(&self) -> Result<Option<Blob<{ PUBLIC_KEY_BUFFER_SIZE }>>> {
+    // TODO: See https://github.com/ripple/xrpl-wasm-stdlib/issues/106
+    fn message_key(&self) -> Result<Option<Blob<33>>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MessageKey)
     }
 
@@ -523,38 +524,45 @@ pub trait AccountFields: LedgerObjectCommonFields {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::ledger_objects::LedgerObjectFieldGetter;
     use crate::core::ledger_objects::account_root::AccountRoot;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::sfield::SField;
     use mockall::predicate::{always, eq};
-
     // ========================================
     // Test helper functions
     // ========================================
 
     /// Helper to set up a mock expectation for get_current_ledger_obj_field
-    fn expect_current_field(
+    fn expect_current_field<
+        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+        const CODE: i32,
+    >(
         mock: &mut MockHostBindings,
-        field_code: i32,
+        field: SField<T, CODE>,
         size: usize,
         times: usize,
     ) {
         mock.expect_get_current_ledger_obj_field()
-            .with(eq(field_code), always(), eq(size))
+            .with(eq(field), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
     }
 
     /// Helper to set up a mock expectation for get_ledger_obj_field
-    fn expect_ledger_field(
+    fn expect_ledger_field<
+        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+        const CODE: i32,
+    >(
         mock: &mut MockHostBindings,
         slot: i32,
-        field_code: i32,
+        field: SField<T, CODE>,
         size: usize,
         times: usize,
     ) {
         mock.expect_get_ledger_obj_field()
-            .with(eq(slot), eq(field_code), always(), eq(size))
+            .with(eq(slot), eq(field), always(), eq(size))
             .times(times)
             .returning(move |_, _, _, _| size as i32);
     }

@@ -98,7 +98,6 @@ use crate::host::{Result, get_tx_field};
 ///
 ///   // Get optional fields from the current transaction
 ///   let flags: Option<u32> = get_field_optional(sfield::Flags).unwrap();
-///   let memo: Option<MemoBlob> = get_field_optional(sfield::Memo).unwrap();
 /// # }
 /// ```
 ///
@@ -222,27 +221,40 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     }
 }
 
-/// Retrieves a field from the current transaction.
+/// Retrieves a field from the current transaction using an SField constant.
 ///
 /// # Arguments
 ///
-/// * `field_code` - The field code identifying which field to retrieve
+/// * `field` - An SField constant that encodes both the field code and expected type
 ///
 /// # Returns
 ///
 /// Returns a `Result<T>` where:
 /// * `Ok(T)` - The field value for the specified field
 /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use xrpl_wasm_stdlib::core::current_tx::get_field;
+/// use xrpl_wasm_stdlib::sfield;
+///
+/// // Type is automatically inferred from the SField constant
+/// let sequence = get_field(sfield::Sequence).unwrap();  // u32
+/// let account = get_field(sfield::Account).unwrap();  // AccountID
+/// ```
 #[inline]
-pub fn get_field<T: CurrentTxFieldGetter>(field_code: i32) -> Result<T> {
-    T::get_from_current_tx(field_code)
+pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(
+    _field: crate::sfield::SField<T, CODE>,
+) -> Result<T> {
+    T::get_from_current_tx(CODE)
 }
 
-/// Retrieves an optionally present field from the current transaction.
+/// Retrieves an optionally present field from the current transaction using an SField constant.
 ///
 /// # Arguments
 ///
-/// * `field_code` - The field code identifying which field to retrieve
+/// * `field` - An SField constant that encodes both the field code and expected type
 ///
 /// # Returns
 ///
@@ -250,7 +262,20 @@ pub fn get_field<T: CurrentTxFieldGetter>(field_code: i32) -> Result<T> {
 /// * `Ok(Some(T))` - The field value for the specified field
 /// * `Ok(None)` - If the field is not present (i.e., result_code == FIELD_NOT_FOUND)
 /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use xrpl_wasm_stdlib::core::current_tx::get_field_optional;
+/// use xrpl_wasm_stdlib::sfield;
+///
+/// // Type is automatically inferred from the SField constant
+/// let flags = get_field_optional(sfield::Flags).unwrap();  // Option<u32>
+/// let source_tag = get_field_optional(sfield::SourceTag).unwrap();  // Option<u32>
+/// ```
 #[inline]
-pub fn get_field_optional<T: CurrentTxFieldGetter>(field_code: i32) -> Result<Option<T>> {
-    T::get_from_current_tx_optional(field_code)
+pub fn get_field_optional<T: CurrentTxFieldGetter, const CODE: i32>(
+    _field: crate::sfield::SField<T, CODE>,
+) -> Result<Option<T>> {
+    T::get_from_current_tx_optional(CODE)
 }

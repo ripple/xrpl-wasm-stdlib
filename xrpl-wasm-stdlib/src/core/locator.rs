@@ -79,12 +79,12 @@ impl Locator {
         }
     }
 
-    pub fn pack(&mut self, sfield_or_index: i32) -> bool {
+    pub fn pack(&mut self, sfield_or_index: impl Into<i32>) -> bool {
         if self.cur_buffer_index + 4 > LOCATOR_BUFFER_SIZE {
             return false;
         }
 
-        let value_bytes: [u8; 4] = sfield_or_index.to_le_bytes();
+        let value_bytes: [u8; 4] = sfield_or_index.into().to_le_bytes();
         self.buffer[self.cur_buffer_index..self.cur_buffer_index + 4].copy_from_slice(&value_bytes);
         self.cur_buffer_index += 4;
 
@@ -107,13 +107,56 @@ impl Locator {
         self.cur_buffer_index == 0
     }
 
-    pub fn repack_last(&mut self, sfield_or_index: i32) -> bool {
+    pub fn repack_last(&mut self, sfield_or_index: impl Into<i32>) -> bool {
         self.cur_buffer_index -= 4;
 
-        let value_bytes: [u8; 4] = sfield_or_index.to_le_bytes();
+        let value_bytes: [u8; 4] = sfield_or_index.into().to_le_bytes();
         self.buffer[self.cur_buffer_index..self.cur_buffer_index + 4].copy_from_slice(&value_bytes);
         self.cur_buffer_index += 4;
 
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sfield;
+
+    #[test]
+    fn test_pack_with_sfield_no_into_needed() {
+        // This test demonstrates that .into() is no longer needed when using SField constants
+        let mut locator = Locator::new();
+
+        // Pack SField constants directly without .into()
+        assert!(locator.pack(sfield::Memos));
+        assert!(locator.pack(0));
+        assert!(locator.pack(sfield::MemoData));
+
+        assert_eq!(locator.len(), 12); // 3 packed values * 4 bytes each
+    }
+
+    #[test]
+    fn test_pack_with_i32_still_works() {
+        // This test verifies that i32 values still work as before
+        let mut locator = Locator::new();
+
+        assert!(locator.pack(123i32));
+        assert!(locator.pack(456i32));
+
+        assert_eq!(locator.len(), 8); // 2 packed values * 4 bytes each
+    }
+
+    #[test]
+    fn test_repack_last_with_sfield() {
+        let mut locator = Locator::new();
+
+        locator.pack(sfield::Memos);
+        locator.pack(0);
+
+        // Repack the last value with a different SField
+        assert!(locator.repack_last(sfield::MemoData));
+
+        assert_eq!(locator.len(), 8); // Still 2 packed values
     }
 }

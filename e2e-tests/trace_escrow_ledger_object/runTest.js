@@ -16,9 +16,10 @@ async function test(testContext) {
   const close_time = (
     await client.request({
       command: "ledger",
-      ledger_index: "validated",
+      ledger_index: "closed",
     })
   ).result.ledger.close_time
+  const finishAfter = close_time + (process.env.DEVNET ? 3 : 0)
 
   // Create escrow with optional fields for better test coverage
   // All time values are in seconds since Ripple Epoch
@@ -28,7 +29,7 @@ async function test(testContext) {
     Amount: "1000000",
     Destination: destWallet.address,
     CancelAfter: close_time + 2000, // Can cancel after ~33 minutes
-    FinishAfter: close_time, // Already passed, can finish immediately
+    FinishAfter: finishAfter, // Already passed, can finish immediately
     SourceTag: 11747,
     DestinationTag: 23480,
     Condition: condition,

@@ -353,7 +353,7 @@ pub trait EscrowFinishFields: TransactionCommonFields {
         let mut buffer = ConditionBlob::new();
         let result_code = unsafe {
             get_tx_field(
-                sfield::Condition,
+                sfield::Condition.into(),
                 buffer.data.as_mut_ptr(),
                 buffer.capacity(),
             )
@@ -394,7 +394,7 @@ pub trait EscrowFinishFields: TransactionCommonFields {
         let mut buffer = FulfillmentBlob::new();
         let result_code = unsafe {
             get_tx_field(
-                sfield::Fulfillment,
+                sfield::Fulfillment.into(),
                 buffer.data.as_mut_ptr(),
                 buffer.capacity(),
             )
@@ -408,17 +408,23 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
 #[cfg(test)]
 mod tests {
-    use crate::host::host_bindings_trait::MockHostBindings;
-    use mockall::predicate::{always, eq};
 
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::sfield::SField;
+    use mockall::predicate::{always, eq};
     // ========================================
     // Test helper functions
     // ========================================
 
     /// Helper to set up a mock expectation for get_tx_field
-    fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
+    fn expect_tx_field<T: Send + std::fmt::Debug + PartialEq + 'static, const CODE: i32>(
+        mock: &mut MockHostBindings,
+        field: SField<T, CODE>,
+        size: usize,
+        times: usize,
+    ) {
         mock.expect_get_tx_field()
-            .with(eq(field_code), always(), eq(size))
+            .with(eq(field), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
     }
@@ -434,6 +440,8 @@ mod tests {
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
+
+            use crate::sfield::{Condition, Fulfillment};
             use mockall::predicate::{always, eq};
 
             #[test]
@@ -441,9 +449,9 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_condition
-                expect_tx_field(&mut mock, sfield::Condition, CONDITION_BLOB_SIZE, 1);
+                expect_tx_field(&mut mock, Condition, CONDITION_BLOB_SIZE, 1);
                 // get_fulfillment
-                expect_tx_field(&mut mock, sfield::Fulfillment, FULFILLMENT_BLOB_SIZE, 1);
+                expect_tx_field(&mut mock, Fulfillment, FULFILLMENT_BLOB_SIZE, 1);
 
                 let _guard = setup_mock(mock);
 
@@ -518,12 +526,12 @@ mod tests {
 
                 // get_condition
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                    .with(eq(Condition), always(), eq(CONDITION_BLOB_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_fulfillment
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
+                    .with(eq(Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
 
