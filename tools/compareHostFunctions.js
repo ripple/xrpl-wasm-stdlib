@@ -61,11 +61,11 @@ const read = process.argv[2].includes("github.com")
 async function main() {
   const wasmImportFile = await read(
     process.argv[2],
-    "src/xrpld/app/wasm/detail/WasmVM.cpp",
+    "src/libxrpl/tx/wasm/WasmVM.cpp",
   )
   const hostWrapperFile = await read(
     process.argv[2],
-    "src/xrpld/app/wasm/HostFuncWrapper.h",
+    "include/xrpl/tx/wasm/HostFuncWrapper.h",
   )
   let importHits = [
     // Parse WASM host function imports in `WasmVM.cpp`
