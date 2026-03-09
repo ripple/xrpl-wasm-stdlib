@@ -1,8 +1,10 @@
 pub mod account_root;
+pub mod array_object;
 pub mod current_escrow;
 pub mod escrow;
 pub mod traits;
 
+use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
@@ -31,16 +33,17 @@ use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 /// ```rust,no_run
 /// use xrpl_wasm_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+/// use xrpl_wasm_stdlib::core::types::amount::Amount;
 /// use xrpl_wasm_stdlib::sfield;
 ///
 /// fn example() {
 ///   let slot = 0;
 ///   // Get a required field from a specific ledger object
-///   let balance: u64 = ledger_object::get_field(slot, sfield::Balance).unwrap();
-///   let account: AccountID = ledger_object::get_field(slot, sfield::Account).unwrap();
+///   let balance = ledger_object::get_field(slot, sfield::Balance.into()).unwrap();
+///   let account = ledger_object::get_field(slot, sfield::Account.into()).unwrap();
 ///
 ///   // Get an optional field from the current ledger object
-///   let flags: Option<u32> = current_ledger_object::get_field_optional(sfield::Flags).unwrap();
+///   let flags = current_ledger_object::get_field_optional(sfield::Flags).unwrap();
 /// }
 /// ```
 ///
@@ -203,31 +206,175 @@ impl<T: FixedSizeFieldType> LedgerObjectFieldGetter for T {
     }
 }
 
+/// Implementation of `LedgerObjectFieldGetter` for 160-bit cryptographic hashes.
+///
+/// This implementation handles 20-byte hash fields in XRPL ledger objects.
+/// Hash160 values are used for various cryptographic operations and identifiers.
+///
+/// # Buffer Management
+///
+/// Uses a 20-byte buffer (HASH160_SIZE) and validates that exactly 20 bytes
+/// are returned from the host function to ensure data integrity.
+impl LedgerObjectFieldGetter for Hash160 {
+    #[inline]
+    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_current_ledger_obj_field(field_code, buffer.as_mut_ptr().cast(), HASH160_SIZE)
+        };
+        match_result_code_with_expected_bytes(result_code, HASH160_SIZE, || {
+            Hash160::from(unsafe { buffer.assume_init() })
+        })
+    }
+
+    #[inline]
+    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_current_ledger_obj_field(field_code, buffer.as_mut_ptr().cast(), HASH160_SIZE)
+        };
+        match_result_code_with_expected_bytes_optional(result_code, HASH160_SIZE, || {
+            Some(Hash160::from(unsafe { buffer.assume_init() }))
+        })
+    }
+
+    #[inline]
+    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                register_num,
+                field_code,
+                buffer.as_mut_ptr().cast(),
+                HASH160_SIZE,
+            )
+        };
+        match_result_code_with_expected_bytes(result_code, HASH160_SIZE, || {
+            Hash160::from(unsafe { buffer.assume_init() })
+        })
+    }
+
+    #[inline]
+    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                register_num,
+                field_code,
+                buffer.as_mut_ptr().cast(),
+                HASH160_SIZE,
+            )
+        };
+        match_result_code_with_expected_bytes_optional(result_code, HASH160_SIZE, || {
+            Some(Hash160::from(unsafe { buffer.assume_init() }))
+        })
+    }
+}
+
+/// Implementation of `LedgerObjectFieldGetter` for 192-bit cryptographic hashes.
+///
+/// This implementation handles 24-byte hash fields in XRPL ledger objects.
+/// Hash192 values are used for various cryptographic operations and identifiers.
+///
+/// # Buffer Management
+///
+/// Uses a 24-byte buffer (HASH192_SIZE) and validates that exactly 24 bytes
+/// are returned from the host function to ensure data integrity.
+impl LedgerObjectFieldGetter for Hash192 {
+    #[inline]
+    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_current_ledger_obj_field(field_code, buffer.as_mut_ptr().cast(), HASH192_SIZE)
+        };
+        match_result_code_with_expected_bytes(result_code, HASH192_SIZE, || {
+            Hash192::from(unsafe { buffer.assume_init() })
+        })
+    }
+
+    #[inline]
+    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_current_ledger_obj_field(field_code, buffer.as_mut_ptr().cast(), HASH192_SIZE)
+        };
+        match_result_code_with_expected_bytes_optional(result_code, HASH192_SIZE, || {
+            Some(Hash192::from(unsafe { buffer.assume_init() }))
+        })
+    }
+
+    #[inline]
+    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                register_num,
+                field_code,
+                buffer.as_mut_ptr().cast(),
+                HASH192_SIZE,
+            )
+        };
+        match_result_code_with_expected_bytes(result_code, HASH192_SIZE, || {
+            Hash192::from(unsafe { buffer.assume_init() })
+        })
+    }
+
+    #[inline]
+    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
+        let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                register_num,
+                field_code,
+                buffer.as_mut_ptr().cast(),
+                HASH192_SIZE,
+            )
+        };
+        match_result_code_with_expected_bytes_optional(result_code, HASH192_SIZE, || {
+            Some(Hash192::from(unsafe { buffer.assume_init() }))
+        })
+    }
+}
+
 pub mod current_ledger_object {
     use super::LedgerObjectFieldGetter;
     use crate::host::Result;
+    use crate::sfield::SField;
 
     /// Retrieves a field from the current ledger object.
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - An SField constant that encodes both the field code and expected type
     ///
     /// # Returns
     ///
     /// Returns a `Result<T>` where:
     /// * `Ok(T)` - The field value for the specified field
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use xrpl_wasm_stdlib::core::ledger_objects::current_ledger_object;
+    /// use xrpl_wasm_stdlib::sfield;
+    ///
+    /// // Type is automatically inferred from the SField constant
+    /// let flags = current_ledger_object::get_field(sfield::Flags).unwrap();  // u32
+    /// let balance = current_ledger_object::get_field(sfield::Balance).unwrap();  // u64
+    /// ```
     #[inline]
-    pub fn get_field<T: LedgerObjectFieldGetter>(field_code: i32) -> Result<T> {
-        T::get_from_current_ledger_obj(field_code)
+    pub fn get_field<T: LedgerObjectFieldGetter, const CODE: i32>(
+        _field: SField<T, CODE>,
+    ) -> Result<T> {
+        T::get_from_current_ledger_obj(CODE)
     }
 
     /// Retrieves an optionally present field from the current ledger object.
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - An SField constant that encodes both the field code and expected type
     ///
     /// # Returns
     ///
@@ -236,30 +383,47 @@ pub mod current_ledger_object {
     /// * `Ok(None)` - If the field is not present
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
     #[inline]
-    pub fn get_field_optional<T: LedgerObjectFieldGetter>(field_code: i32) -> Result<Option<T>> {
-        T::get_from_current_ledger_obj_optional(field_code)
+    pub fn get_field_optional<T: LedgerObjectFieldGetter, const CODE: i32>(
+        _field: SField<T, CODE>,
+    ) -> Result<Option<T>> {
+        T::get_from_current_ledger_obj_optional(CODE)
     }
 }
 
 pub mod ledger_object {
     use super::LedgerObjectFieldGetter;
     use crate::host::Result;
+    use crate::sfield::SField;
 
     /// Retrieves a field from a specified ledger object.
     ///
     /// # Arguments
     ///
     /// * `register_num` - The register number holding the ledger object to look for data in
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - An SField constant that encodes both the field code and expected type
     ///
     /// # Returns
     ///
     /// Returns a `Result<T>` where:
     /// * `Ok(T)` - The field value for the specified field
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
+    /// use xrpl_wasm_stdlib::sfield;
+    ///
+    /// // Type is automatically inferred from the SField constant
+    /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+    /// let account = ledger_object::get_field(0, sfield::Account).unwrap();  // AccountID
+    /// ```
     #[inline]
-    pub fn get_field<T: LedgerObjectFieldGetter>(register_num: i32, field_code: i32) -> Result<T> {
-        T::get_from_ledger_obj(register_num, field_code)
+    pub fn get_field<T: LedgerObjectFieldGetter, const CODE: i32>(
+        register_num: i32,
+        _field: SField<T, CODE>,
+    ) -> Result<T> {
+        T::get_from_ledger_obj(register_num, CODE)
     }
 
     /// Retrieves an optionally present field from a specified ledger object.
@@ -267,7 +431,7 @@ pub mod ledger_object {
     /// # Arguments
     ///
     /// * `register_num` - The register number holding the ledger object to look for data in
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - An SField constant that encodes both the field code and expected type
     ///
     /// # Returns
     ///
@@ -276,11 +440,11 @@ pub mod ledger_object {
     /// * `Ok(None)` - If the field is not present in the ledger object
     /// * `Err(Error)` - If the field retrieval operation failed
     #[inline]
-    pub fn get_field_optional<T: LedgerObjectFieldGetter>(
+    pub fn get_field_optional<T: LedgerObjectFieldGetter, const CODE: i32>(
         register_num: i32,
-        field_code: i32,
+        _field: SField<T, CODE>,
     ) -> Result<Option<T>> {
-        T::get_from_ledger_obj_optional(register_num, field_code)
+        T::get_from_ledger_obj_optional(register_num, CODE)
     }
 
     #[cfg(test)]
@@ -338,38 +502,38 @@ pub mod ledger_object {
         fn test_field_getter_basic_types() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
-            expect_current_field(&mut mock, sfield::Flags, 4, 1);
-            expect_current_field(&mut mock, sfield::Balance, 8, 1);
+            expect_current_field(&mut mock, sfield::LedgerEntryType.into(), 2, 1);
+            expect_current_field(&mut mock, sfield::Flags.into(), 4, 1);
+            expect_current_field(&mut mock, sfield::Balance.into(), 8, 1);
 
             let _guard = setup_mock(mock);
 
             // Test that all basic integer types work
-            assert!(u16::get_from_current_ledger_obj(sfield::LedgerEntryType).is_ok());
-            assert!(u32::get_from_current_ledger_obj(sfield::Flags).is_ok());
-            assert!(u64::get_from_current_ledger_obj(sfield::Balance).is_ok());
+            assert!(u16::get_from_current_ledger_obj(sfield::LedgerEntryType.into()).is_ok());
+            assert!(u32::get_from_current_ledger_obj(sfield::Flags.into()).is_ok());
+            assert!(u64::get_from_current_ledger_obj(sfield::Balance.into()).is_ok());
         }
 
         #[test]
         fn test_field_getter_xrpl_types() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
-            expect_current_field(&mut mock, sfield::Amount, 48, 1);
-            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
-            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
-            expect_current_field(&mut mock, sfield::PublicKey, DEFAULT_BLOB_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Amount.into(), 48, 1);
+            expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey.into(), DEFAULT_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
             // Test that XRPL-specific types work
-            assert!(AccountID::get_from_current_ledger_obj(sfield::Account).is_ok());
-            assert!(Amount::get_from_current_ledger_obj(sfield::Amount).is_ok());
-            assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash).is_ok());
-            assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID).is_ok());
+            assert!(AccountID::get_from_current_ledger_obj(sfield::Account.into()).is_ok());
+            assert!(Amount::get_from_current_ledger_obj(sfield::Amount.into()).is_ok());
+            assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).is_ok());
+            assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).is_ok());
 
             let blob: Blob<DEFAULT_BLOB_SIZE> =
-                Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
+                Blob::get_from_current_ledger_obj(sfield::PublicKey.into()).unwrap();
             // The test host returns buffer length as the result
             assert_eq!(blob.len, DEFAULT_BLOB_SIZE);
         }
@@ -378,17 +542,17 @@ pub mod ledger_object {
         fn test_field_getter_optional_variants() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::Flags, 4, 1);
-            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Flags.into(), 4, 1);
+            expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval
-            let result = u32::get_from_current_ledger_obj_optional(sfield::Flags);
+            let result = u32::get_from_current_ledger_obj_optional(sfield::Flags.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
-            let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account);
+            let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -398,16 +562,16 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 8, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
             // Test ledger object field retrieval with slot numbers
-            assert!(u32::get_from_ledger_obj(slot, sfield::Flags).is_ok());
-            assert!(u64::get_from_ledger_obj(slot, sfield::Balance).is_ok());
-            assert!(AccountID::get_from_ledger_obj(slot, sfield::Account).is_ok());
+            assert!(u32::get_from_ledger_obj(slot, sfield::Flags.into()).is_ok());
+            assert!(u64::get_from_ledger_obj(slot, sfield::Balance.into()).is_ok());
+            assert!(AccountID::get_from_ledger_obj(slot, sfield::Account.into()).is_ok());
         }
 
         #[test]
@@ -415,12 +579,12 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
 
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval with slot numbers
-            let result = u32::get_from_ledger_obj_optional(slot, sfield::Flags);
+            let result = u32::get_from_ledger_obj_optional(slot, sfield::Flags.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -433,16 +597,16 @@ pub mod ledger_object {
         fn test_current_ledger_object_module() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::Flags, 4, 2);
-            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Flags.into(), 4, 2);
+            expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
             // Test the current_ledger_object module's convenience functions
-            assert!(current_ledger_object::get_field::<u32>(sfield::Flags).is_ok());
-            assert!(current_ledger_object::get_field::<AccountID>(sfield::Account).is_ok());
+            assert!(current_ledger_object::get_field(sfield::Flags).is_ok());
+            assert!(current_ledger_object::get_field(sfield::Account).is_ok());
 
-            let result = current_ledger_object::get_field_optional::<u32>(sfield::Flags);
+            let result = current_ledger_object::get_field_optional(sfield::Flags);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -452,28 +616,40 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::LedgerEntryType, 2, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 2);
-            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Amount, 48, 1);
-            expect_ledger_field(&mut mock, slot, sfield::EmailHash, HASH128_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::PreviousTxnID, HASH256_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::PublicKey, 33, 1);
+            expect_ledger_field(&mut mock, slot, sfield::LedgerEntryType.into(), 2, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 2);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PreviousTxnID.into(),
+                HASH256_SIZE,
+                1,
+            );
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PublicKey.into(),
+                DEFAULT_BLOB_SIZE,
+                1,
+            );
 
             let _guard = setup_mock(mock);
 
             // Test the ledger_object module's convenience functions
-            assert!(ledger_object::get_field::<u16>(slot, sfield::LedgerEntryType).is_ok());
-            assert!(ledger_object::get_field::<u32>(slot, sfield::Flags).is_ok());
-            assert!(ledger_object::get_field::<u64>(slot, sfield::Balance).is_ok());
-            assert!(ledger_object::get_field::<AccountID>(slot, sfield::Account).is_ok());
-            assert!(ledger_object::get_field::<Amount>(slot, sfield::Amount).is_ok());
-            assert!(ledger_object::get_field::<Hash128>(slot, sfield::EmailHash).is_ok());
-            assert!(ledger_object::get_field::<Hash256>(slot, sfield::PreviousTxnID).is_ok());
-            assert!(ledger_object::get_field::<Blob<33>>(slot, sfield::PublicKey).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::LedgerEntryType).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::Flags).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::Balance).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::Account).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::Amount).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::EmailHash).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::PreviousTxnID).is_ok());
+            assert!(ledger_object::get_field(slot, sfield::PublicKey).is_ok());
 
-            let result = ledger_object::get_field_optional::<u32>(slot, sfield::Flags);
+            let result = ledger_object::get_field_optional(slot, sfield::Flags);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -487,16 +663,16 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Balance, 8, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Sequence, 4, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Sequence.into(), 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
 
             let _guard = setup_mock(mock);
 
             // Verify type inference works with turbofish syntax
-            let _balance = get_field::<u64>(slot, sfield::Balance);
-            let _account = get_field::<AccountID>(slot, sfield::Account);
+            let _balance = get_field(slot, sfield::Balance);
+            let _account = get_field(slot, sfield::Account);
 
             // Verify type inference works with type annotations
             let _sequence: Result<u32> = get_field(slot, sfield::Sequence);
@@ -511,25 +687,31 @@ pub mod ledger_object {
         fn test_type_sizes() {
             let mut mock = MockHostBindings::new();
 
-            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
-            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
-            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
-            expect_current_field(&mut mock, sfield::PublicKey, PUBLIC_KEY_BUFFER_SIZE, 1);
+            expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_current_field(
+                &mut mock,
+                sfield::PublicKey.into(),
+                PUBLIC_KEY_BUFFER_SIZE,
+                1,
+            );
 
             let _guard = setup_mock(mock);
 
             // Verify that returned types have the expected sizes
-            let hash128 = Hash128::get_from_current_ledger_obj(sfield::EmailHash).unwrap();
+            let hash128 = Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).unwrap();
             assert_eq!(hash128.as_bytes().len(), HASH128_SIZE);
 
-            let hash256 = Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID).unwrap();
+            let hash256 =
+                Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).unwrap();
             assert_eq!(hash256.as_bytes().len(), HASH256_SIZE);
 
-            let account = AccountID::get_from_current_ledger_obj(sfield::Account).unwrap();
+            let account = AccountID::get_from_current_ledger_obj(sfield::Account.into()).unwrap();
             assert_eq!(account.0.len(), ACCOUNT_ID_SIZE);
 
             let blob: Blob<{ PUBLIC_KEY_BUFFER_SIZE }> =
-                Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
+                Blob::get_from_current_ledger_obj(sfield::PublicKey.into()).unwrap();
             // In test environment, host returns buffer size as result code
             assert_eq!(blob.len, PUBLIC_KEY_BUFFER_SIZE);
             assert_eq!(blob.data.len(), PUBLIC_KEY_BUFFER_SIZE);

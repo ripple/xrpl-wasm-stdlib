@@ -1,9 +1,8 @@
 use crate::core::ledger_objects::{current_ledger_object, ledger_object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{Blob, CONDITION_BLOB_SIZE, ConditionBlob, UriBlob, WasmBlob};
+use crate::core::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, StandardBlob};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
 use crate::core::types::uint::{Hash128, Hash256};
 
 /// This module provides traits for interacting with XRP Ledger objects.
@@ -120,7 +119,11 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         let mut buffer = [0u8; CONDITION_BLOB_SIZE];
 
         let result_code = unsafe {
-            get_current_ledger_obj_field(sfield::Condition, buffer.as_mut_ptr(), buffer.len())
+            get_current_ledger_obj_field(
+                sfield::Condition.into(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
         };
 
         match_result_code_optional(result_code, || {
@@ -190,7 +193,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
+    fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::FinishFunction)
     }
 
@@ -207,8 +210,9 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_data(&self) -> Result<ContractData> {
         let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
-        let result_code =
-            unsafe { get_current_ledger_obj_field(sfield::Data, data.as_mut_ptr(), data.len()) };
+        let result_code = unsafe {
+            get_current_ledger_obj_field(sfield::Data.into(), data.as_mut_ptr(), data.len())
+        };
 
         match result_code {
             code if code >= 0 => Ok(ContractData {
@@ -260,7 +264,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Amount,
+                sfield::Amount.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -284,7 +288,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Condition,
+                sfield::Condition.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
             )
@@ -357,7 +361,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
+    fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 
@@ -382,7 +386,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let result_code = unsafe {
             get_ledger_obj_field(
                 self.get_slot_num(),
-                sfield::Data,
+                sfield::Data.into(),
                 data.as_mut_ptr(),
                 data.len(),
             )
@@ -434,7 +438,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
 
     /// A domain associated with this account. In JSON, this is the hexadecimal for the ASCII representation of the
     /// domain. Cannot be more than 256 bytes in length.
-    fn domain(&self) -> Result<Option<UriBlob>> {
+    fn domain(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Domain)
     }
 
@@ -457,7 +461,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// A public key that may be used to send encrypted messages to this account. In JSON, uses hexadecimal.
     /// Must be exactly 33 bytes, with the first byte indicating the key type: 0x02 or 0x03 for secp256k1 keys,
     /// 0xED for Ed25519 keys.
-    fn message_key(&self) -> Result<Option<Blob<{ PUBLIC_KEY_BUFFER_SIZE }>>> {
+    fn message_key(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MessageKey)
     }
 
