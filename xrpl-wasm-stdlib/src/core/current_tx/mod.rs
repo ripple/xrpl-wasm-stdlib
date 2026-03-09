@@ -65,6 +65,7 @@ use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_tx_field};
+use crate::sfield;
 
 /// Trait for types that can be retrieved from current transaction fields.
 ///
@@ -245,7 +246,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 /// ```
 #[inline]
 pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(
-    _field: crate::sfield::SField<T, CODE>,
+    _field: sfield::SField<T, CODE>,
 ) -> Result<T> {
     T::get_from_current_tx(CODE)
 }

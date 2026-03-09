@@ -6,6 +6,7 @@ use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::sfield::SField;
 
 /// A generic unsigned integer type with configurable byte size.
 ///
@@ -76,36 +77,44 @@ pub type Hash256 = UInt256;
 /// are returned from the host function to ensure data integrity.
 impl LedgerObjectFieldGetter for Hash128 {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH128_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH128_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH128_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH128_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
@@ -124,36 +133,44 @@ impl LedgerObjectFieldGetter for Hash128 {
 /// are returned from the host function to ensure data integrity.
 impl LedgerObjectFieldGetter for Hash256 {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))

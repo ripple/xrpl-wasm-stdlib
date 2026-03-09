@@ -240,7 +240,15 @@ pub trait TransactionCommonFields {
     /// only provides the key claimed to be used for signing. The XRPL network performs signature
     /// validation before transaction execution.
     fn get_signing_pub_key(&self) -> Result<PublicKey> {
-        get_field(sfield::SigningPubKey)
+        get_field(sfield::SigningPubKey).and_then(|blob| {
+            if blob.len == 33 {
+                Result::Ok(PublicKey::from(blob.data))
+            } else {
+                Result::Err(crate::host::Error::from_code(
+                    crate::host::error_codes::INTERNAL_ERROR,
+                ))
+            }
+        })
     }
 
     /// Retrieves the ticket sequence from the current transaction.

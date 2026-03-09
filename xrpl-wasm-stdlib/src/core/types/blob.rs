@@ -2,15 +2,16 @@ use crate::core::current_tx::CurrentTxFieldGetter;
 use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::sfield::SField;
 
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
 
-pub const DOMAIN_BLOB_SIZE: usize = 256;
-
 /// The maximum number of bytes in a Condition. Xrpld currently caps this value at 128 bytes
 /// (see `maxSerializedCondition` in xrpld source code), so we do the same here.
 pub const CONDITION_BLOB_SIZE: usize = 128;
+
+pub const DOMAIN_BLOB_SIZE: usize = 256;
 
 /// The maximum number of bytes in a Fulfillment. Theoretically, the crypto-condition format allows for much larger
 /// fulfillments, but xrpld currently caps this value at 256 bytes (see `maxSerializedFulfillment` in xrpld source
@@ -19,6 +20,10 @@ pub const FULFILLMENT_BLOB_SIZE: usize = 256;
 
 // Declared here because there is no Memo struct.
 pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
+
+/// The number of bytes in a Public key. In XRPL, ed25519 public keys are prefixed with a one-byte prefix (i.e., `0xED`)
+/// to be consistent with secp256k1 public keys, which always have 33 bytes.
+pub const PUBLIC_KEY_BLOB_SIZE: usize = 33;
 
 /// Maximum size of a signature in bytes.
 ///
@@ -146,6 +151,9 @@ pub type UriBlob = Blob<URI_BLOB_SIZE>;
 /// Type alias for 4KB blob (for WASM bytecode)
 pub type WasmBlob = Blob<WASM_BLOB_SIZE>;
 
+/// Type alias for 33-byte blob (for Public Key fields)
+pub type PublicKeyBlob = Blob<PUBLIC_KEY_BLOB_SIZE>;
+
 pub type EmptyBlob = Blob<0>;
 
 /// Empty blob constant.
@@ -172,32 +180,40 @@ pub const EMPTY_BLOB: EmptyBlob = Blob {
 /// * `N` - The maximum capacity of the blob buffer in bytes
 impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<N, _>(i32::from(field), |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|(data, len)| Blob { data, len })
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<N, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
+        get_variable_size_field::<N, _>(i32::from(field), |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|(data, len)| Blob { data, len })
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<N, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
