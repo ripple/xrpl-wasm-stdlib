@@ -359,18 +359,21 @@ impl LedgerObjectFieldGetter for Amount {
 /// internally. No strict byte count validation is performed since amounts can vary in size.
 impl CurrentTxFieldGetter for Amount {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
             get_tx_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
+            i32::from(field),
+            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+        )
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }

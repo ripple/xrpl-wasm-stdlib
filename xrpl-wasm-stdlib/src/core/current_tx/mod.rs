@@ -65,7 +65,7 @@ use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_tx_field};
-use crate::sfield;
+use crate::sfield::SField;
 
 /// Trait for types that can be retrieved from current transaction fields.
 ///
@@ -128,7 +128,7 @@ pub trait CurrentTxFieldGetter: Sized {
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - The SField identifying which field to retrieve
     ///
     /// # Returns
     ///
@@ -136,7 +136,7 @@ pub trait CurrentTxFieldGetter: Sized {
     /// * `Ok(Self)` - The field value for the specified field
     /// * `Err(Error::FieldNotFound)` - If the field is not present in the transaction
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
-    fn get_from_current_tx(field_code: i32) -> Result<Self>;
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self>;
 
     /// Get an optional field from the current transaction.
     ///
@@ -145,7 +145,7 @@ pub trait CurrentTxFieldGetter: Sized {
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - The SField identifying which field to retrieve
     ///
     /// # Returns
     ///
@@ -153,7 +153,9 @@ pub trait CurrentTxFieldGetter: Sized {
     /// * `Ok(Some(Self))` - The field value for the specified field
     /// * `Ok(None)` - If the field is not present in the transaction (i.e., result_code == FIELD_NOT_FOUND)
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>>;
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>>;
 }
 
 /// Trait for types that can be retrieved as fixed-size fields from transactions.
@@ -204,18 +206,22 @@ impl FixedSizeFieldType for u64 {
 /// The buffer size is determined at compile-time via the `SIZE` constant.
 impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { get_tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code =
+            unsafe { get_tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes(result_code, T::SIZE, || unsafe {
             value.assume_init()
         })
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { get_tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code =
+            unsafe { get_tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, T::SIZE, || {
             Some(unsafe { value.assume_init() })
         })
@@ -245,10 +251,8 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 /// let account = get_field(sfield::Account).unwrap();  // AccountID
 /// ```
 #[inline]
-pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(
-    _field: sfield::SField<T, CODE>,
-) -> Result<T> {
-    T::get_from_current_tx(CODE)
+pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE>) -> Result<T> {
+    T::get_from_current_tx(field)
 }
 
 /// Retrieves an optionally present field from the current transaction using an SField constant.
@@ -276,7 +280,7 @@ pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(
 /// ```
 #[inline]
 pub fn get_field_optional<T: CurrentTxFieldGetter, const CODE: i32>(
-    _field: crate::sfield::SField<T, CODE>,
+    field: SField<T, CODE>,
 ) -> Result<Option<T>> {
-    T::get_from_current_tx_optional(CODE)
+    T::get_from_current_tx_optional(field)
 }

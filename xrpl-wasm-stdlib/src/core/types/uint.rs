@@ -189,18 +189,20 @@ impl LedgerObjectFieldGetter for Hash256 {
 /// are returned from the host function to ensure data integrity.
 impl CurrentTxFieldGetter for Hash256 {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
-            field_code,
+            i32::from(field),
             |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
