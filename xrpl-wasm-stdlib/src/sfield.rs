@@ -1,14 +1,17 @@
 #![allow(non_upper_case_globals)]
 
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::ledger_objects::array_object::{Array, Object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::StandardBlob;
+use crate::core::types::blob::{
+    Blob, ConditionBlob, FulfillmentBlob, SignatureBlob, StandardBlob, UriBlob, WasmBlob,
+};
 use crate::core::types::currency::Currency;
 use crate::core::types::issue::Issue;
+use crate::core::types::{public_key, transaction_type};
 
 use crate::core::types::uint::{Hash128, Hash160, Hash192, Hash256};
+use core::borrow::Borrow;
 use core::marker::PhantomData;
 
 /// A type-safe wrapper for XRPL serialized field codes.
@@ -16,22 +19,31 @@ use core::marker::PhantomData;
 /// This struct encodes both the field code and the expected type as const generics,
 /// allowing the compiler to automatically infer the correct type when calling `get_field`.
 ///
+/// The type parameter `T` represents the expected Rust type for this field, which can be
+/// used with various field getter traits like `LedgerObjectFieldGetter` or `CurrentTxFieldGetter`.
+///
 /// # Example
 ///
 /// ```rust,no_run
 /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
+/// use xrpl_wasm_stdlib::core::current_tx::get_field;
 /// use xrpl_wasm_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
+/// // Works with ledger objects:
 /// let flags = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
 /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+///
+/// // Also works with current transaction:
+/// let account = get_field(sfield::Account).unwrap();  // AccountID
+/// let sequence = get_field(sfield::Sequence).unwrap();  // u32
 /// ```
-#[derive(Copy, Clone)]
-pub struct SField<T: LedgerObjectFieldGetter, const CODE: i32> {
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct SField<T, const CODE: i32> {
     _phantom: PhantomData<T>,
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> SField<T, CODE> {
+impl<T, const CODE: i32> SField<T, CODE> {
     /// Creates a new SField constant.
     ///
     /// This is a const function that can be used to initialize SField constants.
@@ -42,15 +54,26 @@ impl<T: LedgerObjectFieldGetter, const CODE: i32> SField<T, CODE> {
     }
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> From<SField<T, CODE>> for i32 {
+impl<T, const CODE: i32> From<SField<T, CODE>> for i32 {
     fn from(_: SField<T, CODE>) -> Self {
         CODE
     }
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> Default for SField<T, CODE> {
+impl<T, const CODE: i32> Default for SField<T, CODE> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<T, const CODE: i32> Borrow<i32> for SField<T, CODE> {
+    fn borrow(&self) -> &i32 {
+        // This is a bit of a hack, but it works because CODE is a compile-time constant
+        // We create a static reference to the code value
+        const fn make_static<const C: i32>() -> &'static i32 {
+            &C
+        }
+        make_static::<CODE>()
     }
 }
 
@@ -62,7 +85,7 @@ pub const index: SField<u8, 0> = SField::new();
 // Placeholder SField constants for array and object types
 // These types don't have FieldGetter implementations but are represented as SField<u8, CODE>
 pub const LedgerEntryType: SField<u16, 65537> = SField::new();
-pub const TransactionType: SField<u16, 65538> = SField::new();
+pub const TransactionType: SField<transaction_type::TransactionType, 65538> = SField::new();
 pub const SignerWeight: SField<u16, 65539> = SField::new();
 pub const TransferFee: SField<u16, 65540> = SField::new();
 pub const TradingFee: SField<u16, 65541> = SField::new();
@@ -239,12 +262,12 @@ pub const SignatureReward: SField<Amount, 393245> = SField::new();
 pub const MinAccountCreateAmount: SField<Amount, 393246> = SField::new();
 pub const LPTokenBalance: SField<Amount, 393247> = SField::new();
 pub const PublicKey: SField<StandardBlob, 458753> = SField::new();
-pub const MessageKey: SField<StandardBlob, 458754> = SField::new();
-pub const SigningPubKey: SField<StandardBlob, 458755> = SField::new();
-pub const TxnSignature: SField<StandardBlob, 458756> = SField::new();
+pub const MessageKey: SField<Blob<33>, 458754> = SField::new();
+pub const SigningPubKey: SField<public_key::PublicKey, 458755> = SField::new();
+pub const TxnSignature: SField<SignatureBlob, 458756> = SField::new();
 pub const URI: SField<StandardBlob, 458757> = SField::new();
 pub const Signature: SField<StandardBlob, 458758> = SField::new();
-pub const Domain: SField<StandardBlob, 458759> = SField::new();
+pub const Domain: SField<UriBlob, 458759> = SField::new();
 pub const FundCode: SField<StandardBlob, 458760> = SField::new();
 pub const RemoveCode: SField<StandardBlob, 458761> = SField::new();
 pub const ExpireCode: SField<StandardBlob, 458762> = SField::new();
@@ -252,8 +275,8 @@ pub const CreateCode: SField<StandardBlob, 458763> = SField::new();
 pub const MemoType: SField<StandardBlob, 458764> = SField::new();
 pub const MemoData: SField<StandardBlob, 458765> = SField::new();
 pub const MemoFormat: SField<StandardBlob, 458766> = SField::new();
-pub const Fulfillment: SField<StandardBlob, 458768> = SField::new();
-pub const Condition: SField<StandardBlob, 458769> = SField::new();
+pub const Fulfillment: SField<FulfillmentBlob, 458768> = SField::new();
+pub const Condition: SField<ConditionBlob, 458769> = SField::new();
 pub const MasterSignature: SField<StandardBlob, 458770> = SField::new();
 pub const UNLModifyValidator: SField<StandardBlob, 458771> = SField::new();
 pub const ValidatorToDisable: SField<StandardBlob, 458772> = SField::new();
@@ -268,7 +291,7 @@ pub const AssetClass: SField<StandardBlob, 458780> = SField::new();
 pub const Provider: SField<StandardBlob, 458781> = SField::new();
 pub const MPTokenMetadata: SField<StandardBlob, 458782> = SField::new();
 pub const CredentialType: SField<StandardBlob, 458783> = SField::new();
-pub const FinishFunction: SField<StandardBlob, 458784> = SField::new();
+pub const FinishFunction: SField<WasmBlob, 458784> = SField::new();
 pub const Account: SField<AccountID, 524289> = SField::new();
 pub const Owner: SField<AccountID, 524290> = SField::new();
 pub const Destination: SField<AccountID, 524291> = SField::new();
