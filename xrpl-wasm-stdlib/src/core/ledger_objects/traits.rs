@@ -1,7 +1,9 @@
 use crate::core::ledger_objects::{current_ledger_object, ledger_object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{Blob, CONDITION_BLOB_SIZE, ConditionBlob, UriBlob, WasmBlob};
+use crate::core::types::blob::{
+    CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob,
+};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use crate::core::types::uint::{Hash128, Hash256};
 
@@ -455,7 +457,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// Must be exactly 33 bytes, with the first byte indicating the key type: 0x02 or 0x03 for secp256k1 keys,
     /// 0xED for Ed25519 keys.
     // TODO: See https://github.com/ripple/xrpl-wasm-stdlib/issues/106
-    fn message_key(&self) -> Result<Option<Blob<33>>> {
+    fn message_key(&self) -> Result<Option<PublicKeyBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MessageKey)
     }
 
