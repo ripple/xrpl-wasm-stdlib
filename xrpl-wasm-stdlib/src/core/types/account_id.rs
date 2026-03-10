@@ -112,3 +112,24 @@ impl CurrentTxFieldGetter for AccountID {
         .map(|buffer| buffer.map(|b| b.into()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_account_id_byte_order_preserved() {
+        // Test with distinct byte values to verify no byte swapping
+        let mut bytes = [0u8; ACCOUNT_ID_SIZE];
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte = i as u8;
+        }
+
+        let account_id = AccountID::from(bytes);
+
+        // Verify each byte is in the correct position
+        for i in 0..ACCOUNT_ID_SIZE {
+            assert_eq!(account_id.0[i], i as u8);
+        }
+    }
+}
