@@ -32,7 +32,7 @@ use core::marker::PhantomData;
 /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
 /// // current transaction:
 /// let account = current_tx::get_field(sfield::Account).unwrap();  // AccountID
-/// let sequence = curenet_tx::get_field(sfield::Sequence).unwrap();  // u32
+/// let sequence = current_tx::get_field(sfield::Sequence).unwrap();  // u32
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SField<T, const CODE: i32> {
