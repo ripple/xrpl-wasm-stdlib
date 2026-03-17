@@ -116,26 +116,19 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
+        let mut buffer = ConditionBlob::new();
 
         let result_code = unsafe {
             get_current_ledger_obj_field(
                 sfield::Condition.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
+                buffer.data.as_mut_ptr(),
+                buffer.capacity(),
             )
         };
 
         match_result_code_optional(result_code, || {
-            if result_code > 0 {
-                let blob = ConditionBlob {
-                    data: buffer,
-                    len: result_code as usize,
-                };
-                Some(blob)
-            } else {
-                None
-            }
+            buffer.len = result_code as usize;
+            (result_code > 0).then_some(buffer)
         })
     }
 
