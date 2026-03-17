@@ -25,14 +25,16 @@ use core::marker::PhantomData;
 /// ```rust,no_run
 /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
 /// use xrpl_wasm_stdlib::core::current_tx;
+/// use xrpl_wasm_stdlib::core::types::amount::Amount;
 /// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 ///
 /// // Type is automatically inferred from the SField constant, for both ledger_objects and current_transaction:
-/// let flags = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
-/// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+/// let flags:u32 = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
+/// let balance:Amount = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
 /// // current transaction:
-/// let account = current_tx::get_field(sfield::Account).unwrap();  // AccountID
-/// let sequence = current_tx::get_field(sfield::Sequence).unwrap();  // u32
+/// let account:AccountID = current_tx::get_field(sfield::Account).unwrap();  // AccountID
+/// let sequence:u32 = current_tx::get_field(sfield::Sequence).unwrap();  // u32
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SField<T, const CODE: i32> {
