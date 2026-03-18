@@ -400,7 +400,7 @@ pub mod current_ledger_object {
         use super::*;
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
         use crate::core::types::amount::{AMOUNT_SIZE, Amount};
-        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE};
+        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
         use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
@@ -462,7 +462,7 @@ pub mod current_ledger_object {
             assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash).is_ok());
             assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID).is_ok());
 
-            let blob: Blob<33> = Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
+            let blob: PublicKeyBlob = Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
             assert_eq!(blob.len, 33);
         }
 

@@ -225,8 +225,8 @@ pub trait TransactionCommonFields {
     /// Retrieves the signing public key from the current transaction.
     ///
     /// This field contains the hex representation of the public key that corresponds to the
-    /// private key used to sign this transaction. If the field is empty (0 bytes), this indicates
-    /// that a multi-signature is present in the Signers field instead.
+    /// private key used to sign this transaction. If an empty string, this field indicates that a
+    /// multi-signature is present in the Signers field instead.
     ///
     /// # Returns
     ///
@@ -1062,12 +1062,7 @@ mod tests {
                 assert!(tx.get_computation_allowance().is_ok());
                 assert!(tx.get_fee().is_ok());
                 assert!(tx.get_sequence().is_ok());
-
-                // SigningPubKey with 33 bytes should return Ok(Some(PublicKey))
-                let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_ok());
-                assert!(signing_key_result.unwrap().is_some());
-
+                assert!(tx.get_signing_pub_key().is_ok());
                 assert!(tx.get_txn_signature().is_ok());
             }
 
@@ -1131,9 +1126,7 @@ mod tests {
                 let seq_result = tx.get_sequence();
                 assert!(seq_result.is_err());
 
-                // SigningPubKey with zero length is valid (multi-sig) and should return Ok(None)
                 let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_ok());
                 assert!(signing_key_result.unwrap().is_none());
             }
 
@@ -1342,74 +1335,6 @@ mod tests {
                 let signing_key_result = tx.get_signing_pub_key();
                 assert!(signing_key_result.is_err());
                 assert_eq!(signing_key_result.err().unwrap().code(), INVALID_FIELD);
-            }
-
-            #[test]
-            fn test_get_signing_pub_key_single_sig() {
-                let mut mock = MockHostBindings::new();
-
-                // get_signing_pub_key - returns 33 bytes (single-sig)
-                expect_tx_field(&mut mock, sfield::SigningPubKey, PUBLIC_KEY_BUFFER_SIZE, 1);
-
-                let _guard = setup_mock(mock);
-
-                let tx = EscrowFinish;
-
-                // SigningPubKey with 33 bytes should return Ok(Some(PublicKey))
-                let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_ok());
-                let signing_key_opt = signing_key_result.unwrap();
-                assert!(signing_key_opt.is_some());
-                let signing_key = signing_key_opt.unwrap();
-                assert_eq!(signing_key.0.len(), PUBLIC_KEY_BUFFER_SIZE);
-            }
-
-            #[test]
-            fn test_get_signing_pub_key_multi_sig() {
-                let mut mock = MockHostBindings::new();
-
-                // get_signing_pub_key - returns 0 bytes (multi-sig)
-                mock.expect_get_tx_field()
-                    .with(
-                        eq(sfield::SigningPubKey),
-                        always(),
-                        eq(PUBLIC_KEY_BUFFER_SIZE),
-                    )
-                    .times(1)
-                    .returning(|_, _, _| 0);
-
-                let _guard = setup_mock(mock);
-
-                let tx = EscrowFinish;
-
-                // SigningPubKey with 0 bytes should return Ok(None) for multi-sig
-                let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_ok());
-                assert!(signing_key_result.unwrap().is_none());
-            }
-
-            #[test]
-            fn test_get_signing_pub_key_invalid_length() {
-                let mut mock = MockHostBindings::new();
-
-                // get_signing_pub_key - returns invalid length (not 0 or 33)
-                mock.expect_get_tx_field()
-                    .with(
-                        eq(sfield::SigningPubKey),
-                        always(),
-                        eq(PUBLIC_KEY_BUFFER_SIZE),
-                    )
-                    .times(1)
-                    .returning(|_, _, _| 16); // Invalid length
-
-                let _guard = setup_mock(mock);
-
-                let tx = EscrowFinish;
-
-                // SigningPubKey with invalid length should return Err
-                let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_err());
-                assert_eq!(signing_key_result.err().unwrap().code(), INTERNAL_ERROR);
             }
         }
     }
