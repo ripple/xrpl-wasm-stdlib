@@ -41,14 +41,12 @@
 use crate::core::current_tx::{get_field, get_field_optional};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{
-    CONDITION_BLOB_SIZE, ConditionBlob, FULFILLMENT_BLOB_SIZE, FulfillmentBlob, SignatureBlob,
-};
+use crate::core::types::blob::{ConditionBlob, FulfillmentBlob, SignatureBlob};
 use crate::core::types::public_key::PublicKey;
 use crate::core::types::transaction_type::TransactionType;
 use crate::core::types::uint::Hash256;
 use crate::host::error_codes::match_result_code_optional;
-use crate::host::{Error, Result, get_tx_field};
+use crate::host::{Result, get_tx_field};
 use crate::sfield;
 
 /// Trait providing access to common fields present in all XRPL transactions.
@@ -352,22 +350,18 @@ pub trait EscrowFinishFields: TransactionCommonFields {
     /// * `Ok(None)` - If the escrow has no cryptographic condition (time-based only)
     /// * `Err(Error)` - If an error occurred during field retrieval
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
-
-        let result_code =
-            unsafe { get_tx_field(sfield::Condition.into(), buffer.as_mut_ptr(), buffer.len()) };
-
-        if result_code < 0 {
-            Result::Err(Error::from_code(result_code))
-        } else if result_code == 0 {
-            Result::Ok(None)
-        } else {
-            let blob = ConditionBlob {
-                data: buffer,
-                len: result_code as usize,
-            };
-            Result::Ok(Some(blob))
-        }
+        let mut buffer = ConditionBlob::new();
+        let result_code = unsafe {
+            get_tx_field(
+                sfield::Condition.into(),
+                buffer.data.as_mut_ptr(),
+                buffer.capacity(),
+            )
+        };
+        match_result_code_optional(result_code, || {
+            buffer.len = result_code as usize;
+            (result_code > 0).then_some(buffer)
+        })
     }
 
     /// Retrieves the cryptographic fulfillment from the current EscrowFinish transaction.
@@ -397,19 +391,17 @@ pub trait EscrowFinishFields: TransactionCommonFields {
     /// This limit ensures network performance while supporting the most practical
     /// cryptographic proof scenarios.
     fn get_fulfillment(&self) -> Result<Option<FulfillmentBlob>> {
-        // Fulfillment fields are limited in rippled to 256 bytes, so we don't use `get_blob_field`
-        // but instead just use a smaller buffer directly.
-
-        let mut buffer = [0u8; FULFILLMENT_BLOB_SIZE]; // <-- 256 is the current rippled cap.
-
-        let result_code =
-            unsafe { get_tx_field(sfield::Fulfillment.into(), buffer.as_mut_ptr(), 256) };
+        let mut buffer = FulfillmentBlob::new();
+        let result_code = unsafe {
+            get_tx_field(
+                sfield::Fulfillment.into(),
+                buffer.data.as_mut_ptr(),
+                buffer.capacity(),
+            )
+        };
         match_result_code_optional(result_code, || {
-            let blob = FulfillmentBlob {
-                data: buffer,
-                len: result_code as usize,
-            };
-            Some(blob)
+            buffer.len = result_code as usize;
+            (result_code > 0).then_some(buffer)
         })
     }
 }
@@ -418,6 +410,7 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 mod tests {
     use super::*;
     use crate::core::current_tx::escrow_finish::EscrowFinish;
+    use crate::core::types::blob::{CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
     use mockall::predicate::{always, eq};

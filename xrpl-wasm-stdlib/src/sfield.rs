@@ -1,14 +1,15 @@
 #![allow(non_upper_case_globals)]
 
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::ledger_objects::array_object::{Array, Object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
 use crate::core::types::blob::StandardBlob;
 use crate::core::types::currency::Currency;
 use crate::core::types::issue::Issue;
+use crate::core::types::transaction_type::TransactionType;
 
 use crate::core::types::uint::{Hash128, Hash160, Hash192, Hash256};
+use core::borrow::Borrow;
 use core::marker::PhantomData;
 
 /// A type-safe wrapper for XRPL serialized field codes.
@@ -16,22 +17,31 @@ use core::marker::PhantomData;
 /// This struct encodes both the field code and the expected type as const generics,
 /// allowing the compiler to automatically infer the correct type when calling `get_field`.
 ///
+/// The type parameter `T` represents the expected Rust type for this field, which can be
+/// used with various field getter traits like `LedgerObjectFieldGetter` or `CurrentTxFieldGetter`.
+///
 /// # Example
 ///
 /// ```rust,no_run
 /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
+/// use xrpl_wasm_stdlib::core::current_tx;
+/// use xrpl_wasm_stdlib::core::types::amount::Amount;
 /// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 ///
-/// // Type is automatically inferred from the SField constant
-/// let flags = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
-/// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+/// // Type is automatically inferred from the SField constant, for both ledger_objects and current_transaction:
+/// let flags:u32 = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
+/// let balance:Amount = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+/// // current transaction:
+/// let account:AccountID = current_tx::get_field(sfield::Account).unwrap();  // AccountID
+/// let sequence:u32 = current_tx::get_field(sfield::Sequence).unwrap();  // u32
 /// ```
-#[derive(Copy, Clone)]
-pub struct SField<T: LedgerObjectFieldGetter, const CODE: i32> {
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct SField<T, const CODE: i32> {
     _phantom: PhantomData<T>,
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> SField<T, CODE> {
+impl<T, const CODE: i32> SField<T, CODE> {
     /// Creates a new SField constant.
     ///
     /// This is a const function that can be used to initialize SField constants.
@@ -42,15 +52,26 @@ impl<T: LedgerObjectFieldGetter, const CODE: i32> SField<T, CODE> {
     }
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> From<SField<T, CODE>> for i32 {
+impl<T, const CODE: i32> From<SField<T, CODE>> for i32 {
     fn from(_: SField<T, CODE>) -> Self {
         CODE
     }
 }
 
-impl<T: LedgerObjectFieldGetter, const CODE: i32> Default for SField<T, CODE> {
+impl<T, const CODE: i32> Default for SField<T, CODE> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<T, const CODE: i32> Borrow<i32> for SField<T, CODE> {
+    fn borrow(&self) -> &i32 {
+        // This is a bit of a hack, but it works because CODE is a compile-time constant
+        // We create a static reference to the code value
+        const fn make_static<const C: i32>() -> &'static i32 {
+            &C
+        }
+        make_static::<CODE>()
     }
 }
 
@@ -62,7 +83,7 @@ pub const index: SField<u8, 0> = SField::new();
 // Placeholder SField constants for array and object types
 // These types don't have FieldGetter implementations but are represented as SField<u8, CODE>
 pub const LedgerEntryType: SField<u16, 65537> = SField::new();
-pub const TransactionType: SField<u16, 65538> = SField::new();
+pub const TransactionType: SField<TransactionType, 65538> = SField::new();
 pub const SignerWeight: SField<u16, 65539> = SField::new();
 pub const TransferFee: SField<u16, 65540> = SField::new();
 pub const TradingFee: SField<u16, 65541> = SField::new();
