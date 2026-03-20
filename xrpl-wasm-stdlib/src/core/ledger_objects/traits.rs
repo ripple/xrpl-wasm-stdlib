@@ -55,7 +55,7 @@ pub trait LedgerObjectCommonFields {
     ///
     /// The ledger entry type as a u16 value
     fn get_ledger_entry_type(&self) -> Result<u16> {
-        current_ledger_object::get_field(sfield::LedgerEntryType)
+        ledger_object::get_field(self.get_slot_num(), sfield::LedgerEntryType)
     }
 }
 
@@ -593,7 +593,7 @@ mod tests {
             // get_flags
             expect_ledger_field(&mut mock, 1, sfield::Flags, 4, 1);
             // get_ledger_entry_type
-            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
+            expect_ledger_field(&mut mock, 1, sfield::LedgerEntryType, 2, 1);
 
             let _guard = setup_mock(mock);
 
@@ -627,15 +627,14 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::LedgerEntryType), always(), eq(2))
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _, _| INTERNAL_ERROR);
 
             let _guard = setup_mock(mock);
 
-            // Note: slot is ignored for this test, but required to instantiate the struct.
-            let account = AccountRoot { slot_num: -1 };
+            let account = AccountRoot { slot_num: 1 };
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
