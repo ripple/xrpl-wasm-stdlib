@@ -1,0 +1,139 @@
+# XRPL WebAssembly Standard Library - Augment AI Configuration
+
+## Project Overview
+A Rust `no_std` library providing type-safe, zero-cost abstractions for XRPL WebAssembly smart contract development. Smart escrows are conditional payment contracts that run deterministically across all XRPL validators.
+
+## Quick Commands
+
+### Build & Test
+```bash
+./scripts/setup.sh              # Initial setup (run once)
+./scripts/run-all.sh            # Full test suite (clippy, fmt, build, tests)
+./scripts/build.sh              # Build debug mode
+./scripts/build.sh release      # Build release mode
+./scripts/run-tests.sh          # Run integration tests
+cargo test --workspace          # Unit tests only
+```
+
+### WASM Build Target
+```bash
+# WASM contracts MUST use wasm32v1-none target
+cargo build --target wasm32v1-none --release
+```
+
+## Architecture
+
+### Directory Structure
+- `xrpl-wasm-stdlib/src/` - Core library (host functions, types, transaction/ledger access)
+- `examples/smart-escrows/` - Example smart contracts
+- `e2e-tests/` - Integration tests
+- `scripts/` - Build and test automation
+- `ui/` - Web testing interface
+- `docs/` - Documentation
+
+### Key Concepts
+- **Smart Escrows**: Conditional payment contracts with custom release logic
+- **Host Functions**: 26 WASM host functions for ledger/transaction access
+- **no_std**: No heap allocations, stack-only memory
+- **Deterministic**: Must produce identical results across all validators
+- **Read-only**: Cannot modify ledger (except escrow data updates)
+
+## Critical Rules
+
+### WASM Contract Requirements
+1. **ALWAYS** use `#![no_std]` and `#![no_main]` attributes
+2. **NEVER** allocate on heap (no Vec, String, Box, HashMap)
+3. **ALWAYS** use wasm32v1-none target for contracts
+4. **ALWAYS** return i32 from finish() function (1 = success, 0 = failure)
+5. **ALWAYS** use library's custom Result type, NOT std::result::Result
+
+### File Naming Conventions
+- Rust files: snake_case (e.g., `account_id.rs`)
+- Rust crates: kebab-case (e.g., `xrpl-wasm-stdlib`)
+- JavaScript files: camelCase (e.g., `runTest.js`)
+- Shell scripts: kebab-case (e.g., `build-and-test.sh`)
+
+### Error Handling Pattern
+```rust
+use xrpl_wasm_stdlib::host::{Result, Error};
+use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+
+match operation() {
+    Ok(value) => value,
+    Err(e) => {
+        trace(&format!("Error: {:?}", e)).ok();
+        return 0;
+    }
+}
+```
+
+### WASM Contract Template
+```rust
+#![no_std]
+#![no_main]
+
+use xrpl_wasm_stdlib::host::{Result, Error};
+use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+
+#[unsafe(no_mangle)]
+pub extern "C" fn finish() -> i32 {
+    // Contract logic here
+    1 // Success
+}
+```
+
+### Cargo.toml for Contracts
+```toml
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = "s"      # Optimize for size
+lto = true           # Link-time optimization
+codegen-units = 1    # Better optimization
+panic = "abort"      # no_std requirement
+```
+
+## Common Gotchas
+
+- TypeScript strict mode ON - no unused imports/variables
+- Clippy runs with `-Dclippy::all` (all warnings are errors)
+- Integration tests expect `runTest.js` in example directories
+- WASM binaries should be < 64KB
+- Host functions return negative error codes on failure
+- `trace()` statements only visible in rippled's debug.log
+- Tests use real local rippled node - not mocks (except unit tests)
+
+## Testing Requirements
+
+- All PRs must pass `./scripts/run-all.sh`
+- New features need unit tests AND integration tests
+- New examples need comprehensive README + runTest.js
+- Test on both local node and WASM devnet before PR
+
+## Test Networks
+
+- **Local Node**: `ws://localhost:6006` (development)
+- **WASM Devnet**: `wss://wasm.devnet.rippletest.net:51233` (integration testing)
+- Run on devnet: `DEVNET=true ./scripts/run-tests.sh`
+
+## Documentation
+
+- API docs: `cargo doc --open`
+- Comprehensive guide: https://ripple.github.io/xrpl-wasm-stdlib/xrpl_wasm_stdlib/guide/index.html
+- See CONTRIBUTING.md for PR requirements
+- See docs/NAMING_CONVENTIONS.md for file naming rules
+
+## Build Artifacts
+
+- WASM output: `target/wasm32v1-none/release/*.wasm`
+- Examples: `examples/target/wasm32v1-none/release/*.wasm`
+- E2E tests: `e2e-tests/target/wasm32v1-none/release/*.wasm`
+
+## When Making Changes
+
+1. **Before editing**: Use codebase-retrieval to understand existing patterns
+2. **After editing**: Search for all downstream changes needed (callers, implementations, tests)
+3. **Always**: Update existing tests affected by changes
+4. **Never**: Create new test files unless explicitly requested
+5. **Always**: Use package managers (cargo, npm) instead of editing package files directly
