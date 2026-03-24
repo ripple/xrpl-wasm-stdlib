@@ -96,15 +96,26 @@ mod tests {
     }
 
     #[test]
+    fn test_mpt_id_byte_layout() {
+        // Test that sequence number is stored as big-endian in first 4 bytes
+        let sequence_num = 0x12345678u32;
+        let account_id = AccountID::from([0xAA; 20]);
+        let mpt_id = MptId::new(sequence_num, account_id);
+
+        let bytes = mpt_id.as_bytes();
+        // Sequence number should be big-endian
+        assert_eq!(&bytes[0..4], &[0x12, 0x34, 0x56, 0x78]);
+        // Issuer should follow
+        assert_eq!(&bytes[4..24], &[0xAA; 20]);
+    }
+
+    #[test]
     fn test_mpt_id_from_bytes() {
         // Create a test byte array
         let mut bytes = [0u8; 24];
-        // Set sequence number bytes (first 4 bytes)
+        // Set sequence number bytes (first 4 bytes, big-endian)
         bytes[0..4].copy_from_slice(&67890u32.to_be_bytes());
         // Set account ID bytes (last 20 bytes)
-        // 1. **`bytes.iter_mut().skip(4)`** - Creates a mutable iterator over the bytes array and skips the first 4 elements
-        // 2. **`.take(20)`** - Takes only the next 20 elements (since we want indices 4 through 23, which is 20 elements)
-        // 3. **`*byte = 2`** - Dereferences the mutable reference to set the value to the integer 2 (for testing purposes)
         for byte in bytes.iter_mut().skip(4).take(20) {
             *byte = 2;
         }
@@ -130,5 +141,46 @@ mod tests {
         // Verify the sequence number and issuer
         assert_eq!(mpt_id.get_sequence_num(), sequence_num);
         assert_eq!(mpt_id.get_issuer(), account_id);
+    }
+
+    #[test]
+    fn test_mpt_id_is_empty_when_all_zeros() {
+        let mpt_id = MptId::from([0u8; 24]);
+        assert!(mpt_id.is_empty());
+    }
+
+    #[test]
+    fn test_mpt_id_is_not_empty_when_has_data() {
+        // Any non-zero byte means not empty
+        let mut bytes = [0u8; 24];
+        bytes[0] = 1; // Set sequence number to 1
+        let mpt_id = MptId::from(bytes);
+        assert!(!mpt_id.is_empty());
+
+        // Also test with non-zero issuer
+        let mut bytes2 = [0u8; 24];
+        bytes2[10] = 0xFF; // Non-zero byte in issuer portion
+        let mpt_id2 = MptId::from(bytes2);
+        assert!(!mpt_id2.is_empty());
+    }
+
+    #[test]
+    fn test_mpt_id_sequence_num_zero() {
+        // Edge case: sequence number 0
+        let account_id = AccountID::from([0xBB; 20]);
+        let mpt_id = MptId::new(0, account_id);
+
+        assert_eq!(mpt_id.get_sequence_num(), 0);
+        assert_eq!(&mpt_id.as_bytes()[0..4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_mpt_id_sequence_num_max() {
+        // Edge case: max u32 sequence number
+        let account_id = AccountID::from([0xCC; 20]);
+        let mpt_id = MptId::new(u32::MAX, account_id);
+
+        assert_eq!(mpt_id.get_sequence_num(), u32::MAX);
+        assert_eq!(&mpt_id.as_bytes()[0..4], &[0xFF, 0xFF, 0xFF, 0xFF]);
     }
 }
