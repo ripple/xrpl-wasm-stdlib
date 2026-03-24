@@ -712,13 +712,13 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::Balance, 48, 1);
             // burned_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
-            // domain - StandardBlob uses 1024 bytes
+            // domain
             expect_ledger_field(&mut mock, 1, sfield::Domain, DOMAIN_BLOB_SIZE, 1);
             // email_hash
             expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
             // first_nf_token_sequence
             expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
-            // message_key - StandardBlob uses 1024 bytes
+            // message_key
             expect_ledger_field(&mut mock, 1, sfield::MessageKey, PUBLIC_KEY_BLOB_SIZE, 1);
             // minted_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
@@ -781,7 +781,7 @@ mod tests {
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // domain - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // domain - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Domain), always(), eq(DOMAIN_BLOB_SIZE))
                 .times(1)
@@ -796,7 +796,7 @@ mod tests {
                 .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // message_key - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // message_key - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
                 .with(
                     eq(1),
@@ -1046,7 +1046,7 @@ mod tests {
             expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
-            // get_finish_function - StandardBlob uses 1024 bytes
+            // get_finish_function
             expect_current_field(&mut mock, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
@@ -1097,7 +1097,7 @@ mod tests {
                 .with(eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::FinishFunction), always(), eq(WASM_BLOB_SIZE))
                 .times(1)
@@ -1233,7 +1233,7 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
-            // get_finish_function - StandardBlob uses 1024 bytes
+            // get_finish_function
             expect_ledger_field(&mut mock, 1, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
@@ -1289,7 +1289,7 @@ mod tests {
                 .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
                 .with(
                     eq(1),
