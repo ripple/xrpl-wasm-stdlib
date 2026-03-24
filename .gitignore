@@ -30,3 +30,7 @@ reference/build-rippled-*/
 .benchmark/
 
 .vscode/
+
+# Claude Code local overrides (personal preferences, not committed)
+CLAUDE.local.md
+.claude/settings.local.json
