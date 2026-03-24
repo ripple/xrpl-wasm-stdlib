@@ -408,106 +408,927 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::core::current_tx::escrow_finish::EscrowFinish;
-    use crate::core::types::blob::{CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE};
+
     use crate::host::host_bindings_trait::MockHostBindings;
-    use crate::host::setup_mock;
+    use crate::sfield::SField;
     use mockall::predicate::{always, eq};
+    // ========================================
+    // Test helper functions
+    // ========================================
 
-    #[test]
-    fn test_get_condition_returns_some_with_data() {
-        let mut mock = MockHostBindings::new();
-
-        // Set up expectations
+    /// Helper to set up a mock expectation for get_tx_field
+    fn expect_tx_field<T: Send + std::fmt::Debug + PartialEq + 'static, const CODE: i32>(
+        mock: &mut MockHostBindings,
+        field: SField<T, CODE>,
+        size: usize,
+        times: usize,
+    ) {
         mock.expect_get_tx_field()
-            .with(
-                eq::<i32>(sfield::Condition.into()),
-                always(),
-                eq(CONDITION_BLOB_SIZE),
-            )
-            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
-
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
-
-        // When the mock host function returns a positive value (buffer length),
-        // get_condition should return Ok(Some(ConditionBlob))
-        let escrow = EscrowFinish;
-        let result = escrow.get_condition();
-
-        assert!(result.is_ok());
-        let condition_opt = result.unwrap();
-        assert!(condition_opt.is_some());
-
-        let condition = condition_opt.unwrap();
-        assert_eq!(condition.len, CONDITION_BLOB_SIZE);
-        assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
+            .with(eq(field), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
     }
 
-    #[test]
-    fn test_get_fulfillment_returns_some_with_data() {
-        let mut mock = MockHostBindings::new();
+    mod escrow_finish_fields {
 
-        // Set up expectations
-        mock.expect_get_tx_field()
-            .with(eq::<i32>(sfield::Fulfillment.into()), always(), eq(256))
-            .returning(|_, _, _| 256);
+        mod optional_fields {
+            use crate::core::current_tx::escrow_finish::EscrowFinish;
+            use crate::core::current_tx::traits::EscrowFinishFields;
+            use crate::core::current_tx::traits::tests::expect_tx_field;
+            use crate::core::types::blob::{CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE};
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::host_bindings_trait::MockHostBindings;
+            use crate::host::setup_mock;
+            use crate::sfield;
 
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
+            use crate::sfield::{Condition, Fulfillment};
+            use mockall::predicate::{always, eq};
 
-        // When the mock host function returns a positive value (buffer length),
-        // get_fulfillment should return Ok(Some(FulfillmentBlob))
-        let escrow = EscrowFinish;
-        let result = escrow.get_fulfillment();
+            #[test]
+            fn test_optional_fields_return_some() {
+                let mut mock = MockHostBindings::new();
 
-        // The mock returns buffer.len() which is 256 (the size passed to get_tx_field)
-        assert!(result.is_ok());
-        let fulfillment_opt = result.unwrap();
-        assert!(fulfillment_opt.is_some());
+                // get_condition
+                expect_tx_field(&mut mock, Condition, CONDITION_BLOB_SIZE, 1);
+                // get_fulfillment
+                expect_tx_field(&mut mock, Fulfillment, FULFILLMENT_BLOB_SIZE, 1);
 
-        let fulfillment = fulfillment_opt.unwrap();
-        assert_eq!(fulfillment.len, 256);
-        assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // All optional fields should return Ok(Some(...))
+                let condition = escrow.get_condition().unwrap();
+                assert!(condition.is_some());
+                assert_eq!(condition.unwrap().len, CONDITION_BLOB_SIZE);
+
+                let fulfillment = escrow.get_fulfillment().unwrap();
+                assert!(fulfillment.is_some());
+                assert_eq!(fulfillment.unwrap().len, FULFILLMENT_BLOB_SIZE);
+            }
+
+            #[test]
+            fn test_optional_fields_return_none_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+
+                // get_condition - returns None when result code is 0
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_fulfillment - returns None when result code is 0
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // Variable-size optional fields return None when result code is 0 (not present)
+                assert!(escrow.get_condition().unwrap().is_none());
+                assert!(escrow.get_fulfillment().unwrap().is_none());
+            }
+
+            #[test]
+            fn test_optional_fields_return_error_on_internal_error() {
+                let mut mock = MockHostBindings::new();
+
+                // get_condition
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_fulfillment
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // Optional fields should also return Err on INTERNAL_ERROR
+                let condition_result = escrow.get_condition();
+                assert!(condition_result.is_err());
+                assert_eq!(condition_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let fulfillment_result = escrow.get_fulfillment();
+                assert!(fulfillment_result.is_err());
+                assert_eq!(fulfillment_result.err().unwrap().code(), INTERNAL_ERROR);
+            }
+
+            #[test]
+            fn test_optional_fields_return_error_on_field_not_found() {
+                let mut mock = MockHostBindings::new();
+
+                // get_condition
+                mock.expect_get_tx_field()
+                    .with(eq(Condition), always(), eq(CONDITION_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_fulfillment
+                mock.expect_get_tx_field()
+                    .with(eq(Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // Optional fields return Err on FIELD_NOT_FOUND (not None)
+                let condition_result = escrow.get_condition();
+                assert!(condition_result.is_err());
+                assert_eq!(condition_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let fulfillment_result = escrow.get_fulfillment();
+                assert!(fulfillment_result.is_err());
+                assert_eq!(fulfillment_result.err().unwrap().code(), FIELD_NOT_FOUND);
+            }
+
+            #[test]
+            fn test_optional_fields_return_error_on_invalid_field() {
+                let mut mock = MockHostBindings::new();
+
+                // get_condition
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_fulfillment
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // Optional fields should also return Err on INVALID_FIELD
+                let condition_result = escrow.get_condition();
+                assert!(condition_result.is_err());
+                assert_eq!(condition_result.err().unwrap().code(), INVALID_FIELD);
+
+                let fulfillment_result = escrow.get_fulfillment();
+                assert!(fulfillment_result.is_err());
+                assert_eq!(fulfillment_result.err().unwrap().code(), INVALID_FIELD);
+            }
+        }
+
+        mod mandatory_fields {
+            use crate::core::current_tx::escrow_finish::EscrowFinish;
+            use crate::core::current_tx::traits::EscrowFinishFields;
+            use crate::core::current_tx::traits::tests::expect_tx_field;
+            use crate::core::types::account_id::ACCOUNT_ID_SIZE;
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::host_bindings_trait::MockHostBindings;
+            use crate::host::setup_mock;
+            use crate::sfield;
+            use mockall::predicate::{always, eq};
+
+            #[test]
+            fn test_mandatory_fields_return_ok() {
+                let mut mock = MockHostBindings::new();
+
+                // get_owner
+                expect_tx_field(&mut mock, sfield::Owner, ACCOUNT_ID_SIZE, 1);
+                // get_offer_sequence
+                expect_tx_field(&mut mock, sfield::OfferSequence, 4, 1);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // All mandatory fields should return Ok
+                assert!(escrow.get_owner().is_ok());
+                assert!(escrow.get_offer_sequence().is_ok());
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+
+                // get_owner - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_offer_sequence - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // Mandatory fields should return Err when zero length (INTERNAL_ERROR due to byte mismatch)
+                let owner_result = escrow.get_owner();
+                assert!(owner_result.is_err());
+
+                let offer_seq_result = escrow.get_offer_sequence();
+                assert!(offer_seq_result.is_err());
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_field_not_found() {
+                let mut mock = MockHostBindings::new();
+
+                // get_owner
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_offer_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // All mandatory fields should return Err on FIELD_NOT_FOUND
+                let owner_result = escrow.get_owner();
+                assert!(owner_result.is_err());
+                assert_eq!(owner_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let offer_seq_result = escrow.get_offer_sequence();
+                assert!(offer_seq_result.is_err());
+                assert_eq!(offer_seq_result.err().unwrap().code(), FIELD_NOT_FOUND);
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_internal_error() {
+                let mut mock = MockHostBindings::new();
+
+                // get_owner
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_offer_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // All mandatory fields should return Err on INTERNAL_ERROR
+                let owner_result = escrow.get_owner();
+                assert!(owner_result.is_err());
+                assert_eq!(owner_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let offer_seq_result = escrow.get_offer_sequence();
+                assert!(offer_seq_result.is_err());
+                assert_eq!(offer_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_invalid_field() {
+                let mut mock = MockHostBindings::new();
+
+                // get_owner
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_offer_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+
+                let _guard = setup_mock(mock);
+
+                let escrow = EscrowFinish;
+
+                // All mandatory fields should return Err on INVALID_FIELD
+                let owner_result = escrow.get_owner();
+                assert!(owner_result.is_err());
+                assert_eq!(owner_result.err().unwrap().code(), INVALID_FIELD);
+
+                let offer_seq_result = escrow.get_offer_sequence();
+                assert!(offer_seq_result.is_err());
+                assert_eq!(offer_seq_result.err().unwrap().code(), INVALID_FIELD);
+            }
+        }
     }
 
-    #[test]
-    fn test_get_condition_and_fulfillment_independence() {
-        let mut mock = MockHostBindings::new();
+    mod transaction_common_fields {
 
-        // Set up expectations for both condition and fulfillment
-        mock.expect_get_tx_field()
-            .with(
-                eq::<i32>(sfield::Condition.into()),
-                always(),
-                eq(CONDITION_BLOB_SIZE),
-            )
-            .returning(|_, _, _| CONDITION_BLOB_SIZE as i32);
+        mod optional_fields {
+            use crate::core::current_tx::escrow_finish::EscrowFinish;
+            use crate::core::current_tx::traits::TransactionCommonFields;
+            use crate::core::current_tx::traits::tests::expect_tx_field;
+            use crate::core::types::uint::HASH256_SIZE;
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::host_bindings_trait::MockHostBindings;
+            use crate::host::setup_mock;
+            use crate::sfield;
+            use mockall::predicate::{always, eq};
 
-        mock.expect_get_tx_field()
-            .with(eq::<i32>(sfield::Fulfillment.into()), always(), eq(256))
-            .returning(|_, _, _| 256);
+            #[test]
+            fn test_optional_fields_return_some() {
+                let mut mock = MockHostBindings::new();
 
-        // Set the mock in thread-local storage (automatically cleans up at the end of scope)
-        let _guard = setup_mock(mock);
+                // get_account_txn_id
+                expect_tx_field(&mut mock, sfield::AccountTxnID, HASH256_SIZE, 1);
+                // get_flags
+                expect_tx_field(&mut mock, sfield::Flags, 4, 1);
+                // get_last_ledger_sequence
+                expect_tx_field(&mut mock, sfield::LastLedgerSequence, 4, 1);
+                // get_network_id
+                expect_tx_field(&mut mock, sfield::NetworkID, 4, 1);
+                // get_source_tag
+                expect_tx_field(&mut mock, sfield::SourceTag, 4, 1);
+                // get_ticket_sequence
+                expect_tx_field(&mut mock, sfield::TicketSequence, 4, 1);
 
-        // Verify that get_condition and get_fulfillment can be called independently
-        let escrow = EscrowFinish;
+                let _guard = setup_mock(mock);
 
-        let condition_result = escrow.get_condition();
-        let fulfillment_result = escrow.get_fulfillment();
+                let tx = EscrowFinish;
 
-        assert!(condition_result.is_ok());
-        assert!(fulfillment_result.is_ok());
+                // All optional fields should return Ok(Some(...))
+                assert!(tx.get_account_txn_id().unwrap().is_some());
+                assert!(tx.get_flags().unwrap().is_some());
+                assert!(tx.get_last_ledger_sequence().unwrap().is_some());
+                assert!(tx.get_network_id().unwrap().is_some());
+                assert!(tx.get_source_tag().unwrap().is_some());
+                assert!(tx.get_ticket_sequence().unwrap().is_some());
+            }
 
-        // Verify they have different sizes
-        if let (Some(condition), Some(fulfillment)) =
-            (condition_result.unwrap(), fulfillment_result.unwrap())
-        {
-            assert_eq!(condition.capacity(), CONDITION_BLOB_SIZE);
-            assert_eq!(fulfillment.capacity(), FULFILLMENT_BLOB_SIZE);
-            assert_ne!(condition.capacity(), fulfillment.capacity());
+            #[test]
+            fn test_optional_fields_return_none_when_field_not_found() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account_txn_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_flags
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Flags), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_last_ledger_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::LastLedgerSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_network_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::NetworkID), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_source_tag
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::SourceTag), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_ticket_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TicketSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
+                assert!(tx.get_account_txn_id().unwrap().is_none());
+                assert!(tx.get_flags().unwrap().is_none());
+                assert!(tx.get_last_ledger_sequence().unwrap().is_none());
+                assert!(tx.get_network_id().unwrap().is_none());
+                assert!(tx.get_source_tag().unwrap().is_none());
+                assert!(tx.get_ticket_sequence().unwrap().is_none());
+            }
+
+            #[test]
+            fn test_optional_fields_return_none_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account_txn_id - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_flags - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Flags), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_last_ledger_sequence - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::LastLedgerSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_network_id - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::NetworkID), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_source_tag - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::SourceTag), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_ticket_sequence - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TicketSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+
+                // Mock trace_num calls (2 calls per field for byte mismatch: expected + actual)
+                mock.expect_trace_num()
+                    .with(always(), always(), always())
+                    .returning(|_, _, _| 0)
+                    .times(12); // 6 fields * 2 calls each
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // Fixed-size optional fields should return Err when zero length (byte mismatch)
+                assert!(tx.get_account_txn_id().is_err());
+                assert!(tx.get_flags().is_err());
+                assert!(tx.get_last_ledger_sequence().is_err());
+                assert!(tx.get_network_id().is_err());
+                assert!(tx.get_source_tag().is_err());
+                assert!(tx.get_ticket_sequence().is_err());
+            }
+
+            #[test]
+            fn test_optional_fields_return_error_on_internal_error() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account_txn_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_flags
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Flags), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_last_ledger_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::LastLedgerSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_network_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::NetworkID), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_source_tag
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::SourceTag), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_ticket_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TicketSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+
+                // Mock trace_num calls (1 call per field for error codes)
+                mock.expect_trace_num()
+                    .with(always(), always(), always())
+                    .returning(|_, _, _| 0)
+                    .times(6); // 6 fields * 1 call each
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // Optional fields should return Err on INTERNAL_ERROR
+                let account_txn_id_result = tx.get_account_txn_id();
+                assert!(account_txn_id_result.is_err());
+                assert_eq!(account_txn_id_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let flags_result = tx.get_flags();
+                assert!(flags_result.is_err());
+                assert_eq!(flags_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let last_ledger_seq_result = tx.get_last_ledger_sequence();
+                assert!(last_ledger_seq_result.is_err());
+                assert_eq!(last_ledger_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let network_id_result = tx.get_network_id();
+                assert!(network_id_result.is_err());
+                assert_eq!(network_id_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let source_tag_result = tx.get_source_tag();
+                assert!(source_tag_result.is_err());
+                assert_eq!(source_tag_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let ticket_seq_result = tx.get_ticket_sequence();
+                assert!(ticket_seq_result.is_err());
+                assert_eq!(ticket_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+            }
+
+            #[test]
+            fn test_optional_fields_return_error_on_invalid_field() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account_txn_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_flags
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Flags), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_last_ledger_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::LastLedgerSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_network_id
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::NetworkID), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_source_tag
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::SourceTag), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_ticket_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TicketSequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+
+                // Mock trace_num calls (1 call per field for error codes)
+                mock.expect_trace_num()
+                    .with(always(), always(), always())
+                    .returning(|_, _, _| 0)
+                    .times(6); // 6 fields * 1 call each
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // Optional fields should return Err on INVALID_FIELD
+                let account_txn_id_result = tx.get_account_txn_id();
+                assert!(account_txn_id_result.is_err());
+                assert_eq!(account_txn_id_result.err().unwrap().code(), INVALID_FIELD);
+
+                let flags_result = tx.get_flags();
+                assert!(flags_result.is_err());
+                assert_eq!(flags_result.err().unwrap().code(), INVALID_FIELD);
+
+                let last_ledger_seq_result = tx.get_last_ledger_sequence();
+                assert!(last_ledger_seq_result.is_err());
+                assert_eq!(last_ledger_seq_result.err().unwrap().code(), INVALID_FIELD);
+
+                let network_id_result = tx.get_network_id();
+                assert!(network_id_result.is_err());
+                assert_eq!(network_id_result.err().unwrap().code(), INVALID_FIELD);
+
+                let source_tag_result = tx.get_source_tag();
+                assert!(source_tag_result.is_err());
+                assert_eq!(source_tag_result.err().unwrap().code(), INVALID_FIELD);
+
+                let ticket_seq_result = tx.get_ticket_sequence();
+                assert!(ticket_seq_result.is_err());
+                assert_eq!(ticket_seq_result.err().unwrap().code(), INVALID_FIELD);
+            }
+        }
+
+        mod required_fields {
+            use crate::core::current_tx::escrow_finish::EscrowFinish;
+            use crate::core::current_tx::traits::TransactionCommonFields;
+            use crate::core::current_tx::traits::tests::expect_tx_field;
+            use crate::core::types::account_id::ACCOUNT_ID_SIZE;
+            use crate::core::types::amount::AMOUNT_SIZE;
+            use crate::core::types::blob::SIGNATURE_BLOB_SIZE;
+            use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::host_bindings_trait::MockHostBindings;
+            use crate::host::setup_mock;
+            use crate::sfield;
+            use mockall::predicate::{always, eq};
+
+            #[test]
+            fn test_mandatory_fields_return_ok() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account
+                expect_tx_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+                // get_transaction_type
+                expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
+                // get_computation_allowance
+                expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
+                // get_fee
+                expect_tx_field(&mut mock, sfield::Fee, AMOUNT_SIZE, 1);
+                // get_sequence
+                expect_tx_field(&mut mock, sfield::Sequence, 4, 1);
+                // get_signing_pub_key
+                expect_tx_field(&mut mock, sfield::SigningPubKey, PUBLIC_KEY_BUFFER_SIZE, 1);
+                // get_txn_signature
+                expect_tx_field(&mut mock, sfield::TxnSignature, SIGNATURE_BLOB_SIZE, 1);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // All mandatory fields should return Ok
+                assert!(tx.get_account().is_ok());
+                assert!(tx.get_transaction_type().is_ok());
+                assert!(tx.get_computation_allowance().is_ok());
+                assert!(tx.get_fee().is_ok());
+                assert!(tx.get_sequence().is_ok());
+                assert!(tx.get_signing_pub_key().is_ok());
+                assert!(tx.get_txn_signature().is_ok());
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_transaction_type - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TransactionType), always(), eq(2))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_computation_allowance - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_fee - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_sequence - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Sequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_signing_pub_key - returns 0 (zero length)
+                mock.expect_get_tx_field()
+                    .with(
+                        eq(sfield::SigningPubKey),
+                        always(),
+                        eq(PUBLIC_KEY_BUFFER_SIZE),
+                    )
+                    .times(1)
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // Fixed-size mandatory fields should return Err when zero length (byte mismatch)
+                let account_result = tx.get_account();
+                assert!(account_result.is_err());
+
+                let tx_type_result = tx.get_transaction_type();
+                assert!(tx_type_result.is_err());
+
+                let comp_allow_result = tx.get_computation_allowance();
+                assert!(comp_allow_result.is_err());
+
+                // Variable-size field (Amount) returns Ok with zero length
+                let fee_result = tx.get_fee();
+                assert!(fee_result.is_ok());
+
+                let seq_result = tx.get_sequence();
+                assert!(seq_result.is_err());
+
+                let signing_key_result = tx.get_signing_pub_key();
+                assert!(signing_key_result.is_err());
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_field_not_found() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_transaction_type
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TransactionType), always(), eq(2))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_computation_allowance
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_fee
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Sequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_signing_pub_key
+                mock.expect_get_tx_field()
+                    .with(
+                        eq(sfield::SigningPubKey),
+                        always(),
+                        eq(PUBLIC_KEY_BUFFER_SIZE),
+                    )
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // All mandatory fields should return Err on FIELD_NOT_FOUND
+                let account_result = tx.get_account();
+                assert!(account_result.is_err());
+                assert_eq!(account_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let tx_type_result = tx.get_transaction_type();
+                assert!(tx_type_result.is_err());
+                assert_eq!(tx_type_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let comp_allow_result = tx.get_computation_allowance();
+                assert!(comp_allow_result.is_err());
+                assert_eq!(comp_allow_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let fee_result = tx.get_fee();
+                assert!(fee_result.is_err());
+                assert_eq!(fee_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let seq_result = tx.get_sequence();
+                assert!(seq_result.is_err());
+                assert_eq!(seq_result.err().unwrap().code(), FIELD_NOT_FOUND);
+
+                let signing_key_result = tx.get_signing_pub_key();
+                assert!(signing_key_result.is_err());
+                assert_eq!(signing_key_result.err().unwrap().code(), FIELD_NOT_FOUND);
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_internal_error() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_transaction_type
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TransactionType), always(), eq(2))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_computation_allowance
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_fee
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Sequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+                // get_signing_pub_key
+                mock.expect_get_tx_field()
+                    .with(
+                        eq(sfield::SigningPubKey),
+                        always(),
+                        eq(PUBLIC_KEY_BUFFER_SIZE),
+                    )
+                    .times(1)
+                    .returning(|_, _, _| INTERNAL_ERROR);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // All mandatory fields should return Err on INTERNAL_ERROR
+                let account_result = tx.get_account();
+                assert!(account_result.is_err());
+                assert_eq!(account_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let tx_type_result = tx.get_transaction_type();
+                assert!(tx_type_result.is_err());
+                assert_eq!(tx_type_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let comp_allow_result = tx.get_computation_allowance();
+                assert!(comp_allow_result.is_err());
+                assert_eq!(comp_allow_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let fee_result = tx.get_fee();
+                assert!(fee_result.is_err());
+                assert_eq!(fee_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let seq_result = tx.get_sequence();
+                assert!(seq_result.is_err());
+                assert_eq!(seq_result.err().unwrap().code(), INTERNAL_ERROR);
+
+                let signing_key_result = tx.get_signing_pub_key();
+                assert!(signing_key_result.is_err());
+                assert_eq!(signing_key_result.err().unwrap().code(), INTERNAL_ERROR);
+            }
+
+            #[test]
+            fn test_mandatory_fields_return_error_on_invalid_field() {
+                let mut mock = MockHostBindings::new();
+
+                // get_account
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_transaction_type
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::TransactionType), always(), eq(2))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_computation_allowance
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_fee
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_sequence
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Sequence), always(), eq(4))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_signing_pub_key
+                mock.expect_get_tx_field()
+                    .with(
+                        eq(sfield::SigningPubKey),
+                        always(),
+                        eq(PUBLIC_KEY_BUFFER_SIZE),
+                    )
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+
+                let _guard = setup_mock(mock);
+
+                let tx = EscrowFinish;
+
+                // All mandatory fields should return Err on INVALID_FIELD
+                let account_result = tx.get_account();
+                assert!(account_result.is_err());
+                assert_eq!(account_result.err().unwrap().code(), INVALID_FIELD);
+
+                let tx_type_result = tx.get_transaction_type();
+                assert!(tx_type_result.is_err());
+                assert_eq!(tx_type_result.err().unwrap().code(), INVALID_FIELD);
+
+                let comp_allow_result = tx.get_computation_allowance();
+                assert!(comp_allow_result.is_err());
+                assert_eq!(comp_allow_result.err().unwrap().code(), INVALID_FIELD);
+
+                let fee_result = tx.get_fee();
+                assert!(fee_result.is_err());
+                assert_eq!(fee_result.err().unwrap().code(), INVALID_FIELD);
+
+                let seq_result = tx.get_sequence();
+                assert!(seq_result.is_err());
+                assert_eq!(seq_result.err().unwrap().code(), INVALID_FIELD);
+
+                let signing_key_result = tx.get_signing_pub_key();
+                assert!(signing_key_result.is_err());
+                assert_eq!(signing_key_result.err().unwrap().code(), INVALID_FIELD);
+            }
         }
     }
 }
