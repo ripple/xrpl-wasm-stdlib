@@ -57,7 +57,7 @@ pub trait LedgerObjectCommonFields {
     ///
     /// The ledger entry type as a u16 value
     fn get_ledger_entry_type(&self) -> Result<u16> {
-        current_ledger_object::get_field(sfield::LedgerEntryType)
+        ledger_object::get_field(self.get_slot_num(), sfield::LedgerEntryType)
     }
 }
 
@@ -596,7 +596,7 @@ mod tests {
             // get_flags
             expect_ledger_field(&mut mock, 1, sfield::Flags, 4, 1);
             // get_ledger_entry_type
-            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
+            expect_ledger_field(&mut mock, 1, sfield::LedgerEntryType, 2, 1);
 
             let _guard = setup_mock(mock);
 
@@ -630,15 +630,14 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::LedgerEntryType), always(), eq(2))
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _, _| INTERNAL_ERROR);
 
             let _guard = setup_mock(mock);
 
-            // Note: slot is ignored for this test, but required to instantiate the struct.
-            let account = AccountRoot { slot_num: -1 };
+            let account = AccountRoot { slot_num: 1 };
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
@@ -667,6 +666,7 @@ mod tests {
 
     mod account_fields {
         use super::*;
+        use crate::core::types::account_id::ACCOUNT_ID_SIZE;
         use crate::core::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
         use crate::host::setup_mock;
 
@@ -725,7 +725,7 @@ mod tests {
             // nf_token_minter
             expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
             // regular_key
-            expect_ledger_field(&mut mock, 1, sfield::RegularKey, 20, 1);
+            expect_ledger_field(&mut mock, 1, sfield::RegularKey, ACCOUNT_ID_SIZE, 1);
             // ticket_count
             expect_ledger_field(&mut mock, 1, sfield::TicketCount, 4, 1);
             // tick_size
@@ -818,7 +818,7 @@ mod tests {
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // regular_key
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::RegularKey), always(), eq(20))
+                .with(eq(1), eq(sfield::RegularKey), always(), eq(ACCOUNT_ID_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // ticket_count

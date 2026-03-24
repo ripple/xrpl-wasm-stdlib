@@ -9,7 +9,6 @@ use crate::core::types::blob::{
 };
 use crate::core::types::currency::Currency;
 use crate::core::types::issue::Issue;
-
 use crate::core::types::transaction_type::TransactionType;
 use crate::core::types::uint::{Hash128, Hash160, Hash192, Hash256};
 use core::borrow::Borrow;
@@ -29,7 +28,6 @@ use core::marker::PhantomData;
 /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
 /// use xrpl_wasm_stdlib::core::current_tx;
 /// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::core::current_tx::get_field;
 /// use xrpl_wasm_stdlib::sfield;
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 ///

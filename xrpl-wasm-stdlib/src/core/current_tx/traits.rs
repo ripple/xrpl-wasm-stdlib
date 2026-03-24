@@ -1126,7 +1126,10 @@ mod tests {
                 let seq_result = tx.get_sequence();
                 assert!(seq_result.is_err());
 
+                // SigningPubKey is special: zero length indicates multi-signature transaction
+                // and should return Ok(None), not an error
                 let signing_key_result = tx.get_signing_pub_key();
+                assert!(signing_key_result.is_ok());
                 assert!(signing_key_result.unwrap().is_none());
             }
 
