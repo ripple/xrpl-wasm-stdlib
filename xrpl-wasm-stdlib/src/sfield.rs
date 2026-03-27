@@ -3,11 +3,13 @@
 use crate::core::ledger_objects::array_object::{Array, Object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{ConditionBlob, FulfillmentBlob, StandardBlob};
+use crate::core::types::blob::{
+    ConditionBlob, FulfillmentBlob, MemoBlob, PublicKeyBlob, SignatureBlob, StandardBlob, UriBlob,
+    WasmBlob,
+};
 use crate::core::types::currency::Currency;
 use crate::core::types::issue::Issue;
 use crate::core::types::transaction_type::TransactionType;
-
 use crate::core::types::uint::{Hash128, Hash160, Hash192, Hash256};
 use core::borrow::Borrow;
 use core::marker::PhantomData;
@@ -259,13 +261,13 @@ pub const Price: SField<Amount, 393244> = SField::new();
 pub const SignatureReward: SField<Amount, 393245> = SField::new();
 pub const MinAccountCreateAmount: SField<Amount, 393246> = SField::new();
 pub const LPTokenBalance: SField<Amount, 393247> = SField::new();
-pub const PublicKey: SField<StandardBlob, 458753> = SField::new();
-pub const MessageKey: SField<StandardBlob, 458754> = SField::new();
-pub const SigningPubKey: SField<StandardBlob, 458755> = SField::new();
-pub const TxnSignature: SField<StandardBlob, 458756> = SField::new();
-pub const URI: SField<StandardBlob, 458757> = SField::new();
-pub const Signature: SField<StandardBlob, 458758> = SField::new();
-pub const Domain: SField<StandardBlob, 458759> = SField::new();
+pub const PublicKey: SField<PublicKeyBlob, 458753> = SField::new();
+pub const MessageKey: SField<PublicKeyBlob, 458754> = SField::new();
+pub const SigningPubKey: SField<PublicKeyBlob, 458755> = SField::new();
+pub const TxnSignature: SField<SignatureBlob, 458756> = SField::new();
+pub const URI: SField<UriBlob, 458757> = SField::new();
+pub const Signature: SField<SignatureBlob, 458758> = SField::new();
+pub const Domain: SField<UriBlob, 458759> = SField::new();
 pub const FundCode: SField<StandardBlob, 458760> = SField::new();
 pub const RemoveCode: SField<StandardBlob, 458761> = SField::new();
 pub const ExpireCode: SField<StandardBlob, 458762> = SField::new();
@@ -289,7 +291,7 @@ pub const AssetClass: SField<StandardBlob, 458780> = SField::new();
 pub const Provider: SField<StandardBlob, 458781> = SField::new();
 pub const MPTokenMetadata: SField<StandardBlob, 458782> = SField::new();
 pub const CredentialType: SField<StandardBlob, 458783> = SField::new();
-pub const FinishFunction: SField<StandardBlob, 458784> = SField::new();
+pub const FinishFunction: SField<WasmBlob, 458784> = SField::new();
 pub const Account: SField<AccountID, 524289> = SField::new();
 pub const Owner: SField<AccountID, 524290> = SField::new();
 pub const Destination: SField<AccountID, 524291> = SField::new();
@@ -338,7 +340,7 @@ pub const PreviousFields: SField<Object, 917510> = SField::new();
 pub const FinalFields: SField<Object, 917511> = SField::new();
 pub const NewFields: SField<Object, 917512> = SField::new();
 pub const TemplateEntry: SField<Object, 917513> = SField::new();
-pub const Memo: SField<Object, 917514> = SField::new();
+pub const Memo: SField<MemoBlob, 917514> = SField::new();
 pub const SignerEntry: SField<Object, 917515> = SField::new();
 pub const NFToken: SField<Object, 917516> = SField::new();
 pub const EmitDetails: SField<Object, 917517> = SField::new();

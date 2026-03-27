@@ -31,28 +31,37 @@ pub struct Object;
 // Implement FieldGetter for Array and Object as no-ops
 // These are placeholder types and should not be used for actual field retrieval
 use crate::core::ledger_objects::LedgerObjectFieldGetter;
+use crate::sfield::SField;
 
 impl LedgerObjectFieldGetter for Array {
     #[inline]
-    fn get_from_current_ledger_obj(_field_code: i32) -> Result<Self> {
+    fn get_from_current_ledger_obj<const CODE: i32>(_field: SField<Self, CODE>) -> Result<Self> {
         // This should never be called - Array is a placeholder type
         unreachable!("Array is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_ledger_obj(_slot: i32, _field_code: i32) -> Result<Self> {
+    fn get_from_ledger_obj<const CODE: i32>(
+        _slot: i32,
+        _field: SField<Self, CODE>,
+    ) -> Result<Self> {
         // This should never be called - Array is a placeholder type
         unreachable!("Array is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(_field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        _field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         // This should never be called - Array is a placeholder type
         unreachable!("Array is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(_slot: i32, _field_code: i32) -> Result<Option<Self>> {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        _slot: i32,
+        _field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         // This should never be called - Array is a placeholder type
         unreachable!("Array is a placeholder type and cannot be retrieved from ledger objects")
     }
@@ -60,25 +69,33 @@ impl LedgerObjectFieldGetter for Array {
 
 impl LedgerObjectFieldGetter for Object {
     #[inline]
-    fn get_from_current_ledger_obj(_field_code: i32) -> Result<Self> {
+    fn get_from_current_ledger_obj<const CODE: i32>(_field: SField<Self, CODE>) -> Result<Self> {
         // This should never be called - Object is a placeholder type
         unreachable!("Object is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_ledger_obj(_slot: i32, _field_code: i32) -> Result<Self> {
+    fn get_from_ledger_obj<const CODE: i32>(
+        _slot: i32,
+        _field: SField<Self, CODE>,
+    ) -> Result<Self> {
         // This should never be called - Object is a placeholder type
         unreachable!("Object is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(_field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        _field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         // This should never be called - Object is a placeholder type
         unreachable!("Object is a placeholder type and cannot be retrieved from ledger objects")
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(_slot: i32, _field_code: i32) -> Result<Option<Self>> {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        _slot: i32,
+        _field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         // This should never be called - Object is a placeholder type
         unreachable!("Object is a placeholder type and cannot be retrieved from ledger objects")
     }
