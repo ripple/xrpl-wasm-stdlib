@@ -295,7 +295,7 @@ impl Amount {
             // Add Amount field
             if add_txn_field(
                 txn_index,
-                sfield::Amount,
+                sfield::Amount.into(),
                 amount_bytes.as_ptr(),
                 amount_bytes.len(),
             ) < 0
@@ -310,7 +310,7 @@ impl Amount {
 
             if add_txn_field(
                 txn_index,
-                sfield::Destination,
+                sfield::Destination.into(),
                 dest_buffer.as_ptr(),
                 dest_buffer.len(),
             ) < 0
@@ -376,7 +376,7 @@ impl Amount {
                     // Add LimitAmount field
                     if add_txn_field(
                         txn_index,
-                        sfield::LimitAmount,
+                        sfield::LimitAmount.into(),
                         amount_bytes.as_ptr(),
                         amount_bytes.len(),
                     ) < 0

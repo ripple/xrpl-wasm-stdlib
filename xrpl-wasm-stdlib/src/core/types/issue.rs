@@ -185,3 +185,118 @@ impl LedgerObjectFieldGetter for Issue {
         .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Test IouIssue byte layout
+    #[test]
+    fn test_iou_issue_creation() {
+        let issuer = AccountID::from([1u8; 20]);
+        let currency = Currency::from([2u8; 20]);
+        let iou = IouIssue::new(issuer, currency);
+
+        // Verify bytes structure (currency first, then issuer)
+        let bytes = iou.as_bytes();
+        assert_eq!(bytes.len(), 40);
+        assert_eq!(&bytes[..20], currency.as_bytes());
+        assert_eq!(&bytes[20..], &issuer.0);
+    }
+
+    #[test]
+    fn test_iou_issue_with_standard_currency() {
+        let issuer = AccountID::from([0xAB; 20]);
+        let currency = Currency::from(*b"USD");
+        let iou = IouIssue::new(issuer, currency);
+
+        let bytes = iou.as_bytes();
+        // First 20 bytes are currency
+        assert_eq!(&bytes[..20], currency.as_bytes());
+        // Last 20 bytes are issuer
+        assert_eq!(&bytes[20..], &issuer.0);
+    }
+
+    #[test]
+    fn test_iou_issue_different_issuers_not_equal() {
+        let issuer1 = AccountID::from([1u8; 20]);
+        let issuer2 = AccountID::from([3u8; 20]);
+        let currency = Currency::from([2u8; 20]);
+
+        let iou1 = IouIssue::new(issuer1, currency);
+        let iou2 = IouIssue::new(issuer2, currency);
+
+        assert_ne!(iou1, iou2);
+    }
+
+    // Test MptIssue accessor
+    #[test]
+    fn test_mpt_issue_creation() {
+        let issuer = AccountID::from([1u8; 20]);
+        let mpt_id = MptId::new(12345, issuer);
+        let mpt = MptIssue::new(mpt_id);
+
+        assert_eq!(mpt.mpt_id(), mpt_id);
+    }
+
+    // Test Issue::from_buffer parsing logic
+    #[test]
+    fn test_issue_from_buffer_xrp() {
+        let buffer = [0u8; 40];
+        let result = Issue::from_buffer(buffer, 20);
+        assert!(matches!(result, Result::Ok(Issue::XRP(_))));
+    }
+
+    #[test]
+    fn test_issue_from_buffer_mpt() {
+        // MPT buffer: 4 bytes sequence + 20 bytes issuer = 24 bytes
+        let mut buffer = [0u8; 40];
+        // Set sequence number (first 4 bytes, big-endian)
+        buffer[0..4].copy_from_slice(&12345u32.to_be_bytes());
+        // Set issuer (next 20 bytes)
+        buffer[4..24].copy_from_slice(&[0xAB; 20]);
+
+        let result = Issue::from_buffer(buffer, 24);
+        match result {
+            Result::Ok(Issue::MPT(mpt)) => {
+                assert_eq!(mpt.mpt_id().get_sequence_num(), 12345);
+                assert_eq!(mpt.mpt_id().get_issuer(), AccountID::from([0xAB; 20]));
+            }
+            _ => panic!("Expected MPT issue"),
+        }
+    }
+
+    #[test]
+    fn test_issue_from_buffer_iou() {
+        // IOU buffer: 20 bytes currency + 20 bytes issuer = 40 bytes
+        let mut buffer = [0u8; 40];
+        // Set currency (first 20 bytes)
+        buffer[..20].copy_from_slice(&[0xCC; 20]);
+        // Set issuer (last 20 bytes)
+        buffer[20..40].copy_from_slice(&[0xDD; 20]);
+
+        let result = Issue::from_buffer(buffer, 40);
+        match result {
+            Result::Ok(Issue::IOU(iou)) => {
+                let bytes = iou.as_bytes();
+                assert_eq!(&bytes[..20], &[0xCC; 20]); // currency
+                assert_eq!(&bytes[20..], &[0xDD; 20]); // issuer
+            }
+            _ => panic!("Expected IOU issue"),
+        }
+    }
+
+    #[test]
+    fn test_issue_from_buffer_invalid_length() {
+        let buffer = [0u8; 40];
+        // Invalid lengths should return error
+        let result = Issue::from_buffer(buffer, 10);
+        assert!(matches!(result, Result::Err(_)));
+
+        let result = Issue::from_buffer(buffer, 30);
+        assert!(matches!(result, Result::Err(_)));
+
+        let result = Issue::from_buffer(buffer, 0);
+        assert!(matches!(result, Result::Err(_)));
+    }
+}
