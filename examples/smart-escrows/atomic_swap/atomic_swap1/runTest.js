@@ -1,4 +1,4 @@
-const xrpl = require("xrpl")
+const xrpl = require("@transia/xrpl")
 const path = require("path")
 const fs = require("fs")
 

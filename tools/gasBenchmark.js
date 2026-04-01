@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const xrpl = require("xrpl")
+const xrpl = require("@transia/xrpl")
 const fs = require("fs")
 const path = require("path")
 const { execSync } = require("child_process")

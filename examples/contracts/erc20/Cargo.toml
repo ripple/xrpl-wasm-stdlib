@@ -1,0 +1,12 @@
+[package]
+name = "erc20"
+version = "1.0.0"
+edition = "2024"
+description = "An ERC-20 wrapper contract for Multi-Purpose Tokens (MPTs) on the XRP Ledger."
+license = "ISC"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-wasm-stdlib = { path = "../../../xrpl-wasm-stdlib" }
