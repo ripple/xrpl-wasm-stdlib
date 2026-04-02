@@ -8,6 +8,7 @@ const client =
     : new xrpl.Client("ws://127.0.0.1:6006")
 
 async function submit(tx, wallet, debug = false) {
+  console.log("Submitting transaction:", JSON.stringify(tx, null, 2))
   const result = await client.submitAndWait(tx, { autofill: true, wallet })
   console.log(
     "SUBMITTED " + tx.TransactionType + "(" + result.result.hash + ")",
