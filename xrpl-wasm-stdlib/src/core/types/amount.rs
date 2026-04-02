@@ -193,7 +193,8 @@ impl Amount {
     pub fn from_bytes(bytes: &[u8]) -> host::Result<Self> {
         // TODO: Move to trait!
 
-        if bytes.len() != 48 {
+        // XRP = 8 bytes, MPT = 33 bytes, IOU = 48 bytes
+        if bytes.len() != 8 && bytes.len() != 33 && bytes.len() != 48 {
             return Err(InternalError);
         }
 
