@@ -74,12 +74,12 @@ unsafe fn add_amount_field(txn_index: i32) -> i32 {
         0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0
     ];
     
-    add_txn_field(
-        txn_index, 
-        sfield::Amount, 
-        AMOUNT_BYTES.as_ptr(), 
+    unsafe { add_txn_field(
+        txn_index,
+        sfield::Amount.into(),
+        AMOUNT_BYTES.as_ptr(),
         AMOUNT_BYTES.len()
-    )
+    ) }
 }
 
 /// Adds the destination field to the transaction
@@ -95,12 +95,12 @@ unsafe fn add_destination_field(txn_index: i32, destination: &AccountID) -> i32 
     dest_buffer[0] = 0x14; // Length prefix for 20-byte account
     dest_buffer[1..21].copy_from_slice(&destination.0);
     
-    add_txn_field(
+    unsafe { add_txn_field(
         txn_index,
-        sfield::Destination,
+        sfield::Destination.into(),
         dest_buffer.as_ptr(),
         dest_buffer.len()
-    )
+    ) }
 }
 
 /// Adds the memos field to the transaction
@@ -120,14 +120,14 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
     // Helper: get a 256-byte window at current position
     #[inline(always)]
     unsafe fn at<'a>(base: *mut u8, pos: usize) -> &'a mut [u8; buffer_sizes::MEMO_BUFFER] {
-        &mut *(base.add(pos) as *mut [u8; buffer_sizes::MEMO_BUFFER])
+        unsafe { &mut *(base.add(pos) as *mut [u8; buffer_sizes::MEMO_BUFFER]) }
     }
 
     let mut pos = 0usize;
 
     // Write each Memo directly into the big buffer
     let len1 = build_memo(
-        at(base, pos),
+        unsafe { at(base, pos) },
         Some(b"invoice"),
         Some(b"INV-2024-001"),
         Some(b"text/plain")
@@ -135,7 +135,7 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
     pos += len1;
 
     let len2 = build_memo(
-        at(base, pos),
+        unsafe { at(base, pos) },
         Some(b"note"),
         Some(b"Payment for consulting services"),
         Some(b"text/plain")
@@ -143,7 +143,7 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
     pos += len2;
 
     let len3 = build_memo(
-        at(base, pos),
+        unsafe { at(base, pos) },
         None,
         Some(b"Additional reference: Project Alpha"),
         None
@@ -151,15 +151,15 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
     pos += len3;
 
     // Terminate the array
-    *base.add(pos) = markers::ARRAY_END;
+    unsafe { *base.add(pos) = markers::ARRAY_END; }
     pos += 1;
 
-    add_txn_field(
+    unsafe { add_txn_field(
         txn_index,
-        sfield::Memos,
+        sfield::Memos.into(),
         base,
         pos
-    )
+    ) }
 }
 
 // ============================================================================
