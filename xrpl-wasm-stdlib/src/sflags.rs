@@ -93,14 +93,13 @@ pub const tfTrustLine: u32 = 0x00000004;
 pub const tfTransferable: u32 = 0x00000008;
 pub const tfMutable: u32 = 0x00000010;
 
-// MPTokenIssuanceCreate flags:
-// Note: You'll need to import lsfMPT* constants from LedgerFormats
-pub const tfMPTCanLock: u32 = 0x00000001; // placeholder - should match lsfMPTCanLock
-pub const tfMPTRequireAuth: u32 = 0x00000002; // placeholder - should match lsfMPTRequireAuth
-pub const tfMPTCanEscrow: u32 = 0x00000004; // placeholder - should match lsfMPTCanEscrow
-pub const tfMPTCanTrade: u32 = 0x00000008; // placeholder - should match lsfMPTCanTrade
-pub const tfMPTCanTransfer: u32 = 0x00000010; // placeholder - should match lsfMPTCanTransfer
-pub const tfMPTCanClawback: u32 = 0x00000020; // placeholder - should match lsfMPTCanClawback
+// MPTokenIssuanceCreate flags (values from LedgerFormats.h lsfMPT* constants):
+pub const tfMPTCanLock: u32 = 0x00000002;
+pub const tfMPTRequireAuth: u32 = 0x00000004;
+pub const tfMPTCanEscrow: u32 = 0x00000008;
+pub const tfMPTCanTrade: u32 = 0x00000010;
+pub const tfMPTCanTransfer: u32 = 0x00000020;
+pub const tfMPTCanClawback: u32 = 0x00000040;
 pub const tfMPTokenIssuanceCreateMask: u32 = !(tfUniversal
     | tfMPTCanLock
     | tfMPTRequireAuth
@@ -109,15 +108,15 @@ pub const tfMPTokenIssuanceCreateMask: u32 = !(tfUniversal
     | tfMPTCanTransfer
     | tfMPTCanClawback);
 
-// MPTokenIssuanceCreate MutableFlags:
-pub const tmfMPTCanMutateCanLock: u32 = 0x00000001; // placeholder - should match lmfMPTCanMutateCanLock
-pub const tmfMPTCanMutateRequireAuth: u32 = 0x00000002; // placeholder
-pub const tmfMPTCanMutateCanEscrow: u32 = 0x00000004; // placeholder
-pub const tmfMPTCanMutateCanTrade: u32 = 0x00000008; // placeholder
-pub const tmfMPTCanMutateCanTransfer: u32 = 0x00000010; // placeholder
-pub const tmfMPTCanMutateCanClawback: u32 = 0x00000020; // placeholder
-pub const tmfMPTCanMutateMetadata: u32 = 0x00000040; // placeholder
-pub const tmfMPTCanMutateTransferFee: u32 = 0x00000080; // placeholder
+// MPTokenIssuanceCreate MutableFlags (values from LedgerFormats.h lsmfMPT* constants):
+pub const tmfMPTCanMutateCanLock: u32 = 0x00000002;
+pub const tmfMPTCanMutateRequireAuth: u32 = 0x00000004;
+pub const tmfMPTCanMutateCanEscrow: u32 = 0x00000008;
+pub const tmfMPTCanMutateCanTrade: u32 = 0x00000010;
+pub const tmfMPTCanMutateCanTransfer: u32 = 0x00000020;
+pub const tmfMPTCanMutateCanClawback: u32 = 0x00000040;
+pub const tmfMPTCanMutateMetadata: u32 = 0x00010000;
+pub const tmfMPTCanMutateTransferFee: u32 = 0x00020000;
 pub const tmfMPTokenIssuanceCreateMutableMask: u32 = !(tmfMPTCanMutateCanLock
     | tmfMPTCanMutateRequireAuth
     | tmfMPTCanMutateCanEscrow

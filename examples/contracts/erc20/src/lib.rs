@@ -254,7 +254,7 @@ fn init() -> i32 {
         }
 
         let result = emit_built_txn(txn_index);
-        if result < 0 {
+        if result != 0 {
             return exit("Failed to emit issuance txn", ERR_ISSUANCE);
         }
     }
@@ -281,13 +281,13 @@ fn transfer(to: AccountID, amount: u64) -> i32 {
 
     // Clawback from caller
     let result = emit_clawback(&mpt_id, &caller, amount);
-    if result < 0 {
+    if result != 0 {
         return exit("Clawback failed", ERR_CLAWBACK);
     }
 
     // Payment to recipient
     let result = emit_payment(&mpt_id, &to, amount);
-    if result < 0 {
+    if result != 0 {
         return exit("Payment failed", ERR_PAYMENT);
     }
 
@@ -328,13 +328,13 @@ fn transfer_from(from: AccountID, to: AccountID, amount: u64) -> i32 {
 
     // Clawback from `from`
     let result = emit_clawback(&mpt_id, &from, amount);
-    if result < 0 {
+    if result != 0 {
         return exit("Clawback failed", ERR_CLAWBACK);
     }
 
     // Payment to `to`
     let result = emit_payment(&mpt_id, &to, amount);
-    if result < 0 {
+    if result != 0 {
         return exit("Payment failed", ERR_PAYMENT);
     }
 

@@ -19,20 +19,44 @@ async function test(testContext) {
   console.log("\n=== Step 1: Deploy ERC-20 Contract ===")
 
   const maxAmount = "1000000"
-  // ContractCreate does NOT take FunctionName or ComputationAllowance —
-  // the "init" entry point is hardcoded in rippled.
+
+  // Get current ledger to set a generous LastLedgerSequence
+  const ledgerInfo = await client.request({
+    command: "ledger",
+    ledger_index: "validated",
+  })
+  const currentLedger = ledgerInfo.result.ledger_index
+
   const contractCreateTx = {
     TransactionType: "ContractCreate",
     Account: sourceWallet.address,
+    Flags: 0,
+    Fee: "10000000", // Higher fee for the large WASM blob
+    LastLedgerSequence: currentLedger + 200, // Generous window for large tx
     ContractCode: finish,
     // Declare the contract's exported functions (ABI)
     Functions: [
       {
         Function: {
+          FunctionName: xrpl.convertStringToHex("init"),
+        },
+      },
+      {
+        Function: {
           FunctionName: xrpl.convertStringToHex("transfer"),
           Parameters: [
-            { Parameter: { ParameterType: { type: "ACCOUNT" } } },
-            { Parameter: { ParameterType: { type: "UINT64" } } },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "ACCOUNT" },
+              },
+            },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "UINT64" },
+              },
+            },
           ],
         },
       },
@@ -40,8 +64,18 @@ async function test(testContext) {
         Function: {
           FunctionName: xrpl.convertStringToHex("approve"),
           Parameters: [
-            { Parameter: { ParameterType: { type: "ACCOUNT" } } },
-            { Parameter: { ParameterType: { type: "UINT64" } } },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "ACCOUNT" },
+              },
+            },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "UINT64" },
+              },
+            },
           ],
         },
       },
@@ -49,9 +83,24 @@ async function test(testContext) {
         Function: {
           FunctionName: xrpl.convertStringToHex("transfer_from"),
           Parameters: [
-            { Parameter: { ParameterType: { type: "ACCOUNT" } } },
-            { Parameter: { ParameterType: { type: "ACCOUNT" } } },
-            { Parameter: { ParameterType: { type: "UINT64" } } },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "ACCOUNT" },
+              },
+            },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "ACCOUNT" },
+              },
+            },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "UINT64" },
+              },
+            },
           ],
         },
       },
@@ -60,6 +109,7 @@ async function test(testContext) {
     InstanceParameters: [
       {
         InstanceParameter: {
+          ParameterFlag: 0,
           ParameterType: { type: "UINT64" },
         },
       },
@@ -67,6 +117,7 @@ async function test(testContext) {
     InstanceParameterValues: [
       {
         InstanceParameterValue: {
+          ParameterFlag: 0,
           ParameterValue: {
             type: "UINT64",
             value: maxAmount,
@@ -76,15 +127,15 @@ async function test(testContext) {
     ],
   }
 
-  const contractCreateResult = await submit(contractCreateTx, sourceWallet)
+  const contractCreateResult = await submit(
+    contractCreateTx,
+    sourceWallet,
+    true,
+  )
   if (contractCreateResult.result.meta.TransactionResult !== "tesSUCCESS") {
     console.error(
       "Failed to create contract:",
       contractCreateResult.result.meta.TransactionResult,
-    )
-    console.error(
-      "Metadata:",
-      JSON.stringify(contractCreateResult.result.meta, null, 2),
     )
     process.exit(1)
   }
@@ -109,10 +160,88 @@ async function test(testContext) {
   }
   console.log("Contract account (MPT issuer):", contractAccount)
 
-  // Derive the MPT issuance ID from the contract's sequence + account
-  // The MPTokenIssuanceCreate inner txn should appear in metadata
-  let mptIssuanceID = null
+  // Debug: inspect the ContractSource to see stored functions
+  let contractSourceIndex = null
   for (const node of contractCreateResult.result.meta.AffectedNodes) {
+    if (
+      node.CreatedNode &&
+      node.CreatedNode.LedgerEntryType === "ContractSource"
+    ) {
+      contractSourceIndex = node.CreatedNode.LedgerIndex
+      break
+    }
+  }
+  if (contractSourceIndex) {
+    const sourceEntry = await client.request({
+      command: "ledger_entry",
+      index: contractSourceIndex,
+    })
+    console.log(
+      "ContractSource Functions:",
+      JSON.stringify(sourceEntry.result.node?.Functions, null, 2),
+    )
+  } else {
+    console.log("No ContractSource found in metadata")
+  }
+
+  // --- Step 1b: Call init via ContractCall ---
+  console.log("\n=== Step 1b: Call init() ===")
+  const initTx = {
+    TransactionType: "ContractCall",
+    Account: sourceWallet.address,
+    ContractAccount: contractAccount,
+    FunctionName: xrpl.convertStringToHex("init"),
+    ComputationAllowance: 1000000,
+    Fee: "10000000",
+    LastLedgerSequence:
+      (
+        await client.request({
+          command: "ledger",
+          ledger_index: "validated",
+        })
+      ).result.ledger_index + 200,
+  }
+  // Submit manually to avoid autofill throwing on temMALFORMED
+  const prepared = await client.autofill(initTx)
+  const signed = sourceWallet.sign(prepared)
+  console.log("Signed init tx:", signed.tx_blob.substring(0, 100) + "...")
+  const submitRes = await client.request({
+    command: "submit",
+    tx_blob: signed.tx_blob,
+  })
+  console.log("Submit result:", JSON.stringify(submitRes.result, null, 2))
+  if (submitRes.result.engine_result !== "tesSUCCESS") {
+    // Wait for it to be validated anyway
+    console.log("Waiting for validation...")
+  }
+  // Wait for the tx to be validated
+  const initResult = await client.request({
+    command: "tx",
+    transaction: signed.hash,
+  })
+  // Poll until validated
+  let txResult = initResult
+  for (let i = 0; i < 20; i++) {
+    if (txResult.result.validated) break
+    await new Promise((r) => setTimeout(r, 1000))
+    txResult = await client.request({
+      command: "tx",
+      transaction: signed.hash,
+    })
+  }
+  console.log("Init tx result:", txResult.result?.meta?.TransactionResult)
+  if (txResult.result?.meta?.TransactionResult !== "tesSUCCESS") {
+    console.error(
+      "Failed to call init:",
+      txResult.result?.meta?.TransactionResult,
+    )
+    console.error("Full result:", JSON.stringify(txResult.result, null, 2))
+    process.exit(1)
+  }
+
+  // Extract MPT issuance ID from the init ContractCall metadata
+  let mptIssuanceID = null
+  for (const node of initResult.result.meta.AffectedNodes) {
     if (
       node.CreatedNode &&
       node.CreatedNode.LedgerEntryType === "MPTokenIssuance"
@@ -122,7 +251,11 @@ async function test(testContext) {
     }
   }
   if (!mptIssuanceID) {
-    console.error("Failed to extract MPT issuance ID from metadata")
+    console.error("Failed to extract MPT issuance ID from init metadata")
+    console.error(
+      "Full metadata:",
+      JSON.stringify(initResult.result.meta, null, 2),
+    )
     process.exit(1)
   }
   console.log("MPT Issuance ID:", mptIssuanceID)
