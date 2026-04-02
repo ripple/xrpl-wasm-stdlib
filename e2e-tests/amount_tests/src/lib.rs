@@ -45,12 +45,12 @@ pub extern "C" fn instance_amount_xrp() -> i32 {
 }
 
 /// Test IOU Amount as instance parameter
-/// Expects instance param 0 = IOU Amount of USD 1.2
+/// Expects instance param 1 = IOU Amount of USD 1.2
 #[unsafe(no_mangle)]
 pub extern "C" fn instance_amount_iou() -> i32 {
     let _ = trace("=== Instance Amount IOU ===");
 
-    let amount = match get_instance_param::<Amount>(0) {
+    let amount = match get_instance_param::<Amount>(1) {
         Ok(a) => a,
         Err(err) => {
             let _ = trace_num("IOU instance param error:", err as i64);
@@ -93,12 +93,12 @@ pub extern "C" fn instance_amount_iou() -> i32 {
 }
 
 /// Test MPT Amount as instance parameter
-/// Expects instance param 0 = MPT Amount of 500 units
+/// Expects instance param 2 = MPT Amount of 500 units
 #[unsafe(no_mangle)]
 pub extern "C" fn instance_amount_mpt() -> i32 {
     let _ = trace("=== Instance Amount MPT ===");
 
-    let amount = match get_instance_param::<Amount>(0) {
+    let amount = match get_instance_param::<Amount>(2) {
         Ok(a) => a,
         Err(err) => {
             let _ = trace_num("MPT instance param error:", err as i64);
