@@ -3,30 +3,27 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_std::core::types::account_id::AccountID;
 use xrpl_wasm_std::core::event::codec_v3::{
-    EventBuffer, event_add_u8, event_add_u16, event_add_u32, event_add_u64,
-    event_add_u128, event_add_u160, event_add_u192, event_add_u256, event_add_amount, event_add_account,
-    event_add_currency, event_add_str
+    EventBuffer, event_add_account, event_add_amount, event_add_currency, event_add_str,
+    event_add_u8, event_add_u16, event_add_u32, event_add_u64, event_add_u128, event_add_u160,
+    event_add_u192, event_add_u256,
 };
+use xrpl_wasm_std::core::types::account_id::AccountID;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn events() -> i32 {
     let mut buf = EventBuffer::new();
 
     // STI_AMOUNT
-    const AMOUNT: [u8; 8] = [
-        0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0
-    ];
+    const AMOUNT: [u8; 8] = [0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0];
     if event_add_amount(&mut buf, "amount", &AMOUNT).is_err() {
         return -1;
     }
 
     // STI_CURRENCY
     const CURRENCY: [u8; 20] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x00,
-        0x00, 0x00, 0x00, 0x00
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44,
+        0x00, 0x00, 0x00, 0x00, 0x00,
     ];
     if event_add_currency(&mut buf, "currency", &CURRENCY).is_err() {
         return -1;
@@ -34,9 +31,8 @@ pub extern "C" fn events() -> i32 {
 
     // STI_ACCOUNT
     const ACCOUNT: [u8; 20] = [
-        0x59, 0x69, 0x15, 0xCF, 0xDE, 0xEE, 0x3A, 0x69,
-        0x5B, 0x3E, 0xFD, 0x6B, 0xDA, 0x9A, 0xC7, 0x88,
-        0xA3, 0x68, 0xB7, 0xB
+        0x59, 0x69, 0x15, 0xCF, 0xDE, 0xEE, 0x3A, 0x69, 0x5B, 0x3E, 0xFD, 0x6B, 0xDA, 0x9A, 0xC7,
+        0x88, 0xA3, 0x68, 0xB7, 0xB,
     ];
     let account = AccountID(ACCOUNT);
     if event_add_account(&mut buf, "destination", &account.0).is_err() {
@@ -91,7 +87,7 @@ pub extern "C" fn events() -> i32 {
     // STI_ISSUE (XRP)
     // STI_ISSUE (IOU)
     // STI_ISSUE (MPT)
-    
+
     if buf.emit("event1").is_err() {
         return -1;
     }
