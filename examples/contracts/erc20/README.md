@@ -12,6 +12,8 @@ This contract makes it easier to transition from the EVM world to the XRPL world
 
 The contract's pseudo-account **is** the MPT issuer. During `ContractCreate`, the hardcoded `init` function reads `max_amount` from instance parameters and emits an `MPTokenIssuanceCreate` inner transaction with `tfMPTCanTransfer | tfMPTCanClawback` flags. The resulting sequence number is stored in `ContractData` so subsequent calls can derive the `MptId`.
 
+The `init` call must include XRP funding via the `tfSendAmount` parameter flag (`0x00010000`) because contract pseudo-accounts cannot receive direct `Payment` transactions — they must be funded through `ContractCall` parameters.
+
 ### Transfer Architecture: Clawback + Payment
 
 Since the contract is the issuer, it cannot simply "send" tokens on behalf of users. Instead, transfers use two inner transactions:
@@ -27,11 +29,11 @@ Functions like `total_supply`, `balance_of`, and `allowance` are intentionally o
 
 ### Storage Layout
 
-Allowances are the only state the contract manages, stored under the key prefix `"allowances"` using a 40-byte composite key (owner `AccountID` ‖ spender `AccountID`). The MPT issuance sequence is stored under `"mpt_seq"`.
+Allowances are the only state the contract manages, stored under the key prefix `"allowances"` using an 80-byte hex-encoded composite key (hex(owner `AccountID`) ‖ hex(spender `AccountID`)). Hex encoding is used because the key appears as a JSON object key in `ContractData`, which requires valid string characters. The MPT issuance sequence is stored under `"mpt_seq"`.
 
 ```
-ContractData["mpt_seq"]                                    → u32
-ContractData["allowances"][owner (20B) || spender (20B)]   → u64
+ContractData["mpt_seq"]                                              → u32
+ContractData["allowances"][hex(owner 20B) || hex(spender 20B)]       → u64
 ```
 
 ### Events
@@ -45,22 +47,25 @@ ContractData["allowances"][owner (20B) || spender (20B)]   → u64
 
 | Function        | Parameters                                             | Returns      | Description                                                                      |
 | --------------- | ------------------------------------------------------ | ------------ | -------------------------------------------------------------------------------- |
-| `init`          | _(none; reads `max_amount: u64` from instance params)_ | 0 on success | Creates the MPT issuance during `ContractCreate`                                 |
-| `transfer`      | `to: AccountID`, `amount: u64`                         | 0 on success | Clawback from caller + Payment to `to`                                           |
-| `approve`       | `spender: AccountID`, `amount: u64`                    | 0 on success | Stores the allowance in `ContractData`                                           |
-| `transfer_from` | `from: AccountID`, `to: AccountID`, `amount: u64`      | 0 on success | Validates allowance, Clawback from `from`, Payment to `to`, decrements allowance |
+| `init`          | `xrp_funding: Amount` _(+ `max_amount: u64` instance)_ | 1 on success | Creates the MPT issuance; requires `tfSendAmount` to fund the contract account   |
+| `mint`          | `to: AccountID`, `amount: u64`                         | 1 on success | Issuer sends MPTs to `to` via Payment (no Clawback)                              |
+| `transfer`      | `to: AccountID`, `amount: u64`                         | 1 on success | Clawback from caller + Payment to `to`                                           |
+| `approve`       | `spender: AccountID`, `amount: u64`                    | 1 on success | Stores the allowance in `ContractData`                                           |
+| `transfer_from` | `from: AccountID`, `to: AccountID`, `amount: u64`      | 1 on success | Validates allowance, Clawback from `from`, Payment to `to`, decrements allowance |
 
 ## Error Codes
 
-| Code | Constant                     | Meaning                                       |
-| ---- | ---------------------------- | --------------------------------------------- |
-| `0`  | `SUCCESS`                    | Operation completed successfully              |
-| `-1` | `ERR_CLAWBACK`               | Clawback inner transaction failed             |
-| `-2` | `ERR_PAYMENT`                | Payment inner transaction failed              |
-| `-3` | `ERR_ISSUANCE`               | MPT issuance creation failed                  |
-| `-4` | `ERR_SEQUENCE`               | Failed to read the contract account sequence  |
-| `-5` | `ERR_STORE`                  | Failed to store data in `ContractData`        |
-| `-6` | `ERR_INSUFFICIENT_ALLOWANCE` | `transfer_from` caller's allowance is too low |
+Error codes use values below `-256` to avoid collisions with host function error codes.
+
+| Code   | Constant                     | Meaning                                       |
+| ------ | ---------------------------- | --------------------------------------------- |
+| `1`    | `SUCCESS`                    | Operation completed successfully              |
+| `-257` | `ERR_CLAWBACK`               | Clawback inner transaction failed             |
+| `-258` | `ERR_PAYMENT`                | Payment inner transaction failed              |
+| `-259` | `ERR_ISSUANCE`               | MPT issuance creation failed                  |
+| `-260` | `ERR_SEQUENCE`               | Failed to read the contract account sequence  |
+| `-261` | `ERR_STORE`                  | Failed to store data in `ContractData`        |
+| `-262` | `ERR_INSUFFICIENT_ALLOWANCE` | `transfer_from` caller's allowance is too low |
 
 ## Running the Tests
 
