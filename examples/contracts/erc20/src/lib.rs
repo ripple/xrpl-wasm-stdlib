@@ -167,12 +167,12 @@ fn emit_clawback(mpt_id: &MptId, holder: &AccountID, amount: u64) -> i32 {
 
         // Add Amount field (the MPT amount to claw back)
         let mpt_amount = build_mpt_amount(mpt_id, amount);
-        let (amount_bytes, _) = mpt_amount.to_stamount_bytes();
+        let (amount_bytes, amount_len) = mpt_amount.to_stamount_bytes();
         if add_txn_field(
             txn_index,
             sfield::Amount.into(),
             amount_bytes.as_ptr(),
-            amount_bytes.len(),
+            amount_len,
         ) < 0
         {
             return -1;
@@ -199,7 +199,11 @@ fn emit_clawback(mpt_id: &MptId, holder: &AccountID, amount: u64) -> i32 {
 /// Emit a Payment inner transaction to send MPTs to a recipient.
 fn emit_payment(mpt_id: &MptId, recipient: &AccountID, amount: u64) -> i32 {
     let mpt_amount = build_mpt_amount(mpt_id, amount);
-    mpt_amount.transfer(recipient)
+    let result = mpt_amount.transfer(recipient);
+    if result != 0 {
+        let _ = trace_num("emit_payment transfer returned", result as i64);
+    }
+    result
 }
 
 // ============================================================================

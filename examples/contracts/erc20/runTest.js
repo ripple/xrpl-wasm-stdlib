@@ -19,15 +19,17 @@ async function submitContractCall(client, tx, wallet, debug = false) {
     console.error("Full result:", JSON.stringify(submitRes.result, null, 2))
     process.exit(1)
   }
-  // Poll until validated, reconnecting if needed
+  // Close the ledger and poll until validated, reconnecting if needed
   let txResult
   for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 1000))
+    await new Promise((r) => setTimeout(r, 500))
     try {
       if (!client.isConnected()) {
         console.log("Reconnecting to rippled...")
         await client.connect()
       }
+      // Force ledger close on standalone server
+      await client.request({ command: "ledger_accept" })
       txResult = await client.request({
         command: "tx",
         transaction: signed.hash,
@@ -69,7 +71,7 @@ async function test(testContext) {
   // The init function will create the MPT issuance with max_amount
   console.log("\n=== Step 1: Deploy ERC-20 Contract ===")
 
-  const maxAmount = "1000000"
+  const maxAmount = Number(1000000).toString(16) // UINT64 values are hex strings
 
   // Get current ledger to set a generous LastLedgerSequence
   const ledgerInfo = await client.request({
@@ -305,20 +307,20 @@ async function test(testContext) {
     // Wait for it to be validated anyway
     console.log("Waiting for validation...")
   }
-  // Wait for the tx to be validated
-  const initResult = await client.request({
-    command: "tx",
-    transaction: signed.hash,
-  })
-  // Poll until validated
-  let txResult = initResult
+  // Close ledger and poll until validated
+  let txResult
   for (let i = 0; i < 20; i++) {
-    if (txResult.result.validated) break
-    await new Promise((r) => setTimeout(r, 1000))
-    txResult = await client.request({
-      command: "tx",
-      transaction: signed.hash,
-    })
+    await new Promise((r) => setTimeout(r, 500))
+    try {
+      await client.request({ command: "ledger_accept" })
+      txResult = await client.request({
+        command: "tx",
+        transaction: signed.hash,
+      })
+      if (txResult.result.validated) break
+    } catch (e) {
+      console.log("Init poll attempt", i, "failed:", e.message)
+    }
   }
   console.log("Init tx result:", txResult.result?.meta?.TransactionResult)
   if (txResult.result?.meta?.TransactionResult !== "tesSUCCESS") {
@@ -373,7 +375,7 @@ async function test(testContext) {
 
   // --- Step 2b: Mint tokens to destWallet ---
   console.log("\n=== Step 2b: Mint tokens to destWallet ===")
-  const mintAmount = "1000"
+  const mintAmount = Number(1000).toString(16) // UINT64 values are hex strings
   const mintTx = {
     TransactionType: "ContractCall",
     Account: sourceWallet.address,
@@ -414,7 +416,7 @@ async function test(testContext) {
 
   // --- Step 3: Test approve ---
   console.log("\n=== Step 3: Test approve ===")
-  const approveAmount = "500"
+  const approveAmount = Number(500).toString(16) // UINT64 values are hex strings
   const approveTx = {
     TransactionType: "ContractCall",
     Account: destWallet.address,
@@ -475,7 +477,7 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  const transferFromAmount = "100"
+  const transferFromAmount = Number(100).toString(16) // UINT64 values are hex strings
   const transferFromTx = {
     TransactionType: "ContractCall",
     Account: sourceWallet.address,
