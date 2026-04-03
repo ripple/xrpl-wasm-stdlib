@@ -72,6 +72,10 @@ pub enum TransactionType {
     DIDDelete = 50,
     OracleSet = 51,
     OracleDelete = 52,
+    MPTokenIssuanceCreate = 54,
+    MPTokenIssuanceDestroy = 55,
+    MPTokenIssuanceSet = 56,
+    MPTokenAuthorize = 57,
     EnableAmendment = 100,
     SetFee = 101,
     UNLModify = 102,
@@ -136,6 +140,10 @@ impl From<i16> for TransactionType {
             50 => TransactionType::DIDDelete,
             51 => TransactionType::OracleSet,
             52 => TransactionType::OracleDelete,
+            54 => TransactionType::MPTokenIssuanceCreate,
+            55 => TransactionType::MPTokenIssuanceDestroy,
+            56 => TransactionType::MPTokenIssuanceSet,
+            57 => TransactionType::MPTokenAuthorize,
             100 => TransactionType::EnableAmendment,
             101 => TransactionType::SetFee,
             102 => TransactionType::UNLModify,
@@ -278,6 +286,22 @@ mod tests {
         assert_eq!(TransactionType::from(50i16), TransactionType::DIDDelete);
         assert_eq!(TransactionType::from(51i16), TransactionType::OracleSet);
         assert_eq!(TransactionType::from(52i16), TransactionType::OracleDelete);
+        assert_eq!(
+            TransactionType::from(54i16),
+            TransactionType::MPTokenIssuanceCreate
+        );
+        assert_eq!(
+            TransactionType::from(55i16),
+            TransactionType::MPTokenIssuanceDestroy
+        );
+        assert_eq!(
+            TransactionType::from(56i16),
+            TransactionType::MPTokenIssuanceSet
+        );
+        assert_eq!(
+            TransactionType::from(57i16),
+            TransactionType::MPTokenAuthorize
+        );
         assert_eq!(
             TransactionType::from(100i16),
             TransactionType::EnableAmendment

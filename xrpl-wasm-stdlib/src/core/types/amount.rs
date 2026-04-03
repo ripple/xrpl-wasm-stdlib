@@ -124,11 +124,14 @@ impl Amount {
     /// - MPT: Flag byte (0b_0110_0000) in byte 0, raw amount in bytes 1-9, MptId in bytes 9-33 + 15 bytes padding
     /// - IOU: OpaqueFloat in first 8 bytes, Currency in bytes 8-28, AccountID in bytes 28-48
     ///
-    /// Returns a tuple of (bytes, length) where length is always 48.
+    /// Returns a tuple of (bytes, actual_length) where actual_length varies by type:
+    /// - XRP: 8 bytes
+    /// - MPT: 33 bytes (1 control + 8 amount + 24 mpt_id)
+    /// - IOU: 48 bytes (8 float + 20 currency + 20 issuer)
     pub fn to_stamount_bytes(&self) -> ([u8; AMOUNT_SIZE], usize) {
         let mut bytes = [0u8; AMOUNT_SIZE];
 
-        match self {
+        let len = match self {
             Amount::XRP { num_drops } => {
                 if *num_drops >= 0 {
                     // Set the positive bit (0x40) and clear the currency bit (0x80)
@@ -139,6 +142,7 @@ impl Amount {
                     let negative_drops = ((-*num_drops) as u64) & 0x3FFFFFFFFFFFFFFFu64; // Clear positive bit
                     bytes[0..8].copy_from_slice(&negative_drops.to_be_bytes());
                 }
+                8
             }
 
             Amount::MPT {
@@ -146,7 +150,7 @@ impl Amount {
                 is_positive,
                 mpt_id,
             } => {
-                // MPT format for tracing: flag byte + amount + mpt_id
+                // MPT format: flag byte + amount + mpt_id
                 let mut control_byte = 0u8;
 
                 // Set the sign bit (bit 6)
@@ -163,7 +167,7 @@ impl Amount {
                 bytes[0] = control_byte;
                 bytes[1..9].copy_from_slice(&num_units.to_be_bytes());
                 bytes[9..33].copy_from_slice(mpt_id.as_bytes());
-                // Remaining 15 bytes stay as zeros (padding)
+                33 // 1 control + 8 amount + 24 mpt_id
             }
 
             Amount::IOU {
@@ -171,15 +175,15 @@ impl Amount {
                 issuer,
                 currency,
             } => {
-                // IOU format for tracing: opaque float + currency + issuer
+                // IOU format: opaque float + currency + issuer
                 bytes[0..8].copy_from_slice(&amount.0);
                 bytes[8..28].copy_from_slice(currency.as_bytes());
                 bytes[28..48].copy_from_slice(&issuer.0);
-                // No padding needed - uses all 48 bytes
+                48 // Uses all 48 bytes
             }
-        }
+        };
 
-        (bytes, AMOUNT_SIZE)
+        (bytes, len)
     }
 
     /// Parses a Amount from a byte array.
@@ -287,18 +291,20 @@ impl Amount {
             // Build Payment transaction
             let txn_index = build_txn(TransactionType::Payment as i32);
             if txn_index < 0 {
+                let _ =
+                    crate::host::trace::trace_num("build_txn(Payment) returned", txn_index as i64);
                 return -100; // Build error
             }
 
             // Get the encoded amount from Amount
-            let (amount_bytes, _) = self.to_stamount_bytes();
+            let (amount_bytes, amount_len) = self.to_stamount_bytes();
 
             // Add Amount field
             if add_txn_field(
                 txn_index,
                 sfield::Amount.into(),
                 amount_bytes.as_ptr(),
-                amount_bytes.len(),
+                amount_len,
             ) < 0
             {
                 return -101; // Field error
@@ -372,14 +378,14 @@ impl Amount {
                     };
 
                     // Get the encoded amount
-                    let (amount_bytes, _) = limit_iou.to_stamount_bytes();
+                    let (amount_bytes, amount_len) = limit_iou.to_stamount_bytes();
 
                     // Add LimitAmount field
                     if add_txn_field(
                         txn_index,
                         sfield::LimitAmount.into(),
                         amount_bytes.as_ptr(),
-                        amount_bytes.len(),
+                        amount_len,
                     ) < 0
                     {
                         return -101; // Field error
@@ -666,11 +672,9 @@ mod tests {
 
         // Test to_stamount_bytes format (should include sign bit for positive)
         let (stamount_bytes, len) = original.to_stamount_bytes();
-        assert_eq!(len, 48);
+        assert_eq!(len, 8);
         let expected_value = 1_000_000u64 | 0x4000000000000000u64; // Add positive sign bit
         assert_eq!(&stamount_bytes[0..8], &expected_value.to_be_bytes());
-        // Remaining bytes should be zero padding
-        assert_eq!(&stamount_bytes[8..48], &[0u8; 40]);
     }
 
     #[test]
@@ -692,10 +696,8 @@ mod tests {
 
         // Test to_stamount_bytes format (should NOT include sign bit for negative)
         let (stamount_bytes, len) = original.to_stamount_bytes();
-        assert_eq!(len, 48);
+        assert_eq!(len, 8);
         assert_eq!(&stamount_bytes[0..8], &500_000u64.to_be_bytes());
-        // Remaining bytes should be zero padding
-        assert_eq!(&stamount_bytes[8..48], &[0u8; 40]);
     }
 
     #[test]
@@ -727,12 +729,10 @@ mod tests {
 
         // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
-        assert_eq!(len, 48);
+        assert_eq!(len, 33);
         assert_eq!(stamount_bytes[0], 0x60); // Flag byte
         assert_eq!(&stamount_bytes[1..9], &VALUE.to_be_bytes()); // Amount
         assert_eq!(&stamount_bytes[9..33], mpt_id.as_bytes()); // MptId
-        // Remaining bytes should be zero padding
-        assert_eq!(&stamount_bytes[33..48], &[0u8; 15]);
     }
 
     #[test]
@@ -764,12 +764,10 @@ mod tests {
 
         // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
-        assert_eq!(len, 48);
+        assert_eq!(len, 33);
         assert_eq!(stamount_bytes[0], 0x20); // Flag byte (negative)
         assert_eq!(&stamount_bytes[1..9], &VALUE.to_be_bytes()); // Amount
         assert_eq!(&stamount_bytes[9..33], mpt_id.as_bytes()); // MptId
-        // Remaining bytes should be zero padding
-        assert_eq!(&stamount_bytes[33..48], &[0u8; 15]);
     }
 
     #[test]

@@ -9,6 +9,7 @@ members = [
     "smart-escrows/nft_owner",
     "smart-escrows/notary",
     "smart-escrows/oracle",
+    "contracts/erc20",
 ]
 
 [profile.release]
