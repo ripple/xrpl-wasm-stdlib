@@ -40,7 +40,7 @@ use xrpl_wasm_stdlib::core::types::amount::Amount;
 use xrpl_wasm_stdlib::core::types::mpt_id::MptId;
 use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
 use xrpl_wasm_stdlib::host;
-use xrpl_wasm_stdlib::host::trace::trace;
+use xrpl_wasm_stdlib::host::trace::trace_num;
 use xrpl_wasm_stdlib::host::{add_txn_field, build_txn, emit_built_txn};
 use xrpl_wasm_stdlib::sfield;
 use xrpl_wasm_stdlib::sflags::{tfMPTCanClawback, tfMPTCanTransfer};
@@ -50,13 +50,13 @@ use xrpl_wasm_stdlib::wasm_export;
 // Constants
 // ============================================================================
 
-const SUCCESS: i32 = 0;
-const ERR_CLAWBACK: i32 = -1;
-const ERR_PAYMENT: i32 = -2;
-const ERR_ISSUANCE: i32 = -3;
-const ERR_SEQUENCE: i32 = -4;
-const ERR_STORE: i32 = -5;
-const ERR_INSUFFICIENT_ALLOWANCE: i32 = -6;
+const SUCCESS: i32 = 1;
+const ERR_CLAWBACK: i32 = -257;
+const ERR_PAYMENT: i32 = -258;
+const ERR_ISSUANCE: i32 = -259;
+const ERR_SEQUENCE: i32 = -260;
+const ERR_STORE: i32 = -261;
+const ERR_INSUFFICIENT_ALLOWANCE: i32 = -262;
 
 /// Storage key for the MPT issuance sequence number.
 const MPT_SEQ_KEY: &str = "mpt_seq";
@@ -70,7 +70,7 @@ const ALLOWANCES_KEY: &str = "allowances";
 
 /// Exit handler for `wasm_export` – logs a message and returns the error code.
 fn exit(message: &str, error_code: i32) -> i32 {
-    let _ = trace(message);
+    let _ = trace_num(message, error_code as i64);
     error_code
 }
 
@@ -101,16 +101,27 @@ fn build_mpt_amount(mpt_id: &MptId, value: u64) -> Amount {
     }
 }
 
-/// Build a 40-byte storage key from owner (20 bytes) + spender (20 bytes).
-fn allowance_key(owner: &AccountID, spender: &AccountID) -> [u8; 40] {
-    let mut key = [0u8; 40];
+/// Hex-encode a byte into two ASCII hex characters.
+fn hex_byte(b: u8) -> (u8, u8) {
+    const HEX: [u8; 16] = *b"0123456789abcdef";
+    (HEX[(b >> 4) as usize], HEX[(b & 0x0f) as usize])
+}
+
+/// Build an 80-byte hex-encoded storage key from owner (20 bytes) + spender (20 bytes).
+/// Uses hex encoding so the key is valid as a JSON object key in STJson.
+fn allowance_key(owner: &AccountID, spender: &AccountID) -> [u8; 80] {
+    let mut key = [0u8; 80];
     let mut i = 0;
     while i < 20 {
-        key[i] = owner.0[i];
+        let (hi, lo) = hex_byte(owner.0[i]);
+        key[i * 2] = hi;
+        key[i * 2 + 1] = lo;
         i += 1;
     }
     while i < 40 {
-        key[i] = spender.0[i - 20];
+        let (hi, lo) = hex_byte(spender.0[i - 20]);
+        key[i * 2] = hi;
+        key[i * 2 + 1] = lo;
         i += 1;
     }
     key
@@ -203,7 +214,7 @@ fn emit_payment(mpt_id: &MptId, recipient: &AccountID, amount: u64) -> i32 {
 ///
 /// Instance params: `max_amount` (u64 maximum supply of the MPT)
 #[wasm_export(exit = exit, instance(max_amount: u64))]
-fn init() -> i32 {
+fn init(_xrp_funding: Amount) -> i32 {
     // Get the contract's own account and its current sequence number
     let contract: AccountID = current_tx::get_field(sfield::ContractAccount).unwrap();
 
@@ -225,6 +236,7 @@ fn init() -> i32 {
     unsafe {
         let txn_index = build_txn(TransactionType::MPTokenIssuanceCreate as i32);
         if txn_index < 0 {
+            let _ = trace_num("build_txn returned", txn_index as i64);
             return exit("Failed to build issuance txn", ERR_ISSUANCE);
         }
 
@@ -255,6 +267,7 @@ fn init() -> i32 {
 
         let result = emit_built_txn(txn_index);
         if result != 0 {
+            let _ = trace_num("emit_built_txn returned", result as i64);
             return exit("Failed to emit issuance txn", ERR_ISSUANCE);
         }
     }
@@ -264,6 +277,24 @@ fn init() -> i32 {
         return exit("Failed to store MPT sequence", ERR_STORE);
     }
 
+    SUCCESS
+}
+
+/// Mint MPTs to a recipient by sending a Payment from the issuer (contract).
+///
+/// Function params: `to` (recipient AccountID), `amount` (u64 units to mint)
+#[wasm_export(exit = exit)]
+fn mint(to: AccountID, amount: u64) -> i32 {
+    let contract = get_contract_account();
+    let mpt_id = get_mpt_id(&contract);
+
+    // Payment to recipient (minting from issuer)
+    let result = emit_payment(&mpt_id, &to, amount);
+    if result != 0 {
+        return exit("Mint payment failed", ERR_PAYMENT);
+    }
+
+    emit_transfer(&contract, &to, amount);
     SUCCESS
 }
 

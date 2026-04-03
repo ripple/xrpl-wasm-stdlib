@@ -1,6 +1,57 @@
 const xrpl = require("@transia/xrpl")
 
 /**
+ * Submit a ContractCall transaction manually (submit + poll for validation).
+ * This avoids websocket disconnection issues with submitAndWait for long-running WASM calls.
+ */
+async function submitContractCall(client, tx, wallet, debug = false) {
+  console.log("Submitting transaction:", JSON.stringify(tx, null, 2))
+  const prepared = await client.autofill(tx)
+  const signed = wallet.sign(prepared)
+  const submitRes = await client.request({
+    command: "submit",
+    tx_blob: signed.tx_blob,
+  })
+  if (debug)
+    console.log("Submit result:", JSON.stringify(submitRes.result, null, 2))
+  if (submitRes.result.engine_result !== "tesSUCCESS") {
+    console.error("Submit failed:", submitRes.result.engine_result)
+    console.error("Full result:", JSON.stringify(submitRes.result, null, 2))
+    process.exit(1)
+  }
+  // Poll until validated, reconnecting if needed
+  let txResult
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 1000))
+    try {
+      if (!client.isConnected()) {
+        console.log("Reconnecting to rippled...")
+        await client.connect()
+      }
+      txResult = await client.request({
+        command: "tx",
+        transaction: signed.hash,
+      })
+      if (txResult.result.validated) break
+    } catch (e) {
+      console.log("Poll attempt", i, "failed:", e.message, "- retrying...")
+    }
+  }
+  if (!txResult?.result?.validated) {
+    console.error("Transaction was not validated after 30 attempts")
+    process.exit(1)
+  }
+  console.log("Result code:", txResult.result.meta.TransactionResult)
+  if (txResult.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error("Transaction failed:", txResult.result.meta.TransactionResult)
+    if (debug) console.log(JSON.stringify(txResult.result, null, 2))
+    process.exit(1)
+  }
+  if (debug) console.log(JSON.stringify(txResult.result, null, 2))
+  return txResult
+}
+
+/**
  * Integration test for the ERC-20 MPT wrapper contract.
  *
  * Test flow:
@@ -39,6 +90,33 @@ async function test(testContext) {
       {
         Function: {
           FunctionName: xrpl.convertStringToHex("init"),
+          Parameters: [
+            {
+              Parameter: {
+                ParameterFlag: 0x00010000, // tfSendAmount - sends XRP to contract
+                ParameterType: { type: "AMOUNT" },
+              },
+            },
+          ],
+        },
+      },
+      {
+        Function: {
+          FunctionName: xrpl.convertStringToHex("mint"),
+          Parameters: [
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "ACCOUNT" },
+              },
+            },
+            {
+              Parameter: {
+                ParameterFlag: 0,
+                ParameterType: { type: "UINT64" },
+              },
+            },
+          ],
         },
       },
       {
@@ -185,6 +263,8 @@ async function test(testContext) {
   }
 
   // --- Step 1b: Call init via ContractCall ---
+  // Use tfSendAmount parameter flag to fund the contract account with XRP
+  // in the same call (contract accounts can't receive direct Payments)
   console.log("\n=== Step 1b: Call init() ===")
   const initTx = {
     TransactionType: "ContractCall",
@@ -193,6 +273,17 @@ async function test(testContext) {
     FunctionName: xrpl.convertStringToHex("init"),
     ComputationAllowance: 1000000,
     Fee: "10000000",
+    Parameters: [
+      {
+        Parameter: {
+          ParameterFlag: 0x00010000, // tfSendAmount - transfer XRP to contract
+          ParameterValue: {
+            type: "AMOUNT",
+            value: xrpl.xrpToDrops(500),
+          },
+        },
+      },
+    ],
     LastLedgerSequence:
       (
         await client.request({
@@ -239,25 +330,26 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  // Extract MPT issuance ID from the init ContractCall metadata
-  let mptIssuanceID = null
-  for (const node of initResult.result.meta.AffectedNodes) {
-    if (
-      node.CreatedNode &&
-      node.CreatedNode.LedgerEntryType === "MPTokenIssuance"
-    ) {
-      mptIssuanceID = node.CreatedNode.LedgerIndex
-      break
-    }
-  }
-  if (!mptIssuanceID) {
-    console.error("Failed to extract MPT issuance ID from init metadata")
+  // Extract MPT issuance ID from the contract account's objects
+  // The inner MPTokenIssuanceCreate is a separate tx, so its effects
+  // won't appear in the ContractCall's metadata.
+  const accountObjects = await client.request({
+    command: "account_objects",
+    account: contractAccount,
+    type: "mpt_issuance",
+  })
+  const mptIssuance = accountObjects.result.account_objects.find(
+    (obj) => obj.LedgerEntryType === "MPTokenIssuance",
+  )
+  if (!mptIssuance) {
+    console.error("Failed to find MPTokenIssuance for contract account")
     console.error(
-      "Full metadata:",
-      JSON.stringify(initResult.result.meta, null, 2),
+      "Account objects:",
+      JSON.stringify(accountObjects.result, null, 2),
     )
     process.exit(1)
   }
+  const mptIssuanceID = mptIssuance.mpt_issuance_id
   console.log("MPT Issuance ID:", mptIssuanceID)
 
   // --- Step 2: Authorize users and mint tokens ---
@@ -279,15 +371,46 @@ async function test(testContext) {
   }
   console.log("destWallet authorized for MPT")
 
-  // Mint tokens to destWallet (the contract/issuer sends via Payment)
-  // Since the contract is the issuer, we need to use a ContractCall
-  // to trigger a Payment from the contract. For initial distribution,
-  // the issuer (contract pseudo-account) can send directly.
-  // For now, we'll issue tokens by calling transfer from a funded account.
-  // First, let's mint to destWallet by having the issuer pay directly.
-  // Note: The contract IS the issuer, so direct Payment from contract
-  // account requires a contract call. We'll skip direct minting and
-  // test the transfer flow instead.
+  // --- Step 2b: Mint tokens to destWallet ---
+  console.log("\n=== Step 2b: Mint tokens to destWallet ===")
+  const mintAmount = "1000"
+  const mintTx = {
+    TransactionType: "ContractCall",
+    Account: sourceWallet.address,
+    ContractAccount: contractAccount,
+    FunctionName: xrpl.convertStringToHex("mint"),
+    ComputationAllowance: 1000000,
+    Fee: "10000000",
+    Parameters: [
+      {
+        Parameter: {
+          ParameterValue: {
+            type: "ACCOUNT",
+            value: destWallet.address,
+          },
+        },
+      },
+      {
+        Parameter: {
+          ParameterValue: {
+            type: "UINT64",
+            value: mintAmount,
+          },
+        },
+      },
+    ],
+  }
+  const mintResult = await submitContractCall(
+    client,
+    mintTx,
+    sourceWallet,
+    true,
+  )
+  if (mintResult.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error("mint failed:", mintResult.result.meta.TransactionResult)
+    process.exit(1)
+  }
+  console.log(`mint(${destWallet.address}, ${mintAmount}) succeeded`)
 
   // --- Step 3: Test approve ---
   console.log("\n=== Step 3: Test approve ===")
@@ -298,6 +421,7 @@ async function test(testContext) {
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("approve"),
     ComputationAllowance: 1000000,
+    Fee: "10000000",
     Parameters: [
       {
         Parameter: {
@@ -317,7 +441,12 @@ async function test(testContext) {
       },
     ],
   }
-  const approveResult = await submit(approveTx, destWallet, true)
+  const approveResult = await submitContractCall(
+    client,
+    approveTx,
+    destWallet,
+    true,
+  )
   if (approveResult.result.meta.TransactionResult !== "tesSUCCESS") {
     console.error(
       "approve failed:",
@@ -353,6 +482,7 @@ async function test(testContext) {
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("transfer_from"),
     ComputationAllowance: 1000000,
+    Fee: "10000000",
     Parameters: [
       {
         Parameter: {
@@ -380,7 +510,12 @@ async function test(testContext) {
       },
     ],
   }
-  const transferFromResult = await submit(transferFromTx, sourceWallet, true)
+  const transferFromResult = await submitContractCall(
+    client,
+    transferFromTx,
+    sourceWallet,
+    true,
+  )
   if (transferFromResult.result.meta.TransactionResult !== "tesSUCCESS") {
     console.error(
       "transfer_from failed:",
