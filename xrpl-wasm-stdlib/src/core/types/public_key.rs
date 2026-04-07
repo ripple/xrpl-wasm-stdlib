@@ -112,4 +112,53 @@ mod test_public_key {
         assert_eq!(pubkey_secp256k1_ref, PUBKEY_SECP256K1);
         assert_ne!(pubkey_secp256k1_ref, PUBKEY_ED25519);
     }
+
+    #[test]
+    fn test_from_33_bytes() {
+        use super::PublicKey;
+        let pk = PublicKey::from(PUBKEY_SECP256K1);
+        assert_eq!(pk.0, PUBKEY_SECP256K1);
+    }
+
+    #[test]
+    fn test_from_64_bytes_truncates() {
+        use super::PublicKey;
+        let mut bytes_64 = [0xAA; 64];
+        bytes_64[0] = 0x02; // secp256k1 prefix
+        let pk = PublicKey::from(bytes_64);
+        assert_eq!(pk.0, bytes_64[..PUBLIC_KEY_BUFFER_SIZE]);
+    }
+
+    #[test]
+    fn test_from_slice_exact_size() {
+        use super::PublicKey;
+        let slice: &[u8] = &PUBKEY_ED25519;
+        let pk = PublicKey::from(slice);
+        assert_eq!(pk.0, PUBKEY_ED25519);
+    }
+
+    #[test]
+    fn test_from_slice_shorter_pads_with_zeros() {
+        use super::PublicKey;
+        let short: &[u8] = &[0xED, 0x01, 0x02];
+        let pk = PublicKey::from(short);
+        assert_eq!(&pk.0[..3], short);
+        assert_eq!(&pk.0[3..], &[0u8; PUBLIC_KEY_BUFFER_SIZE - 3]);
+    }
+
+    #[test]
+    fn test_from_slice_longer_truncates() {
+        use super::PublicKey;
+        let long: Vec<u8> = (0..64).collect();
+        let pk = PublicKey::from(long.as_slice());
+        assert_eq!(&pk.0, &long[..PUBLIC_KEY_BUFFER_SIZE]);
+    }
+
+    #[test]
+    fn test_from_slice_empty() {
+        use super::PublicKey;
+        let empty: &[u8] = &[];
+        let pk = PublicKey::from(empty);
+        assert_eq!(pk.0, [0u8; PUBLIC_KEY_BUFFER_SIZE]);
+    }
 }
