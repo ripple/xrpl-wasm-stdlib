@@ -256,3 +256,131 @@ pub fn get_field_optional<T: CurrentTxFieldGetter, F: Into<i32>>(
 ) -> Result<Option<T>> {
     T::get_from_current_tx_optional(field_code.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{CurrentTxFieldGetter, get_field, get_field_optional};
+    use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::core::types::amount::{AMOUNT_SIZE, Amount};
+    use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
+    use crate::core::types::public_key::{PUBLIC_KEY_BUFFER_SIZE, PublicKey};
+    use crate::core::types::transaction_type::TransactionType;
+    use crate::core::types::uint::{HASH256_SIZE, Hash256};
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use crate::sfield;
+    use mockall::predicate::{always, eq};
+
+    /// Helper to set up a mock expectation for get_tx_field
+    fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
+        mock.expect_get_tx_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
+    }
+
+    #[test]
+    fn test_basic_types() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Sequence.into(), 4, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(u32::get_from_current_tx(sfield::Flags.into()).is_ok());
+        assert!(u32::get_from_current_tx(sfield::Sequence.into()).is_ok());
+    }
+
+    #[test]
+    fn test_xrpl_types() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::Fee.into(), AMOUNT_SIZE, 1);
+        expect_tx_field(
+            &mut mock,
+            sfield::SigningPubKey.into(),
+            PUBLIC_KEY_BUFFER_SIZE,
+            1,
+        );
+        expect_tx_field(&mut mock, sfield::TransactionType.into(), 2, 1);
+        expect_tx_field(&mut mock, sfield::MemoData.into(), DEFAULT_BLOB_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(AccountID::get_from_current_tx(sfield::Account.into()).is_ok());
+        assert!(Hash256::get_from_current_tx(sfield::PreviousTxnID.into()).is_ok());
+        assert!(Amount::get_from_current_tx(sfield::Fee.into()).is_ok());
+        assert!(PublicKey::get_from_current_tx(sfield::SigningPubKey.into()).is_ok());
+        assert!(TransactionType::get_from_current_tx(sfield::TransactionType.into()).is_ok());
+        assert!(Blob::<DEFAULT_BLOB_SIZE>::get_from_current_tx(sfield::MemoData.into()).is_ok());
+    }
+
+    #[test]
+    fn test_optional_variants() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::Fee.into(), AMOUNT_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+        expect_tx_field(
+            &mut mock,
+            sfield::SigningPubKey.into(),
+            PUBLIC_KEY_BUFFER_SIZE,
+            1,
+        );
+        expect_tx_field(&mut mock, sfield::TransactionType.into(), 2, 1);
+        expect_tx_field(&mut mock, sfield::MemoData.into(), DEFAULT_BLOB_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        let result = u32::get_from_current_tx_optional(sfield::Flags.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = AccountID::get_from_current_tx_optional(sfield::Account.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = Amount::get_from_current_tx_optional(sfield::Fee.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = Hash256::get_from_current_tx_optional(sfield::PreviousTxnID.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = PublicKey::get_from_current_tx_optional(sfield::SigningPubKey.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = TransactionType::get_from_current_tx_optional(sfield::TransactionType.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result =
+            Blob::<DEFAULT_BLOB_SIZE>::get_from_current_tx_optional(sfield::MemoData.into());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_get_field_convenience() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 2);
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Flags).is_ok());
+        assert!(get_field::<AccountID, _>(sfield::Account).is_ok());
+
+        let result = get_field_optional::<u32, _>(sfield::Flags);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+}
