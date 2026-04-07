@@ -118,6 +118,28 @@ mod tests {
     }
 
     #[test]
+    fn test_mpt_id_as_bytes_and_len() {
+        let issuer = AccountID::from([0xAA; 20]);
+        let mpt_id = MptId::new(42, issuer);
+
+        assert_eq!(mpt_id.len(), 24);
+        assert_eq!(&mpt_id.as_bytes()[0..4], &42u32.to_be_bytes());
+        assert_eq!(&mpt_id.as_bytes()[4..], &[0xAA; 20]);
+
+        let ptr_slice = unsafe { core::slice::from_raw_parts(mpt_id.as_ptr(), mpt_id.len()) };
+        assert_eq!(ptr_slice, mpt_id.as_bytes());
+    }
+
+    #[test]
+    fn test_mpt_id_is_empty() {
+        let empty = MptId::from([0u8; 24]);
+        assert!(empty.is_empty());
+
+        let non_empty = MptId::new(1, AccountID::from([0u8; 20]));
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
     fn test_mpt_id_from_tuple() {
         // Create a test account ID
         let account_bytes = [3u8; 20];

@@ -454,6 +454,8 @@ pub mod ledger_object {
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
         use crate::core::types::amount::Amount;
         use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
+        use crate::core::types::currency::{CURRENCY_SIZE, Currency};
+        use crate::core::types::issue::Issue;
         use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
         use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
         use crate::host::host_bindings_trait::MockHostBindings;
@@ -523,6 +525,13 @@ pub mod ledger_object {
             expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
             expect_current_field(&mut mock, sfield::PublicKey.into(), DEFAULT_BLOB_SIZE, 1);
+            expect_current_field(&mut mock, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
+            // Issue uses a 40-byte buffer but returns 20 bytes for XRP
+            let asset_field_code: i32 = sfield::Asset.into();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(asset_field_code), always(), eq(40))
+                .times(1)
+                .returning(|_, _, _| 20);
 
             let _guard = setup_mock(mock);
 
@@ -531,6 +540,8 @@ pub mod ledger_object {
             assert!(Amount::get_from_current_ledger_obj(sfield::Amount.into()).is_ok());
             assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).is_ok());
             assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).is_ok());
+            assert!(Currency::get_from_current_ledger_obj(sfield::BaseAsset.into()).is_ok());
+            assert!(Issue::get_from_current_ledger_obj(sfield::Asset.into()).is_ok());
 
             let blob: Blob<DEFAULT_BLOB_SIZE> =
                 Blob::get_from_current_ledger_obj(sfield::PublicKey.into()).unwrap();
@@ -544,6 +555,17 @@ pub mod ledger_object {
 
             expect_current_field(&mut mock, sfield::Flags.into(), 4, 1);
             expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Amount.into(), 48, 1);
+            expect_current_field(&mut mock, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
+            expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey.into(), DEFAULT_BLOB_SIZE, 1);
+            // Issue uses a 40-byte buffer but returns 20 bytes for XRP
+            let asset_field_code: i32 = sfield::Asset.into();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(asset_field_code), always(), eq(40))
+                .times(1)
+                .returning(|_, _, _| 20);
 
             let _guard = setup_mock(mock);
 
@@ -553,6 +575,33 @@ pub mod ledger_object {
             assert!(result.unwrap().is_some());
 
             let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Amount::get_from_current_ledger_obj_optional(sfield::Amount.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Currency::get_from_current_ledger_obj_optional(sfield::BaseAsset.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash128::get_from_current_ledger_obj_optional(sfield::EmailHash.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result =
+                Hash256::get_from_current_ledger_obj_optional(sfield::PreviousTxnID.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Blob::<DEFAULT_BLOB_SIZE>::get_from_current_ledger_obj_optional(
+                sfield::PublicKey.into(),
+            );
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Issue::get_from_current_ledger_obj_optional(sfield::Asset.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -565,6 +614,28 @@ pub mod ledger_object {
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
             expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 8, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PreviousTxnID.into(),
+                HASH256_SIZE,
+                1,
+            );
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PublicKey.into(),
+                DEFAULT_BLOB_SIZE,
+                1,
+            );
+            let asset_field_code: i32 = sfield::Asset.into();
+            mock.expect_get_ledger_obj_field()
+                .with(eq(slot), eq(asset_field_code), always(), eq(40))
+                .times(1)
+                .returning(|_, _, _, _| 20);
 
             let _guard = setup_mock(mock);
 
@@ -572,6 +643,15 @@ pub mod ledger_object {
             assert!(u32::get_from_ledger_obj(slot, sfield::Flags.into()).is_ok());
             assert!(u64::get_from_ledger_obj(slot, sfield::Balance.into()).is_ok());
             assert!(AccountID::get_from_ledger_obj(slot, sfield::Account.into()).is_ok());
+            assert!(Amount::get_from_ledger_obj(slot, sfield::Amount.into()).is_ok());
+            assert!(Currency::get_from_ledger_obj(slot, sfield::BaseAsset.into()).is_ok());
+            assert!(Hash128::get_from_ledger_obj(slot, sfield::EmailHash.into()).is_ok());
+            assert!(Hash256::get_from_ledger_obj(slot, sfield::PreviousTxnID.into()).is_ok());
+            assert!(
+                Blob::<DEFAULT_BLOB_SIZE>::get_from_ledger_obj(slot, sfield::PublicKey.into())
+                    .is_ok()
+            );
+            assert!(Issue::get_from_ledger_obj(slot, sfield::Asset.into()).is_ok());
         }
 
         #[test]
@@ -580,11 +660,60 @@ pub mod ledger_object {
             let slot = 0;
 
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PreviousTxnID.into(),
+                HASH256_SIZE,
+                1,
+            );
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::PublicKey.into(),
+                DEFAULT_BLOB_SIZE,
+                1,
+            );
+            let asset_field_code: i32 = sfield::Asset.into();
+            mock.expect_get_ledger_obj_field()
+                .with(eq(slot), eq(asset_field_code), always(), eq(40))
+                .times(1)
+                .returning(|_, _, _, _| 20);
 
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval with slot numbers
             let result = u32::get_from_ledger_obj_optional(slot, sfield::Flags.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Amount::get_from_ledger_obj_optional(slot, sfield::Amount.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Currency::get_from_ledger_obj_optional(slot, sfield::BaseAsset.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash128::get_from_ledger_obj_optional(slot, sfield::EmailHash.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash256::get_from_ledger_obj_optional(slot, sfield::PreviousTxnID.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Blob::<DEFAULT_BLOB_SIZE>::get_from_ledger_obj_optional(
+                slot,
+                sfield::PublicKey.into(),
+            );
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Issue::get_from_ledger_obj_optional(slot, sfield::Asset.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
