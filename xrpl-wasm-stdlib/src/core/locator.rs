@@ -14,18 +14,11 @@
 //! # let _ = (l.len() >= 3);
 //! ```
 
-use core::mem::MaybeUninit;
-
 /// The size of the buffer, in bytes, to use for any new locator
-const LOCATOR_BUFFER_SIZE: usize = 64;
+const LOCATOR_BUFFER_SIZE: usize = 64; // max depth: 64/4 = 16
 
-// /// A Locator may only pack this many levels deep in an object hierarchy (inclusive of the first
-// /// field)
-// const MAX_DEPTH: u8 = 12; // 1 byte for slot; 5 bytes for each packed object.
-
-/// A Locator allows a WASM developer located any field in any object (even nested fields) by
-/// specifying a `slot_num` (1 byte); a `locator_field_type` (1 byte); then one of an `sfield` (4
-/// bytes) or an `index` (4 bytes).
+/// A Locator encodes a path to a nested field as a sequence of 4-byte packed values
+/// (sfield codes or array indices) in a compact binary format understood by the host.
 ///
 /// ## Derived Traits
 ///
@@ -39,8 +32,6 @@ const LOCATOR_BUFFER_SIZE: usize = 64;
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct Locator {
-    // The first packed value is 6 bytes; All nested/packed values are 5 bytes; so 64 bytes allow
-    // 12 nested levels of access.
     buffer: [u8; LOCATOR_BUFFER_SIZE],
 
     /// An index into `buffer` where the next packing operation can be stored.
@@ -54,27 +45,10 @@ impl Default for Locator {
 }
 
 impl Locator {
-    /// Create a new Locator using an unsigned 8-bit slot number. Valid slots are 0 to 255.
-    pub fn new_with_slot(slot_num: u8) -> Locator {
-        let mut buffer = MaybeUninit::<[u8; 64]>::uninit();
-        unsafe {
-            buffer.as_mut_ptr().cast::<u8>().write(slot_num);
-        }
-        Self {
-            buffer: unsafe { buffer.assume_init() },
-            cur_buffer_index: 1,
-        }
-    }
-
-    /// Create a new Locator. Valid slots are 0 to 255.
+    /// Create a new empty Locator.
     pub fn new() -> Locator {
-        let mut buffer = MaybeUninit::<[u8; 64]>::uninit();
-        // Initialize only the first byte to 0 for safety
-        unsafe {
-            buffer.as_mut_ptr().cast::<u8>().write(0);
-        }
         Self {
-            buffer: unsafe { buffer.assume_init() },
+            buffer: [0; LOCATOR_BUFFER_SIZE],
             cur_buffer_index: 0,
         }
     }
@@ -108,6 +82,10 @@ impl Locator {
     }
 
     pub fn repack_last(&mut self, sfield_or_index: impl Into<i32>) -> bool {
+        if self.cur_buffer_index < 4 {
+            return false;
+        }
+
         self.cur_buffer_index -= 4;
 
         let value_bytes: [u8; 4] = sfield_or_index.into().to_le_bytes();
@@ -158,5 +136,90 @@ mod tests {
         assert!(locator.repack_last(sfield::MemoData));
 
         assert_eq!(locator.len(), 8); // Still 2 packed values
+    }
+
+    #[test]
+    fn test_new_starts_empty() {
+        let locator = Locator::new();
+        assert_eq!(locator.len(), 0);
+        assert!(locator.is_empty());
+    }
+
+    #[test]
+    fn test_default_same_as_new() {
+        assert_eq!(Locator::default(), Locator::new());
+    }
+
+    #[test]
+    fn test_pack_writes_correct_bytes() {
+        let mut locator = Locator::new();
+        assert!(locator.pack(0x12345678i32));
+        assert_eq!(locator.len(), 4);
+
+        let bytes = unsafe { core::slice::from_raw_parts(locator.as_ptr(), 4) };
+        assert_eq!(bytes, &0x12345678i32.to_le_bytes());
+    }
+
+    #[test]
+    fn test_pack_returns_false_when_buffer_full() {
+        let mut locator = Locator::new();
+
+        // Fill all 16 slots (64 bytes / 4 bytes per pack)
+        for i in 0..16 {
+            assert!(locator.pack(i));
+        }
+        assert_eq!(locator.len(), 64);
+
+        // 17th pack should fail
+        assert!(!locator.pack(999i32));
+        assert_eq!(locator.len(), 64);
+    }
+
+    #[test]
+    fn test_is_empty_false_after_pack() {
+        let mut locator = Locator::new();
+        assert!(locator.is_empty());
+
+        locator.pack(sfield::Memos);
+        assert!(!locator.is_empty());
+        assert_eq!(locator.len(), 4);
+    }
+
+    #[test]
+    fn test_num_packed_bytes_equals_len() {
+        let mut locator = Locator::new();
+        assert_eq!(locator.num_packed_bytes(), locator.len());
+
+        locator.pack(sfield::Memos);
+        assert_eq!(locator.num_packed_bytes(), locator.len());
+        assert_eq!(locator.num_packed_bytes(), 4);
+
+        locator.pack(0);
+        assert_eq!(locator.num_packed_bytes(), locator.len());
+        assert_eq!(locator.num_packed_bytes(), 8);
+    }
+
+    #[test]
+    fn test_repack_last_on_empty_returns_false() {
+        let mut locator = Locator::new();
+        assert!(!locator.repack_last(sfield::Memos));
+        assert_eq!(locator.len(), 0);
+    }
+
+    #[test]
+    fn test_repack_last_overwrites_correct_bytes() {
+        let mut locator = Locator::new();
+        locator.pack(0x11111111i32);
+        locator.pack(0x22222222i32);
+        assert_eq!(locator.len(), 8);
+
+        assert!(locator.repack_last(0x33333333i32));
+        assert_eq!(locator.len(), 8);
+
+        let bytes = unsafe { core::slice::from_raw_parts(locator.as_ptr(), 8) };
+        // First value unchanged
+        assert_eq!(&bytes[0..4], &0x11111111i32.to_le_bytes());
+        // Second value replaced
+        assert_eq!(&bytes[4..8], &0x33333333i32.to_le_bytes());
     }
 }
