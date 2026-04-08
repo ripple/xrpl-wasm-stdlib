@@ -526,6 +526,25 @@ mod tests {
 
     // NFToken method tests
     #[test]
+    fn test_nft_host_method_error() {
+        let mut mock = MockHostBindings::new();
+
+        mock.expect_get_nft_flags()
+            .with(always(), eq(NFT_ID_SIZE))
+            .returning(|_, _| crate::host::error_codes::INTERNAL_ERROR);
+
+        let _guard = setup_mock(mock);
+
+        let nft = NFToken::new([0u8; 32]);
+        let result = nft.flags();
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap().code(),
+            crate::host::error_codes::INTERNAL_ERROR
+        );
+    }
+
+    #[test]
     fn test_nft_flags_method() {
         let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];

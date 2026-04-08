@@ -8,7 +8,6 @@ use crate::host;
 use crate::host::Error::InternalError;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::trace::trace_num;
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 
 pub const AMOUNT_SIZE: usize = 48;
@@ -280,13 +279,9 @@ impl Amount {
 
 impl From<[u8; AMOUNT_SIZE]> for Amount {
     fn from(bytes: [u8; AMOUNT_SIZE]) -> Self {
-        // Use the existing from_bytes method with a slice reference
         match Self::from_bytes(&bytes) {
             Ok(amount) => amount,
-            Err(error) => {
-                let _ = trace_num("Error parsing amount", error.code() as i64);
-                panic!("Invalid Amount byte array");
-            }
+            Err(_) => unreachable!("from_bytes cannot fail with a 48-byte array"),
         }
     }
 }
