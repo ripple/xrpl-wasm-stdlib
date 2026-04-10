@@ -144,6 +144,12 @@ export_host_functions! {
     // Host Function Category: FLOAT
     fn float_from_int(_in_int: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_from_uint(_in_uint_ptr: *const u8, _in_uint_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_from_stamount(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_from_stnumber(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_to_int(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_to_mantissa_and_exponent(_in_buff: *const u8, _in_buff_len: usize, _mantissa_ptr: *mut u8, _mantissa_len: usize, _exp_ptr: *mut u8, _exp_len: usize) -> i32;
+    fn float_negate(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize) -> i32;
+    fn float_abs(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize) -> i32;
     fn float_set(_exponent: i32, _mantissa: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_compare(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize) -> i32;
     fn float_add(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
