@@ -10,7 +10,7 @@ pub const XRPL_KEYLET_SIZE: usize = 32;
 // Type aliases for specific keylets, all currently using the same underlying array type.
 pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 
-/// Generates an account keylet for a given XRP Ledger account.
+/// Generates an account keylet for a given XRP Ledger account
 ///
 /// Account keylets are used to reference account entries in the XRP Ledger's state data.
 /// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
