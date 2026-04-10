@@ -274,6 +274,47 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        pub(super) fn float_from_stamount(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            out_buff: *mut u8,
+            out_buff_len: usize,
+            rounding_mode: i32,
+        ) -> i32;
+        pub(super) fn float_from_stnumber(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            out_buff: *mut u8,
+            out_buff_len: usize,
+            rounding_mode: i32,
+        ) -> i32;
+        pub(super) fn float_to_int(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            out_buff: *mut u8,
+            out_buff_len: usize,
+            rounding_mode: i32,
+        ) -> i32;
+        pub(super) fn float_to_mantissa_and_exponent(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            mantissa_ptr: *mut u8,
+            mantissa_len: usize,
+            exp_ptr: *mut u8,
+            exp_len: usize,
+        ) -> i32;
+        pub(super) fn float_negate(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            out_buff: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn float_abs(
+            in_buff: *const u8,
+            in_buff_len: usize,
+            out_buff: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
         pub(super) fn float_set(
             exponent: i32,
             mantissa: i64,
@@ -1085,6 +1126,106 @@ impl HostBindings for WasmHostBindings {
         }
     }
 
+    unsafe fn float_from_stamount(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::float_from_stamount(
+                in_buff,
+                in_buff_len,
+                out_buff,
+                out_buff_len,
+                rounding_mode,
+            )
+        }
+    }
+
+    unsafe fn float_from_stnumber(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::float_from_stnumber(
+                in_buff,
+                in_buff_len,
+                out_buff,
+                out_buff_len,
+                rounding_mode,
+            )
+        }
+    }
+
+    unsafe fn float_to_int(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::float_to_int(
+                in_buff,
+                in_buff_len,
+                out_buff,
+                out_buff_len,
+                rounding_mode,
+            )
+        }
+    }
+
+    unsafe fn float_to_mantissa_and_exponent(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        mantissa_ptr: *mut u8,
+        mantissa_len: usize,
+        exp_ptr: *mut u8,
+        exp_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::float_to_mantissa_and_exponent(
+                in_buff,
+                in_buff_len,
+                mantissa_ptr,
+                mantissa_len,
+                exp_ptr,
+                exp_len,
+            )
+        }
+    }
+
+    unsafe fn float_negate(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::float_negate(in_buff, in_buff_len, out_buff, out_buff_len)
+        }
+    }
+
+    unsafe fn float_abs(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe { host_defined_functions::float_abs(in_buff, in_buff_len, out_buff, out_buff_len) }
+    }
+
     unsafe fn float_set(
         &self,
         exponent: i32,
@@ -1416,6 +1557,12 @@ export_host_functions! {
     // Host Function Category: FLOAT
     fn float_from_int(in_int: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_from_uint(in_uint_ptr: *const u8, in_uint_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_from_stamount(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_from_stnumber(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_to_int(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_to_mantissa_and_exponent(in_buff: *const u8, in_buff_len: usize, mantissa_ptr: *mut u8, mantissa_len: usize, exp_ptr: *mut u8, exp_len: usize) -> i32;
+    fn float_negate(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize) -> i32;
+    fn float_abs(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize) -> i32;
     fn float_set(exponent: i32, mantissa: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_compare(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize) -> i32;
     fn float_add(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;

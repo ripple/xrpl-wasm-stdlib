@@ -1206,7 +1206,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the conversion
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1226,7 +1226,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the conversion
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1239,6 +1239,131 @@ pub trait HostBindings {
         rounding_mode: i32,
     ) -> i32;
 
+    /// Converts a serialized STAmount to an opaque float representation
+    /// # Parameters
+    /// * `in_buff` - Pointer to the serialized STAmount
+    /// * `in_buff_len` - The length of the serialized STAmount in bytes
+    /// * `out_buff` - Pointer to output buffer where the float will be written
+    /// * `out_buff_len` - The length of the output buffer in bytes
+    /// * `rounding_mode` - Rounding mode to use for the conversion
+    /// # Returns
+    /// 12 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_from_stamount(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32;
+
+    /// Converts a serialized STNumber to an opaque float representation
+    /// # Parameters
+    /// * `in_buff` - Pointer to the serialized STNumber
+    /// * `in_buff_len` - The length of the serialized STNumber in bytes
+    /// * `out_buff` - Pointer to output buffer where the float will be written
+    /// * `out_buff_len` - The length of the output buffer in bytes
+    /// * `rounding_mode` - Rounding mode to use for the conversion
+    /// # Returns
+    /// 12 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_from_stnumber(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32;
+
+    /// Converts an opaque float to int64 (written as 8 bytes)
+    /// # Parameters
+    /// * `in_buff` - Pointer to the opaque float value
+    /// * `in_buff_len` - The length of the float buffer in bytes
+    /// * `out_buff` - Pointer to output buffer where the int64 will be written
+    /// * `out_buff_len` - The length of the output buffer in bytes
+    /// * `rounding_mode` - Rounding mode to use for the conversion
+    /// # Returns
+    /// 8 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_to_int(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+        rounding_mode: i32,
+    ) -> i32;
+
+    /// Decomposes an opaque float into mantissa (int64, 8 bytes) and exponent (int32, 4 bytes)
+    /// # Parameters
+    /// * `in_buff` - Pointer to the opaque float value
+    /// * `in_buff_len` - The length of the float buffer in bytes
+    /// * `mantissa_ptr` - Pointer to output buffer for mantissa (8 bytes)
+    /// * `mantissa_len` - The length of the mantissa output buffer
+    /// * `exp_ptr` - Pointer to output buffer for exponent (4 bytes)
+    /// * `exp_len` - The length of the exponent output buffer
+    /// # Returns
+    /// 12 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn float_to_mantissa_and_exponent(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        mantissa_ptr: *mut u8,
+        mantissa_len: usize,
+        exp_ptr: *mut u8,
+        exp_len: usize,
+    ) -> i32;
+
+    /// Negates an opaque float value
+    /// # Parameters
+    /// * `in_buff` - Pointer to the opaque float value
+    /// * `in_buff_len` - The length of the float buffer in bytes
+    /// * `out_buff` - Pointer to output buffer where result will be written
+    /// * `out_buff_len` - The length of the output buffer in bytes
+    /// # Returns
+    /// 12 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_negate(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Absolute value of an opaque float value
+    /// # Parameters
+    /// * `in_buff` - Pointer to the opaque float value
+    /// * `in_buff_len` - The length of the float buffer in bytes
+    /// * `out_buff` - Pointer to output buffer where result will be written
+    /// * `out_buff_len` - The length of the output buffer in bytes
+    /// # Returns
+    /// 12 on success, error code otherwise
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn float_abs(
+        &self,
+        in_buff: *const u8,
+        in_buff_len: usize,
+        out_buff: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
     /// Creates a float from explicit exponent and mantissa values
     /// # Parameters
     /// * `exponent` - The exponent value
@@ -1247,7 +1372,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1289,7 +1414,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the addition
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1315,7 +1440,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the subtraction
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1341,7 +1466,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the multiplication
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1367,7 +1492,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the division
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1392,7 +1517,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1415,7 +1540,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1437,7 +1562,7 @@ pub trait HostBindings {
     /// * `out_buff_len` - The length of the output buffer in bytes
     /// * `rounding_mode` - Rounding mode to use for the operation
     /// # Returns
-    /// 8 on success, error code otherwise
+    /// 12 on success, error code otherwise
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory

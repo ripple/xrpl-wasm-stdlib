@@ -31,7 +31,6 @@ use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
 use xrpl_wasm_stdlib::core::types::currency::Currency;
 use xrpl_wasm_stdlib::core::types::mpt_id::MptId;
-use xrpl_wasm_stdlib::core::types::opaque_float::OpaqueFloat;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::trace::{
     DataRepr, trace, trace_account_buf, trace_amount, trace_data, trace_num,
@@ -917,14 +916,13 @@ fn test_trace_amount_functions() -> i32 {
     // Exponent 82 = 0b01010010
     // Top byte: 0b11010100 = 0xD4
     // Second byte: 0b10010001 = 0x91
-    let amount_bytes = [0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00]; // Valid IOU: $5 USD
+    let amount_bytes: [u8; 8] = [0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00]; // Valid IOU: $5 USD
 
     let currency = Currency::from(currency_bytes);
     let issuer = AccountID::from(issuer_bytes);
-    let amount = OpaqueFloat(amount_bytes);
 
     let iou_amount = Amount::IOU {
-        amount,
+        amount: amount_bytes,
         issuer,
         currency,
     };

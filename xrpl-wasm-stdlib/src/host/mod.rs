@@ -6,15 +6,21 @@
 //! ## Float Operations for Fungible Tokens (IOUs)
 //!
 //! The host provides float arithmetic functions for XRPL's fungible token amounts.
-//! These operations use rippled's Number class via FFI to ensure exact consensus compatibility:
+//! These operations use rippled's Number class via FFI to ensure exact consensus compatibility.
+//! All float values use a 12-byte STNumber serialization format.
 //!
 //! - `float_from_int` / `float_from_uint` - Convert integers to float format
+//! - `float_from_stamount` / `float_from_stnumber` - Convert from STAmount/STNumber to float
+//! - `float_to_int` - Convert float to int64
+//! - `float_to_mantissa_and_exponent` - Decompose float into mantissa and exponent
 //! - `float_set` - Create float from exponent and mantissa
 //! - `float_add` / `float_subtract` / `float_multiply` / `float_divide` - Arithmetic
 //! - `float_pow` / `float_root` / `float_log` - Mathematical functions
 //! - `float_compare` - Comparison operations
+//! - `float_negate` / `float_abs` - Sign operations
 //!
-//! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
+//! All operations that produce a float result write 12 bytes.
+//! Operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
 //!
 //! See the host_bindings documentation for detailed function signatures.
 

@@ -120,8 +120,8 @@ pub fn trace_amount(msg: &str, amount: &Amount) -> Result<i32> {
 
 /// Write a float to the XRPLD trace log
 #[inline(always)]
-pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
-    let result_code = unsafe { host::trace_opaque_float(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
+pub fn trace_float(msg: &str, f: &[u8; 12]) -> Result<i32> {
+    let result_code = unsafe { host::trace_opaque_float(msg.as_ptr(), msg.len(), f.as_ptr(), 12) };
     match_result_code(result_code, || result_code)
 }
 
@@ -212,18 +212,16 @@ mod tests {
         // Create a test IOU Amount
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39]; // Simple test float
+        let amount_bytes: [u8; 8] = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39]; // Simple test float
 
         let currency = Currency::from(currency_bytes);
         let issuer = AccountID::from(issuer_bytes);
-        let amount = OpaqueFloat(amount_bytes);
 
         let amount = Amount::IOU {
-            amount,
+            amount: amount_bytes,
             issuer,
             currency,
         };
@@ -284,14 +282,13 @@ mod tests {
         // Test IOU format
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39];
+        let amount_bytes: [u8; 8] = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39];
 
         let iou_amount = Amount::IOU {
-            amount: OpaqueFloat(amount_bytes),
+            amount: amount_bytes,
             issuer: AccountID::from(issuer_bytes),
             currency: Currency::from(currency_bytes),
         };
