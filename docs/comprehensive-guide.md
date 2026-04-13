@@ -55,6 +55,8 @@ This comprehensive guide covers everything you need to develop smart escrows usi
 
 ## Getting Started
 
+This repository (xrpl-wasm-stdlib) contains a testing framework for developing and testing smart functions. For ease of use, add your own custom code to the `examples/` folder.
+
 ### Prerequisites
 
 Before building smart escrows, ensure you have:
@@ -92,48 +94,39 @@ npm install
    ```
 
 3. **Verify installation:**
+    Using WASM Devnet:
+
    ```shell
-   ./scripts/run-tests.sh examples/smart-escrows/hello_world
+   DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/hello_world
    ```
 
-### Your First Contract
+   To instead run the examples entirely locally, omit `DEVNET=true`. This requires a `rippled` server with WASM support accepting API connections on `127.0.0.1:6006`.
 
-Let's create a simple escrow that releases funds when an account balance exceeds 10 XRP:
+### Writing Smart Functions
+
+Create a project folder such as `my-escrow/` (it's recommended to put it under `examples/smart-escrows/` in this repository). In that folder, create a `src/` subfolder and name your source file `lib.rs`. For a smart escrow, you write the code to define your smart function in this file, in a function named `finish()`. A very basic example is this "Hello World" example which writes to the trace log and always allows the escrow to be finished.
 
 ```rust
+#![cfg_attr(target_arch = "wasm32", no_std)]
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+#[cfg(not(target_arch = "wasm32"))]
+extern crate std;
+
+use xrpl_wasm_stdlib::host::trace::trace;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-    let tx = EscrowFinish;
+    let _ = trace("Hello World!");
 
-    // Get the account trying to finish the escrow
-    let account = match tx.get_account() {
-        Ok(acc) => acc,
-        Err(_) => return 0, // Invalid transaction
-    };
-
-    // Check account balance
-    match get_account_balance(&account) {
-        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1, // Release (>10 XRP)
-        _ => 0, // Keep locked
-    }
+    1 // Returning 1 allows the escrow to be finished
 }
 ```
 
-**Build and test:**
+In your project folder, create a `Cargo.toml` file with the project settings:
 
 ```shell
-# Add the contract code above to src/lib.rs
-# Configure Cargo.toml:
-
 [package]
-name = "my-escrow"
+name = "my-escrow" # Change this to your own project's name
 version = "0.1.0"
 edition = "2021"
 
@@ -147,13 +140,58 @@ crate-type = ["cdylib"]
 opt-level = "s"
 lto = true
 panic = "abort"
-
-# Build the contract
-cargo build --target wasm32v1-none --release
-
-# Test with provided tools
-node ../examples/smart-escrows/hello_world/runTest.js
 ```
+
+Install dependencies and build the contract:
+
+***TODO: fix "error: current package believes it's in a workspace when it's not:***
+
+```sh
+cargo build --target wasm32v1-none --release
+```
+
+If the build succeeds, it writes the compiled output to `target/wasm32v1-none/release/my-escrow.wasm`. (The filename matches the package name you set in your `Cargo.toml`.)
+
+You can test your finish function using the [Smart Escrow Testing UI](https://ripple.github.io/xrpl-wasm-stdlib/ui/) or by writing a test script in JavaScript to submit the finish function.
+
+Example `runTest.js` for use with `scripts/run-tests.sh` in this repo.
+
+```cjs
+async function test(testContext) {
+  const { deploy, finish, submit, sourceWallet, destWallet } = testContext
+
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
+
+  const tx = {
+    TransactionType: "EscrowFinish",
+    Account: sourceWallet.address,
+    Owner: sourceWallet.address,
+    OfferSequence: parseInt(escrowResult.sequence),
+    ComputationAllowance: 1000000,
+  }
+
+  const response = await submit(tx, sourceWallet)
+
+  if (response.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error(
+      "\nFailed to finish escrow:",
+      response.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+}
+
+module.exports = { test }
+```
+
+To test with the scripts, run a command such as the following from the top of this repo, substituting your project name:
+
+```sh
+DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/my-escrow
+```
+
+See the `examples/` folder for more examples.
+
 
 ### Core Concepts
 
