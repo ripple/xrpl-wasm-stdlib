@@ -78,7 +78,9 @@ rustup target add wasm32v1-none
 npm install
 ```
 
-### Installation
+### Installation for Contributors
+
+Use the following steps to get started with this repository and the test scripts defined within:
 
 1. **Clone the repository:**
 
@@ -102,9 +104,41 @@ npm install
 
    To instead run the examples entirely locally, omit `DEVNET=true`. This requires a `rippled` server with WASM support accepting API connections on `127.0.0.1:6006`.
 
+**Tip:** If you're adding your own examples to `examples/`, you need to add it to the `examples/Cargo.toml` file's `members` array.
+
 ### Writing Smart Functions
 
-Create a project folder such as `my-escrow/` (it's recommended to put it under `examples/smart-escrows/` in this repository). In that folder, create a `src/` subfolder and name your source file `lib.rs`. For a smart escrow, you write the code to define your smart function in this file, in a function named `finish()`. A very basic example is this "Hello World" example which writes to the trace log and always allows the escrow to be finished.
+To write new smart functions, you need a Rust toolchain including `rustup` and `cargo` installed. You can use the public WASM Devnet or a local server with WASM support.
+
+If you haven't installed the WASM target, do so now:
+
+```sh
+rustup target add wasm32v1-none
+```
+
+Then use Cargo to create a new project folder, naming it whatever you want:
+
+```sh
+cargo new --lib my_escrow
+cd my_escrow
+```
+
+Edit the `Cargo.toml` file to have the `xrpl-wasm-stdlib` dependency and the `cdylib` crate type. The file should look like the following:
+
+```ini
+[package]
+name = "my_escrow"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+xrpl-wasm-stdlib = "0.8.0"
+
+[lib]
+crate-type = ["cdylib"]
+```
+
+Edit the `src/lib.rs` file to implement your custom smart function. For a smart escrow, the `finish` function allows the escrow to be finished if it returns a value greater than 0, and does not allow the escrow to be finished otherwise. The following example writes "Hello World" to the trace log and always allows the escrow to be finished:
 
 ```rust
 #![cfg_attr(target_arch = "wasm32", no_std)]
@@ -118,79 +152,142 @@ use xrpl_wasm_stdlib::host::trace::trace;
 pub extern "C" fn finish() -> i32 {
     let _ = trace("Hello World!");
 
-    1 // Returning 1 allows the escrow to be finished
+    1 // Allow the escrow to be finished
 }
 ```
 
-In your project folder, create a `Cargo.toml` file with the project settings:
+See `examples/` for other examples.
 
-```shell
-[package]
-name = "my-escrow" # Change this to your own project's name
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
-
-[lib]
-crate-type = ["cdylib"]
-
-[profile.release]
-opt-level = "s"
-lto = true
-panic = "abort"
-```
-
-Install dependencies and build the contract:
-
-***TODO: fix "error: current package believes it's in a workspace when it's not:***
+When you've got your finish function written, build it using Cargo:
 
 ```sh
 cargo build --target wasm32v1-none --release
 ```
 
-If the build succeeds, it writes the compiled output to `target/wasm32v1-none/release/my-escrow.wasm`. (The filename matches the package name you set in your `Cargo.toml`.)
+If the build succeeds, it writes the compiled output to `target/wasm32v1-none/release/my_escrow.wasm`. The filename matches the package name you set in your `Cargo.toml`, except any hypen (`-`) characters may be replaced with underscores (`_`).
 
-You can test your finish function using the [Smart Escrow Testing UI](https://ripple.github.io/xrpl-wasm-stdlib/ui/) or by writing a test script in JavaScript to submit the finish function.
+You can test your finish function using the [Smart Escrow Testing UI](https://ripple.github.io/xrpl-wasm-stdlib/ui/) or by writing a test script in JavaScript.
 
-Example `runTest.js` for use with `scripts/run-tests.sh` in this repo.
+#### Testing with JavaScript
 
-```cjs
-async function test(testContext) {
-  const { deploy, finish, submit, sourceWallet, destWallet } = testContext
+While smart escrows are in development, you need special editions of the `xrpl` and `ripple-binary-codec` libraries that support smart escrow features. Define these requirements with a `package.json` file such as the following:
 
-  const escrowResult = await deploy(sourceWallet, destWallet, finish)
-
-  const tx = {
-    TransactionType: "EscrowFinish",
-    Account: sourceWallet.address,
-    Owner: sourceWallet.address,
-    OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000,
-  }
-
-  const response = await submit(tx, sourceWallet)
-
-  if (response.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nFailed to finish escrow:",
-      response.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+```json
+{
+  "name": "smart-escrow-test",
+  "version": "0.0.1",
+  "dependencies": {
+    "ripple-binary-codec": "2.7.0-smartescrow.0",
+    "xrpl": "4.6.0-smartescrow.0"
+  },
+  "type": "module"
 }
-
-module.exports = { test }
 ```
 
-To test with the scripts, run a command such as the following from the top of this repo, substituting your project name:
+Then install them with NPM:
 
 ```sh
-DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/my-escrow
+npm i
 ```
 
-See the `examples/` folder for more examples.
+The following stand-alone JavaScript file creates an escrow using a custom finish function and tries to finish it:
+
+```js
+import xrpl from 'xrpl'
+import fs from 'fs'
+
+// A "self-service fundWallet" that uses the genesis account since there's
+// currently no faucet on WASM Devnet:
+async function fundWalletSelfService() {
+  const genesisWallet =  xrpl.Wallet.fromSeed('snoPBrXtMeMyMHUVTgbuqAfg1SUTb', { algorithm: 'secp256k1' })
+  const walletToFund = xrpl.Wallet.generate()
+  await client.submitAndWait({
+      TransactionType: 'Payment',
+      Account: genesisWallet.address,
+      Amount: xrpl.xrpToDrops(1000),
+      Destination: walletToFund.address
+    }, {
+    wallet: genesisWallet,
+    autofill: true
+  })
+  return {wallet: walletToFund}
+}
+
+// Read finish function from file ---------------------------------------------
+const wasmPath = 'target/wasm32v1-none/release/my_escrow.wasm'
+const finishFunction = fs.readFileSync(wasmPath).toString('hex')
+
+// Connect and get accounts ---------------------------------------------------
+const client = new xrpl.Client('wss://wasm.devnet.rippletest.net:51233')
+await client.connect()
+
+console.log('Funding new wallet from faucet...')
+// const { wallet } = await client.fundWallet() // needs a faucet
+const { wallet } = await fundWalletSelfService()
+console.log(wallet)
+
+// Calculate expiration -------------------------------------------------------
+const expireAfter = 300 // 300 seconds = 5 minutes
+const expirationTime = new Date() // Current time
+expirationTime.setSeconds(expirationTime.getSeconds() + expireAfter)
+const expirationRippleTime = xrpl.isoTimeToRippleTime(expirationTime.toISOString())
+
+// Send EscrowCreate transaction ----------------------------------------------
+const escrowCreate = {
+  TransactionType: 'EscrowCreate',
+  Account: wallet.address,
+  Destination: 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh',
+  Amount: '123456', // drops of XRP
+  FinishFunction: finishFunction,
+  CancelAfter: expirationRippleTime
+}
+xrpl.validate(escrowCreate)
+
+console.log('Signing and submitting the transaction:',
+  JSON.stringify(escrowCreate, null, 2))
+const response = await client.submitAndWait(escrowCreate, {
+  wallet,
+  autofill: true
+})
+console.log(JSON.stringify(response.result, null, 2))
+const escrowCreateResultCode = response.result.meta.TransactionResult
+if (escrowCreateResultCode === 'tesSUCCESS') {
+  console.log('Escrow created successfully.')
+} else {
+  console.error(`EscrowCreate failed with code ${escrowCreateResultCode}.`)
+  client.disconnect()
+  process.exit(1)
+}
+const escrowSeq = response.result.tx_json.Sequence
+
+// Finish Escrow --------------------------------------------------------------
+const escrowFinish = {
+  TransactionType: 'EscrowFinish',
+  Account: wallet.address,
+  Owner: wallet.address,
+  OfferSequence: escrowSeq,
+  ComputationAllowance: 1000000
+}
+xrpl.validate(escrowFinish)
+
+console.log('Signing and submitting the transaction:',
+  JSON.stringify(escrowFinish, null, 2))
+const response2 = await client.submitAndWait(escrowFinish, {
+  wallet,
+  autofill: true
+})
+console.log(JSON.stringify(response2.result, null, 2))
+if (response2.result.meta.TransactionResult === 'tesSUCCESS') {
+  console.log('Escrow finished successfully. Balance changes:')
+  console.log(
+    JSON.stringify(xrpl.getBalanceChanges(response2.result.meta), null, 2)
+  )
+}
+
+client.disconnect()
+```
+
+See the `scripts/` and `examples/` folders for examples of test scripts for working with more complex release conditions.
 
 
 ### Core Concepts
