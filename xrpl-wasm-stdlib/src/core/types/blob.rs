@@ -139,9 +139,6 @@ pub type ConditionBlob = Blob<CONDITION_BLOB_SIZE>;
 /// Type alias for 256-byte blob (for Fulfillment fields)
 pub type FulfillmentBlob = Blob<FULFILLMENT_BLOB_SIZE>;
 
-/// Type alias for 1024-byte blob (for Memo fields).
-pub type MemoBlob = Blob<MEMO_BLOB_SIZE>;
-
 /// Type alias for 72-byte blob (for Signature fields).
 pub type SignatureBlob = Blob<SIGNATURE_BLOB_SIZE>;
 
@@ -462,13 +459,6 @@ mod tests {
         // Capacity should always be N regardless of actual data
         assert_eq!(blob1.capacity(), 10);
         assert_eq!(blob2.capacity(), 10);
-    }
-
-    #[test]
-    fn test_memo_blob_type_alias() {
-        let blob: MemoBlob = MemoBlob::new();
-        assert_eq!(blob.capacity(), MEMO_BLOB_SIZE);
-        assert_eq!(blob.capacity(), 1024);
     }
 
     #[test]

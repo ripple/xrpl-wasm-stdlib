@@ -4,8 +4,7 @@ use crate::core::ledger_objects::array_object::{Array, Object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
 use crate::core::types::blob::{
-    ConditionBlob, FulfillmentBlob, MemoBlob, PublicKeyBlob, SignatureBlob, StandardBlob, UriBlob,
-    WasmBlob,
+    ConditionBlob, FulfillmentBlob, PublicKeyBlob, SignatureBlob, StandardBlob, UriBlob, WasmBlob,
 };
 use crate::core::types::currency::Currency;
 use crate::core::types::issue::Issue;
@@ -340,7 +339,7 @@ pub const PreviousFields: SField<Object, 917510> = SField::new();
 pub const FinalFields: SField<Object, 917511> = SField::new();
 pub const NewFields: SField<Object, 917512> = SField::new();
 pub const TemplateEntry: SField<Object, 917513> = SField::new();
-pub const Memo: SField<MemoBlob, 917514> = SField::new();
+pub const Memo: SField<Object, 917514> = SField::new();
 pub const SignerEntry: SField<Object, 917515> = SField::new();
 pub const NFToken: SField<Object, 917516> = SField::new();
 pub const EmitDetails: SField<Object, 917517> = SField::new();
