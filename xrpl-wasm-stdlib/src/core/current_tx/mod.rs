@@ -89,7 +89,6 @@ use crate::sfield::SField;
 /// use xrpl_wasm_stdlib::core::current_tx::{get_field, get_field_optional};
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::core::types::blob::{MemoBlob, MEMO_BLOB_SIZE};
 /// use xrpl_wasm_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
