@@ -102,7 +102,7 @@ Use the following steps to get started with this repository and the test scripts
    DEVNET=true ./scripts/run-tests.sh examples/smart-escrows/hello_world
    ```
 
-   To instead run the examples entirely locally, omit `DEVNET=true`. This requires a `rippled` server with WASM support accepting API connections on `127.0.0.1:6006`.
+   To instead run the examples entirely locally, omit `DEVNET=true`. This requires a `rippled` server with Smart Escrow support accepting API connections on `127.0.0.1:6006`.
 
 **Tip:** If you're adding your own examples to `examples/`, you need to add it to the `examples/Cargo.toml` file's `members` array.
 
