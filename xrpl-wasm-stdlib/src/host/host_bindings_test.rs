@@ -129,6 +129,18 @@ fn create_default_mock() -> MockHostBindings {
         .returning(|_, _, out_buff_len, _| out_buff_len as i32);
     mock.expect_float_from_uint()
         .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_from_stamount()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_from_stnumber()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_to_int()
+        .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+    mock.expect_float_to_mantissa_and_exponent()
+        .returning(|_, _, _, mantissa_len, _, exp_len| (mantissa_len + exp_len) as i32);
+    mock.expect_float_negate()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_float_abs()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_float_set()
         .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
     mock.expect_float_compare().returning(|_, _, _, _| 0);
@@ -276,6 +288,12 @@ export_host_functions! {
     // Host Function Category: FLOAT
     fn float_from_int(in_int: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_from_uint(in_uint_ptr: *const u8, in_uint_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_from_stamount(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_from_stnumber(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_to_int(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
+    fn float_to_mantissa_and_exponent(in_buff: *const u8, in_buff_len: usize, mantissa_ptr: *mut u8, mantissa_len: usize, exp_ptr: *mut u8, exp_len: usize) -> i32;
+    fn float_negate(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize) -> i32;
+    fn float_abs(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize) -> i32;
     fn float_set(exponent: i32, mantissa: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_compare(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize) -> i32;
     fn float_add(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
