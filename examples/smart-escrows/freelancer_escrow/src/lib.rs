@@ -21,6 +21,13 @@ const FREELANCER_CONFIRMED: usize = 25;
 const DISPUTE_RAISED: usize = 26;
 const DISPUTING_PARTY: usize = 27;
 
+const INTENT_CONFIRM: u8 = 0;
+const INTENT_DECONFIRM: u8 = 1;
+const INTENT_DISPUTE: u8 = 2;
+
+const DISPUTING_CLIENT: u8 = 1;
+const DISPUTING_FREELANCER: u8 = 2;
+
 
 pub fn get_first_memo() -> Result<Option<u8>> {
     let mut data = [0u8; 1];
@@ -63,7 +70,7 @@ pub extern "C" fn finish() -> i32 {
         Ok(v) => v,
         Err(e) => return e.code()
     };
-    if data.len < DEADLINE_END + 4 {
+    if data.len < DISPUTING_PARTY + 1 {
         return Error::InvalidParams.code();
     }
     let mut arbitrator = [0u8; 20];
@@ -74,9 +81,12 @@ pub extern "C" fn finish() -> i32 {
         Err(e) => return e.code()
     };
     match (tx_account.0, intent) {
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 < 2 && data.data[DISPUTE_RAISED] != 1 => {
+        a if (a.0 == client.0 || a.0 == freelancer.0)
+            && (a.1 == INTENT_CONFIRM || a.1 == INTENT_DECONFIRM)
+            && data.data[DISPUTE_RAISED] != 1 =>
+        {
             // Participant, not a dispute request, no current dispute. Confirm / deconfirm.
-            data.data[if tx_account.0 == client.0 {CLIENT_CONFIRMED} else {FREELANCER_CONFIRMED}] = intent ^ 1;
+            data.data[if tx_account.0 == client.0 {CLIENT_CONFIRMED} else {FREELANCER_CONFIRMED}] = (intent == INTENT_CONFIRM) as u8;
             let should_release = data.data[CLIENT_CONFIRMED] == 1 && data.data[FREELANCER_CONFIRMED] == 1;
             // Capture these before data is moved into update_current_escrow_data.
             let freelancer_confirmed = data.data[FREELANCER_CONFIRMED] == 1;
@@ -106,21 +116,21 @@ pub extern "C" fn finish() -> i32 {
             }
             return 0;
         },
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 && data.data[DISPUTE_RAISED] != 1 => {
+        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == INTENT_DISPUTE && data.data[DISPUTE_RAISED] != 1 => {
             // Participant, no current dispute. Calling dispute.
             data.data[DISPUTE_RAISED] = 1;
             data.data[CLIENT_CONFIRMED..DISPUTE_RAISED].fill(0);
-            data.data[DISPUTING_PARTY] = if tx_account.0 == client.0 {1} else {2};
+            data.data[DISPUTING_PARTY] = if tx_account.0 == client.0 { DISPUTING_CLIENT } else { DISPUTING_FREELANCER };
             match CurrentEscrow::update_current_escrow_data(data) {
                 Ok(()) => {},
                 Err(e) => return e.code()
             }
         },
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 => {
+        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == INTENT_DISPUTE => {
             // Participant, current dispute. Resolve dispute if you're the one who disputed.
-            if data.data[DISPUTING_PARTY] == 1 && tx_account.0 == client.0 {
+            if data.data[DISPUTING_PARTY] == DISPUTING_CLIENT && tx_account.0 == client.0 {
                 data.data[DISPUTE_RAISED] = 0;
-            } else if data.data[DISPUTING_PARTY] == 2 && tx_account.0 == freelancer.0 {
+            } else if data.data[DISPUTING_PARTY] == DISPUTING_FREELANCER && tx_account.0 == freelancer.0 {
                 data.data[DISPUTE_RAISED] = 0;
             } else {
                 return 0;
@@ -131,7 +141,7 @@ pub extern "C" fn finish() -> i32 {
                 Err(e) => return e.code()
             }
         },
-        a if a.0 == arbitrator && data.data[DISPUTE_RAISED] == 1 && a.1 == 2 => {
+        a if a.0 == arbitrator && data.data[DISPUTE_RAISED] == 1 && a.1 == INTENT_DISPUTE => {
             // Arbitrator, current dispute. You rule in favor of the freelancer.
             return 1;
         }
