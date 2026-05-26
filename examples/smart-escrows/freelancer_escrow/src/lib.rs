@@ -169,10 +169,9 @@ pub extern "C" fn finish() -> i32 {
         }
         a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == INTENT_DISPUTE => {
             // Participant, current dispute. Resolve dispute if you're the one who disputed.
-            if data.data[DISPUTING_PARTY] == DISPUTING_CLIENT && tx_account.0 == client.0 {
-                data.data[DISPUTE_RAISED] = 0;
-            } else if data.data[DISPUTING_PARTY] == DISPUTING_FREELANCER
-                && tx_account.0 == freelancer.0
+            if (data.data[DISPUTING_PARTY] == DISPUTING_CLIENT && tx_account.0 == client.0)
+                || (data.data[DISPUTING_PARTY] == DISPUTING_FREELANCER
+                    && tx_account.0 == freelancer.0)
             {
                 data.data[DISPUTE_RAISED] = 0;
             } else {
