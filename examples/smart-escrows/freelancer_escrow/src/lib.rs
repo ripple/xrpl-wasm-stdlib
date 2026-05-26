@@ -63,6 +63,9 @@ pub extern "C" fn finish() -> i32 {
         Ok(v) => v,
         Err(e) => return e.code()
     };
+    if data.len < DEADLINE_END + 4 {
+        return Error::InvalidParams.code();
+    }
     let mut arbitrator = [0u8; 20];
     arbitrator.copy_from_slice(&data.data[ARBITRATOR_START..DEADLINE_START]);
     let intent = match get_first_memo() {
@@ -70,20 +73,38 @@ pub extern "C" fn finish() -> i32 {
         Ok(None) => 0,
         Err(e) => return e.code()
     };
-    let mut deadline_bytes = [0u8; 4];
-    deadline_bytes.copy_from_slice(&data.data[DEADLINE_START..DEADLINE_END]);
-    let deadline = u32::from_le_bytes(deadline_bytes);
-    let freelancer_confirmed = data.data[FREELANCER_CONFIRMED] == 1;
     match (tx_account.0, intent) {
         a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 < 2 && data.data[DISPUTE_RAISED] != 1 => {
             // Participant, not a dispute request, no current dispute. Confirm / deconfirm.
             data.data[if tx_account.0 == client.0 {CLIENT_CONFIRMED} else {FREELANCER_CONFIRMED}] = intent ^ 1;
             let should_release = data.data[CLIENT_CONFIRMED] == 1 && data.data[FREELANCER_CONFIRMED] == 1;
+            // Capture these before data is moved into update_current_escrow_data.
+            let freelancer_confirmed = data.data[FREELANCER_CONFIRMED] == 1;
+            let mut deadline_bytes = [0u8; 4];
+            deadline_bytes.copy_from_slice(&data.data[DEADLINE_START..DEADLINE_END]);
+            let deadline = u32::from_le_bytes(deadline_bytes);
             match CurrentEscrow::update_current_escrow_data(data) {
                 Ok(()) => {},
                 Err(e) => return e.code()
             }
-            return should_release as i32;
+            if should_release {
+                return 1;
+            }
+            // Auto-release if freelancer has confirmed and deadline has passed (no active dispute).
+            if freelancer_confirmed {
+                let mut time_buf = [0u8; 4];
+                let time = unsafe {
+                    xrpl_wasm_stdlib::host::get_parent_ledger_time(time_buf.as_mut_ptr(), time_buf.len())
+                };
+                if time < 0 {
+                    return time;
+                }
+                let curr_time = u32::from_le_bytes(time_buf);
+                if curr_time > deadline {
+                    return 1;
+                }
+            }
+            return 0;
         },
         a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 && data.data[DISPUTE_RAISED] != 1 => {
             // Participant, no current dispute. Calling dispute.
@@ -116,18 +137,5 @@ pub extern "C" fn finish() -> i32 {
         }
         _ => return 0
     };
-    if freelancer_confirmed {
-        let mut time_buf = [0u8; 4];
-        let time = unsafe {
-            xrpl_wasm_stdlib::host::get_parent_ledger_time(time_buf.as_mut_ptr(), time_buf.len())
-        };
-        if time < 0 {
-            return time;
-        }
-        let curr_time = u32::from_le_bytes(time_buf);
-        if curr_time > deadline {
-            return 1;
-        }
-    }
     0
 }
