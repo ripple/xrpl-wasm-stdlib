@@ -13,6 +13,14 @@ use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+const ARBITRATOR_START: usize = 0;
+const DEADLINE_START: usize = 20;
+const DEADLINE_END: usize = 24;
+const CLIENT_CONFIRMED: usize = 24;
+const FREELANCER_CONFIRMED: usize = 25;
+const DISPUTE_RAISED: usize = 26;
+const DISPUTING_PARTY: usize = 27;
+
 
 pub fn get_first_memo() -> Result<Option<u8>> {
     let mut data = [0u8; 1];
@@ -42,41 +50,46 @@ pub extern "C" fn finish() -> i32 {
         Ok(v) => v,
         Err(e) => return e.code(),
     };
-    let client = match get_current_escrow().get_account() {
+    let escrow = get_current_escrow();
+    let client = match escrow.get_account() {
         Ok(v) => v,
         Err(e) => return e.code()
     };
-    let freelancer = match get_current_escrow().get_destination() {
+    let freelancer = match escrow.get_destination() {
         Ok(v) => v,
         Err(e) => return e.code()
     };
-    let mut data = match get_current_escrow().get_data() {
+    let mut data = match escrow.get_data() {
         Ok(v) => v,
         Err(e) => return e.code()
     };
     let mut arbitrator = [0u8; 20];
-    arbitrator.copy_from_slice(&data.data[0..20]);
+    arbitrator.copy_from_slice(&data.data[ARBITRATOR_START..DEADLINE_START]);
     let intent = match get_first_memo() {
         Ok(Some(v)) => v,
         Ok(None) => 0,
         Err(e) => return e.code()
     };
+    let mut deadline_bytes = [0u8; 4];
+    deadline_bytes.copy_from_slice(&data.data[DEADLINE_START..DEADLINE_END]);
+    let deadline = u32::from_le_bytes(deadline_bytes);
+    let freelancer_confirmed = data.data[FREELANCER_CONFIRMED] == 1;
     match (tx_account.0, intent) {
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 < 2 && data.data[26] != 1 => {
+        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 < 2 && data.data[DISPUTE_RAISED] != 1 => {
             // Participant, not a dispute request, no current dispute. Confirm / deconfirm.
-            data.data[if tx_account.0 == client.0 {24} else {25}] = intent ^ 1;
-            let should_release = data.data[24] == 1 && data.data[25] == 1;
+            data.data[if tx_account.0 == client.0 {CLIENT_CONFIRMED} else {FREELANCER_CONFIRMED}] = intent ^ 1;
+            let should_release = data.data[CLIENT_CONFIRMED] == 1 && data.data[FREELANCER_CONFIRMED] == 1;
             match CurrentEscrow::update_current_escrow_data(data) {
                 Ok(()) => {},
                 Err(e) => return e.code()
             }
             return should_release as i32;
         },
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 && data.data[26] != 1 => {
+        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 && data.data[DISPUTE_RAISED] != 1 => {
             // Participant, no current dispute. Calling dispute.
-            data.data[26] = 1;
-            data.data[24..26].fill(0);
-            data.data[27] = if tx_account.0 == client.0 {1} else {2};
+            data.data[DISPUTE_RAISED] = 1;
+            data.data[CLIENT_CONFIRMED..DISPUTE_RAISED].fill(0);
+            data.data[DISPUTING_PARTY] = if tx_account.0 == client.0 {1} else {2};
             match CurrentEscrow::update_current_escrow_data(data) {
                 Ok(()) => {},
                 Err(e) => return e.code()
@@ -84,24 +97,37 @@ pub extern "C" fn finish() -> i32 {
         },
         a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == 2 => {
             // Participant, current dispute. Resolve dispute if you're the one who disputed.
-            if data.data[27] == 1 && tx_account.0 == client.0 {
-                data.data[26] = 0;
-            } else if data.data[27] == 2 && tx_account.0 == freelancer.0 {
-                data.data[26] = 0;
+            if data.data[DISPUTING_PARTY] == 1 && tx_account.0 == client.0 {
+                data.data[DISPUTE_RAISED] = 0;
+            } else if data.data[DISPUTING_PARTY] == 2 && tx_account.0 == freelancer.0 {
+                data.data[DISPUTE_RAISED] = 0;
             } else {
                 return 0;
             }
-            data.data[27] = 0;
+            data.data[DISPUTING_PARTY] = 0;
             match CurrentEscrow::update_current_escrow_data(data) {
                 Ok(()) => {},
                 Err(e) => return e.code()
             }
         },
-        a if a.0 == arbitrator && data.data[26] == 1 && a.1 == 2 => {
+        a if a.0 == arbitrator && data.data[DISPUTE_RAISED] == 1 && a.1 == 2 => {
             // Arbitrator, current dispute. You rule in favor of the freelancer.
             return 1;
         }
         _ => return 0
     };
+    if freelancer_confirmed {
+        let mut time_buf = [0u8; 4];
+        let time = unsafe {
+            xrpl_wasm_stdlib::host::get_parent_ledger_time(time_buf.as_mut_ptr(), time_buf.len())
+        };
+        if time < 0 {
+            return time;
+        }
+        let curr_time = u32::from_le_bytes(time_buf);
+        if curr_time > deadline {
+            return 1;
+        }
+    }
     0
 }
