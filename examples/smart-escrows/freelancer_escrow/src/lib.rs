@@ -1,212 +1,298 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
+#[cfg(not(target_arch = "wasm32"))]
+extern crate std;
+
 use xrpl_wasm_stdlib::core::current_tx::escrow_finish::get_current_escrow_finish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::core::types::contract_data::ContractData;
+use xrpl_wasm_stdlib::host::get_parent_ledger_time;
 use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::trace_num;
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::sfield;
 
-#[cfg(not(target_arch = "wasm32"))]
-extern crate std;
+macro_rules! try_or_trace {
+    ($e:expr, $label:literal) => {
+        match $e {
+            Ok(v) => v,
+            Err(e) => {
+                let _ = trace_num($label, e.code() as i64);
+                return e.code();
+            }
+        }
+    };
+}
 
-const ARBITRATOR_START: usize = 0;
-const DEADLINE_START: usize = 20;
-const DEADLINE_END: usize = 24;
-const CLIENT_CONFIRMED: usize = 24;
-const FREELANCER_CONFIRMED: usize = 25;
-const DISPUTE_RAISED: usize = 26;
-const DISPUTING_PARTY: usize = 27;
+// ── Intent ────────────────────────────────────────────────────────────────────
 
-const INTENT_CONFIRM: u8 = 0;
-const INTENT_DECONFIRM: u8 = 1;
-const INTENT_DISPUTE: u8 = 2;
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Intent {
+    Confirm,
+    Deconfirm,
+    Dispute,
+    Undispute,
+}
 
-const DISPUTING_CLIENT: u8 = 1;
-const DISPUTING_FREELANCER: u8 = 2;
-const DISPUTING_ARB_LOCK: u8 = 3; // arbitrator ruled for client, lock contract for CancelAfter
+impl Intent {
+    fn from_byte(b: u8) -> Option<Self> {
+        match b {
+            0 => Some(Self::Confirm),
+            1 => Some(Self::Deconfirm),
+            2 => Some(Self::Dispute),
+            3 => Some(Self::Undispute),
+            _ => None,
+        }
+    }
+}
 
-const ARB_RULE_FREELANCER: u8 = INTENT_CONFIRM;
-const ARB_RULE_CLIENT: u8 = INTENT_DISPUTE;
+// ── Roles & dispute state ─────────────────────────────────────────────────────
 
-pub fn get_first_memo() -> Result<Option<u8>> {
-    let mut data = [0u8; 1];
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Party {
+    Client,
+    Freelancer,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Role {
+    Client,
+    Freelancer,
+    Arbitrator,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum DisputeState {
+    None,
+    ActiveBy(Party),
+    ArbLocked,
+}
+
+// ── Escrow state wrapper ───────────────────────────────────────────────────────
+//
+// 28-byte Data layout:
+//   0..20  arbitrator AccountID
+//  20..24  deadline u32 LE (Ripple epoch seconds)
+//     24   client_confirmed  (0/1)
+//     25   freelancer_confirmed (0/1)
+//     26   dispute_raised (0/1)
+//     27   disputing_party (0=none, 1=client, 2=freelancer, 3=arb_locked)
+
+struct State {
+    inner: ContractData,
+}
+
+impl State {
+    const SIZE: usize = 28;
+    const ARBITRATOR: core::ops::Range<usize> = 0..20;
+    const DEADLINE: core::ops::Range<usize> = 20..24;
+    const CLIENT_CONFIRMED: usize = 24;
+    const FREELANCER_CONFIRMED: usize = 25;
+    const DISPUTE_RAISED: usize = 26;
+    const DISPUTING_PARTY: usize = 27;
+
+    fn load(escrow: &CurrentEscrow) -> Result<Self> {
+        let inner = match escrow.get_data() {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
+        if inner.len < Self::SIZE {
+            return Err(Error::InvalidParams);
+        }
+        Ok(Self { inner })
+    }
+
+    fn arbitrator(&self) -> AccountID {
+        let mut buf = [0u8; 20];
+        buf.copy_from_slice(&self.inner.data[Self::ARBITRATOR]);
+        AccountID(buf)
+    }
+
+    fn deadline(&self) -> u32 {
+        let mut bytes = [0u8; 4];
+        bytes.copy_from_slice(&self.inner.data[Self::DEADLINE]);
+        u32::from_le_bytes(bytes)
+    }
+
+    fn client_confirmed(&self) -> bool {
+        self.inner.data[Self::CLIENT_CONFIRMED] != 0
+    }
+
+    fn freelancer_confirmed(&self) -> bool {
+        self.inner.data[Self::FREELANCER_CONFIRMED] != 0
+    }
+
+    fn set_confirmation(&mut self, party: Party, confirmed: bool) {
+        let idx = match party {
+            Party::Client => Self::CLIENT_CONFIRMED,
+            Party::Freelancer => Self::FREELANCER_CONFIRMED,
+        };
+        self.inner.data[idx] = confirmed as u8;
+    }
+
+    fn dispute(&self) -> DisputeState {
+        if self.inner.data[Self::DISPUTE_RAISED] == 0 {
+            return DisputeState::None;
+        }
+        match self.inner.data[Self::DISPUTING_PARTY] {
+            1 => DisputeState::ActiveBy(Party::Client),
+            2 => DisputeState::ActiveBy(Party::Freelancer),
+            3 => DisputeState::ArbLocked,
+            _ => DisputeState::None,
+        }
+    }
+
+    fn set_dispute(&mut self, ds: DisputeState) {
+        match ds {
+            DisputeState::None => {
+                self.inner.data[Self::DISPUTE_RAISED] = 0;
+                self.inner.data[Self::DISPUTING_PARTY] = 0;
+            }
+            DisputeState::ActiveBy(party) => {
+                self.inner.data[Self::DISPUTE_RAISED] = 1;
+                self.inner.data[Self::DISPUTING_PARTY] = match party {
+                    Party::Client => 1,
+                    Party::Freelancer => 2,
+                };
+            }
+            DisputeState::ArbLocked => {
+                self.inner.data[Self::DISPUTING_PARTY] = 3;
+            }
+        }
+    }
+
+    fn persist(self) -> Result<()> {
+        CurrentEscrow::update_current_escrow_data(self.inner)
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+fn read_intent() -> Result<Intent> {
+    let mut buf = [0u8; 1];
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
     locator.pack(sfield::MemoData);
-    let result_code = unsafe {
+    let code = unsafe {
         get_tx_nested_field(
             locator.as_ptr(),
             locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
+            buf.as_mut_ptr(),
+            buf.len(),
         )
     };
-
-    match result_code {
-        result_code if result_code > 0 => Ok(Some(data[0])),
-        0 => Err(Error::InternalError),
-        result_code => Err(Error::from_code(result_code)),
+    if code <= 0 {
+        return Err(if code == 0 {
+            Error::InternalError
+        } else {
+            Error::from_code(code)
+        });
+    }
+    match Intent::from_byte(buf[0]) {
+        Some(intent) => Ok(intent),
+        None => Err(Error::InvalidParams),
     }
 }
 
+fn identify(
+    tx: AccountID,
+    client: AccountID,
+    freelancer: AccountID,
+    arbitrator: AccountID,
+) -> Option<Role> {
+    if tx == client {
+        Some(Role::Client)
+    } else if tx == freelancer {
+        Some(Role::Freelancer)
+    } else if tx == arbitrator {
+        Some(Role::Arbitrator)
+    } else {
+        None
+    }
+}
+
+fn party_of(role: Role) -> Party {
+    if role == Role::Client {
+        Party::Client
+    } else {
+        Party::Freelancer
+    }
+}
+
+fn deadline_release(state: &State) -> Result<bool> {
+    if !state.freelancer_confirmed() {
+        return Ok(false);
+    }
+    let mut buf = [0u8; 4];
+    let code = unsafe { get_parent_ledger_time(buf.as_mut_ptr(), buf.len()) };
+    if code < 0 {
+        return Err(Error::from_code(code));
+    }
+    Ok(u32::from_le_bytes(buf) > state.deadline())
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-    let tx_account = match get_current_escrow_finish().get_account() {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = trace_num("Error in getting tx_account", e.code() as i64);
-            return e.code();
-        }
-    };
+    let tx = get_current_escrow_finish();
+    let tx_account = try_or_trace!(tx.get_account(), "tx_account");
     let escrow = get_current_escrow();
-    let client = match escrow.get_account() {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = trace_num("Error in getting client account", e.code() as i64);
-            return e.code();
-        }
+    let client = try_or_trace!(escrow.get_account(), "client");
+    let freelancer = try_or_trace!(escrow.get_destination(), "freelancer");
+    let mut state = try_or_trace!(State::load(&escrow), "state");
+    let intent = try_or_trace!(read_intent(), "intent");
+
+    let role = match identify(tx_account, client, freelancer, state.arbitrator()) {
+        Some(r) => r,
+        None => return 0,
     };
-    let freelancer = match escrow.get_destination() {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = trace_num("Error in getting freelancer account", e.code() as i64);
-            return e.code();
+
+    match (role, intent, state.dispute()) {
+        // Participant confirm/deconfirm, no active dispute
+        (
+            Role::Client | Role::Freelancer,
+            Intent::Confirm | Intent::Deconfirm,
+            DisputeState::None,
+        ) => {
+            state.set_confirmation(party_of(role), intent == Intent::Confirm);
+            let release = (state.client_confirmed() && state.freelancer_confirmed())
+                || try_or_trace!(deadline_release(&state), "ledger_time");
+            try_or_trace!(state.persist(), "persist");
+            release as i32
         }
-    };
-    let mut data = match escrow.get_data() {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = trace_num("Error in fetching escrow data", e.code() as i64);
-            return e.code();
+        // Participant raises a dispute, clears confirmations
+        (Role::Client | Role::Freelancer, Intent::Dispute, DisputeState::None) => {
+            state.set_confirmation(Party::Client, false);
+            state.set_confirmation(Party::Freelancer, false);
+            state.set_dispute(DisputeState::ActiveBy(party_of(role)));
+            try_or_trace!(state.persist(), "persist");
+            0
         }
-    };
-    if data.len < DISPUTING_PARTY + 1 {
-        let _ = trace_num("Error, escrow data malformed / too short", data.len as i64);
-        return Error::InvalidParams.code();
+        // Disputing party withdraws their own dispute
+        (Role::Client | Role::Freelancer, Intent::Undispute, DisputeState::ActiveBy(by))
+            if by == party_of(role) =>
+        {
+            state.set_dispute(DisputeState::None);
+            try_or_trace!(state.persist(), "persist");
+            0
+        }
+        // Arbitrator rules on an active dispute
+        (Role::Arbitrator, _, DisputeState::ActiveBy(_)) => match intent {
+            Intent::Confirm => 1, // rule for freelancer: release funds
+            Intent::Dispute => {
+                // rule for client: lock until CancelAfter
+                state.set_dispute(DisputeState::ArbLocked);
+                try_or_trace!(state.persist(), "persist");
+                0
+            }
+            _ => 0,
+        },
+        _ => 0,
     }
-    let mut arbitrator = [0u8; 20];
-    arbitrator.copy_from_slice(&data.data[ARBITRATOR_START..DEADLINE_START]);
-    let intent = match get_first_memo() {
-        Ok(Some(v)) => v,
-        Ok(None) => 0,
-        Err(e) => {
-            let _ = trace_num("Error in fetching Memo fields", e.code() as i64);
-            return e.code();
-        }
-    };
-    match (tx_account.0, intent) {
-        a if (a.0 == client.0 || a.0 == freelancer.0)
-            && (a.1 == INTENT_CONFIRM || a.1 == INTENT_DECONFIRM)
-            && data.data[DISPUTE_RAISED] != 1 =>
-        {
-            // Participant, not a dispute request, no current dispute. Confirm / deconfirm.
-            data.data[if tx_account.0 == client.0 {
-                CLIENT_CONFIRMED
-            } else {
-                FREELANCER_CONFIRMED
-            }] = (intent == INTENT_CONFIRM) as u8;
-            let should_release =
-                data.data[CLIENT_CONFIRMED] == 1 && data.data[FREELANCER_CONFIRMED] == 1;
-            // Capture these before data is moved into update_current_escrow_data.
-            let freelancer_confirmed = data.data[FREELANCER_CONFIRMED] == 1;
-            let mut deadline_bytes = [0u8; 4];
-            deadline_bytes.copy_from_slice(&data.data[DEADLINE_START..DEADLINE_END]);
-            let deadline = u32::from_le_bytes(deadline_bytes);
-            match CurrentEscrow::update_current_escrow_data(data) {
-                Ok(()) => {}
-                Err(e) => {
-                    let _ = trace_num("Error updating confirm state", e.code() as i64);
-                    return e.code();
-                }
-            }
-            if should_release {
-                return 1;
-            }
-            // Auto-release if freelancer has confirmed and deadline has passed (no active dispute).
-            if freelancer_confirmed {
-                let mut time_buf = [0u8; 4];
-                let time = unsafe {
-                    xrpl_wasm_stdlib::host::get_parent_ledger_time(
-                        time_buf.as_mut_ptr(),
-                        time_buf.len(),
-                    )
-                };
-                if time < 0 {
-                    let _ = trace_num("Error getting ledger time", time as i64);
-                    return time;
-                }
-                let curr_time = u32::from_le_bytes(time_buf);
-                if curr_time > deadline {
-                    return 1;
-                }
-            }
-            return 0;
-        }
-        a if (a.0 == client.0 || a.0 == freelancer.0)
-            && a.1 == INTENT_DISPUTE
-            && data.data[DISPUTE_RAISED] != 1 =>
-        {
-            // Participant, no current dispute. Calling dispute.
-            data.data[DISPUTE_RAISED] = 1;
-            data.data[CLIENT_CONFIRMED..DISPUTE_RAISED].fill(0);
-            data.data[DISPUTING_PARTY] = if tx_account.0 == client.0 {
-                DISPUTING_CLIENT
-            } else {
-                DISPUTING_FREELANCER
-            };
-            match CurrentEscrow::update_current_escrow_data(data) {
-                Ok(()) => {}
-                Err(e) => {
-                    let _ = trace_num("Error updating dispute state", e.code() as i64);
-                    return e.code();
-                }
-            }
-        }
-        a if (a.0 == client.0 || a.0 == freelancer.0) && a.1 == INTENT_DISPUTE => {
-            // Participant, current dispute. Resolve dispute if you're the one who disputed.
-            if (data.data[DISPUTING_PARTY] == DISPUTING_CLIENT && tx_account.0 == client.0)
-                || (data.data[DISPUTING_PARTY] == DISPUTING_FREELANCER
-                    && tx_account.0 == freelancer.0)
-            {
-                data.data[DISPUTE_RAISED] = 0;
-            } else {
-                return 0;
-            }
-            data.data[DISPUTING_PARTY] = 0;
-            match CurrentEscrow::update_current_escrow_data(data) {
-                Ok(()) => {}
-                Err(e) => {
-                    let _ = trace_num("Error resolving dispute state", e.code() as i64);
-                    return e.code();
-                }
-            }
-        }
-        a if a.0 == arbitrator
-            && data.data[DISPUTE_RAISED] == 1
-            && data.data[DISPUTING_PARTY] != DISPUTING_ARB_LOCK =>
-        {
-            // Arbitrator, active dispute. You can either rule for freelancer or client, where you lock the escrow until it cancels.
-            if a.1 == ARB_RULE_FREELANCER {
-                return 1;
-            }
-            if a.1 == ARB_RULE_CLIENT {
-                data.data[DISPUTING_PARTY] = DISPUTING_ARB_LOCK;
-                match CurrentEscrow::update_current_escrow_data(data) {
-                    Ok(()) => {}
-                    Err(e) => {
-                        let _ = trace_num("Error writing arb ruling", e.code() as i64);
-                        return e.code();
-                    }
-                }
-            }
-            return 0;
-        }
-        _ => return 0,
-    };
-    0
 }

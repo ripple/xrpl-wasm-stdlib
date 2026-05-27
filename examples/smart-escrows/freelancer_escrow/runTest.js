@@ -3,6 +3,7 @@ const { decodeAccountID, convertStringToHex } = require("xrpl")
 const INTENT_CONFIRM = 0
 const INTENT_DECONFIRM = 1
 const INTENT_DISPUTE = 2
+const INTENT_UNDISPUTE = 3
 
 const ARB_RULE_FREELANCER = INTENT_CONFIRM
 const ARB_RULE_CLIENT = INTENT_DISPUTE
@@ -301,6 +302,101 @@ async function test(testContext) {
     console.error(
       "Expected freelancer to be blocked after arb ruling, got:",
       freelancerBlocked.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  // === Escrow 5: Self-resolve — disputing party withdraws with INTENT_UNDISPUTE ===
+  console.log("\n--- Self-resolve: disputing party withdraws ---")
+  const seq5 = await createEscrow(data)
+
+  // Client raises a dispute.
+  const raiseDispute3 = await submit(
+    escrowFinishTx(
+      sourceWallet.address,
+      sourceWallet.address,
+      seq5,
+      INTENT_DISPUTE,
+    ),
+    sourceWallet,
+  )
+  if (raiseDispute3.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+    console.error(
+      "Expected hold after raising dispute, got:",
+      raiseDispute3.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  // Freelancer tries to undispute the client's dispute — only the disputing party can withdraw.
+  const wrongUndispute = await submit(
+    escrowFinishTx(
+      destWallet.address,
+      sourceWallet.address,
+      seq5,
+      INTENT_UNDISPUTE,
+    ),
+    destWallet,
+  )
+  if (wrongUndispute.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+    console.error(
+      "Expected non-disputer undispute to be rejected, got:",
+      wrongUndispute.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  // Client withdraws their own dispute — back to pending.
+  const selfResolve = await submit(
+    escrowFinishTx(
+      sourceWallet.address,
+      sourceWallet.address,
+      seq5,
+      INTENT_UNDISPUTE,
+    ),
+    sourceWallet,
+  )
+  if (selfResolve.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+    console.error(
+      "Expected hold after self-resolve (back to pending), got:",
+      selfResolve.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  // Both confirm — escrow releases now that dispute is cleared.
+  const confirmAfterResolve = await submit(
+    escrowFinishTx(
+      destWallet.address,
+      sourceWallet.address,
+      seq5,
+      INTENT_CONFIRM,
+    ),
+    destWallet,
+  )
+  if (
+    confirmAfterResolve.result.meta.TransactionResult !== "tecWASM_REJECTED"
+  ) {
+    console.error(
+      "Expected hold waiting for client after freelancer confirm, got:",
+      confirmAfterResolve.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+
+  const releaseAfterResolve = await submit(
+    escrowFinishTx(
+      sourceWallet.address,
+      sourceWallet.address,
+      seq5,
+      INTENT_CONFIRM,
+    ),
+    sourceWallet,
+  )
+  if (releaseAfterResolve.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error(
+      "Expected release after both confirm post-resolve, got:",
+      releaseAfterResolve.result.meta.TransactionResult,
     )
     process.exit(1)
   }

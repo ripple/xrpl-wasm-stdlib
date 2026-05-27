@@ -26,10 +26,10 @@ flowchart TD
         D[DISPUTE_RAISED=1, DISPUTING_PARTY = client or freelancer]
     end
 
-    DISPUTED -->|Disputing party — INTENT_DISPUTE again| WITHDRAW[Clear DISPUTE_RAISED\nClear DISPUTING_PARTY]
+    DISPUTED -->|Disputing party — INTENT_UNDISPUTE| WITHDRAW[Clear DISPUTE_RAISED\nClear DISPUTING_PARTY]
     WITHDRAW --> PENDING
-    DISPUTED -->|Arbitrator — ARB_RULE_FREELANCER| PAID
-    DISPUTED -->|Arbitrator — ARB_RULE_CLIENT| LOCK[Set DISPUTING_PARTY = DISPUTING_ARB_LOCK]
+    DISPUTED -->|Arbitrator — INTENT_CONFIRM| PAID
+    DISPUTED -->|Arbitrator — INTENT_DISPUTE| LOCK[Set DISPUTING_PARTY = DISPUTING_ARB_LOCK]
 
     LOCK --> LOCKED
 
@@ -94,7 +94,7 @@ sequenceDiagram
         Note over Client,Freelancer: Self-resolve — disputing party withdraws
         Client->>Escrow: EscrowFinish INTENT_DISPUTE
         Escrow->>Escrow: DISPUTE_RAISED=1, DISPUTING_PARTY=client
-        Client->>Escrow: EscrowFinish INTENT_DISPUTE again
+        Client->>Escrow: EscrowFinish INTENT_UNDISPUTE
         Escrow->>Escrow: DISPUTE_RAISED=0, DISPUTING_PARTY=0
         Note over Escrow: Back to Pending
     end
