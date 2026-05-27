@@ -58,6 +58,12 @@ impl<T, const CODE: i32> From<SField<T, CODE>> for i32 {
     }
 }
 
+impl<T, const CODE: i32> From<SField<T, CODE>> for i64 {
+    fn from(_: SField<T, CODE>) -> Self {
+        CODE as i64
+    }
+}
+
 impl<T, const CODE: i32> Default for SField<T, CODE> {
     fn default() -> Self {
         Self::new()
