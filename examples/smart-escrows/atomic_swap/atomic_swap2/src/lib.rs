@@ -124,7 +124,7 @@ pub extern "C" fn finish() -> i32 {
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
         let first_escrow_slot =
-            unsafe { host::cache_ledger_obj(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
+            unsafe { host::cache_le(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
         if first_escrow_slot < 0 {
             let _ = trace_num(
                 "Failed to cache first escrow, error:",
@@ -310,7 +310,7 @@ pub extern "C" fn finish() -> i32 {
         // Get current ledger time for deadline comparison
         let mut time_buffer = [0u8; 4];
         let time_result =
-            unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
+            unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
         let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
             u32::from_le_bytes(time_buffer)

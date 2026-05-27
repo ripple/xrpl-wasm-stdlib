@@ -9,7 +9,7 @@ use crate::host::Error::InternalError;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::trace::trace_num;
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, home_le_field, le_field, tx_field};
 
 pub const AMOUNT_SIZE: usize = 48;
 
@@ -306,7 +306,7 @@ impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
@@ -314,7 +314,7 @@ impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
@@ -322,7 +322,7 @@ impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
         get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
@@ -330,7 +330,7 @@ impl LedgerObjectFieldGetter for Amount {
     #[inline]
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
@@ -352,7 +352,7 @@ impl CurrentTxFieldGetter for Amount {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
         get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
+            tx_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
@@ -360,7 +360,7 @@ impl CurrentTxFieldGetter for Amount {
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
+            tx_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }

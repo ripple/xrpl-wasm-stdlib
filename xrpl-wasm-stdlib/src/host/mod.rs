@@ -10,9 +10,9 @@
 //!
 //! - `float_from_int` / `float_from_uint` - Convert integers to float format
 //! - `float_set` - Create float from exponent and mantissa
-//! - `float_add` / `float_subtract` / `float_multiply` / `float_divide` - Arithmetic
+//! - `float_add` / `float_sub` / `float_mult` / `float_div` - Arithmetic
 //! - `float_pow` / `float_root` / `float_log` - Mathematical functions
-//! - `float_compare` - Comparison operations
+//! - `float_cmp` - Comparison operations
 //!
 //! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
 //!

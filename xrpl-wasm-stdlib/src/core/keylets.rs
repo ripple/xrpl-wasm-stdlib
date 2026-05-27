@@ -27,7 +27,7 @@ pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::account_keylet` function, though the unsafe code is contained
+/// the `host::accountroot_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
@@ -35,13 +35,13 @@ pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 /// ```rust
 ///
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::account_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::accountroot_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match account_keylet(&account){
+///   match accountroot_id(&account){
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -52,9 +52,9 @@ pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 ///   Ok(())
 /// }
 /// ```
-pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
+pub fn accountroot_id(account_id: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::account_keylet(
+        host::accountroot_id(
             account_id.0.as_ptr(), // Assuming AccountID is a tuple struct like AccountID(bytes)
             account_id.0.len(),
             keylet_buffer_ptr,
@@ -80,7 +80,7 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::amm_keylet` function.
+/// the `host::amm_id` function.
 ///
 /// # Example
 ///
@@ -88,7 +88,7 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::issue::{Issue, XrpIssue, IouIssue};
 /// use xrpl_wasm_stdlib::core::types::currency::Currency;
-/// use xrpl_wasm_stdlib::core::keylets::amm_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::amm_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let issue1: Issue = Issue::XRP(XrpIssue {});
@@ -97,7 +97,7 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///  let currency = b"RLUSD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; // RLUSD currency code
 ///  let currency: Currency = Currency::from(*currency);
 ///  let issue2 = Issue::IOU(IouIssue::new(issuer, currency));
-///  match amm_keylet(&issue1, &issue2) {
+///  match amm_id(&issue1, &issue2) {
 ///    xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///      let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///    }
@@ -108,11 +108,11 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///  Ok(())
 /// }
 /// ```
-pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
+pub fn amm_id(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
     let issue1_bytes = issue1.as_bytes();
     let issue2_bytes = issue2.as_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::amm_keylet(
+        host::amm_id(
             issue1_bytes.as_ptr(),
             issue1_bytes.len(),
             issue2_bytes.as_ptr(),
@@ -141,21 +141,21 @@ pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::check_keylet` function, though the unsafe code is contained
+/// the `host::check_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::check_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::check_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match check_keylet(&owner, sequence) {
+///   match check_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -166,10 +166,10 @@ pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn check_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::check_keylet(
+        host::check_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -198,13 +198,13 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::credential_keylet` function.
+/// the `host::credential_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::credential_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::credential_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let subject: AccountID =
@@ -212,7 +212,7 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     let issuer: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let cred_type: &[u8] = b"termsandconditions";
-///     match credential_keylet(&subject, &issuer, cred_type) {
+///     match credential_id(&subject, &issuer, cred_type) {
 ///       xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -223,13 +223,13 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     Ok(())
 /// }
 /// ```
-pub fn credential_keylet(
+pub fn credential_id(
     subject: &AccountID,
     issuer: &AccountID,
     credential_type: &[u8],
 ) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::credential_keylet(
+        host::credential_id(
             subject.0.as_ptr(),
             subject.0.len(),
             issuer.0.as_ptr(),
@@ -259,20 +259,20 @@ pub fn credential_keylet(
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::delegate_keylet` function.
+/// the `host::delegate_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::delegate_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::delegate_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match delegate_keylet(&account, &authorize) {
+///     match delegate_id(&account, &authorize) {
 ///       xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -283,9 +283,9 @@ pub fn credential_keylet(
 ///     Ok(())
 /// }
 /// ```
-pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
+pub fn delegate_id(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::delegate_keylet(
+        host::delegate_id(
             account.0.as_ptr(),
             account.0.len(),
             authorize.0.as_ptr(),
@@ -313,20 +313,20 @@ pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<Key
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::deposit_preauth_keylet` function.
+/// the `host::deposit_preauth_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::deposit_preauth_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::deposit_preauth_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match deposit_preauth_keylet(&account, &authorize) {
+///     match deposit_preauth_id(&account, &authorize) {
 ///       xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -337,9 +337,9 @@ pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<Key
 ///     Ok(())
 /// }
 /// ```
-pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
+pub fn deposit_preauth_id(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::deposit_preauth_keylet(
+        host::deposit_preauth_id(
             account.0.as_ptr(),
             account.0.len(),
             authorize.0.as_ptr(),
@@ -367,7 +367,7 @@ pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Res
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::did_keylet` function, though the unsafe code is contained
+/// the `host::did_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
@@ -375,13 +375,13 @@ pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Res
 /// ```rust
 ///
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::did_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::did_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match did_keylet(&account){
+///   match did_id(&account){
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -392,9 +392,9 @@ pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Res
 ///   Ok(())
 /// }
 /// ```
-pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
+pub fn did_id(account_id: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::did_keylet(
+        host::did_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
             keylet_buffer_ptr,
@@ -421,21 +421,21 @@ pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::escrow_keylet` function, though the unsafe code is contained
+/// the `host::escrow_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::escrow_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::escrow_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match escrow_keylet(&owner, sequence) {
+///   match escrow_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -446,10 +446,10 @@ pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn escrow_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::escrow_keylet(
+        host::escrow_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -478,14 +478,14 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::line_keylet` function.
+/// the `host::trustline_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::currency::Currency;
-/// use xrpl_wasm_stdlib::core::keylets::line_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::trustline_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let account1: AccountID =
@@ -494,7 +494,7 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///    AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///  let currency = b"RLUSD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; // RLUSD currency code
 ///  let currency: Currency = Currency::from(*currency);
-///  match line_keylet(&account1, &account2, &currency) {
+///  match trustline_id(&account1, &account2, &currency) {
 ///    xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///      let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///    }
@@ -505,13 +505,13 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///  Ok(())
 /// }
 /// ```
-pub fn line_keylet(
+pub fn trustline_id(
     account1: &AccountID,
     account2: &AccountID,
     currency: &Currency,
 ) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::line_keylet(
+        host::trustline_id(
             account1.0.as_ptr(),
             account1.0.len(),
             account2.0.as_ptr(),
@@ -542,21 +542,21 @@ pub fn line_keylet(
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::mpt_issuance_keylet` function, though the unsafe code is contained
+/// the `host::mpt_issuance_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::mpt_issuance_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::mpt_issuance_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match mpt_issuance_keylet(&owner, sequence) {
+///   match mpt_issuance_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -567,10 +567,10 @@ pub fn line_keylet(
 ///   Ok(())
 ///}
 /// ```
-pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn mpt_issuance_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::mpt_issuance_keylet(
+        host::mpt_issuance_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -598,14 +598,14 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::mptoken_keylet` function.
+/// the `host::mptoken_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::mpt_id::MptId;
-/// use xrpl_wasm_stdlib::core::keylets::mptoken_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::mptoken_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let issuer: AccountID =
@@ -613,7 +613,7 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     let mptid: MptId = MptId::new(1, issuer);
 ///     let holder: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match mptoken_keylet(&mptid, &holder) {
+///     match mptoken_id(&mptid, &holder) {
 ///       xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -624,9 +624,9 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     Ok(())
 /// }
 /// ```
-pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> {
+pub fn mptoken_id(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::mptoken_keylet(
+        host::mptoken_id(
             mptid.as_bytes().as_ptr(),
             mptid.as_bytes().len(),
             holder.0.as_ptr(),
@@ -655,21 +655,21 @@ pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> 
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::nft_offer_keylet` function, though the unsafe code is contained
+/// the `host::nft_offer_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::nft_offer_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::nft_offer_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match nft_offer_keylet(&owner, sequence) {
+///   match nft_offer_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -680,10 +680,10 @@ pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> 
 ///   Ok(())
 ///}
 /// ```
-pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn nft_offer_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::nft_offer_keylet(
+        host::nft_offer_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -712,21 +712,21 @@ pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::offer_keylet` function, though the unsafe code is contained
+/// the `host::offer_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::offer_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::offer_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match offer_keylet(&owner, sequence) {
+///   match offer_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -737,10 +737,10 @@ pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn offer_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::offer_keylet(
+        host::offer_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -769,21 +769,21 @@ pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::oracle_keylet` function, though the unsafe code is contained
+/// the `host::oracle_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::oracle_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::oracle_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let document_id = 12345;
-///   match oracle_keylet(&owner, document_id) {
+///   match oracle_id(&owner, document_id) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -794,10 +794,10 @@ pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes> {
+pub fn oracle_id(owner: &AccountID, document_id: u32) -> Result<KeyletBytes> {
     let document_id_bytes = document_id.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::oracle_keylet(
+        host::oracle_id(
             owner.0.as_ptr(),
             owner.0.len(),
             document_id_bytes.as_ptr(),
@@ -827,14 +827,14 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::paychan_keylet` function, though the unsafe code is contained
+/// the `host::paychan_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::paychan_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::paychan_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -843,7 +843,7 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 ///   let destination: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match paychan_keylet(&account, &destination, sequence) {
+///   match paychan_id(&account, &destination, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -854,14 +854,10 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 ///   Ok(())
 ///}
 /// ```
-pub fn paychan_keylet(
-    account: &AccountID,
-    destination: &AccountID,
-    seq: u32,
-) -> Result<KeyletBytes> {
+pub fn paychan_id(account: &AccountID, destination: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::paychan_keylet(
+        host::paychan_id(
             account.0.as_ptr(),
             account.0.len(),
             destination.0.as_ptr(),
@@ -892,21 +888,21 @@ pub fn paychan_keylet(
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::permissioned_domain_keylet` function, though the unsafe code is contained
+/// the `host::permissioned_domain_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::permissioned_domain_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::permissioned_domain_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match permissioned_domain_keylet(&account, sequence) {
+///   match permissioned_domain_id(&account, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -917,10 +913,10 @@ pub fn paychan_keylet(
 ///   Ok(())
 ///}
 /// ```
-pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn permissioned_domain_id(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::permissioned_domain_keylet(
+        host::permissioned_domain_id(
             account.0.as_ptr(),
             account.0.len(),
             seq_bytes.as_ptr(),
@@ -948,7 +944,7 @@ pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<Keyle
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::signers_keylet` function, though the unsafe code is contained
+/// the `host::signers_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
@@ -956,13 +952,13 @@ pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<Keyle
 /// ```rust
 ///
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::signers_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::signers_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match signers_keylet(&account){
+///   match signers_id(&account){
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -973,9 +969,9 @@ pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<Keyle
 ///   Ok(())
 /// }
 /// ```
-pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
+pub fn signers_id(account_id: &AccountID) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::signers_keylet(
+        host::signers_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
             keylet_buffer_ptr,
@@ -1002,21 +998,21 @@ pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::ticket_keylet` function, though the unsafe code is contained
+/// the `host::ticket_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::ticket_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::ticket_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match ticket_keylet(&owner, sequence) {
+///   match ticket_id(&owner, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -1027,10 +1023,10 @@ pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn ticket_id(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::ticket_keylet(
+        host::ticket_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
@@ -1059,21 +1055,21 @@ pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::vault_keylet` function, though the unsafe code is contained
+/// the `host::vault_id` function, though the unsafe code is contained
 /// within the closure passed to `create_keylet_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::keylets::vault_keylet;
+/// use xrpl_wasm_stdlib::core::keylets::vault_id;
 /// use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match vault_keylet(&account, sequence) {
+///   match vault_id(&account, sequence) {
 ///     xrpl_wasm_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -1084,10 +1080,10 @@ pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///   Ok(())
 ///}
 /// ```
-pub fn vault_keylet(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn vault_id(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::vault_keylet(
+        host::vault_id(
             account.0.as_ptr(),
             account.0.len(),
             seq_bytes.as_ptr(),
@@ -1177,7 +1173,7 @@ mod tests {
     ///
     /// Arguments:
     /// - `$mod_name`: name for the test module
-    /// - `$expect_fn`: mock expectation method (e.g., `expect_account_keylet`)
+    /// - `$expect_fn`: mock expectation method (e.g., `expect_accountroot_id`)
     /// - `$success_arity`: number of prefix params for write_keylet_returning (2, 4, or 6)
     /// - `$error_arity`: total number of params for error_returning (4, 6, or 8)
     /// - `$call_block`: block that sets up args and returns the keylet function call result
@@ -1215,130 +1211,124 @@ mod tests {
         };
     }
 
-    keylet_test!(account_keylet_tests, expect_account_keylet, 2, 4, {
+    keylet_test!(account_keylet_tests, expect_accountroot_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        account_keylet(&account_id)
+        accountroot_id(&account_id)
     });
 
-    keylet_test!(check_keylet_tests, expect_check_keylet, 4, 6, {
+    keylet_test!(check_keylet_tests, expect_check_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        check_keylet(&owner, 12345)
+        check_id(&owner, 12345)
     });
 
-    keylet_test!(delegate_keylet_tests, expect_delegate_keylet, 4, 6, {
+    keylet_test!(delegate_keylet_tests, expect_delegate_id, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
         let authorize = AccountID::from([0xBB; 20]);
-        delegate_keylet(&account, &authorize)
+        delegate_id(&account, &authorize)
     });
 
-    keylet_test!(credential_keylet_tests, expect_credential_keylet, 6, 8, {
+    keylet_test!(credential_keylet_tests, expect_credential_id, 6, 8, {
         let subject = AccountID::from([0xBB; 20]);
         let issuer = AccountID::from([0xBB; 20]);
         let cred_type: &[u8] = b"termsandconditions";
-        credential_keylet(&subject, &issuer, cred_type)
+        credential_id(&subject, &issuer, cred_type)
     });
 
-    keylet_test!(amm_keylet_tests, expect_amm_keylet, 4, 6, {
+    keylet_test!(amm_keylet_tests, expect_amm_id, 4, 6, {
         use crate::core::types::issue::{Issue, XrpIssue};
         let issue1 = Issue::XRP(XrpIssue {});
         let issue2 = Issue::XRP(XrpIssue {});
-        amm_keylet(&issue1, &issue2)
+        amm_id(&issue1, &issue2)
     });
 
     keylet_test!(
         deposit_preauth_keylet_tests,
-        expect_deposit_preauth_keylet,
+        expect_deposit_preauth_id,
         4,
         6,
         {
             let account = AccountID::from([0xBB; 20]);
             let authorize = AccountID::from([0xBB; 20]);
-            deposit_preauth_keylet(&account, &authorize)
+            deposit_preauth_id(&account, &authorize)
         }
     );
 
-    keylet_test!(did_keylet_tests, expect_did_keylet, 2, 4, {
+    keylet_test!(did_keylet_tests, expect_did_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        did_keylet(&account_id)
+        did_id(&account_id)
     });
 
-    keylet_test!(escrow_keylet_tests, expect_escrow_keylet, 4, 6, {
+    keylet_test!(escrow_keylet_tests, expect_escrow_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        escrow_keylet(&owner, 12345)
+        escrow_id(&owner, 12345)
     });
 
-    keylet_test!(line_keylet_tests, expect_line_keylet, 6, 8, {
+    keylet_test!(line_keylet_tests, expect_trustline_id, 6, 8, {
         use crate::core::types::currency::Currency;
         let account1 = AccountID::from([0xBB; 20]);
         let account2 = AccountID::from([0xBB; 20]);
         let currency = Currency::from([0xBB; 20]);
-        line_keylet(&account1, &account2, &currency)
+        trustline_id(&account1, &account2, &currency)
     });
 
-    keylet_test!(
-        mpt_issuance_keylet_tests,
-        expect_mpt_issuance_keylet,
-        4,
-        6,
-        {
-            let owner = AccountID::from([0xBB; 20]);
-            mpt_issuance_keylet(&owner, 12345)
-        }
-    );
+    keylet_test!(mpt_issuance_keylet_tests, expect_mpt_issuance_id, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        mpt_issuance_id(&owner, 12345)
+    });
 
-    keylet_test!(mptoken_keylet_tests, expect_mptoken_keylet, 4, 6, {
+    keylet_test!(mptoken_keylet_tests, expect_mptoken_id, 4, 6, {
         use crate::core::types::mpt_id::MptId;
         let issuer = AccountID::from([0xBB; 20]);
         let mptid = MptId::new(1, issuer);
         let holder = AccountID::from([0xBB; 20]);
-        mptoken_keylet(&mptid, &holder)
+        mptoken_id(&mptid, &holder)
     });
 
-    keylet_test!(nft_offer_keylet_tests, expect_nft_offer_keylet, 4, 6, {
+    keylet_test!(nft_offer_keylet_tests, expect_nft_offer_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        nft_offer_keylet(&owner, 12345)
+        nft_offer_id(&owner, 12345)
     });
 
-    keylet_test!(offer_keylet_tests, expect_offer_keylet, 4, 6, {
+    keylet_test!(offer_keylet_tests, expect_offer_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        offer_keylet(&owner, 12345)
+        offer_id(&owner, 12345)
     });
 
-    keylet_test!(oracle_keylet_tests, expect_oracle_keylet, 4, 6, {
+    keylet_test!(oracle_keylet_tests, expect_oracle_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        oracle_keylet(&owner, 12345)
+        oracle_id(&owner, 12345)
     });
 
-    keylet_test!(paychan_keylet_tests, expect_paychan_keylet, 6, 8, {
+    keylet_test!(paychan_keylet_tests, expect_paychan_id, 6, 8, {
         let account = AccountID::from([0xBB; 20]);
         let destination = AccountID::from([0xBB; 20]);
-        paychan_keylet(&account, &destination, 12345)
+        paychan_id(&account, &destination, 12345)
     });
 
     keylet_test!(
         permissioned_domain_keylet_tests,
-        expect_permissioned_domain_keylet,
+        expect_permissioned_domain_id,
         4,
         6,
         {
             let account = AccountID::from([0xBB; 20]);
-            permissioned_domain_keylet(&account, 12345)
+            permissioned_domain_id(&account, 12345)
         }
     );
 
-    keylet_test!(signers_keylet_tests, expect_signers_keylet, 2, 4, {
+    keylet_test!(signers_keylet_tests, expect_signers_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        signers_keylet(&account_id)
+        signers_id(&account_id)
     });
 
-    keylet_test!(ticket_keylet_tests, expect_ticket_keylet, 4, 6, {
+    keylet_test!(ticket_keylet_tests, expect_ticket_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        ticket_keylet(&owner, 12345)
+        ticket_id(&owner, 12345)
     });
 
-    keylet_test!(vault_keylet_tests, expect_vault_keylet, 4, 6, {
+    keylet_test!(vault_keylet_tests, expect_vault_id, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
-        vault_keylet(&account, 12345)
+        vault_id(&account, 12345)
     });
 
     #[test]
@@ -1346,14 +1336,14 @@ mod tests {
         let mut mock = MockHostBindings::new();
 
         // Return 16 instead of 32 — positive but wrong size
-        mock.expect_account_keylet()
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, _, _| 16);
 
         let _guard = setup_mock(mock);
 
         let account_id = AccountID::from([0xBB; 20]);
-        let result = account_keylet(&account_id);
+        let result = accountroot_id(&account_id);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
     }

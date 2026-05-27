@@ -2,7 +2,7 @@ use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
+use crate::host::{Result, home_le_field, le_field};
 
 pub const CURRENCY_SIZE: usize = 20;
 pub const STANDARD_CURRENCY_SIZE: usize = 3; // For standard currencies like USD, EUR, etc.
@@ -63,7 +63,7 @@ impl LedgerObjectFieldGetter for Currency {
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -72,7 +72,7 @@ impl LedgerObjectFieldGetter for Currency {
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
@@ -81,7 +81,7 @@ impl LedgerObjectFieldGetter for Currency {
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -90,7 +90,7 @@ impl LedgerObjectFieldGetter for Currency {
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }

@@ -84,7 +84,7 @@ pub fn trace_num(msg: &str, number: i64) -> Result<i32> {
 #[inline(always)]
 pub fn trace_account_buf(msg: &str, account_id: &[u8; 20]) -> Result<i32> {
     let result_code = unsafe {
-        host::trace_account(
+        host::trace_acct(
             msg.as_ptr(),
             msg.len(),
             account_id.as_ptr(),
@@ -95,9 +95,9 @@ pub fn trace_account_buf(msg: &str, account_id: &[u8; 20]) -> Result<i32> {
 }
 
 #[inline(always)]
-pub fn trace_account(msg: &str, account_id: &AccountID) -> Result<i32> {
+pub fn trace_acct(msg: &str, account_id: &AccountID) -> Result<i32> {
     let result_code = unsafe {
-        host::trace_account(
+        host::trace_acct(
             msg.as_ptr(),
             msg.len(),
             account_id.0.as_ptr(),
@@ -108,12 +108,12 @@ pub fn trace_account(msg: &str, account_id: &AccountID) -> Result<i32> {
 }
 
 #[inline(always)]
-pub fn trace_amount(msg: &str, amount: &Amount) -> Result<i32> {
+pub fn trace_amt(msg: &str, amount: &Amount) -> Result<i32> {
     // Convert Amount to the STAmount format expected by the host trace function
     let (amount_bytes, len) = amount.to_stamount_bytes();
 
     let result_code =
-        unsafe { host::trace_amount(msg.as_ptr(), msg.len(), amount_bytes.as_ptr(), len) };
+        unsafe { host::trace_amt(msg.as_ptr(), msg.len(), amount_bytes.as_ptr(), len) };
 
     match_result_code(result_code, || result_code)
 }
@@ -121,7 +121,7 @@ pub fn trace_amount(msg: &str, amount: &Amount) -> Result<i32> {
 /// Write a float to the XRPLD trace log
 #[inline(always)]
 pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
-    let result_code = unsafe { host::trace_opaque_float(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
+    let result_code = unsafe { host::trace_xfloat(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
     match_result_code(result_code, || result_code)
 }
 
@@ -139,8 +139,8 @@ mod tests {
 
         let message = "Test XRP amount";
 
-        // Set up expectations for trace_amount call
-        mock.expect_trace_amount()
+        // Set up expectations for trace_amt call
+        mock.expect_trace_amt()
             .with(always(), always(), always(), always())
             .returning(move |_, msg_len, _, _| msg_len as i32);
 
@@ -151,8 +151,8 @@ mod tests {
             num_drops: 1_000_000,
         };
 
-        // Call trace_amount function
-        let result = trace_amount(message, &amount);
+        // Call trace_amt function
+        let result = trace_amt(message, &amount);
 
         // Should return Ok with the message length
         assert!(result.is_ok());
@@ -165,8 +165,8 @@ mod tests {
 
         let message = "Test MPT amount";
 
-        // Set up expectations for trace_amount call
-        mock.expect_trace_amount()
+        // Set up expectations for trace_amt call
+        mock.expect_trace_amt()
             .with(always(), always(), always(), always())
             .returning(move |_, msg_len, _, _| msg_len as i32);
 
@@ -188,8 +188,8 @@ mod tests {
             mpt_id,
         };
 
-        // Call trace_amount function
-        let result = trace_amount(message, &amount);
+        // Call trace_amt function
+        let result = trace_amt(message, &amount);
 
         // Should return Ok with the message length
         assert!(result.is_ok());
@@ -202,8 +202,8 @@ mod tests {
 
         let message = "Test IOU amount";
 
-        // Set up expectations for trace_amount call
-        mock.expect_trace_amount()
+        // Set up expectations for trace_amt call
+        mock.expect_trace_amt()
             .with(always(), always(), always(), always())
             .returning(move |_, msg_len, _, _| msg_len as i32);
 
@@ -228,8 +228,8 @@ mod tests {
             currency,
         };
 
-        // Call trace_amount function
-        let result = trace_amount(message, &amount);
+        // Call trace_amt function
+        let result = trace_amt(message, &amount);
 
         // Should return Ok with the message length
         assert!(result.is_ok());
@@ -242,8 +242,8 @@ mod tests {
 
         let message = "Test negative XRP amount";
 
-        // Set up expectations for trace_amount call
-        mock.expect_trace_amount()
+        // Set up expectations for trace_amt call
+        mock.expect_trace_amt()
             .with(always(), always(), always(), always())
             .returning(move |_, msg_len, _, _| msg_len as i32);
 
@@ -254,8 +254,8 @@ mod tests {
             num_drops: -1_000_000,
         };
 
-        // Call trace_amount function
-        let result = trace_amount(message, &amount);
+        // Call trace_amt function
+        let result = trace_amt(message, &amount);
 
         // Should return Ok with the message length
         assert!(result.is_ok());

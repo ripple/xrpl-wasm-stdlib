@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::keylets::credential_keylet;
+use xrpl_wasm_stdlib::core::keylets::credential_id;
 use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
@@ -23,13 +23,12 @@ pub extern "C" fn finish() -> i32 {
     };
 
     let cred_type: &[u8] = b"termsandconditions";
-    match credential_keylet(&account_id, &account_id, cred_type) {
+    match credential_id(&account_id, &account_id, cred_type) {
         Ok(keylet) => {
             let _ = trace_data("cred_keylet", &keylet, DataRepr::AsHex);
 
-            let slot = unsafe {
-                xrpl_wasm_stdlib::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0)
-            };
+            let slot =
+                unsafe { xrpl_wasm_stdlib::host::cache_le(keylet.as_ptr(), keylet.len(), 0) };
             if slot < 0 {
                 let _ = trace_num("CACHE ERROR", i64::from(slot));
                 return 0;

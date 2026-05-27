@@ -17,14 +17,14 @@
 /// Input:
 /// ```ignore
 /// export_host_functions! {
-///     fn account_keylet(_account_ptr: *const u8, _account_len: usize,
+///     fn accountroot_id(_account_ptr: *const u8, _account_len: usize,
 ///                       _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
 /// }
 /// ```
 ///
 /// Generates:
 /// ```ignore
-/// pub unsafe fn account_keylet(_account_ptr: *const u8, _account_len: usize,
+/// pub unsafe fn accountroot_id(_account_ptr: *const u8, _account_len: usize,
 ///                              _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32 {
 ///     _out_buff_len as i32  // Returns 32 at runtime
 /// }
@@ -88,68 +88,68 @@ macro_rules! export_host_functions {
 // Generate all the stub functions
 export_host_functions! {
     // Host Function Category: ledger and transaction info
-    fn get_ledger_sqn(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_parent_ledger_time(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_parent_ledger_hash(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_base_fee(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn ldgr_index(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn parent_ldgr_time(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn parent_ldgr_hash(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn base_fee(_out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn amendment_enabled(_amendment_ptr: *const u8, _amendment_len: usize) -> i32;
-    fn cache_ledger_obj(_keylet_ptr: *const u8, _keylet_len: usize, _cache_num: i32) -> i32;
-    fn get_tx_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_current_ledger_obj_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_ledger_obj_field(_cache_num: i32, _field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_tx_nested_field(_locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_current_ledger_obj_nested_field(_locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_ledger_obj_nested_field(_cache_num: i32, _locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_tx_array_len(_field: i32) -> i32;
-    fn get_current_ledger_obj_array_len(_field: i32) -> i32;
-    fn get_ledger_obj_array_len(_cache_num: i32, _field: i32) -> i32;
-    fn get_tx_nested_array_len(_locator_ptr: *const u8, _locator_len: usize) -> i32;
-    fn get_current_ledger_obj_nested_array_len(_locator_ptr: *const u8, _locator_len: usize) -> i32;
-    fn get_ledger_obj_nested_array_len(_cache_num: i32, _locator_ptr: *const u8, _locator_len: usize) -> i32;
+    fn cache_le(_keylet_ptr: *const u8, _keylet_len: usize, _cache_num: i32) -> i32;
+    fn tx_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn home_le_field(_field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn le_field(_cache_num: i32, _field: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn tx_inner(_locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn home_le_inner(_locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn le_inner(_cache_num: i32, _locator_ptr: *const u8, _locator_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn tx_arr_len(_field: i32) -> i32;
+    fn home_le_arr_len(_field: i32) -> i32;
+    fn le_arr_len(_cache_num: i32, _field: i32) -> i32;
+    fn tx_inner_arr_len(_locator_ptr: *const u8, _locator_len: usize) -> i32;
+    fn home_le_inner_arr_len(_locator_ptr: *const u8, _locator_len: usize) -> i32;
+    fn le_inner_arr_len(_cache_num: i32, _locator_ptr: *const u8, _locator_len: usize) -> i32;
 
     // Host Function Category: update current ledger entry
-    fn update_data(_data_ptr: *const u8, _data_len: usize) -> i32;
+    fn set_data(_data_ptr: *const u8, _data_len: usize) -> i32;
 
     // Host Function Category: hash and keylet computation
-    fn compute_sha512_half(_data_ptr: *const u8, _data_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn sha512_half(_data_ptr: *const u8, _data_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn check_sig(_message_ptr: *const u8, _message_len: usize, _signature_ptr: *const u8, _signature_len: usize, _pubkey_ptr: *const u8, _pubkey_len: usize) -> i32;
-    fn account_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn amm_keylet(_issue1_ptr: *const u8, _issue1_len: usize, _issue2_ptr: *const u8, _issue2_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn check_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn credential_keylet(_subject_ptr: *const u8, _subject_len: usize, _issuer_ptr: *const u8, _issuer_len: usize, _cred_type_ptr: *const u8, _cred_type_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn delegate_keylet(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn deposit_preauth_keylet(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn did_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn escrow_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn line_keylet(_account1_ptr: *const u8, _account1_len: usize, _account2_ptr: *const u8, _account2_len: usize, _currency_ptr: *const u8, _currency_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn mpt_issuance_keylet(_issuer_ptr: *const u8, _issuer_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn mptoken_keylet(_mptid_ptr: *const u8, _mptid_len: usize, _holder_ptr: *const u8, _holder_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn nft_offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn offer_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn oracle_keylet(_account_ptr: *const u8, _account_len: usize, _document_id_ptr: *const u8, _document_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn paychan_keylet(_account_ptr: *const u8, _account_len: usize, _destination_ptr: *const u8, _destination_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn permissioned_domain_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn signers_keylet(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn ticket_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn vault_keylet(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn accountroot_id(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn amm_id(_issue1_ptr: *const u8, _issue1_len: usize, _issue2_ptr: *const u8, _issue2_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn check_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn credential_id(_subject_ptr: *const u8, _subject_len: usize, _issuer_ptr: *const u8, _issuer_len: usize, _cred_type_ptr: *const u8, _cred_type_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn delegate_id(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn deposit_preauth_id(_account_ptr: *const u8, _account_len: usize, _authorize_ptr: *const u8, _authorize_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn did_id(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn escrow_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn trustline_id(_account1_ptr: *const u8, _account1_len: usize, _account2_ptr: *const u8, _account2_len: usize, _currency_ptr: *const u8, _currency_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn mpt_issuance_id(_issuer_ptr: *const u8, _issuer_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn mptoken_id(_mptid_ptr: *const u8, _mptid_len: usize, _holder_ptr: *const u8, _holder_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_offer_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn offer_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn oracle_id(_account_ptr: *const u8, _account_len: usize, _document_id_ptr: *const u8, _document_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn paychan_id(_account_ptr: *const u8, _account_len: usize, _destination_ptr: *const u8, _destination_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn permissioned_domain_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn signers_id(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn ticket_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn vault_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
-    fn get_nft(_account_ptr: *const u8, _account_len: usize, _nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_nft_issuer(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_nft_taxon(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
-    fn get_nft_flags(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
-    fn get_nft_transfer_fee(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
-    fn get_nft_serial(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_uri(_account_ptr: *const u8, _account_len: usize, _nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_issuer(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_taxon(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn nft_flags(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
+    fn nft_xfer_fee(_nft_id_ptr: *const u8, _nft_id_len: usize) -> i32;
+    fn nft_serial(_nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
 
     // Host Function Category: FLOAT
     fn float_from_int(_in_int: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_from_uint(_in_uint_ptr: *const u8, _in_uint_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_set(_exponent: i32, _mantissa: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_compare(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize) -> i32;
+    fn float_cmp(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize) -> i32;
     fn float_add(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_subtract(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_multiply(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_divide(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_sub(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_mult(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_div(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _pow: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_log(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
@@ -157,8 +157,8 @@ export_host_functions! {
     // Host Function Category: TRACE
     fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) -> i32;
     fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) -> i32;
-    fn trace_account(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
-    fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
-    fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
+    fn trace_acct(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
+    fn trace_xfloat(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
+    fn trace_amt(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
 
 }

@@ -5,7 +5,7 @@ use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, home_le_field, le_field, tx_field};
 
 /// A generic unsigned integer type with configurable byte size.
 ///
@@ -79,7 +79,7 @@ impl LedgerObjectFieldGetter for Hash128 {
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH128_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -88,7 +88,7 @@ impl LedgerObjectFieldGetter for Hash128 {
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH128_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
@@ -97,7 +97,7 @@ impl LedgerObjectFieldGetter for Hash128 {
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH128_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -106,7 +106,7 @@ impl LedgerObjectFieldGetter for Hash128 {
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH128_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
@@ -127,7 +127,7 @@ impl LedgerObjectFieldGetter for Hash256 {
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -136,7 +136,7 @@ impl LedgerObjectFieldGetter for Hash256 {
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+            |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
@@ -145,7 +145,7 @@ impl LedgerObjectFieldGetter for Hash256 {
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -154,7 +154,7 @@ impl LedgerObjectFieldGetter for Hash256 {
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
+            |fc, buf, size| unsafe { le_field(register_num, fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }
@@ -175,7 +175,7 @@ impl CurrentTxFieldGetter for Hash256 {
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+            |fc, buf, size| unsafe { tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -184,7 +184,7 @@ impl CurrentTxFieldGetter for Hash256 {
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
             field_code,
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+            |fc, buf, size| unsafe { tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }

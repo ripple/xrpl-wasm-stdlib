@@ -11,8 +11,7 @@ use xrpl_wasm_stdlib::host::trace::trace_num;
 pub extern "C" fn finish() -> i32 {
     unsafe {
         let mut ledger_sqn_buffer = [0u8; 4];
-        let result_code =
-            host::get_ledger_sqn(ledger_sqn_buffer.as_mut_ptr(), ledger_sqn_buffer.len());
+        let result_code = host::ldgr_index(ledger_sqn_buffer.as_mut_ptr(), ledger_sqn_buffer.len());
 
         match_result_code_with_expected_bytes(result_code, 4, || {
             Some(result_code) // <-- Move the value into a buffer

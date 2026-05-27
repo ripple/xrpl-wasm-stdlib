@@ -12,8 +12,8 @@ use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::Error::InternalError;
 use xrpl_wasm_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_wasm_stdlib::host::tx_inner;
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::sfield;
 use xrpl_wasm_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
@@ -62,7 +62,7 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let result_code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             data.as_mut_ptr(),
@@ -123,7 +123,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 
     // Load the counterpart escrow from the ledger
     let counterpart_slot = unsafe {
-        host::cache_ledger_obj(
+        host::cache_le(
             counterpart_escrow_id.as_ptr(),
             counterpart_escrow_id.len(),
             0,
@@ -311,7 +311,7 @@ fn phase2_complete(
     // Get current ledger time for deadline comparison
     let mut time_buffer = [0u8; 4];
     let time_result =
-        unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
+        unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
     let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
         u32::from_le_bytes(time_buffer)
