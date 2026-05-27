@@ -30,3 +30,6 @@ reference/build-rippled-*/
 .benchmark/
 
 .vscode/
+
+# Claude
+.claude/
