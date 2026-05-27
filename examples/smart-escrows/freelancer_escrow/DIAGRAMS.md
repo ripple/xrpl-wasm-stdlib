@@ -1,5 +1,22 @@
 # Freelancer Escrow Flow
 
+## Overview
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending: EscrowCreate
+
+    Pending --> Paid: both confirmed\nor freelancer confirmed + deadline passed
+    Pending --> Disputed: INTENT_DISPUTE
+
+    Disputed --> Pending: INTENT_UNDISPUTE (disputing party only)
+    Disputed --> Paid: Arbitrator ARB_RULE_FREELANCER
+    Disputed --> Locked: Arbitrator ARB_RULE_CLIENT
+
+    Paid --> [*]: freelancer receives funds
+    Locked --> [*]: EscrowCancel — client refunded
+```
+
 ## State Flowchart
 
 ```mermaid
@@ -28,8 +45,8 @@ flowchart TD
 
     DISPUTED -->|Disputing party — INTENT_UNDISPUTE| WITHDRAW[Clear DISPUTE_RAISED\nClear DISPUTING_PARTY]
     WITHDRAW --> PENDING
-    DISPUTED -->|Arbitrator — INTENT_CONFIRM| PAID
-    DISPUTED -->|Arbitrator — INTENT_DISPUTE| LOCK[Set DISPUTING_PARTY = DISPUTING_ARB_LOCK]
+    DISPUTED -->|Arbitrator — ARB_RULE_FREELANCER| PAID
+    DISPUTED -->|Arbitrator — ARB_RULE_CLIENT| LOCK[Set DISPUTING_PARTY = DISPUTING_ARB_LOCK]
 
     LOCK --> LOCKED
 
@@ -75,7 +92,7 @@ sequenceDiagram
         Note over Client,Arbitrator: Dispute — arbitrator rules for freelancer
         Client->>Escrow: EscrowFinish INTENT_DISPUTE
         Escrow->>Escrow: DISPUTE_RAISED=1, DISPUTING_PARTY=client
-        Arbitrator->>Escrow: EscrowFinish ARB_RULE_FREELANCER
+        Arbitrator->>Escrow: EscrowFinish ARB_RULE_FREELANCER (INTENT_CONFIRM)
         Escrow-->>Freelancer: Released
     end
 
@@ -83,7 +100,7 @@ sequenceDiagram
         Note over Client,Arbitrator: Dispute — arbitrator rules for client
         Freelancer->>Escrow: EscrowFinish INTENT_DISPUTE
         Escrow->>Escrow: DISPUTE_RAISED=1, DISPUTING_PARTY=freelancer
-        Arbitrator->>Escrow: EscrowFinish ARB_RULE_CLIENT
+        Arbitrator->>Escrow: EscrowFinish ARB_RULE_CLIENT (INTENT_DISPUTE)
         Escrow->>Escrow: DISPUTING_PARTY=DISPUTING_ARB_LOCK
         Note over Escrow: EscrowFinish blocked — waiting for CancelAfter
         Client->>Escrow: EscrowCancel

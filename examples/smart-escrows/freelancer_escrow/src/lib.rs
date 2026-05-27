@@ -50,6 +50,24 @@ impl Intent {
     }
 }
 
+// ── Arbitrator rulings ────────────────────────────────────────────────────────
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum ArbRuling {
+    ForFreelancer, // INTENT_CONFIRM — release funds to freelancer
+    ForClient,     // INTENT_DISPUTE — lock escrow until CancelAfter
+}
+
+impl ArbRuling {
+    fn from_intent(intent: Intent) -> Option<Self> {
+        match intent {
+            Intent::Confirm => Some(Self::ForFreelancer),
+            Intent::Dispute => Some(Self::ForClient),
+            _ => None,
+        }
+    }
+}
+
 // ── Roles & dispute state ─────────────────────────────────────────────────────
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -283,15 +301,14 @@ pub extern "C" fn finish() -> i32 {
             0
         }
         // Arbitrator rules on an active dispute
-        (Role::Arbitrator, _, DisputeState::ActiveBy(_)) => match intent {
-            Intent::Confirm => 1, // rule for freelancer: release funds
-            Intent::Dispute => {
-                // rule for client: lock until CancelAfter
+        (Role::Arbitrator, _, DisputeState::ActiveBy(_)) => match ArbRuling::from_intent(intent) {
+            Some(ArbRuling::ForFreelancer) => 1,
+            Some(ArbRuling::ForClient) => {
                 state.set_dispute(DisputeState::ArbLocked);
                 try_or_trace!(state.persist(), "persist");
                 0
             }
-            _ => 0,
+            None => 0,
         },
         _ => 0,
     }
