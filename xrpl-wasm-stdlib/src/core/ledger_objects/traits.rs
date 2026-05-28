@@ -156,12 +156,6 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::FinishAfter)
     }
 
-    // TODO: Implement this function.
-    // /// The value 0x0075, mapped to the string Escrow, indicates that this is an Escrow entry.
-    // fn get_ledger_entry_type(&self) -> Result<LedgerEntryType> {
-    //     return Ok(LedgerEntryType::Escrow);
-    // }
-
     /// A hint indicating which page of the sender's owner directory links to this entry, in case
     /// the directory consists of multiple pages.
     fn get_owner_node(&self) -> Result<u64> {
@@ -323,12 +317,6 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     fn get_finish_after(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
     }
-
-    // TODO: Implement this function.
-    // /// The value 0x0075, mapped to the string Escrow, indicates that this is an Escrow entry.
-    // fn get_ledger_entry_type(&self) -> Result<LedgerEntryType> {
-    //     return Ok(LedgerEntryType::Escrow);
-    // }
 
     /// A hint indicating which page of the sender's owner directory links to this entry, in case
     /// the directory consists of multiple pages.
