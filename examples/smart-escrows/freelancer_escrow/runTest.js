@@ -38,11 +38,11 @@ async function test(testContext) {
   })
   const close_time = ledger.result.ledger.close_time
 
-  // 28-byte Data layout:
+  // 27-byte Data layout:
   //  0..20  arbitrator AccountID
   // 20..24  deadline in u32 LE, Ripple epoch seconds
-  // 24..28  confirm/dispute state flags
-  const buf = Buffer.alloc(28)
+  // 24..27  confirm/dispute state flags
+  const buf = Buffer.alloc(27)
   buf.set(decodeAccountID(arbWallet.address))
   buf.writeUInt32LE(close_time + 30 * 60, 20)
   const data = buf.toString("hex")
@@ -168,7 +168,7 @@ async function test(testContext) {
   console.log("\n--- Dispute path: arbitrator resolves for freelancer ---")
   const seq2 = await createEscrow(data)
 
-  // Client raises a dispute — clears confirm flags, sets DISPUTE_RAISED=1.
+  // Client raises a dispute — clears confirm flags, sets DISPUTING_PARTY=client.
   const raiseDispute = await submit(
     escrowFinishTx(
       sourceWallet.address,
@@ -224,7 +224,7 @@ async function test(testContext) {
 
   // === Deadline auto-release — freelancer confirms past deadline ===
   console.log("\n--- Deadline path: freelancer confirms past deadline ---")
-  const pastBuf = Buffer.alloc(28)
+  const pastBuf = Buffer.alloc(27)
   pastBuf.set(decodeAccountID(arbWallet.address))
   pastBuf.writeUInt32LE(close_time - 1, 20) // deadline already in the past
   const dataPast = pastBuf.toString("hex")

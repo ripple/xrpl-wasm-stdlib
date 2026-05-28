@@ -92,26 +92,24 @@ enum DisputeState {
 
 // ── Escrow state wrapper ───────────────────────────────────────────────────────
 //
-// 28-byte Data layout:
+// 27-byte Data layout:
 //   0..20  arbitrator AccountID
 //  20..24  deadline u32 LE (Ripple epoch seconds)
 //     24   client_confirmed  (0/1)
 //     25   freelancer_confirmed (0/1)
-//     26   dispute_raised (0/1)
-//     27   disputing_party (0=none, 1=client, 2=freelancer, 3=arb_locked)
+//     26   disputing_party (0=none, 1=client, 2=freelancer, 3=arb_locked)
 
 struct State {
     inner: ContractData,
 }
 
 impl State {
-    const SIZE: usize = 28;
+    const SIZE: usize = 27;
     const ARBITRATOR: core::ops::Range<usize> = 0..20;
     const DEADLINE: core::ops::Range<usize> = 20..24;
     const CLIENT_CONFIRMED: usize = 24;
     const FREELANCER_CONFIRMED: usize = 25;
-    const DISPUTE_RAISED: usize = 26;
-    const DISPUTING_PARTY: usize = 27;
+    const DISPUTING_PARTY: usize = 26;
 
     fn load(escrow: &CurrentEscrow) -> Result<Self> {
         let inner = match escrow.get_data() {
@@ -153,7 +151,7 @@ impl State {
     }
 
     fn dispute(&self) -> DisputeState {
-        if self.inner.data[Self::DISPUTE_RAISED] == 0 {
+        if self.inner.data[Self::DISPUTING_PARTY] == 0 {
             return DisputeState::None;
         }
         match self.inner.data[Self::DISPUTING_PARTY] {
@@ -165,22 +163,12 @@ impl State {
     }
 
     fn set_dispute(&mut self, ds: DisputeState) {
-        match ds {
-            DisputeState::None => {
-                self.inner.data[Self::DISPUTE_RAISED] = 0;
-                self.inner.data[Self::DISPUTING_PARTY] = 0;
-            }
-            DisputeState::ActiveBy(party) => {
-                self.inner.data[Self::DISPUTE_RAISED] = 1;
-                self.inner.data[Self::DISPUTING_PARTY] = match party {
-                    Party::Client => 1,
-                    Party::Freelancer => 2,
-                };
-            }
-            DisputeState::ArbLocked => {
-                self.inner.data[Self::DISPUTING_PARTY] = 3;
-            }
-        }
+        self.inner.data[Self::DISPUTING_PARTY] = match ds {
+            DisputeState::None => 0,
+            DisputeState::ActiveBy(Party::Client) => 1,
+            DisputeState::ActiveBy(Party::Freelancer) => 2,
+            DisputeState::ArbLocked => 3,
+        };
     }
 
     fn persist(self) -> Result<()> {
