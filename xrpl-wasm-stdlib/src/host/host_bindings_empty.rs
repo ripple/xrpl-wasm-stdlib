@@ -144,7 +144,11 @@ export_host_functions! {
     // Host Function Category: FLOAT
     fn float_from_int(_in_int: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_from_uint(_in_uint_ptr: *const u8, _in_uint_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_set(_exponent: i32, _mantissa: i64, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_from_mant_exp(_mantissa: i64, _exponent: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_from_stamount(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_from_stnumber(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_to_int(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+    fn float_to_mant_exp(_in_buff: *const u8, _in_buff_len: usize, _mant_buff: *mut u8, _mant_buff_len: usize, _exp_buff: *mut u8, _exp_buff_len: usize) -> i32;
     fn float_cmp(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize) -> i32;
     fn float_add(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_sub(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
@@ -152,7 +156,6 @@ export_host_functions! {
     fn float_div(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _pow: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_log(_in_buff: *const u8, _in_buff_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
     fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) -> i32;

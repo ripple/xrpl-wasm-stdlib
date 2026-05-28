@@ -9,7 +9,7 @@
 //! These operations use rippled's Number class via FFI to ensure exact consensus compatibility:
 //!
 //! - `float_from_int` / `float_from_uint` - Convert integers to float format
-//! - `float_set` - Create float from exponent and mantissa
+//! - `float_from_stamount` / `float_from_stnumber` - Convert XRP ledger types to float format
 //! - `float_add` / `float_sub` / `float_mult` / `float_div` - Arithmetic
 //! - `float_pow` / `float_root` / `float_log` - Mathematical functions
 //! - `float_cmp` - Comparison operations
