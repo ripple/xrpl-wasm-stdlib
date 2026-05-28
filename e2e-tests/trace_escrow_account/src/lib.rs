@@ -11,12 +11,12 @@
 
 use xrpl_wasm_stdlib::core::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
+use xrpl_wasm_stdlib::core::keylets::accountroot_id;
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::cache_ledger_obj;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
+use xrpl_wasm_stdlib::host::cache_le;
+use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
 
 // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory (whereas locally
 // this returns the bytes 0x00).
@@ -41,10 +41,10 @@ pub extern "C" fn finish() -> i32 {
         // Compute the keylet for this account's AccountRoot object
         // AccountRoot keylet = 0x61 (a) + SHA512Half(account_id)
         // use xrpl_wasm_stdlib::core::keylet::account_root_keylet;
-        let account_keylet = account_keylet(&account_id).unwrap();
+        let accountroot_id = accountroot_id(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled
-        let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 32, 0) };
+        let slot = unsafe { cache_le(accountroot_id.as_ptr(), 32, 0) };
         if slot < 0 {
             let _ = trace_num("Error slotting Account object", slot as i64);
             panic!()
@@ -106,7 +106,7 @@ pub extern "C" fn finish() -> i32 {
             .balance()
             .unwrap()
             .expect("Balance should be present");
-        let _ = trace_amount("Balance of Account Finishing the Escrow:", &balance_amount);
+        let _ = trace_amt("Balance of Account Finishing the Escrow:", &balance_amount);
         // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory
         // (whereas locally this returns the bytes 0x00).
         #[cfg(target_arch = "wasm32")]

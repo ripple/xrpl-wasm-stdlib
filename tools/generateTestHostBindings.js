@@ -207,18 +207,18 @@ function generateExportMacroContent(methods, withUnderscorePrefix = false) {
     },
     {
       name: "Host Function Category: update current ledger entry",
-      filter: (m) => m.name === "update_data",
+      filter: (m) => m.name === "set_data",
     },
     {
       name: "Host Function Category: hash and keylet computation",
       filter: (m) =>
         m.name.includes("keylet") ||
-        m.name === "compute_sha512_half" ||
+        m.name === "sha512_half" ||
         m.name === "check_sig",
     },
     {
       name: "Host Function Category: NFT",
-      filter: (m) => m.name.startsWith("get_nft"),
+      filter: (m) => m.name.startsWith("nft_uri"),
     },
     {
       name: "Host Function Category: FLOAT",

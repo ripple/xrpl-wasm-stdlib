@@ -317,10 +317,10 @@ Keylets are used to locate objects in the ledger:
 
 ```rust ignore
 use xrpl_wasm_stdlib::core::keylets::{
-    account_keylet,
-    line_keylet,
-    escrow_keylet,
-    oracle_keylet,
+    accountroot_id,
+    trustline_id,
+    escrow_id,
+    oracle_id,
 };
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::asset::Asset;
@@ -329,19 +329,19 @@ let account = AccountID::from([0u8; 20]);
 let sequence = 12345i32;
 
 // Account keylet
-let keylet = account_keylet(&account);
+let keylet = accountroot_id(&account);
 
 // Trust line keylet (requires Asset types)
 let asset1 = Asset::XRP(XrpAsset {});
 let asset2 = Asset::IOU(IouAsset::new(issuer, currency));
-let keylet = line_keylet(&account, &asset1, &asset2);
+let keylet = trustline_id(&account, &asset1, &asset2);
 
 // Escrow keylet
-let keylet = escrow_keylet(&account, sequence);
+let keylet = escrow_id(&account, sequence);
 
 // Oracle keylet
 let document_id = 1i32;
-let keylet = oracle_keylet(&account, document_id);
+let keylet = oracle_id(&account, document_id);
 ```
 
 ### Host Functions
@@ -355,15 +355,15 @@ Low-level host function access through the `host` module.
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::cache_ledger_obj;
+use xrpl_wasm_stdlib::core::keylets::accountroot_id;
+use xrpl_wasm_stdlib::host::cache_le;
 use xrpl_wasm_stdlib::host::Error;
 
 // The correct approach is to use the trait methods
 fn main() {
     let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-    let account_keylet = account_keylet(&account).unwrap_or_panic();
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let accountroot_id = accountroot_id(&account).unwrap_or_panic();
+    let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return;
     }
@@ -407,8 +407,8 @@ use xrpl_wasm_stdlib::core::ledger_objects::account_root::{get_account_balance, 
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::{cache_ledger_obj, Error, Result};
+use xrpl_wasm_stdlib::core::keylets::accountroot_id;
+use xrpl_wasm_stdlib::host::{cache_le, Error, Result};
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};
 
 fn process_escrow() -> Result<i32> {
@@ -423,12 +423,12 @@ fn process_escrow() -> Result<i32> {
     let balance = get_account_balance(&account);
 
     // Handle specific errors - create AccountRoot to access account fields
-    let account_keylet = match account_keylet(&account) {
+    let accountroot_id = match accountroot_id(&account) {
         Ok(keylet) => keylet,
         Err(e) => return Err(e), // Invalid account
     };
 
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return Err(Error::from_code(slot));
     }
@@ -671,16 +671,16 @@ match operation() {
 let account = tx.get_account();
 let balance = get_account_balance(&account);
 // Create AccountRoot to access account fields
-let account_keylet = account_keylet(&account);
-let slot = cache_ledger_obj(&account_keylet);
+let accountroot_id = accountroot_id(&account);
+let slot = cache_le(&accountroot_id);
 let account_root = AccountRoot { slot_num: slot };
 let sequence = account_root.sequence();
 
 // Bad: Multiple calls for same data
 let balance = get_account_balance(&tx.get_account());
 // Bad: Multiple calls - should cache the account and keylet
-let account_keylet = account_keylet(&tx.get_account());
-let slot = cache_ledger_obj(&account_keylet);
+let accountroot_id = accountroot_id(&tx.get_account());
+let slot = cache_le(&accountroot_id);
 let account_root = AccountRoot { slot_num: slot };
 let sequence = account_root.sequence();
 ```
@@ -690,8 +690,8 @@ let sequence = account_root.sequence();
 ```rust ignore
 // Cache ledger objects for multiple field access using traits
 let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-let account_keylet = account_keylet(&account).unwrap_or_panic();
-let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+let accountroot_id = accountroot_id(&account).unwrap_or_panic();
+let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
 let account_root = AccountRoot { slot_num: slot };
 
 // Use trait methods to access fields efficiently
@@ -708,8 +708,8 @@ let mut accounts = [AccountID::default(); 10];
 
 // Reuse buffers for transaction fields
 let mut buffer = [0u8; 64];
-let len1 = unsafe { get_tx_field(sfield::Account, buffer[..20].as_mut_ptr(), 20) };
-let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 20) };
+let len1 = unsafe { tx_field(sfield::Account, buffer[..20].as_mut_ptr(), 20) };
+let len2 = unsafe { tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 20) };
 ```
 
 ### Troubleshooting
@@ -730,7 +730,7 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 | ------------------------ | ----------------------- | ------------------------------------------- |
 | Function not found       | WASM export missing     | Check `#[unsafe(no_mangle)]` on entry point |
 | Memory access violation  | Buffer overflow         | Verify buffer sizes and bounds              |
-| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_ledger_obj` calls           |
+| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_le` calls                   |
 | Field not found          | Missing ledger field    | Handle `FieldNotFound` errors               |
 | Invalid field data       | Malformed field         | Validate input data                         |
 

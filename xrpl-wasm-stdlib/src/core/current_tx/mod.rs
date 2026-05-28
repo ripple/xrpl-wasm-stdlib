@@ -64,7 +64,7 @@ pub mod traits;
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_tx_field};
+use crate::host::{Result, tx_field};
 
 /// Trait for types that can be retrieved from current transaction fields.
 ///
@@ -206,7 +206,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { get_tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes(result_code, T::SIZE, || unsafe {
             value.assume_init()
         })
@@ -215,7 +215,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { get_tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, T::SIZE, || {
             Some(unsafe { value.assume_init() })
         })
