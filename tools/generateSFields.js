@@ -71,6 +71,7 @@ async function main() {
   )
 
   let output = ""
+
   function addLine(line) {
     output += line + "\n"
   }
@@ -116,8 +117,16 @@ async function main() {
   // These override the default type mapping from typeMap
   const customFieldTypes = {
     TransactionType: "TransactionType",
-    // Condition: "ConditionBlob",
-    // Fulfillment: "FulfillmentBlob",
+    Condition: "ConditionBlob",
+    Fulfillment: "FulfillmentBlob",
+    FinishFunction: "WasmBlob",
+    PublicKey: "PublicKeyBlob",
+    Memo: "MemoBlob",
+    Domain: "UriBlob",
+    MessageKey: "PublicKeyBlob",
+    SigningPubKey: "PublicKeyBlob",
+    TxnSignature: "SignatureBlob",
+    URI: "UriBlob",
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -159,9 +168,15 @@ async function main() {
 
     // Generate SField constant for all types
     if (rustType) {
-      addLine(
-        `pub const ${fieldName}: SField<${rustType}, ${fieldCode}> = SField::new();`,
-      )
+      const line = `pub const ${fieldName}: SField<${rustType}, ${fieldCode}> = SField::new();`
+      addLine(line)
+
+      // Show custom type mappings
+      if (customFieldTypes[fieldName]) {
+        console.log(
+          `  ✓ ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
+        )
+      }
     } else {
       // This should not happen if typeMap is complete
       console.warn(`Warning: No Rust type mapping for XRPL type: ${xrplType}`)
