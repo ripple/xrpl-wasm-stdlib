@@ -138,7 +138,7 @@ fn create_default_mock() -> MockHostBindings {
     mock.expect_float_to_int()
         .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
     mock.expect_float_to_mant_exp()
-        .returning(|_, _, _, _, _, exp_buff_len| exp_buff_len as i32);
+        .returning(|_, _, _, _, _, _| 8);
     mock.expect_float_compare().returning(|_, _, _, _| 0);
     mock.expect_float_add()
         .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
