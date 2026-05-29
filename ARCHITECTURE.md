@@ -4,7 +4,7 @@ This doc introduces new developers to the `xrpl_wasm_stdlib` repo.
 
 ### Overview
 
-`xrpl-wasm-stdlib` is a Rust `no_std` library for writing XRPL smart contracts compiled to WebAssembly. Contracts are loaded by `rippled`, which exposes a host ABI the library wraps. The library provides type-safe access to transaction fields, ledger objects, keylets, and serialized fields.
+`xrpl-wasm-stdlib` is a Rust `no_std` library for writing XRPL smart programmability features compiled to WebAssembly. Contracts are loaded by `rippled`, which exposes a host ABI the library wraps. The library provides type-safe access to transaction fields, ledger objects, keylets, and serialized fields.
 
 A minimal contract exports `extern "C" fn finish() -> i32`. A positive return value finishes the escrow, `0` rejects it, and a negative value signals a host error.
 
