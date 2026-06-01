@@ -770,7 +770,11 @@ mod tests {
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Balance), always(), eq(48))
                 .times(1)
-                .returning(|_, _, _, _| 0);
+                .returning(|_, _, buf, size| {
+                    // Zero-initialize so byte[0]=0x00 (XRP path), avoiding float_from_stamount
+                    unsafe { core::ptr::write_bytes(buf, 0, size) };
+                    0
+                });
             // burned_nf_tokens
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
