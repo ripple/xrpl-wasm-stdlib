@@ -8,7 +8,10 @@ use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
+use crate::host::{
+    Result, cache_ledger_obj as host_cache_ledger_obj, get_current_ledger_obj_field,
+    get_ledger_obj_field,
+};
 
 /// Trait for types that can be retrieved from ledger object fields.
 ///
@@ -333,6 +336,15 @@ impl LedgerObjectFieldGetter for Hash192 {
         match_result_code_with_expected_bytes_optional(result_code, HASH192_SIZE, || {
             Some(Hash192::from(unsafe { buffer.assume_init() }))
         })
+    }
+}
+
+pub fn cache_ledger_obj(keylet: &[u8], cache_num: i32) -> Result<i32> {
+    let rescode = unsafe { host_cache_ledger_obj(keylet.as_ptr(), keylet.len(), cache_num) };
+    if rescode < 0 {
+        Result::Err(crate::host::Error::from_code(rescode))
+    } else {
+        Result::Ok(rescode)
     }
 }
 
