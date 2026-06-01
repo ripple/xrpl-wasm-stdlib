@@ -4,9 +4,9 @@ This doc introduces new developers to the `xrpl_wasm_stdlib` repo.
 
 ### Overview
 
-`xrpl-wasm-stdlib` is a Rust `no_std` library for writing XRPL smart programmability features compiled to WebAssembly. Contracts are loaded by `rippled`, which exposes a host ABI the library wraps. The library provides type-safe access to transaction fields, ledger objects, keylets, and serialized fields.
+`xrpl-wasm-stdlib` is a Rust `no_std` library for writing XRPL Smart Escrows compiled to WebAssembly. A smart escrow is a WASM module that implements custom logic for finishing an on-ledger Escrow object. Smart escrow modules are loaded by `rippled`, which exposes a host ABI the library wraps. The library provides type-safe access to transaction fields, ledger objects, keylets, and serialized fields.
 
-A minimal contract exports `extern "C" fn finish() -> i32`. A positive return value finishes the escrow, `0` rejects it, and a negative value signals a host error.
+A smart escrow module exports `extern "C" fn finish() -> i32`. When an `EscrowFinish` transaction is submitted, `rippled` invokes this function. A positive return value releases the escrow, `0` rejects it, and a negative value signals a host error.
 
 ---
 
@@ -24,13 +24,13 @@ Builds `xrpl-wasm-stdlib` and `xrpl-macros`. Targets native + wasm32.
 
 Path: `examples/Cargo.toml`
 
-Builds example smart escrow `.wasm` contracts. Targets wasm32v1-none.
+Builds example smart escrow WASM modules. Targets wasm32v1-none.
 
 #### E2E Tests
 
 Path: `e2e-tests/Cargo.toml`
 
-Builds probe contracts and native test crates. Target is mixed.
+Builds probe smart escrow modules and native test crates. Target is mixed.
 
 ```mermaid
 graph LR
@@ -42,7 +42,7 @@ graph LR
         EX["smart-escrows/*\n(cdylib)"]
     end
     subgraph e2e_ws["e2e-tests/ (E2E Workspace)"]
-        PROBE["probe contracts\n(cdylib)"]
+        PROBE["probe modules\n(cdylib)"]
         NATIVE["native test crates"]
     end
 
@@ -56,11 +56,11 @@ graph LR
 
 ### Library layers
 
-The library is split into two layers. Contract authors work with `core/`. The `host/` layer is internal.
+The library is split into two layers. Smart escrow authors work with `core/`. The `host/` layer is internal.
 
 ```mermaid
 graph TD
-    CONTRACT["Your Contract\nextern C fn finish()"]
+    CONTRACT["Your Smart Escrow\nextern C fn finish()"]
 
     subgraph stdlib["xrpl-wasm-stdlib"]
         direction TB
@@ -87,7 +87,7 @@ graph TD
     WASM --> RIPPLED
 ```
 
-`core/` is the public-facing API. `host/` is the boundary between safe Rust and the host ABI.
+`core/` is the public-facing API for smart escrow authors. `host/` is the boundary between safe Rust and the host ABI.
 
 ---
 
@@ -129,7 +129,7 @@ xrpl-wasm-stdlib/src/
 ├── lib.rs               # no_std toggle, panic_handler (wasm32), hex helpers
 ├── host/                # HostBindings trait + 3 impls, error codes, trace, field_helpers
 ├── core/
-│   ├── current_tx/      # EscrowFinish marker + traits for current TX field access
+│   ├── current_tx/      # typed field access for the triggering EscrowFinish transaction
 │   ├── ledger_objects/  # Cached ledger entry access (Escrow, AccountRoot, etc.)
 │   ├── keylets.rs       # Keylet computation (escrow, oracle, credential, ...)
 │   ├── locator.rs       # Nested-field locator paths for get_*_nested_field
@@ -160,7 +160,7 @@ The library registers a `#[panic_handler]` for `wasm32` that calls `wasm32::unre
 
 ### Integration tests
 
-Each example has a `runTest.js` next to its `Cargo.toml`. `scripts/run-tests.sh` walks all workspace members and runs:
+Each smart escrow example has a `runTest.js` next to its `Cargo.toml`. `scripts/run-tests.sh` walks all workspace members and runs:
 
 ```
 node tests/runSingleTest.js <dir> <release_wasm_path> [endpoint]
