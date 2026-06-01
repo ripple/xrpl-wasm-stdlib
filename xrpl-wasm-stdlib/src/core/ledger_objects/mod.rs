@@ -1170,5 +1170,38 @@ pub mod ledger_object {
         fn test_object_get_field_optional_with_slot_panics() {
             let _ = ledger_object::get_field_optional(0, sfield::Memo);
         }
+
+        // ========================================
+        // cache_ledger_obj tests
+        // ========================================
+
+        #[test]
+        fn test_cache_ledger_obj_success() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_cache_ledger_obj()
+                .with(always(), always(), eq(0))
+                .times(1)
+                .returning(|_, _, _| 0);
+            let _guard = setup_mock(mock);
+
+            let keylet = [0u8; 34];
+            let result = crate::core::ledger_objects::cache_ledger_obj(&keylet, 0);
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap(), 0);
+        }
+
+        #[test]
+        fn test_cache_ledger_obj_error() {
+            use crate::host::error_codes::INTERNAL_ERROR;
+
+            let mut mock = MockHostBindings::new();
+            mock.expect_cache_ledger_obj()
+                .times(1)
+                .returning(|_, _, _| INTERNAL_ERROR);
+            let _guard = setup_mock(mock);
+
+            let keylet = [0u8; 34];
+            assert!(crate::core::ledger_objects::cache_ledger_obj(&keylet, 0).is_err());
+        }
     }
 }
