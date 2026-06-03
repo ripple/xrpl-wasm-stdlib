@@ -272,8 +272,13 @@ pub extern "C" fn finish() -> i32 {
             try_or_trace!(state.persist(), "persist");
             release as i32
         }
-        // Participant raises a dispute, clears confirmations
+        // Participant raises a dispute, clears confirmations.
+        // The auto-release condition (freelancer confirmed + past deadline) is checked first;
+        // once true it cannot be undone, so no intent can block the release.
         (Role::Client | Role::Freelancer, Intent::Dispute, DisputeState::None) => {
+            if try_or_trace!(deadline_release(&state), "ledger_time") {
+                return 1;
+            }
             state.set_confirmation(Party::Client, false);
             state.set_confirmation(Party::Freelancer, false);
             state.set_dispute(DisputeState::ActiveBy(party_of(role)));

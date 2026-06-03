@@ -400,6 +400,35 @@ async function test(testContext) {
     )
     process.exit(1)
   }
+
+  // === Escrow 6: Late dispute — auto-release takes precedence ===
+  // Simulates: freelancer previously confirmed (Data[25]=1), deadline has passed.
+  // A client INTENT_DISPUTE must release rather than enter Disputed state.
+  console.log(
+    "\n--- Late dispute: deadline + freelancer_confirmed → release ---",
+  )
+  const lateDisputeBuf = Buffer.alloc(27)
+  lateDisputeBuf.set(decodeAccountID(arbWallet.address))
+  lateDisputeBuf.writeUInt32LE(close_time - 1, 20) // deadline already in the past
+  lateDisputeBuf[25] = 1 // freelancer_confirmed=1, simulates a prior INTENT_CONFIRM
+  const seq6 = await createEscrow(lateDisputeBuf.toString("hex"))
+
+  const lateDispute = await submit(
+    escrowFinishTx(
+      sourceWallet.address,
+      sourceWallet.address,
+      seq6,
+      INTENT_DISPUTE,
+    ),
+    sourceWallet,
+  )
+  if (lateDispute.result.meta.TransactionResult !== "tesSUCCESS") {
+    console.error(
+      "Expected auto-release on late dispute (deadline + freelancer_confirmed), got:",
+      lateDispute.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
 }
 
 module.exports = { test }
