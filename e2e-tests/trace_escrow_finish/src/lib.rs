@@ -22,7 +22,7 @@ use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::trace::{
-    DataRepr, trace, trace_account, trace_account_buf, trace_amount, trace_data, trace_num,
+    DataRepr, trace, trace_account_buf, trace_acct, trace_amt, trace_data, trace_num,
 };
 use xrpl_wasm_stdlib::sfield;
 
@@ -46,7 +46,7 @@ pub extern "C" fn finish() -> i32 {
         let account = escrow_finish.get_account().unwrap();
         // Account is the wallet that submitted the EscrowFinish - verify it's 20 bytes
         test_utils::assert_eq!(account.0.len(), 20);
-        let _ = trace_account("  Account:", &account);
+        let _ = trace_acct("  Account:", &account);
 
         // Trace Field: TransactionType
         let transaction_type: TransactionType = escrow_finish.get_transaction_type().unwrap();
@@ -67,7 +67,7 @@ pub extern "C" fn finish() -> i32 {
         // Trace Field: Fee
         let fee = escrow_finish.get_fee().unwrap();
         // Fee is system-calculated, just trace it
-        let _ = trace_amount("  Fee:", &fee);
+        let _ = trace_amt("  Fee:", &fee);
 
         // Trace Field: Sequence
         let sequence: u32 = escrow_finish.get_sequence().unwrap();
@@ -132,7 +132,7 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // Memos array (optional) - require at least one memo for testing
-        let array_len = unsafe { host::get_tx_array_len(sfield::Memos.into()) };
+        let array_len = unsafe { host::tx_arr_len(sfield::Memos.into()) };
         test_utils::assert!(
             array_len > 0,
             "At least one Memo should be present for testing"
@@ -147,7 +147,7 @@ pub extern "C" fn finish() -> i32 {
             locator.pack(sfield::Memo);
             locator.pack(sfield::MemoType);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     memo_buf.as_mut_ptr(),
@@ -165,7 +165,7 @@ pub extern "C" fn finish() -> i32 {
 
             locator.repack_last(sfield::MemoData);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     memo_buf.as_mut_ptr(),
@@ -182,7 +182,7 @@ pub extern "C" fn finish() -> i32 {
 
             locator.repack_last(sfield::MemoFormat);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     memo_buf.as_mut_ptr(),
@@ -200,7 +200,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Signers array (optional) - require at least one signer for testing
         // TODO: Use this logic to fix https://github.com/ripple/xrpl-wasm-stdlib/issues/90
-        let array_len = unsafe { host::get_tx_array_len(sfield::Signers.into()) };
+        let array_len = unsafe { host::tx_arr_len(sfield::Signers.into()) };
         #[cfg(target_arch = "wasm32")]
         assert!(
             array_len > 0,
@@ -216,7 +216,7 @@ pub extern "C" fn finish() -> i32 {
             // Try without Signer wrapper - maybe the structure is different
             locator.pack(sfield::Account);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     buf.as_mut_ptr(),
@@ -243,7 +243,7 @@ pub extern "C" fn finish() -> i32 {
 
             locator.repack_last(sfield::TxnSignature);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     buf.as_mut_ptr(),
@@ -262,7 +262,7 @@ pub extern "C" fn finish() -> i32 {
 
             locator.repack_last(sfield::SigningPubKey);
             let output_len = unsafe {
-                host::get_tx_nested_field(
+                host::tx_inner(
                     locator.as_ptr(),
                     locator.num_packed_bytes(),
                     buf.as_mut_ptr(),
@@ -308,7 +308,7 @@ pub extern "C" fn finish() -> i32 {
         let owner: AccountID = escrow_finish.get_owner().unwrap();
         // Owner is the account that created the escrow - verify it's 20 bytes
         test_utils::assert_eq!(owner.0.len(), 20);
-        let _ = trace_account("  Owner:", &owner);
+        let _ = trace_acct("  Owner:", &owner);
 
         // Trace Field: OfferSequence (required)
         let offer_sequence: u32 = escrow_finish.get_offer_sequence().unwrap();

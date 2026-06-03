@@ -6,7 +6,7 @@
 /// # Important
 ///
 /// This type is intentionally opaque - arithmetic operations MUST be performed through
-/// host functions (float_add, float_multiply, etc.) which use rippled's Number class
+/// host functions (float_add, float_mult, etc.) which use rippled's Number class
 /// to ensure exact compatibility with XRPL consensus rules.
 ///
 /// # Format Details

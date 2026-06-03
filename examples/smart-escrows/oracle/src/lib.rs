@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::keylets::oracle_keylet;
+use xrpl_wasm_stdlib::core::keylets::oracle_id;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::host::error_codes::match_result_code;
@@ -23,7 +23,7 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
 
     let mut data: [u8; 8] = [0; 8];
     let result_code = unsafe {
-        host::get_ledger_obj_nested_field(
+        host::le_inner(
             slot,
             locator.as_ptr(),
             locator.num_packed_bytes(),
@@ -49,21 +49,21 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-    let oracle_keylet = match oracle_keylet(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
+    let oracle_id = match oracle_id(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
         Ok(keylet) => keylet,
         Err(error) => {
-            let _ = trace_num("finish: oracle_keylet error_code=", error.code() as i64);
+            let _ = trace_num("finish: oracle_id error_code=", error.code() as i64);
             return error.code();
         }
     };
 
     let slot: i32;
     unsafe {
-        slot = host::cache_ledger_obj(oracle_keylet.as_ptr(), oracle_keylet.len(), 0);
-        let _ = trace_num("finish: cache_ledger_obj slot=", slot as i64);
+        slot = host::cache_le(oracle_id.as_ptr(), oracle_id.len(), 0);
+        let _ = trace_num("finish: cache_le slot=", slot as i64);
 
         if slot < 0 {
-            let _ = trace_num("finish: cache_ledger_obj failed, returning 0", 0);
+            let _ = trace_num("finish: cache_le failed, returning 0", 0);
             return 0;
         };
     }

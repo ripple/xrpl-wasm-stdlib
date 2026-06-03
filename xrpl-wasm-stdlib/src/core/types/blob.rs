@@ -1,7 +1,7 @@
 use crate::core::current_tx::CurrentTxFieldGetter;
 use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, home_le_field, le_field, tx_field};
 
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
@@ -174,7 +174,7 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
     fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
         get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .map(|(data, len)| Blob { data, len })
     }
@@ -182,7 +182,7 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
     fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }
@@ -190,7 +190,7 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
     fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
         get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .map(|(data, len)| Blob { data, len })
     }
@@ -198,7 +198,7 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     #[inline]
     fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }
@@ -224,7 +224,7 @@ impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
     #[inline]
     fn get_from_current_tx(field_code: i32) -> Result<Self> {
         get_variable_size_field::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
+            tx_field(fc, buf, size)
         })
         .map(|(data, len)| Blob { data, len })
     }
@@ -232,7 +232,7 @@ impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
     #[inline]
     fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
         get_variable_size_field_optional::<N, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
+            tx_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }

@@ -13,7 +13,7 @@
 /// fn my_function<H: HostBindings>(host: &H) {
 ///     unsafe {
 ///         let mut buffer = [0u8; 8];
-///         let result = host.get_ledger_sqn(buffer.as_mut_ptr(), buffer.len());
+///         let result = host.ldgr_index(buffer.as_mut_ptr(), buffer.len());
 ///         // ... use result
 ///     }
 /// }
@@ -49,7 +49,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_sqn(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn ldgr_index(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the parent ledger time.
     ///
@@ -69,7 +69,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_parent_ledger_time(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn parent_ldgr_time(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the hash of the parent ledger.
     ///
@@ -91,7 +91,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_parent_ledger_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn parent_ldgr_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the current transaction base fee.
     ///
@@ -108,7 +108,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_base_fee(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn base_fee(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the state of an amendment and whether it's enabled or not.
     ///
@@ -151,12 +151,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn cache_ledger_obj(
-        &self,
-        keylet_ptr: *const u8,
-        keylet_len: usize,
-        cache_num: i32,
-    ) -> i32;
+    unsafe fn cache_le(&self, keylet_ptr: *const u8, keylet_len: usize, cache_num: i32) -> i32;
 
     /// Retrieves a specific transaction field and writes it into the provided output buffer.
     ///
@@ -174,7 +169,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves a specific field from the current ledger object and writes it into the provided buffer.
     ///
@@ -192,12 +187,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_field(
-        &self,
-        field: i32,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32;
+    unsafe fn home_le_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves a specific field from a ledger object based on the given parameters.
     ///
@@ -216,7 +206,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_field(
+    unsafe fn le_field(
         &self,
         cache_num: i32,
         field: i32,
@@ -240,7 +230,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_nested_field(
+    unsafe fn tx_inner(
         &self,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -269,7 +259,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_nested_field(
+    unsafe fn home_le_inner(
         &self,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -295,7 +285,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_nested_field(
+    unsafe fn le_inner(
         &self,
         cache_num: i32,
         locator_ptr: *const u8,
@@ -317,7 +307,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_tx_array_len(&self, field: i32) -> i32;
+    unsafe fn tx_arr_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided field value.
     ///
@@ -332,7 +322,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_current_ledger_obj_array_len(&self, field: i32) -> i32;
+    unsafe fn home_le_arr_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided cache number and field value.
     ///
@@ -348,7 +338,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_ledger_obj_array_len(&self, cache_num: i32, field: i32) -> i32;
+    unsafe fn le_arr_len(&self, cache_num: i32, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
@@ -364,7 +354,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_nested_array_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
+    unsafe fn tx_inner_arr_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
@@ -380,11 +370,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_nested_array_len(
-        &self,
-        locator_ptr: *const u8,
-        locator_len: usize,
-    ) -> i32;
+    unsafe fn home_le_inner_arr_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
@@ -401,7 +387,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_nested_array_len(
+    unsafe fn le_inner_arr_len(
         &self,
         cache_num: i32,
         locator_ptr: *const u8,
@@ -426,7 +412,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn update_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
+    unsafe fn set_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
 
     // ###################################################
     // Host Function Category: hash and keylet computation
@@ -449,7 +435,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn compute_sha512_half(
+    unsafe fn sha512_half(
         &self,
         data_ptr: *const u8,
         data_len: usize,
@@ -507,7 +493,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn account_keylet(
+    unsafe fn accountroot_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -538,7 +524,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn amm_keylet(
+    unsafe fn amm_id(
         &self,
         issue1_ptr: *const u8,
         issue1_len: usize,
@@ -567,7 +553,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn check_keylet(
+    unsafe fn check_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -599,7 +585,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn credential_keylet(
+    unsafe fn credential_id(
         &self,
         subject_ptr: *const u8,
         subject_len: usize,
@@ -630,7 +616,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn delegate_keylet(
+    unsafe fn delegate_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -659,7 +645,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn deposit_preauth_keylet(
+    unsafe fn deposit_preauth_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -686,7 +672,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn did_keylet(
+    unsafe fn did_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -713,7 +699,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn escrow_keylet(
+    unsafe fn escrow_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -745,7 +731,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn line_keylet(
+    unsafe fn trustline_id(
         &self,
         account1_ptr: *const u8,
         account1_len: usize,
@@ -776,7 +762,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn mpt_issuance_keylet(
+    unsafe fn mpt_issuance_id(
         &self,
         issuer_ptr: *const u8,
         issuer_len: usize,
@@ -805,7 +791,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn mptoken_keylet(
+    unsafe fn mptoken_id(
         &self,
         mptid_ptr: *const u8,
         mptid_len: usize,
@@ -834,7 +820,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn nft_offer_keylet(
+    unsafe fn nft_offer_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -863,7 +849,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn offer_keylet(
+    unsafe fn offer_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -893,7 +879,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn oracle_keylet(
+    unsafe fn oracle_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -925,7 +911,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn paychan_keylet(
+    unsafe fn paychan_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -956,7 +942,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn permissioned_domain_keylet(
+    unsafe fn permissioned_domain_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -983,7 +969,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn signers_keylet(
+    unsafe fn signers_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1010,7 +996,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn ticket_keylet(
+    unsafe fn ticket_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1039,7 +1025,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn vault_keylet(
+    unsafe fn vault_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1073,7 +1059,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft(
+    unsafe fn nft_uri(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1101,7 +1087,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_issuer(
+    unsafe fn nft_issuer(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1127,7 +1113,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_taxon(
+    unsafe fn nft_taxon(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1150,7 +1136,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    unsafe fn nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the transfer fee of a specific NFT (Non-Fungible Token).
     ///
@@ -1167,7 +1153,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_transfer_fee(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    unsafe fn nft_xfer_fee(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the serial number of a specific NFT (Non-Fungible Token).
     ///
@@ -1187,7 +1173,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_serial(
+    unsafe fn nft_serial(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1357,7 +1343,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn float_compare(
+    unsafe fn float_cmp(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1406,7 +1392,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_subtract(
+    unsafe fn float_sub(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1432,7 +1418,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_multiply(
+    unsafe fn float_mult(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1458,7 +1444,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_divide(
+    unsafe fn float_div(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1584,7 +1570,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_account(
+    unsafe fn trace_acct(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
@@ -1610,7 +1596,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_opaque_float(
+    unsafe fn trace_xfloat(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
@@ -1636,7 +1622,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_amount(
+    unsafe fn trace_amt(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
