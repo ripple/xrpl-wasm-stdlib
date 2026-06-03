@@ -259,6 +259,14 @@ pub extern "C" fn finish() -> i32 {
         None => return 0,
     };
 
+    // Auto-release is sticky: once the freelancer has confirmed and the deadline has
+    // passed, the next EscrowFinish releases regardless of its intent. Checked here,
+    // before any state mutation, so no intent (confirm, deconfirm, or dispute) can
+    // clear a condition that is already met.
+    if try_or_trace!(deadline_release(&state), "ledger_time") {
+        return 1;
+    }
+
     match (role, intent, state.dispute()) {
         // Participant confirm/deconfirm, no active dispute
         (
@@ -267,18 +275,13 @@ pub extern "C" fn finish() -> i32 {
             DisputeState::None,
         ) => {
             state.set_confirmation(party_of(role), intent == Intent::Confirm);
-            let release = (state.client_confirmed() && state.freelancer_confirmed())
+            let release = state.client_confirmed() && state.freelancer_confirmed()
                 || try_or_trace!(deadline_release(&state), "ledger_time");
             try_or_trace!(state.persist(), "persist");
             release as i32
         }
-        // Participant raises a dispute, clears confirmations.
-        // The auto-release condition (freelancer confirmed + past deadline) is checked first;
-        // once true it cannot be undone, so no intent can block the release.
+        // Participant raises a dispute, clears confirmations
         (Role::Client | Role::Freelancer, Intent::Dispute, DisputeState::None) => {
-            if try_or_trace!(deadline_release(&state), "ledger_time") {
-                return 1;
-            }
             state.set_confirmation(Party::Client, false);
             state.set_confirmation(Party::Freelancer, false);
             state.set_dispute(DisputeState::ActiveBy(party_of(role)));

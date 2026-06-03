@@ -10,7 +10,7 @@ Three parties interact with the escrow via `EscrowFinish` transactions, each car
 
 This Escrow serves the purpose of ensuring safe handling of funds for all parties involved. External communication between client, freelancer, and arbitrator is required to make sound decisions in the contract. The client is responsible for raising a dispute before the deadline; past it, the freelancer can claim the funds unilaterally.
 
-> **Note — no automatic releases.** Like most blockchains, this contract has no timers; state changes only when an `EscrowFinish` is processed. Once the freelancer has confirmed and the deadline has passed, the auto-release condition is checked before any dispute is applied — a dispute by either party at that point releases the escrow to the freelancer instead of entering Disputed state. Nothing fires until someone submits an `EscrowFinish`, but once the condition is met, the outcome is fixed.
+> **Note — no automatic releases.** Like most blockchains, this contract has no timers; state changes only when an `EscrowFinish` is processed. Once the freelancer has confirmed and the deadline has passed, the auto-release condition is checked before any intent is applied — the next `EscrowFinish` releases to the freelancer regardless of what it asks for, and no intent can undo that. Nothing fires until someone submits an `EscrowFinish`, but once the condition is met, the outcome is fixed.
 
 ## Parties & Roles
 
@@ -38,12 +38,12 @@ The escrow's `Data` field must be exactly 27 bytes, set at `EscrowCreate` time.
 
 Each `EscrowFinish` transaction must include the intent byte as the first byte of `Memos[0].MemoData`.
 
-| Byte   | Name               | Sent by              | Effect                                                                                                                                                                |
-| ------ | ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0x00` | `INTENT_CONFIRM`   | Client or Freelancer | Sets the sender's confirmation flag; releases if both confirmed, or if the freelancer has confirmed and the deadline has passed                                       |
-| `0x01` | `INTENT_DECONFIRM` | Client or Freelancer | Clears the sender's confirmation flag                                                                                                                                 |
-| `0x02` | `INTENT_DISPUTE`   | Client or Freelancer | Raises a dispute, clears both confirmation flags; if the auto-release condition is already met (freelancer confirmed + past deadline), releases to freelancer instead |
-| `0x03` | `INTENT_UNDISPUTE` | Disputing party only | Withdraws the sender's own dispute, returning to Pending                                                                                                              |
+| Byte   | Name               | Sent by              | Effect                                                                                                                          |
+| ------ | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `0x00` | `INTENT_CONFIRM`   | Client or Freelancer | Sets the sender's confirmation flag; releases if both confirmed, or if the freelancer has confirmed and the deadline has passed |
+| `0x01` | `INTENT_DECONFIRM` | Client or Freelancer | Clears the sender's confirmation flag                                                                                           |
+| `0x02` | `INTENT_DISPUTE`   | Client or Freelancer | Raises a dispute, clears both confirmation flags                                                                                |
+| `0x03` | `INTENT_UNDISPUTE` | Disputing party only | Withdraws the sender's own dispute, returning to Pending                                                                        |
 
 The arbitrator uses the same intent byte, but with a different meaning:
 
@@ -80,9 +80,12 @@ flowchart TD
         P["client_confirmed ∈ {0,1}\nfreelancer_confirmed ∈ {0,1}"]
     end
 
-    PENDING -->|Client or Freelancer — INTENT_CONFIRM| SET_CONFIRM[Set own confirmation flag]
-    PENDING -->|Client or Freelancer — INTENT_DECONFIRM| SET_DECONFIRM[Clear own confirmation flag]
-    PENDING -->|Client or Freelancer — INTENT_DISPUTE\nonly if deadline not yet triggered| RAISE[Clear both confirmation flags\nSet DISPUTING_PARTY]
+    PENDING -->|EscrowFinish| PRECHECK{freelancer confirmed\n+ past deadline?}
+    PRECHECK -->|Yes| PAID
+
+    PRECHECK -->|No — INTENT_CONFIRM| SET_CONFIRM[Set own confirmation flag]
+    PRECHECK -->|No — INTENT_DECONFIRM| SET_DECONFIRM[Clear own confirmation flag]
+    PRECHECK -->|No — INTENT_DISPUTE| RAISE[Clear both confirmation flags\nSet DISPUTING_PARTY]
 
     SET_CONFIRM --> RELEASE{Both confirmed?\nor freelancer confirmed\n+ deadline passed?}
     SET_DECONFIRM --> PENDING
