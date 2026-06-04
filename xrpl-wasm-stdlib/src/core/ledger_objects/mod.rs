@@ -455,7 +455,10 @@ pub mod ledger_object {
         use crate::core::types::amount::Amount;
         use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
         use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
-        use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
+        use crate::core::types::uint::{
+            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
+            Hash256,
+        };
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield;
@@ -465,7 +468,12 @@ pub mod ledger_object {
         // Test helper functions
         // ========================================
 
-        /// Helper to set up a mock expectation for get_current_ledger_obj_field
+        /// Helper to set up a mock expectation for get_current_ledger_obj_field.
+        ///
+        /// Zero-fills the output buffer before returning. This is required because
+        /// `get_variable_size_field` and the fixed-size getters allocate the buffer
+        /// via `MaybeUninit` and call `assume_init` after the host call returns —
+        /// leaving the buffer uninitialized would be UB.
         fn expect_current_field(
             mock: &mut MockHostBindings,
             field_code: i32,
@@ -475,10 +483,14 @@ pub mod ledger_object {
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(field_code), always(), eq(size))
                 .times(times)
-                .returning(move |_, _, _| size as i32);
+                .returning(move |_, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    size as i32
+                });
         }
 
-        /// Helper to set up a mock expectation for get_ledger_obj_field
+        /// Helper to set up a mock expectation for get_ledger_obj_field.
+        /// Zero-fills the output buffer; see `expect_current_field` for rationale.
         fn expect_ledger_field(
             mock: &mut MockHostBindings,
             slot: i32,
@@ -489,7 +501,10 @@ pub mod ledger_object {
             mock.expect_get_ledger_obj_field()
                 .with(eq(slot), eq(field_code), always(), eq(size))
                 .times(times)
-                .returning(move |_, _, _, _| size as i32);
+                .returning(move |_, _, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    size as i32
+                });
         }
 
         // ========================================
@@ -523,6 +538,8 @@ pub mod ledger_object {
             expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
             expect_current_field(&mut mock, sfield::PublicKey.into(), DEFAULT_BLOB_SIZE, 1);
+            expect_current_field(&mut mock, sfield::TakerPaysCurrency.into(), HASH160_SIZE, 1);
+            expect_current_field(&mut mock, sfield::MPTokenIssuanceID.into(), HASH192_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -531,6 +548,8 @@ pub mod ledger_object {
             assert!(Amount::get_from_current_ledger_obj(sfield::Amount.into()).is_ok());
             assert!(Hash128::get_from_current_ledger_obj(sfield::EmailHash.into()).is_ok());
             assert!(Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID.into()).is_ok());
+            assert!(Hash160::get_from_current_ledger_obj(sfield::TakerPaysCurrency.into()).is_ok());
+            assert!(Hash192::get_from_current_ledger_obj(sfield::MPTokenIssuanceID.into()).is_ok());
 
             let blob: Blob<DEFAULT_BLOB_SIZE> =
                 Blob::get_from_current_ledger_obj(sfield::PublicKey.into()).unwrap();
@@ -544,6 +563,8 @@ pub mod ledger_object {
 
             expect_current_field(&mut mock, sfield::Flags.into(), 4, 1);
             expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::TakerPaysCurrency.into(), HASH160_SIZE, 1);
+            expect_current_field(&mut mock, sfield::MPTokenIssuanceID.into(), HASH192_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -553,6 +574,16 @@ pub mod ledger_object {
             assert!(result.unwrap().is_some());
 
             let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result =
+                Hash160::get_from_current_ledger_obj_optional(sfield::TakerPaysCurrency.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result =
+                Hash192::get_from_current_ledger_obj_optional(sfield::MPTokenIssuanceID.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -565,6 +596,20 @@ pub mod ledger_object {
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
             expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 8, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::TakerPaysCurrency.into(),
+                HASH160_SIZE,
+                1,
+            );
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::MPTokenIssuanceID.into(),
+                HASH192_SIZE,
+                1,
+            );
 
             let _guard = setup_mock(mock);
 
@@ -572,6 +617,8 @@ pub mod ledger_object {
             assert!(u32::get_from_ledger_obj(slot, sfield::Flags.into()).is_ok());
             assert!(u64::get_from_ledger_obj(slot, sfield::Balance.into()).is_ok());
             assert!(AccountID::get_from_ledger_obj(slot, sfield::Account.into()).is_ok());
+            assert!(Hash160::get_from_ledger_obj(slot, sfield::TakerPaysCurrency.into()).is_ok());
+            assert!(Hash192::get_from_ledger_obj(slot, sfield::MPTokenIssuanceID.into()).is_ok());
         }
 
         #[test]
@@ -580,11 +627,35 @@ pub mod ledger_object {
             let slot = 0;
 
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::TakerPaysCurrency.into(),
+                HASH160_SIZE,
+                1,
+            );
+            expect_ledger_field(
+                &mut mock,
+                slot,
+                sfield::MPTokenIssuanceID.into(),
+                HASH192_SIZE,
+                1,
+            );
 
             let _guard = setup_mock(mock);
 
             // Test optional field retrieval with slot numbers
             let result = u32::get_from_ledger_obj_optional(slot, sfield::Flags.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result =
+                Hash160::get_from_ledger_obj_optional(slot, sfield::TakerPaysCurrency.into());
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result =
+                Hash192::get_from_ledger_obj_optional(slot, sfield::MPTokenIssuanceID.into());
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
@@ -715,6 +786,61 @@ pub mod ledger_object {
             // In test environment, host returns buffer size as result code
             assert_eq!(blob.len, PUBLIC_KEY_BUFFER_SIZE);
             assert_eq!(blob.data.len(), PUBLIC_KEY_BUFFER_SIZE);
+        }
+
+        // ========================================
+        // Array and Object unreachable tests
+        // These verify that Array and Object types panic when accessed
+        // through the public field access API, as they should only be
+        // used for navigation via the Location/Locator system.
+        // ========================================
+
+        #[test]
+        #[should_panic]
+        fn test_array_get_field_panics() {
+            let _ = current_ledger_object::get_field(sfield::Signers);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_array_get_field_optional_panics() {
+            let _ = current_ledger_object::get_field_optional(sfield::Signers);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_array_get_field_with_slot_panics() {
+            let _ = ledger_object::get_field(0, sfield::Signers);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_array_get_field_optional_with_slot_panics() {
+            let _ = ledger_object::get_field_optional(0, sfield::Signers);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_object_get_field_panics() {
+            let _ = current_ledger_object::get_field(sfield::Memo);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_object_get_field_optional_panics() {
+            let _ = current_ledger_object::get_field_optional(sfield::Memo);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_object_get_field_with_slot_panics() {
+            let _ = ledger_object::get_field(0, sfield::Memo);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_object_get_field_optional_with_slot_panics() {
+            let _ = ledger_object::get_field_optional(0, sfield::Memo);
         }
     }
 }
