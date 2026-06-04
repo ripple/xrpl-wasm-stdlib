@@ -383,4 +383,17 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap().is_some());
     }
+
+    #[test]
+    fn test_get_field_returns_err_on_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_field()
+            .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
+            .times(1)
+            .returning(|_, _, _| crate::host::error_codes::INTERNAL_ERROR);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Flags).is_err());
+    }
 }

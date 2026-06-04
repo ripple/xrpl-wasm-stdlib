@@ -452,7 +452,7 @@ pub mod ledger_object {
         use super::*;
         use crate::core::ledger_objects::{current_ledger_object, ledger_object};
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
-        use crate::core::types::amount::Amount;
+        use crate::core::types::amount::{AMOUNT_SIZE, Amount};
         use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE};
         use crate::core::types::currency::{CURRENCY_SIZE, Currency};
         use crate::core::types::issue::Issue;
@@ -566,7 +566,7 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
 
             expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
-            expect_current_field(&mut mock, sfield::Amount.into(), 48, 1);
+            expect_current_field(&mut mock, sfield::Amount.into(), AMOUNT_SIZE, 1);
             expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
             expect_current_field(&mut mock, sfield::PublicKey.into(), DEFAULT_BLOB_SIZE, 1);
@@ -601,7 +601,7 @@ pub mod ledger_object {
             expect_current_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
             expect_current_field(&mut mock, sfield::TakerPaysCurrency.into(), HASH160_SIZE, 1);
             expect_current_field(&mut mock, sfield::MPTokenIssuanceID.into(), HASH192_SIZE, 1);
-            expect_current_field(&mut mock, sfield::Amount.into(), 48, 1);
+            expect_current_field(&mut mock, sfield::Amount.into(), AMOUNT_SIZE, 1);
             expect_current_field(&mut mock, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
             expect_current_field(&mut mock, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_current_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
@@ -679,7 +679,7 @@ pub mod ledger_object {
                 HASH192_SIZE,
                 1,
             );
-            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_ledger_field(
@@ -737,7 +737,7 @@ pub mod ledger_object {
                 HASH192_SIZE,
                 1,
             );
-            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::BaseAsset.into(), CURRENCY_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_ledger_field(
@@ -1005,9 +1005,9 @@ pub mod ledger_object {
 
             expect_ledger_field(&mut mock, slot, sfield::LedgerEntryType.into(), 2, 1);
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 2);
-            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount.into(), AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash.into(), HASH128_SIZE, 1);
             expect_ledger_field(
                 &mut mock,
@@ -1050,7 +1050,7 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), 48, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance.into(), AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Sequence.into(), 4, 1);
             expect_ledger_field(&mut mock, slot, sfield::Flags.into(), 4, 1);
