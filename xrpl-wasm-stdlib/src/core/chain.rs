@@ -7,13 +7,13 @@ use crate::host::{
 pub fn ledger_sqn() -> Result<u32> {
     let mut uint_bytes = [0u8; 4];
     let rescode = unsafe { get_ledger_sqn(uint_bytes.as_mut_ptr(), 4) };
-    match_result_code_with_expected_bytes(rescode, 4, || u32::from_be_bytes(uint_bytes))
+    match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
-pub fn parent_ledger_time() -> Result<u64> {
-    let mut uint_bytes = [0u8; 8];
-    let rescode = unsafe { get_parent_ledger_time(uint_bytes.as_mut_ptr(), 8) };
-    match_result_code_with_expected_bytes(rescode, 8, || u64::from_be_bytes(uint_bytes))
+pub fn parent_ledger_time() -> Result<u32> {
+    let mut uint_bytes = [0u8; 4];
+    let rescode = unsafe { get_parent_ledger_time(uint_bytes.as_mut_ptr(), 4) };
+    match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
 pub fn parent_ledger_hash() -> Result<[u8; 32]> {
@@ -22,10 +22,10 @@ pub fn parent_ledger_hash() -> Result<[u8; 32]> {
     match_result_code_with_expected_bytes(rescode, 32, || bytes)
 }
 
-pub fn base_fee() -> Result<u64> {
-    let mut uint_bytes = [0u8; 8];
-    let rescode = unsafe { get_base_fee(uint_bytes.as_mut_ptr(), 8) };
-    match_result_code_with_expected_bytes(rescode, 8, || u64::from_be_bytes(uint_bytes))
+pub fn base_fee() -> Result<u32> {
+    let mut uint_bytes = [0u8; 4];
+    let rescode = unsafe { get_base_fee(uint_bytes.as_mut_ptr(), 4) };
+    match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
 pub fn amendment_enabled(hash: &[u8; 32]) -> Result<bool> {
@@ -45,16 +45,7 @@ mod tests {
     use crate::host::setup_mock;
 
     fn write_u32(ptr: *mut u8, value: u32) {
-        let bytes = value.to_be_bytes();
-        unsafe {
-            for (i, b) in bytes.iter().enumerate() {
-                *ptr.add(i) = *b;
-            }
-        }
-    }
-
-    fn write_u64(ptr: *mut u8, value: u64) {
-        let bytes = value.to_be_bytes();
+        let bytes = value.to_le_bytes();
         unsafe {
             for (i, b) in bytes.iter().enumerate() {
                 *ptr.add(i) = *b;
@@ -105,8 +96,8 @@ mod tests {
         mock.expect_get_parent_ledger_time()
             .times(1)
             .returning(|ptr, _| {
-                write_u64(ptr, 1_000_000);
-                8
+                write_u32(ptr, 1_000_000);
+                4
             });
         let _guard = setup_mock(mock);
 
@@ -161,8 +152,8 @@ mod tests {
     fn test_base_fee_success() {
         let mut mock = MockHostBindings::new();
         mock.expect_get_base_fee().times(1).returning(|ptr, _| {
-            write_u64(ptr, 12);
-            8
+            write_u32(ptr, 12);
+            4
         });
         let _guard = setup_mock(mock);
 
