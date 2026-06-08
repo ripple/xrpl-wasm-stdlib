@@ -1,6 +1,10 @@
 use crate::host::Result;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
 use crate::host::{
+    Error, float_add, float_compare, float_divide, float_multiply, float_pow, float_root,
+    float_subtract,
+};
+use crate::host::{
     FLOAT_ROUNDING_MODES_DOWNWARD, FLOAT_ROUNDING_MODES_TO_NEAREST,
     FLOAT_ROUNDING_MODES_TOWARDS_ZERO, FLOAT_ROUNDING_MODES_UPWARD,
 };
@@ -8,7 +12,6 @@ use crate::host::{
     float_from_int, float_from_mant_exp, float_from_stamount, float_from_stnumber, float_from_uint,
     float_to_int, float_to_mant_exp,
 };
-use crate::host::{Error, float_add, float_compare, float_divide, float_multiply, float_pow, float_root, float_subtract};
 /// Opaque 96-bit representation of an XRPL fungible token (IOU) amount (STNumber format).
 ///
 /// This struct encapsulates the 12-byte STNumber format used by rippled's host functions.
