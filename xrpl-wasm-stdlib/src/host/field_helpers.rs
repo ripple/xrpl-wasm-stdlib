@@ -135,11 +135,11 @@ pub fn get_variable_size_field<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
-    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
+    let mut buffer = [0u8; N];
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr(), N);
     match_result_code(result_code, || {
         let len = result_code as usize;
-        (unsafe { buffer.assume_init() }, len)
+        (buffer, len)
     })
 }
 
@@ -180,10 +180,10 @@ pub fn get_variable_size_field_optional<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
-    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
-    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
+    let mut buffer = [0u8; N];
+    let result_code = host_fn(field_code.into(), buffer.as_mut_ptr(), N);
     match_result_code_optional(result_code, || {
         let len = result_code as usize;
-        Some((unsafe { buffer.assume_init() }, len))
+        Some((buffer, len))
     })
 }

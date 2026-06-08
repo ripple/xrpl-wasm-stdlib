@@ -120,8 +120,8 @@ pub fn trace_amount(msg: &str, amount: &Amount) -> Result<i32> {
 
 /// Write a float to the XRPLD trace log
 #[inline(always)]
-pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
-    let result_code = unsafe { host::trace_opaque_float(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
+pub fn trace_float(msg: &str, f: &[u8; 12]) -> Result<i32> {
+    let result_code = unsafe { host::trace_opaque_float(msg.as_ptr(), msg.len(), f.as_ptr(), 12) };
     match_result_code(result_code, || result_code)
 }
 
@@ -216,7 +216,9 @@ mod tests {
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39]; // Simple test float
+        let amount_bytes = [
+            0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00,
+        ];
 
         let currency = Currency::from(currency_bytes);
         let issuer = AccountID::from(issuer_bytes);
@@ -288,7 +290,9 @@ mod tests {
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39];
+        let amount_bytes = [
+            0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00,
+        ];
 
         let iou_amount = Amount::IOU {
             amount: OpaqueFloat(amount_bytes),
@@ -297,7 +301,7 @@ mod tests {
         };
         let (bytes, len) = iou_amount.to_stamount_bytes();
         assert_eq!(len, 48); // All Amount types should return 48 bytes
-        assert_eq!(&bytes[0..8], &amount_bytes); // Should match the opaque float bytes
+        assert_eq!(&bytes[0..8], &amount_bytes[..8]); // First 8 bytes of the 12-byte STNumber float
 
         // Test MPT format
         use crate::core::types::mpt_id::MptId;

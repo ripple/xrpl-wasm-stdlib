@@ -1,7 +1,7 @@
-/// Opaque 64-bit representation of an XRPL fungible token (IOU) amount.
+/// Opaque 96-bit representation of an XRPL fungible token (IOU) amount (STNumber format).
 ///
-/// This struct encapsulates the XRPL's custom floating-point format used for fungible tokens.
-/// The format is: `[Type:1][Sign:1][Exponent:8][Mantissa:54]` bits.
+/// This struct encapsulates the 12-byte STNumber format used by rippled's host functions.
+/// Layout: 8-byte big-endian int64 mantissa followed by 4-byte big-endian int32 exponent.
 ///
 /// # Important
 ///
@@ -9,22 +9,9 @@
 /// host functions (float_add, float_multiply, etc.) which use rippled's Number class
 /// to ensure exact compatibility with XRPL consensus rules.
 ///
-/// # Format Details
-///
-/// - **Type bit** (bit 63): Always 1 for fungible tokens
-/// - **Sign bit** (bit 62): 1 = positive, 0 = negative
-/// - **Exponent** (bits 61-54): 8 bits, biased by 97 (range -96 to +80)
-/// - **Mantissa** (bits 53-0): 54 bits providing ~16 decimal digits precision
-///
-/// # Special Values
-///
-/// - Zero: `0x8000000000000000`
-/// - Maximum: ~9.999999999999999 × 10^80
-/// - Minimum positive: ~1.0 × 10^-81
-///
 /// ## Derived Traits
 ///
-/// - `Copy`: Efficient for this 8-byte struct, enabling implicit copying
+/// - `Copy`: Efficient for this 12-byte struct, enabling implicit copying
 /// - `PartialEq, Eq`: Enable comparisons (bitwise comparison only)
 /// - `Debug, Clone`: Standard traits for development and consistency
 ///
@@ -37,13 +24,13 @@
 /// ```no_run
 /// # use xrpl_wasm_stdlib::core::types::opaque_float::OpaqueFloat;
 /// // Create from host function
-/// let mut float_bytes = [0u8; 8];
-/// // float_from_int(100, float_bytes.as_mut_ptr(), 8, 0);
+/// let mut float_bytes = [0u8; 12];
+/// // float_from_int(100, float_bytes.as_mut_ptr(), 12, 0);
 /// let amount = OpaqueFloat(float_bytes);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub struct OpaqueFloat(pub [u8; 8]);
+pub struct OpaqueFloat(pub [u8; 12]);
 
 impl OpaqueFloat {
     // /// Accessor for the 8-bit `exponent` component of an `OpaqueFloat`.
@@ -140,17 +127,21 @@ impl OpaqueFloat {
     //     }
 }
 
-impl From<[u8; 8]> for OpaqueFloat {
-    fn from(value: [u8; 8]) -> Self {
+impl From<[u8; 12]> for OpaqueFloat {
+    fn from(value: [u8; 12]) -> Self {
         OpaqueFloat(value)
     }
 }
 
-/// The number `1` in XRPL's custom float format.
-pub const FLOAT_ONE: [u8; 8] = [0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00];
+/// The number `1` in STNumber format (mantissa=1000000000000000, exponent=-15).
+pub const FLOAT_ONE: [u8; 12] = [
+    0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE,
+];
 
-/// The number `0` in XRPL's custom float format.
-pub const FLOAT_NEGATIVE_ONE: [u8; 8] = [0x94, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00];
+/// The number `-1` in STNumber format (mantissa=-1000000000000000, exponent=-15).
+pub const FLOAT_NEGATIVE_ONE: [u8; 12] = [
+    0xF2, 0x1F, 0x49, 0x4C, 0x58, 0x9C, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE,
+];
 
 #[cfg(test)]
 mod tests {

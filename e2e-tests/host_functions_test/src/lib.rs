@@ -917,7 +917,9 @@ fn test_trace_amount_functions() -> i32 {
     // Exponent 82 = 0b01010010
     // Top byte: 0b11010100 = 0xD4
     // Second byte: 0b10010001 = 0x91
-    let amount_bytes = [0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00]; // Valid IOU: $5 USD
+    let amount_bytes = [
+        0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ]; // Valid IOU: $5 USD (12-byte OpaqueFloat: first 8 bytes are STAmount wire format, trailing 4 zero-pad)
 
     let currency = Currency::from(currency_bytes);
     let issuer = AccountID::from(issuer_bytes);
