@@ -112,6 +112,14 @@ async function main() {
     OBJECT: "Object",
   }
 
+  // Custom type overrides for specific field names
+  // These override the default type mapping from typeMap
+  const customFieldTypes = {
+    TransactionType: "TransactionType",
+    // Condition: "ConditionBlob",
+    // Fulfillment: "FulfillmentBlob",
+  }
+
   ////////////////////////////////////////////////////////////////////////
   //  SField processing
   ////////////////////////////////////////////////////////////////////////
@@ -145,7 +153,9 @@ async function main() {
     const xrplType = sfieldHits[x][2]
     const fieldCode =
       parseInt(stypeMap[xrplType]) * 2 ** 16 + parseInt(sfieldHits[x][3])
-    const rustType = typeMap[xrplType]
+
+    // Check for custom type override first, then fall back to typeMap
+    let rustType = customFieldTypes[fieldName] || typeMap[xrplType]
 
     // Generate SField constant for all types
     if (rustType) {
@@ -183,7 +193,7 @@ async function main() {
       ? process.argv[3]
       : path.join(__dirname, "../xrpl-wasm-stdlib/src/sfield.rs")
   try {
-    // Read existing file to preserve type definitions
+    // Read existing file to preserve type definitions and impl blocks
     let existingContent = ""
     try {
       existingContent = await fs.readFile(outputFile, "utf8")
@@ -192,13 +202,13 @@ async function main() {
     }
 
     // Find where the constants section starts (after impl blocks)
-    // Look for the first "pub const Invalid" line
-    const constantsStartMarker = "pub const Invalid: i32 = -1;"
+    // Look for the first "pub const Invalid" line (works for both old and new format)
+    const constantsStartMarker = "pub const Invalid:"
     const existingConstantsStart = existingContent.indexOf(constantsStartMarker)
 
     let finalOutput
     if (existingConstantsStart !== -1) {
-      // Extract the type definitions part (everything before the constants)
+      // Extract the type definitions and impl blocks (everything before the constants)
       const typeDefinitions = existingContent.substring(
         0,
         existingConstantsStart,

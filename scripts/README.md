@@ -39,6 +39,7 @@ You can also run individual test suites:
 - **`run-tests.sh`** - Run integration tests for examples and end-to-end tests
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
+- **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
 
 ## Usage Examples
 
@@ -63,6 +64,9 @@ You can also run individual test suites:
 
 # Run gas benchmarks (requires local rippled instance)
 ./scripts/benchmark-gas.sh
+
+# Generate SField constants from rippled source
+./scripts/generate-sfields.sh
 ```
 
 ## Environment Variables
@@ -100,6 +104,38 @@ This script:
 
 - `gas_benchmark_results.json` - Raw measurement data
 - `GAS_BENCHMARK_REPORT.md` - Formatted comparison report
+
+## Generate SFields Script
+
+The `generate-sfields.sh` script generates type-safe SField constants from the rippled source code:
+
+```shell
+# Generate from default rippled repository (smart-escrow branch)
+./scripts/generate-sfields.sh
+
+# Generate from a specific rippled repository or branch
+./scripts/generate-sfields.sh https://github.com/XRPLF/rippled/tree/develop
+
+# Generate to a custom output file
+./scripts/generate-sfields.sh https://github.com/XRPLF/rippled/tree/ripple/smart-escrow custom_output.rs
+```
+
+This script:
+
+1. Fetches SField definitions from rippled source (local path or GitHub URL)
+2. Generates type-safe Rust constants with proper type mappings
+3. Applies custom type overrides for special fields (TransactionType, Condition, Fulfillment)
+4. Outputs to `xrpl-wasm-stdlib/src/sfield.rs` by default
+
+**Custom type mappings:**
+
+The script automatically applies custom type mappings for fields that need specialized types:
+
+- `TransactionType` → `TransactionType` enum (not `u16`)
+- `Condition` → `ConditionBlob` (not `StandardBlob`)
+- `Fulfillment` → `FulfillmentBlob` (not `StandardBlob`)
+
+To add more custom mappings, edit the `customFieldTypes` object in `tools/generateSFields.js`.
 
 ## Requirements
 

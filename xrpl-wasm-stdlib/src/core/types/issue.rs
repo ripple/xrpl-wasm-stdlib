@@ -287,6 +287,21 @@ mod tests {
     }
 
     #[test]
+    fn test_issue_as_bytes() {
+        let xrp = Issue::XRP(XrpIssue {});
+        assert_eq!(xrp.as_bytes(), &[0u8; 20]);
+
+        let issuer = AccountID::from([0xAA; 20]);
+        let currency = Currency::from([0xBB; 20]);
+        let iou = Issue::IOU(IouIssue::new(issuer, currency));
+        assert_eq!(iou.as_bytes().len(), 40);
+
+        let mpt_id = MptId::new(1, AccountID::from([0xCC; 20]));
+        let mpt = Issue::MPT(MptIssue::new(mpt_id));
+        assert_eq!(mpt.as_bytes(), mpt_id.as_bytes());
+    }
+
+    #[test]
     fn test_issue_from_buffer_invalid_length() {
         let buffer = [0u8; 40];
         // Invalid lengths should return error
