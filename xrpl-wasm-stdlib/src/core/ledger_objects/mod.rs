@@ -961,6 +961,12 @@ pub mod ledger_object {
                     slice[28..48].fill(0xDD);
                     48
                 });
+            mock.expect_float_from_stamount().times(1).returning(
+                |_, _, out_buff, out_buff_len, _| {
+                    unsafe { out_buff.copy_from_nonoverlapping([0u8; 12].as_ptr(), 12) }
+                    out_buff_len as i32
+                },
+            );
 
             let _guard = setup_mock(mock);
 
