@@ -1,6 +1,10 @@
 use crate::host::Result;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
 use crate::host::{
+    Error, float_add, float_compare, float_divide, float_multiply, float_pow, float_root,
+    float_subtract,
+};
+use crate::host::{
     FLOAT_ROUNDING_MODES_DOWNWARD, FLOAT_ROUNDING_MODES_TO_NEAREST,
     FLOAT_ROUNDING_MODES_TOWARDS_ZERO, FLOAT_ROUNDING_MODES_UPWARD,
 };
@@ -143,6 +147,117 @@ impl OpaqueFloat {
         };
         match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
     }
+
+    pub fn compare(&self, other: &OpaqueFloat) -> Result<core::cmp::Ordering> {
+        let rescode = unsafe {
+            float_compare(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+            )
+        };
+        match rescode {
+            0 => Result::Ok(core::cmp::Ordering::Equal),
+            1 => Result::Ok(core::cmp::Ordering::Greater),
+            2 => Result::Ok(core::cmp::Ordering::Less),
+            _ => Result::Err(Error::from_code(rescode)),
+        }
+    }
+
+    pub fn add(&self, other: &OpaqueFloat) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_add(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
+
+    pub fn subtract(&self, other: &OpaqueFloat) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_subtract(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
+
+    pub fn multiply(&self, other: &OpaqueFloat) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_multiply(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
+
+    pub fn divide(&self, other: &OpaqueFloat) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_divide(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
+
+    pub fn pow(&self, n: i32) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_pow(
+                self.0.as_ptr(),
+                self.0.len(),
+                n,
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
+
+    pub fn root(&self, n: i32) -> Result<OpaqueFloat> {
+        let mut float_bytes = [0u8; 12];
+        let rescode = unsafe {
+            float_root(
+                self.0.as_ptr(),
+                self.0.len(),
+                n,
+                float_bytes.as_mut_ptr(),
+                12,
+                0,
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
+    }
 }
 
 impl From<[u8; 12]> for OpaqueFloat {
@@ -168,7 +283,10 @@ mod tests {
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
 
+    use core::cmp::Ordering;
+
     const EXPECTED_FLOAT: OpaqueFloat = OpaqueFloat([0xCC; 12]);
+    const F: OpaqueFloat = OpaqueFloat([0u8; 12]);
 
     fn write_float(out_buff: *mut u8, out_buff_len: usize) -> i32 {
         assert_eq!(out_buff_len, 12);
@@ -354,5 +472,160 @@ mod tests {
             .returning(|_, _, _, _, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);
         assert!(OpaqueFloat::from_stnumber(&[0u8; 8], RoundingMode::ToNearest).is_err());
+    }
+
+    // compare
+
+    #[test]
+    fn test_compare_equal() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_compare().returning(|_, _, _, _| 0);
+        let _guard = setup_mock(mock);
+        assert_eq!(F.compare(&F).unwrap(), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_compare_greater() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_compare().returning(|_, _, _, _| 1);
+        let _guard = setup_mock(mock);
+        assert_eq!(F.compare(&F).unwrap(), Ordering::Greater);
+    }
+
+    #[test]
+    fn test_compare_less() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_compare().returning(|_, _, _, _| 2);
+        let _guard = setup_mock(mock);
+        assert_eq!(F.compare(&F).unwrap(), Ordering::Less);
+    }
+
+    #[test]
+    fn test_compare_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_compare()
+            .returning(|_, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.compare(&F).is_err());
+    }
+
+    // add
+
+    #[test]
+    fn test_add_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_add()
+            .returning(|_, _, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.add(&F).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_add_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_add()
+            .returning(|_, _, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.add(&F).is_err());
+    }
+
+    // subtract
+
+    #[test]
+    fn test_subtract_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_subtract()
+            .returning(|_, _, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.subtract(&F).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_subtract_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_subtract()
+            .returning(|_, _, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.subtract(&F).is_err());
+    }
+
+    // multiply
+
+    #[test]
+    fn test_multiply_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_multiply()
+            .returning(|_, _, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.multiply(&F).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_multiply_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_multiply()
+            .returning(|_, _, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.multiply(&F).is_err());
+    }
+
+    // divide
+
+    #[test]
+    fn test_divide_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_divide()
+            .returning(|_, _, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.divide(&F).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_divide_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_divide()
+            .returning(|_, _, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.divide(&F).is_err());
+    }
+
+    // pow
+
+    #[test]
+    fn test_pow_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_pow()
+            .returning(|_, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.pow(2).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_pow_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_pow()
+            .returning(|_, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.pow(2).is_err());
+    }
+
+    // root
+
+    #[test]
+    fn test_root_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_root()
+            .returning(|_, _, _, out_buff, out_buff_len, _| write_float(out_buff, out_buff_len));
+        let _guard = setup_mock(mock);
+        assert_eq!(F.root(2).unwrap(), EXPECTED_FLOAT);
+    }
+
+    #[test]
+    fn test_root_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_root()
+            .returning(|_, _, _, _, _, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+        assert!(F.root(2).is_err());
     }
 }
