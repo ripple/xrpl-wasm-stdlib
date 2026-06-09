@@ -283,3 +283,229 @@ pub fn get_field_optional<T: CurrentTxFieldGetter, const CODE: i32>(
 ) -> Result<Option<T>> {
     T::get_from_current_tx_optional(field)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{CurrentTxFieldGetter, get_field, get_field_optional};
+    use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::core::types::amount::{AMOUNT_SIZE, Amount};
+    use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+    use crate::core::types::currency::Currency;
+    use crate::core::types::transaction_type::TransactionType;
+    use crate::core::types::uint::{HASH256_SIZE, Hash256};
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use crate::sfield;
+    use mockall::predicate::{always, eq};
+
+    fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
+        mock.expect_get_tx_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
+    }
+
+    #[test]
+    fn test_basic_types() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Sequence.into(), 4, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(u32::get_from_current_tx(sfield::Flags).is_ok());
+        assert!(u32::get_from_current_tx(sfield::Sequence).is_ok());
+    }
+
+    #[test]
+    fn test_xrpl_types() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::Fee.into(), AMOUNT_SIZE, 1);
+        expect_tx_field(
+            &mut mock,
+            sfield::SigningPubKey.into(),
+            PUBLIC_KEY_BLOB_SIZE,
+            1,
+        );
+        expect_tx_field(&mut mock, sfield::TransactionType.into(), 2, 1);
+        expect_tx_field(&mut mock, sfield::MemoData.into(), DEFAULT_BLOB_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(AccountID::get_from_current_tx(sfield::Account).is_ok());
+        assert!(Hash256::get_from_current_tx(sfield::PreviousTxnID).is_ok());
+        assert!(Amount::get_from_current_tx(sfield::Fee).is_ok());
+        assert!(PublicKeyBlob::get_from_current_tx(sfield::SigningPubKey).is_ok());
+        assert!(TransactionType::get_from_current_tx(sfield::TransactionType).is_ok());
+        assert!(Blob::<DEFAULT_BLOB_SIZE>::get_from_current_tx(sfield::MemoData).is_ok());
+    }
+
+    #[test]
+    fn test_optional_variants() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::Fee.into(), AMOUNT_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+        expect_tx_field(
+            &mut mock,
+            sfield::SigningPubKey.into(),
+            PUBLIC_KEY_BLOB_SIZE,
+            1,
+        );
+        expect_tx_field(&mut mock, sfield::TransactionType.into(), 2, 1);
+        expect_tx_field(&mut mock, sfield::MemoData.into(), DEFAULT_BLOB_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        let result = u32::get_from_current_tx_optional(sfield::Flags);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = AccountID::get_from_current_tx_optional(sfield::Account);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = Amount::get_from_current_tx_optional(sfield::Fee);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = Hash256::get_from_current_tx_optional(sfield::PreviousTxnID);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = PublicKeyBlob::get_from_current_tx_optional(sfield::SigningPubKey);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = TransactionType::get_from_current_tx_optional(sfield::TransactionType);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = Blob::<DEFAULT_BLOB_SIZE>::get_from_current_tx_optional(sfield::MemoData);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_get_field_convenience() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Flags.into(), 4, 2);
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Flags).is_ok());
+        assert!(get_field::<AccountID, _>(sfield::Account).is_ok());
+
+        let result = get_field_optional::<u32, _>(sfield::Flags);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_get_field_returns_err_on_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_field()
+            .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
+            .times(1)
+            .returning(|_, _, _| crate::host::error_codes::INTERNAL_ERROR);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Flags).is_err());
+    }
+
+    // Value-level tests: verify Amount variant detection by populating
+    // the mock buffer with known flag bits + payload.
+
+    #[test]
+    fn test_amount_decodes_xrp_variant() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_field()
+            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
+            .times(1)
+            .returning(|_, buf, size| {
+                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                slice.fill(0);
+                let mut be = 1000u64.to_be_bytes();
+                be[0] |= 0x40;
+                slice[0..8].copy_from_slice(&be);
+                8
+            });
+
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
+        assert!(matches!(amount, Amount::XRP { num_drops: 1000 }));
+    }
+
+    #[test]
+    fn test_amount_decodes_mpt_variant() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_field()
+            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
+            .times(1)
+            .returning(|_, buf, size| {
+                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                slice.fill(0);
+                slice[0] = 0x60;
+                slice[1..9].copy_from_slice(&100u64.to_be_bytes());
+                slice[9..13].copy_from_slice(&7u32.to_be_bytes());
+                slice[13..33].fill(0xAB);
+                33
+            });
+
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
+        match amount {
+            Amount::MPT {
+                num_units,
+                is_positive,
+                mpt_id,
+            } => {
+                assert_eq!(num_units, 100);
+                assert!(is_positive);
+                assert_eq!(mpt_id.get_sequence_num(), 7);
+                assert_eq!(mpt_id.get_issuer(), AccountID::from([0xAB; 20]));
+            }
+            _ => panic!("expected MPT variant"),
+        }
+    }
+
+    #[test]
+    fn test_amount_decodes_iou_variant() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_field()
+            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
+            .times(1)
+            .returning(|_, buf, size| {
+                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                slice.fill(0);
+                slice[0] = 0x80;
+                slice[8..28].fill(0xCC);
+                slice[28..48].fill(0xDD);
+                48
+            });
+
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
+        match amount {
+            Amount::IOU {
+                issuer, currency, ..
+            } => {
+                assert_eq!(issuer, AccountID::from([0xDD; 20]));
+                assert_eq!(currency, Currency::from([0xCC; 20]));
+            }
+            _ => panic!("expected IOU variant"),
+        }
+    }
+}

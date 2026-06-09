@@ -11,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  XRPLD_DOCKER_IMAGE: rippleci/xrpld:smart_escrow_supported
+  XRPLD_DOCKER_IMAGE: rippleci/xrpld:ripple--se--supported
 
 jobs:
   pre-commit:
@@ -154,7 +154,7 @@ jobs:
 
       - name: Run docker in background
         run: |
-          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/opt/ripple/" --name xrpld-service --health-cmd="xrpld server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.XRPLD_DOCKER_IMAGE }} -c "xrpld -a"
+          docker run --detach --rm -p 5005:5005 -p 6006:6006 --volume "${{ github.workspace }}/.ci-config/":"/etc/xrpld/" --name xrpld-service --health-cmd="xrpld server_info || exit 1" --health-interval=5s --health-retries=10 --health-timeout=2s --entrypoint bash ${{ env.XRPLD_DOCKER_IMAGE }} -c "xrpld -a"
 
       - name: Wait for xrpld to be healthy
         run: |

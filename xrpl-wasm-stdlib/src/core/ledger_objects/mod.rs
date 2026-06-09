@@ -401,15 +401,14 @@ pub mod current_ledger_object {
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
         use crate::core::types::amount::{AMOUNT_SIZE, Amount};
         use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+        use crate::core::types::currency::Currency;
+        use crate::core::types::issue::Issue;
+        use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
         use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
-
-        // ========================================
-        // Shared test helper functions
-        // ========================================
 
         fn expect_current_field<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
@@ -426,9 +425,20 @@ pub mod current_ledger_object {
                 .returning(move |_, _, _| size as i32);
         }
 
-        // ========================================
-        // Tests for current_ledger_object module
-        // ========================================
+        fn expect_current_field_short<
+            T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+            const CODE: i32,
+        >(
+            mock: &mut MockHostBindings,
+            field: SField<T, CODE>,
+            buf_size: usize,
+            returned: i32,
+        ) {
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(field), always(), eq(buf_size))
+                .times(1)
+                .returning(move |_, _, _| returned);
+        }
 
         #[test]
         fn test_current_basic_types() {
@@ -500,6 +510,184 @@ pub mod current_ledger_object {
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
+
+        #[test]
+        fn test_type_sizes() {
+            let mut mock = MockHostBindings::new();
+
+            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey, PUBLIC_KEY_BUFFER_SIZE, 1);
+
+            let _guard = setup_mock(mock);
+
+            let hash128 = Hash128::get_from_current_ledger_obj(sfield::EmailHash).unwrap();
+            assert_eq!(hash128.as_bytes().len(), HASH128_SIZE);
+
+            let hash256 = Hash256::get_from_current_ledger_obj(sfield::PreviousTxnID).unwrap();
+            assert_eq!(hash256.as_bytes().len(), HASH256_SIZE);
+
+            let account = AccountID::get_from_current_ledger_obj(sfield::Account).unwrap();
+            assert_eq!(account.0.len(), ACCOUNT_ID_SIZE);
+
+            let blob: Blob<PUBLIC_KEY_BUFFER_SIZE> =
+                Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
+            assert_eq!(blob.len, PUBLIC_KEY_BUFFER_SIZE);
+            assert_eq!(blob.data.len(), PUBLIC_KEY_BUFFER_SIZE);
+        }
+
+        // Value-level tests: verify Issue variant detection by populating
+        // the mock buffer with known bytes (not just checking `is_ok()`).
+
+        #[test]
+        fn test_issue_decodes_xrp_variant() {
+            let mut mock = MockHostBindings::new();
+            expect_current_field_short(&mut mock, sfield::Asset, 40, 20);
+
+            let _guard = setup_mock(mock);
+
+            let issue = Issue::get_from_current_ledger_obj(sfield::Asset).unwrap();
+            assert!(matches!(issue, Issue::XRP(_)));
+        }
+
+        #[test]
+        fn test_issue_decodes_mpt_variant() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Asset), always(), eq(40))
+                .times(1)
+                .returning(|_, buf, _| {
+                    let slice = unsafe { core::slice::from_raw_parts_mut(buf, 24) };
+                    slice[0..4].copy_from_slice(&42u32.to_be_bytes());
+                    slice[4..24].fill(0xAB);
+                    24
+                });
+
+            let _guard = setup_mock(mock);
+
+            let issue = Issue::get_from_current_ledger_obj(sfield::Asset).unwrap();
+            match issue {
+                Issue::MPT(mpt) => {
+                    assert_eq!(mpt.mpt_id().get_sequence_num(), 42);
+                    assert_eq!(mpt.mpt_id().get_issuer(), AccountID::from([0xAB; 20]));
+                }
+                _ => panic!("expected MPT variant"),
+            }
+        }
+
+        #[test]
+        fn test_issue_decodes_iou_variant() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Asset), always(), eq(40))
+                .times(1)
+                .returning(|_, buf, _| {
+                    let slice = unsafe { core::slice::from_raw_parts_mut(buf, 40) };
+                    slice[0..20].fill(0xCC);
+                    slice[20..40].fill(0xDD);
+                    40
+                });
+
+            let _guard = setup_mock(mock);
+
+            let issue = Issue::get_from_current_ledger_obj(sfield::Asset).unwrap();
+            match issue {
+                Issue::IOU(iou) => {
+                    let bytes = iou.as_bytes();
+                    assert_eq!(&bytes[..20], &[0xCC; 20]);
+                    assert_eq!(&bytes[20..], &[0xDD; 20]);
+                }
+                _ => panic!("expected IOU variant"),
+            }
+        }
+
+        // Value-level tests: verify Amount variant detection by populating
+        // the mock buffer with known flag bits + payload.
+
+        #[test]
+        fn test_amount_decodes_xrp_variant() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Amount), always(), eq(48))
+                .times(1)
+                .returning(|_, buf, size| {
+                    let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                    slice.fill(0);
+                    let mut be = 1000u64.to_be_bytes();
+                    be[0] |= 0x40;
+                    slice[0..8].copy_from_slice(&be);
+                    8
+                });
+
+            let _guard = setup_mock(mock);
+
+            let amount = Amount::get_from_current_ledger_obj(sfield::Amount).unwrap();
+            assert!(matches!(amount, Amount::XRP { num_drops: 1000 }));
+        }
+
+        #[test]
+        fn test_amount_decodes_mpt_variant() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Amount), always(), eq(48))
+                .times(1)
+                .returning(|_, buf, size| {
+                    let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                    slice.fill(0);
+                    slice[0] = 0x60;
+                    slice[1..9].copy_from_slice(&100u64.to_be_bytes());
+                    slice[9..13].copy_from_slice(&7u32.to_be_bytes());
+                    slice[13..33].fill(0xAB);
+                    33
+                });
+
+            let _guard = setup_mock(mock);
+
+            let amount = Amount::get_from_current_ledger_obj(sfield::Amount).unwrap();
+            match amount {
+                Amount::MPT {
+                    num_units,
+                    is_positive,
+                    mpt_id,
+                } => {
+                    assert_eq!(num_units, 100);
+                    assert!(is_positive);
+                    assert_eq!(mpt_id.get_sequence_num(), 7);
+                    assert_eq!(mpt_id.get_issuer(), AccountID::from([0xAB; 20]));
+                }
+                _ => panic!("expected MPT variant"),
+            }
+        }
+
+        #[test]
+        fn test_amount_decodes_iou_variant() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Amount), always(), eq(48))
+                .times(1)
+                .returning(|_, buf, size| {
+                    let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                    slice.fill(0);
+                    slice[0] = 0x80;
+                    slice[8..28].fill(0xCC);
+                    slice[28..48].fill(0xDD);
+                    48
+                });
+
+            let _guard = setup_mock(mock);
+
+            let amount = Amount::get_from_current_ledger_obj(sfield::Amount).unwrap();
+            match amount {
+                Amount::IOU {
+                    issuer, currency, ..
+                } => {
+                    assert_eq!(issuer, AccountID::from([0xDD; 20]));
+                    assert_eq!(currency, Currency::from([0xCC; 20]));
+                }
+                _ => panic!("expected IOU variant"),
+            }
+        }
     }
 }
 
@@ -528,7 +716,7 @@ pub mod ledger_object {
     /// use xrpl_wasm_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
-    /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+    /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // Amount
     /// let account = ledger_object::get_field(0, sfield::Account).unwrap();  // AccountID
     /// ```
     #[inline]
@@ -565,16 +753,17 @@ pub mod ledger_object {
         use super::*;
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
         use crate::core::types::amount::{AMOUNT_SIZE, Amount};
-        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE};
-        use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
+        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+        use crate::core::types::currency::{CURRENCY_SIZE, Currency};
+        use crate::core::types::issue::Issue;
+        use crate::core::types::uint::{
+            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
+            Hash256,
+        };
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
-
-        // ========================================
-        // Shared test helper functions
-        // ========================================
 
         fn expect_ledger_field<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
@@ -589,12 +778,27 @@ pub mod ledger_object {
             mock.expect_get_ledger_obj_field()
                 .with(eq(slot), eq(field), always(), eq(size))
                 .times(times)
-                .returning(move |_, _, _, _| size as i32);
+                .returning(move |_, _, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    size as i32
+                });
         }
 
-        // ========================================
-        // Tests for ledger_object module
-        // ========================================
+        fn expect_ledger_field_short<
+            T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+            const CODE: i32,
+        >(
+            mock: &mut MockHostBindings,
+            slot: i32,
+            field: SField<T, CODE>,
+            buf_size: usize,
+            returned: i32,
+        ) {
+            mock.expect_get_ledger_obj_field()
+                .with(eq(slot), eq(field), always(), eq(buf_size))
+                .times(1)
+                .returning(move |_, _, _, _| returned);
+        }
 
         #[test]
         fn test_ledger_basic_types() {
@@ -619,19 +823,30 @@ pub mod ledger_object {
 
             expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Amount, AMOUNT_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Balance, AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash, HASH128_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::PreviousTxnID, HASH256_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::BaseAsset, CURRENCY_SIZE, 1);
+            expect_ledger_field_short(&mut mock, slot, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
 
             assert!(AccountID::get_from_ledger_obj(slot, sfield::Account).is_ok());
             assert!(Amount::get_from_ledger_obj(slot, sfield::Amount).is_ok());
+            assert!(Amount::get_from_ledger_obj(slot, sfield::Balance).is_ok());
             assert!(Hash128::get_from_ledger_obj(slot, sfield::EmailHash).is_ok());
             assert!(Hash256::get_from_ledger_obj(slot, sfield::PreviousTxnID).is_ok());
 
-            let blob: Blob<33> = Blob::get_from_ledger_obj(slot, sfield::PublicKey).unwrap();
-            assert_eq!(blob.len, 33);
+            let blob: PublicKeyBlob = Blob::get_from_ledger_obj(slot, sfield::PublicKey).unwrap();
+            assert_eq!(blob.len, PUBLIC_KEY_BLOB_SIZE);
+
+            assert!(Hash160::get_from_ledger_obj(slot, sfield::TakerPaysCurrency).is_ok());
+            assert!(Hash192::get_from_ledger_obj(slot, sfield::MPTokenIssuanceID).is_ok());
+            assert!(Currency::get_from_ledger_obj(slot, sfield::BaseAsset).is_ok());
+            assert!(Issue::get_from_ledger_obj(slot, sfield::Asset).is_ok());
         }
 
         #[test]
@@ -641,6 +856,11 @@ pub mod ledger_object {
 
             expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
             expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Amount, AMOUNT_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::BaseAsset, CURRENCY_SIZE, 1);
+            expect_ledger_field_short(&mut mock, slot, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
 
@@ -651,6 +871,26 @@ pub mod ledger_object {
             let result = AccountID::get_from_ledger_obj_optional(slot, sfield::Account);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
+
+            let result = Amount::get_from_ledger_obj_optional(slot, sfield::Amount);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash160::get_from_ledger_obj_optional(slot, sfield::TakerPaysCurrency);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash192::get_from_ledger_obj_optional(slot, sfield::MPTokenIssuanceID);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Currency::get_from_ledger_obj_optional(slot, sfield::BaseAsset);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Issue::get_from_ledger_obj_optional(slot, sfield::Asset);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
         }
 
         #[test]
@@ -659,16 +899,98 @@ pub mod ledger_object {
             let slot = 0;
 
             expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 2);
-            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 2);
+            expect_ledger_field(&mut mock, slot, sfield::Balance, AMOUNT_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
             assert!(get_field(slot, sfield::Flags).is_ok());
             assert!(get_field(slot, sfield::Account).is_ok());
+            assert!(get_field(slot, sfield::Balance).is_ok());
+            assert!(get_field(slot, sfield::PublicKey).is_ok());
 
             let result = get_field_optional(slot, sfield::Flags);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
+
+            let result = get_field_optional(slot, sfield::Account);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
         }
+
+        #[test]
+        fn test_type_inference() {
+            let mut mock = MockHostBindings::new();
+            let slot = 0;
+
+            expect_ledger_field(&mut mock, slot, sfield::Balance, AMOUNT_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Sequence, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
+
+            let _guard = setup_mock(mock);
+
+            let _balance = get_field(slot, sfield::Balance);
+            let _account = get_field(slot, sfield::Account);
+
+            let _sequence: Result<u32> = get_field(slot, sfield::Sequence);
+            let _flags: Result<u32> = get_field(slot, sfield::Flags);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::current_ledger_object;
+    use super::ledger_object;
+    use crate::sfield;
+
+    #[test]
+    #[should_panic]
+    fn test_array_get_field_panics() {
+        let _ = current_ledger_object::get_field(sfield::Signers);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_array_get_field_optional_panics() {
+        let _ = current_ledger_object::get_field_optional(sfield::Signers);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_array_get_field_with_slot_panics() {
+        let _ = ledger_object::get_field(0, sfield::Signers);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_array_get_field_optional_with_slot_panics() {
+        let _ = ledger_object::get_field_optional(0, sfield::Signers);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_object_get_field_panics() {
+        let _ = current_ledger_object::get_field(sfield::Memo);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_object_get_field_optional_panics() {
+        let _ = current_ledger_object::get_field_optional(sfield::Memo);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_object_get_field_with_slot_panics() {
+        let _ = ledger_object::get_field(0, sfield::Memo);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_object_get_field_optional_with_slot_panics() {
+        let _ = ledger_object::get_field_optional(0, sfield::Memo);
     }
 }
