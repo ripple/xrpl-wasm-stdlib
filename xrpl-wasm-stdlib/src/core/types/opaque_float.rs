@@ -32,11 +32,8 @@ use crate::host::{
 /// # Example
 ///
 /// ```no_run
-/// # use xrpl_wasm_stdlib::core::types::opaque_float::OpaqueFloat;
-/// // Create from host function
-/// let mut float_bytes = [0u8; 12];
-/// // float_from_int(100, float_bytes.as_mut_ptr(), 12, 0);
-/// let amount = OpaqueFloat(float_bytes);
+/// # use xrpl_wasm_stdlib::core::types::opaque_float::{OpaqueFloat, RoundingMode};
+/// let amount = OpaqueFloat::from_int(100, RoundingMode::ToNearest).unwrap();
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
@@ -50,12 +47,14 @@ pub enum RoundingMode {
 }
 
 impl OpaqueFloat {
+    /// Converts a signed integer to an `OpaqueFloat` using the given rounding mode.
     pub fn from_int(i: i64, mode: RoundingMode) -> Result<OpaqueFloat> {
         let mut float_bytes = [0u8; 12];
         let rescode = unsafe { float_from_int(i, float_bytes.as_mut_ptr(), 12, mode as i32) };
         match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
     }
 
+    /// Converts this `OpaqueFloat` to a signed integer using the given rounding mode.
     pub fn to_int(&self, mode: RoundingMode) -> Result<i64> {
         let mut int_bytes = [0u8; 8];
         let rescode = unsafe {
@@ -70,6 +69,7 @@ impl OpaqueFloat {
         match_result_code_with_expected_bytes(rescode, 8, || i64::from_le_bytes(int_bytes))
     }
 
+    /// Converts an unsigned integer to an `OpaqueFloat` using the given rounding mode.
     pub fn from_uint(u: u64, mode: RoundingMode) -> Result<OpaqueFloat> {
         let mut float_bytes = [0u8; 12];
         let rescode = unsafe {
@@ -84,6 +84,7 @@ impl OpaqueFloat {
         match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
     }
 
+    /// Constructs an `OpaqueFloat` from a mantissa and exponent using the given rounding mode.
     pub fn from_mantissa_exponent(m: i64, e: i32, mode: RoundingMode) -> Result<OpaqueFloat> {
         let mut float_bytes = [0u8; 12];
         let rescode =
@@ -91,6 +92,7 @@ impl OpaqueFloat {
         match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
     }
 
+    /// Extracts the mantissa and exponent from this `OpaqueFloat`.
     pub fn to_mantissa_exponent(&self) -> Result<(i64, i32)> {
         let mut mant_bytes = [0u8; 8];
         let mut exp_bytes = [0u8; 4];
@@ -112,6 +114,7 @@ impl OpaqueFloat {
         })
     }
 
+    /// Converts a serialized STAmount (8-byte) to an `OpaqueFloat` using the given rounding mode.
     pub fn from_stamount(amount: &[u8], mode: RoundingMode) -> Result<OpaqueFloat> {
         let mut float_bytes = [0u8; 12];
         let rescode = unsafe {
@@ -126,6 +129,7 @@ impl OpaqueFloat {
         match_result_code_with_expected_bytes(rescode, 12, || OpaqueFloat(float_bytes))
     }
 
+    /// Converts a serialized STNumber (12-byte) to an `OpaqueFloat` using the given rounding mode.
     pub fn from_stnumber(bytes: &[u8], mode: RoundingMode) -> Result<OpaqueFloat> {
         let mut float_bytes = [0u8; 12];
         let rescode = unsafe {
