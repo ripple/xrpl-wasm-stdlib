@@ -37,7 +37,16 @@ Artifact:
 ./target/wasm32v1-none/release/kyc.wasm
 ```
 
-### 3. Deploy and test on Devnet
+### 3a. Deploy and test Locally
+
+```shell
+cd ../../..
+docker run -d --rm -p 5005:5005 -p 6006:6006 --volume "$(pwd)/.ci-config/":"/etc/xrpld/" \
+  --entrypoint bash rippleci/xrpld:ripple--se--supported -c "xrpld -a"
+./scripts/run-tests.sh examples/smart-escrows/kyc
+```
+
+### 3b. Deploy and test on Devnet
 
 Use the test script to deploy an escrow and test the FinishFunction.
 

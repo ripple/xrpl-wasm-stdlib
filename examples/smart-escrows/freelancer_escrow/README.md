@@ -205,9 +205,10 @@ The compiled WASM is written to `examples/target/wasm32v1-none/release/freelance
 
 ## Running Integration Tests
 
-Requires a local `rippled` node on `ws://localhost:6006` (or set `DEVNET=true` to target Devnet):
-
 ```shell
+# Locally (start xrpld if not already running)
+docker run -d --rm -p 5005:5005 -p 6006:6006 --volume "$(pwd)/.ci-config/":"/etc/xrpld/" \
+  --entrypoint bash rippleci/xrpld:ripple--se--supported -c "xrpld -a"
 ./scripts/run-tests.sh examples/smart-escrows/freelancer_escrow
 
 # Against Devnet
