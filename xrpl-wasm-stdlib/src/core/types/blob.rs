@@ -18,9 +18,6 @@ pub const DOMAIN_BLOB_SIZE: usize = 256;
 /// code), so we do the same here.
 pub const FULFILLMENT_BLOB_SIZE: usize = 256;
 
-// Declared here because there is no Memo struct.
-pub const MEMO_BLOB_SIZE: usize = DEFAULT_BLOB_SIZE;
-
 /// The number of bytes in a Public key. In XRPL, ed25519 public keys are prefixed with a one-byte prefix (i.e., `0xED`)
 /// to be consistent with secp256k1 public keys, which always have 33 bytes.
 pub const PUBLIC_KEY_BLOB_SIZE: usize = 33;
