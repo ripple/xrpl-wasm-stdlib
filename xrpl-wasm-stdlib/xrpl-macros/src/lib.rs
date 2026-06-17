@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 mod r_address;
+mod typed_const;
 
 #[proc_macro]
 pub fn r_address(input: TokenStream) -> TokenStream {
@@ -7,4 +8,9 @@ pub fn r_address(input: TokenStream) -> TokenStream {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
+}
+
+#[proc_macro]
+pub fn hash256(input: TokenStream) -> TokenStream {
+    typed_const::hash256(input)
 }
