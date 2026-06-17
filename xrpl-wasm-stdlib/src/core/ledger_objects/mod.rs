@@ -449,7 +449,16 @@ pub mod current_ledger_object {
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
 
+        // ========================================
+        // Test helper functions
+        // ========================================
+
         /// Helper to set up a mock expectation for get_current_ledger_obj_field.
+        ///
+        /// Zero-fills the output buffer before returning. This is required because
+        /// `get_variable_size_field` and the fixed-size getters allocate the buffer
+        /// via `MaybeUninit` and call `assume_init` after the host call returns —
+        /// leaving the buffer uninitialized would be UB.
         fn expect_current_field<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
             const CODE: i32,
@@ -462,7 +471,10 @@ pub mod current_ledger_object {
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(field), always(), eq(size))
                 .times(times)
-                .returning(move |_, _, _| size as i32);
+                .returning(move |_, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    size as i32
+                });
         }
 
         /// Like `expect_current_field`, but the host writes fewer bytes than the
