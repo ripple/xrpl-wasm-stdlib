@@ -290,7 +290,6 @@ mod tests {
     use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
     use crate::core::types::amount::{AMOUNT_SIZE, Amount};
     use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
-    use crate::core::types::currency::Currency;
     use crate::core::types::transaction_type::TransactionType;
     use crate::core::types::uint::{HASH256_SIZE, Hash256};
     use crate::host::host_bindings_trait::MockHostBindings;
@@ -422,11 +421,13 @@ mod tests {
         assert!(get_field::<u32, _>(sfield::Flags).is_err());
     }
 
-    // Value-level tests: verify Amount variant detection by populating
-    // the mock buffer with known flag bits + payload.
-
+    // Verifies the host-to-type pipeline for Amount fields: that get_tx_field bytes are correctly
+    // routed through CurrentTxFieldGetter into a decoded Amount. Amount is used here because its
+    // CurrentTxFieldGetter impl exercises get_variable_size_field, unlike fixed-size types.
+    // One variant is sufficient — get_variable_size_field is variant-agnostic; Amount::from_bytes
+    // parsing for all three variants is covered in types/amount.rs.
     #[test]
-    fn test_amount_decodes_xrp_variant() {
+    fn test_get_tx_field_pipeline_routes_bytes_to_amount() {
         let mut mock = MockHostBindings::new();
         mock.expect_get_tx_field()
             .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
@@ -444,68 +445,5 @@ mod tests {
 
         let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
         assert!(matches!(amount, Amount::XRP { num_drops: 1000 }));
-    }
-
-    #[test]
-    fn test_amount_decodes_mpt_variant() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
-            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
-            .times(1)
-            .returning(|_, buf, size| {
-                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
-                slice.fill(0);
-                slice[0] = 0x60;
-                slice[1..9].copy_from_slice(&100u64.to_be_bytes());
-                slice[9..13].copy_from_slice(&7u32.to_be_bytes());
-                slice[13..33].fill(0xAB);
-                33
-            });
-
-        let _guard = setup_mock(mock);
-
-        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
-        match amount {
-            Amount::MPT {
-                num_units,
-                is_positive,
-                mpt_id,
-            } => {
-                assert_eq!(num_units, 100);
-                assert!(is_positive);
-                assert_eq!(mpt_id.get_sequence_num(), 7);
-                assert_eq!(mpt_id.get_issuer(), AccountID::from([0xAB; 20]));
-            }
-            _ => panic!("expected MPT variant"),
-        }
-    }
-
-    #[test]
-    fn test_amount_decodes_iou_variant() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
-            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
-            .times(1)
-            .returning(|_, buf, size| {
-                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
-                slice.fill(0);
-                slice[0] = 0x80;
-                slice[8..28].fill(0xCC);
-                slice[28..48].fill(0xDD);
-                48
-            });
-
-        let _guard = setup_mock(mock);
-
-        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
-        match amount {
-            Amount::IOU {
-                issuer, currency, ..
-            } => {
-                assert_eq!(issuer, AccountID::from([0xDD; 20]));
-                assert_eq!(currency, Currency::from([0xCC; 20]));
-            }
-            _ => panic!("expected IOU variant"),
-        }
     }
 }
