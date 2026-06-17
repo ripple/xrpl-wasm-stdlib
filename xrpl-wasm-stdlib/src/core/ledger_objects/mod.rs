@@ -13,13 +13,52 @@ use crate::sfield::SField;
 
 /// Trait for types that can be retrieved from ledger object fields.
 ///
-/// This trait provides a unified interface for retrieving typed data from XRPL ledger objects.
+/// This trait provides a unified interface for retrieving typed data from XRPL ledger objects,
+/// replacing the previous collection of type-specific functions with a generic, type-safe approach.
+///
+/// ## Supported Types
+///
+/// The following types implement this trait:
+/// - `u8` - 8-bit unsigned integers (1 byte)
+/// - `u16` - 16-bit unsigned integers (2 bytes)
+/// - `u32` - 32-bit unsigned integers (4 bytes)
+/// - `u64` - 64-bit unsigned integers (8 bytes)
+/// - `AccountID` - 20-byte account identifiers
+/// - `Amount` - XRP amounts and token amounts (variable size, up to 48 bytes)
+/// - `Hash128` - 128-bit cryptographic hashes (16 bytes)
+/// - `Hash256` - 256-bit cryptographic hashes (32 bytes)
+/// - `Blob<N>` - Variable-length binary data (generic over buffer size `N`)
+///
+/// ## Usage Patterns
+///
+/// ```rust,no_run
+/// use xrpl_wasm_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
+/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+/// use xrpl_wasm_stdlib::core::types::amount::Amount;
+/// use xrpl_wasm_stdlib::sfield;
+///
+/// fn example() {
+///   let slot = 0;
+///   // Get a required field from a specific ledger object
+///   let balance = ledger_object::get_field(slot, sfield::Balance).unwrap();
+///   let account = ledger_object::get_field(slot, sfield::Account).unwrap();
+///
+///   // Get an optional field from the current ledger object
+///   let flags = current_ledger_object::get_field_optional(sfield::Flags).unwrap();
+/// }
+/// ```
 ///
 /// ## Error Handling
 ///
 /// - Required field methods return `Result<T>` and error if the field is missing.
 /// - Optional field methods return `Result<Option<T>>` and return `None` if the field is missing.
 /// - All methods return appropriate errors for buffer size mismatches or other retrieval failures.
+///
+/// ## Safety Considerations
+///
+/// - All implementations use appropriately sized buffers for their data types
+/// - Buffer sizes are validated against expected field sizes where applicable
+/// - Unsafe operations are contained within the host function calls
 pub trait LedgerObjectFieldGetter: Sized {
     /// Get a required field from the current ledger object.
     ///
@@ -410,6 +449,7 @@ pub mod current_ledger_object {
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
 
+        /// Helper to set up a mock expectation for get_current_ledger_obj_field.
         fn expect_current_field<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
             const CODE: i32,
@@ -425,6 +465,9 @@ pub mod current_ledger_object {
                 .returning(move |_, _, _| size as i32);
         }
 
+        /// Like `expect_current_field`, but the host writes fewer bytes than the
+        /// buffer holds — used for variable-size fields (e.g. `Issue` uses a 40-byte
+        /// buffer but returns 20 bytes for the XRP variant).
         fn expect_current_field_short<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
             const CODE: i32,
@@ -558,6 +601,7 @@ pub mod current_ledger_object {
                 .with(eq(sfield::Asset), always(), eq(40))
                 .times(1)
                 .returning(|_, buf, _| {
+                    // 4 bytes seq=42 (big-endian) + 20 bytes issuer=0xAB → MPT
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, 24) };
                     slice[0..4].copy_from_slice(&42u32.to_be_bytes());
                     slice[4..24].fill(0xAB);
@@ -583,6 +627,7 @@ pub mod current_ledger_object {
                 .with(eq(sfield::Asset), always(), eq(40))
                 .times(1)
                 .returning(|_, buf, _| {
+                    // 20 bytes currency=0xCC + 20 bytes issuer=0xDD → IOU
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, 40) };
                     slice[0..20].fill(0xCC);
                     slice[20..40].fill(0xDD);
@@ -612,10 +657,12 @@ pub mod current_ledger_object {
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
+                    // XRP positive 1000 drops: byte0 = 0x40 (positive bit, XRP type),
+                    // remaining 7 bytes hold the drop amount big-endian.
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
                     slice.fill(0);
                     let mut be = 1000u64.to_be_bytes();
-                    be[0] |= 0x40;
+                    be[0] |= 0x40; // set positive flag in top bits
                     slice[0..8].copy_from_slice(&be);
                     8
                 });
@@ -633,6 +680,9 @@ pub mod current_ledger_object {
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
+                    // MPT positive: byte0 bit7=0 (not IOU), bit6=1 (positive), bit5=1 (MPT)
+                    // bytes[1..9]  = num_units big-endian
+                    // bytes[9..33] = MptId (4-byte seq + 20-byte issuer)
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
                     slice.fill(0);
                     slice[0] = 0x60;
@@ -667,6 +717,9 @@ pub mod current_ledger_object {
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
+                    // IOU: byte0 bit7=1; bytes[0..8]=OpaqueFloat (opaque, content
+                    // doesn't matter for variant detection), bytes[8..28]=currency,
+                    // bytes[28..48]=issuer.
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
                     slice.fill(0);
                     slice[0] = 0x80;
@@ -765,6 +818,12 @@ pub mod ledger_object {
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
 
+        /// Helper to set up a mock expectation for get_ledger_obj_field.
+        ///
+        /// Zero-fills the output buffer before returning. This is required because
+        /// the fixed-size getters allocate the buffer via `MaybeUninit` and call
+        /// `assume_init` after the host call returns — leaving the buffer uninitialized
+        /// would be UB.
         fn expect_ledger_field<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
             const CODE: i32,
@@ -784,6 +843,8 @@ pub mod ledger_object {
                 });
         }
 
+        /// Like `expect_ledger_field`, but the host writes fewer bytes than the
+        /// buffer holds. See `expect_current_field_short`.
         fn expect_ledger_field_short<
             T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
             const CODE: i32,
