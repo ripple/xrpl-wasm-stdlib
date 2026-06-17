@@ -495,7 +495,10 @@ pub mod current_ledger_object {
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(field), always(), eq(buf_size))
                 .times(1)
-                .returning(move |_, _, _| returned);
+                .returning(move |_, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    returned
+                });
         }
 
         #[test]
@@ -922,7 +925,10 @@ pub mod ledger_object {
             mock.expect_get_ledger_obj_field()
                 .with(eq(slot), eq(field), always(), eq(buf_size))
                 .times(1)
-                .returning(move |_, _, _, _| returned);
+                .returning(move |_, _, buf, buf_size| {
+                    unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
+                    returned
+                });
         }
 
         #[test]
@@ -985,6 +991,9 @@ pub mod ledger_object {
             expect_ledger_field(&mut mock, slot, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::BaseAsset, CURRENCY_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
             expect_ledger_field_short(&mut mock, slot, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
@@ -1010,6 +1019,18 @@ pub mod ledger_object {
             assert!(result.unwrap().is_some());
 
             let result = Currency::get_from_ledger_obj_optional(slot, sfield::BaseAsset);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash128::get_from_ledger_obj_optional(slot, sfield::EmailHash);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash256::get_from_ledger_obj_optional(slot, sfield::PreviousTxnID);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = PublicKeyBlob::get_from_ledger_obj_optional(slot, sfield::PublicKey);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
