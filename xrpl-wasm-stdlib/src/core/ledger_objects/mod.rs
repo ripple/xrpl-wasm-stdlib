@@ -440,10 +440,13 @@ pub mod current_ledger_object {
         use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
         use crate::core::types::amount::{AMOUNT_SIZE, Amount};
         use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
-        use crate::core::types::currency::Currency;
+        use crate::core::types::currency::{CURRENCY_SIZE, Currency};
         use crate::core::types::issue::Issue;
         use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
-        use crate::core::types::uint::{HASH128_SIZE, HASH256_SIZE, Hash128, Hash256};
+        use crate::core::types::uint::{
+            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
+            Hash256,
+        };
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield::{self, SField};
@@ -519,6 +522,10 @@ pub mod current_ledger_object {
             expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
             expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
             expect_current_field(&mut mock, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
+            expect_current_field(&mut mock, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
+            expect_current_field(&mut mock, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
+            expect_current_field(&mut mock, sfield::BaseAsset, CURRENCY_SIZE, 1);
+            expect_current_field_short(&mut mock, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
 
@@ -529,6 +536,11 @@ pub mod current_ledger_object {
 
             let blob: PublicKeyBlob = Blob::get_from_current_ledger_obj(sfield::PublicKey).unwrap();
             assert_eq!(blob.len, 33);
+
+            assert!(Hash160::get_from_current_ledger_obj(sfield::TakerPaysCurrency).is_ok());
+            assert!(Hash192::get_from_current_ledger_obj(sfield::MPTokenIssuanceID).is_ok());
+            assert!(Currency::get_from_current_ledger_obj(sfield::BaseAsset).is_ok());
+            assert!(Issue::get_from_current_ledger_obj(sfield::Asset).is_ok());
         }
 
         #[test]
@@ -537,6 +549,14 @@ pub mod current_ledger_object {
 
             expect_current_field(&mut mock, sfield::Flags, 4, 1);
             expect_current_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_current_field(&mut mock, sfield::Amount, AMOUNT_SIZE, 1);
+            expect_current_field(&mut mock, sfield::EmailHash, HASH128_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_current_field(&mut mock, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
+            expect_current_field(&mut mock, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
+            expect_current_field(&mut mock, sfield::BaseAsset, CURRENCY_SIZE, 1);
+            expect_current_field(&mut mock, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
+            expect_current_field_short(&mut mock, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
 
@@ -545,6 +565,38 @@ pub mod current_ledger_object {
             assert!(result.unwrap().is_some());
 
             let result = AccountID::get_from_current_ledger_obj_optional(sfield::Account);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Amount::get_from_current_ledger_obj_optional(sfield::Amount);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash128::get_from_current_ledger_obj_optional(sfield::EmailHash);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash256::get_from_current_ledger_obj_optional(sfield::PreviousTxnID);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash160::get_from_current_ledger_obj_optional(sfield::TakerPaysCurrency);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Hash192::get_from_current_ledger_obj_optional(sfield::MPTokenIssuanceID);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Currency::get_from_current_ledger_obj_optional(sfield::BaseAsset);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = PublicKeyBlob::get_from_current_ledger_obj_optional(sfield::PublicKey);
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_some());
+
+            let result = Issue::get_from_current_ledger_obj_optional(sfield::Asset);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
         }
