@@ -121,7 +121,6 @@ async function main() {
     Fulfillment: "FulfillmentBlob",
     FinishFunction: "WasmBlob",
     PublicKey: "PublicKeyBlob",
-    Memo: "MemoBlob",
     Domain: "UriBlob",
     MessageKey: "PublicKeyBlob",
     SigningPubKey: "PublicKeyBlob",
