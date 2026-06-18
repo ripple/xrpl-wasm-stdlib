@@ -1,5 +1,0 @@
-error: Invalid blob hex: ABC
- --> tests/blob/fail_odd_length.rs:5:11
-  |
-5 |     blob!("ABC");
-  |           ^^^^^

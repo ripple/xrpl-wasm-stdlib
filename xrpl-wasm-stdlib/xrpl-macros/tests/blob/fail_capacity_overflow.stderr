@@ -1,5 +1,0 @@
-error: Blob hex (8 bytes) exceeds declared capacity (4 bytes)
- --> tests/blob/fail_capacity_overflow.rs:5:11
-  |
-5 |     blob!("DEADBEEFCAFEBABE", 4);
-  |           ^^^^^^^^^^^^^^^^^^
