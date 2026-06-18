@@ -1,0 +1,5 @@
+error: Invalid currency: USDT
+ --> tests/currency/fail_wrong_length.rs:5:15
+  |
+5 |     currency!("USDT");
+  |               ^^^^^^

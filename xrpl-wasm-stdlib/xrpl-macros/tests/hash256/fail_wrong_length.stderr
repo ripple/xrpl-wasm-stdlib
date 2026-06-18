@@ -1,0 +1,5 @@
+error: Invalid hash: abc
+ --> tests/hash256/fail_wrong_length.rs:5:14
+  |
+5 |     hash256!("abc");
+  |              ^^^^^

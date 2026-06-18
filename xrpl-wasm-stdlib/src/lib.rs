@@ -4,7 +4,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-// Re-export the r_address macro for convenient access
+pub use xrpl_macros::blob;
+pub use xrpl_macros::currency;
+pub use xrpl_macros::hash256;
+pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
 
 pub mod core;

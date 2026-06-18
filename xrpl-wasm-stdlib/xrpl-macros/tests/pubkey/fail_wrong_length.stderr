@@ -1,0 +1,5 @@
+error: Invalid key: 02C7387FFC
+ --> tests/pubkey/fail_wrong_length.rs:5:13
+  |
+5 |     pubkey!("02C7387FFC");
+  |             ^^^^^^^^^^^^

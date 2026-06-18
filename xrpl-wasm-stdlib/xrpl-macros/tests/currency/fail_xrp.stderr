@@ -1,0 +1,5 @@
+error: Invalid currency: XRP
+ --> tests/currency/fail_xrp.rs:5:15
+  |
+5 |     currency!("XRP");
+  |               ^^^^^
