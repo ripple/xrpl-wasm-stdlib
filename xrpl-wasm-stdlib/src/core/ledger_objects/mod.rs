@@ -604,6 +604,8 @@ pub mod current_ledger_object {
             assert!(result.unwrap().is_some());
         }
 
+        // get_field / get_field_optional are thin wrappers; this test only verifies that they
+        // route correctly for one type each. Per-type coverage lives in test_current_xrpl_types.
         #[test]
         fn test_current_module_convenience_functions() {
             let mut mock = MockHostBindings::new();
