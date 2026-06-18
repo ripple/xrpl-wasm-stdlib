@@ -21,6 +21,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   check_title:
     if: ${{ github.event.pull_request.draft != true }}
