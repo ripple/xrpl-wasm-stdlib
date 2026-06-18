@@ -17,6 +17,9 @@ on:
       - "release/*"
       - "staging/*"
 
+permissions:
+  contents: read
+
 jobs:
   check_description:
     if: ${{ github.event.pull_request.draft != true }}
