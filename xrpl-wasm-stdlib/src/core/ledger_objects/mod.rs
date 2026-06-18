@@ -987,24 +987,24 @@ pub mod ledger_object {
             let mut mock = MockHostBindings::new();
             let slot = 0;
 
-            expect_ledger_field(&mut mock, slot, sfield::Flags, 4, 1);
-            expect_ledger_field(&mut mock, slot, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::SourceTag, 4, 1);
+            expect_ledger_field(&mut mock, slot, sfield::Destination, ACCOUNT_ID_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::Amount, AMOUNT_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::TakerPaysCurrency, HASH160_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::MPTokenIssuanceID, HASH192_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::BaseAsset, CURRENCY_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::EmailHash, HASH128_SIZE, 1);
-            expect_ledger_field(&mut mock, slot, sfield::PreviousTxnID, HASH256_SIZE, 1);
+            expect_ledger_field(&mut mock, slot, sfield::AccountTxnID, HASH256_SIZE, 1);
             expect_ledger_field(&mut mock, slot, sfield::PublicKey, PUBLIC_KEY_BLOB_SIZE, 1);
             expect_ledger_field_short(&mut mock, slot, sfield::Asset, 40, 20);
 
             let _guard = setup_mock(mock);
 
-            let result = u32::get_from_ledger_obj_optional(slot, sfield::Flags);
+            let result = u32::get_from_ledger_obj_optional(slot, sfield::SourceTag);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
-            let result = AccountID::get_from_ledger_obj_optional(slot, sfield::Account);
+            let result = AccountID::get_from_ledger_obj_optional(slot, sfield::Destination);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
@@ -1028,7 +1028,7 @@ pub mod ledger_object {
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
-            let result = Hash256::get_from_ledger_obj_optional(slot, sfield::PreviousTxnID);
+            let result = Hash256::get_from_ledger_obj_optional(slot, sfield::AccountTxnID);
             assert!(result.is_ok());
             assert!(result.unwrap().is_some());
 
