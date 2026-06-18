@@ -82,3 +82,54 @@ fn decode_classic_address_to_20bytes(addr: &str) -> Option<Vec<u8>> {
     }
     Some(payload[1..].to_vec())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::decode_classic_address_to_20bytes;
+
+    const VALID_ADDR: &str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+    const VALID_BYTES: [u8; 20] = [
+        0xb5, 0xf7, 0x62, 0x79, 0x8a, 0x53, 0xd5, 0x43, 0xa0, 0x14, 0xca, 0xf8, 0xb2, 0x97, 0xcf,
+        0xf8, 0xf2, 0xf9, 0x37, 0xe8,
+    ];
+
+    #[test]
+    fn decodes_known_address() {
+        let bytes = decode_classic_address_to_20bytes(VALID_ADDR).unwrap();
+        assert_eq!(bytes.as_slice(), VALID_BYTES);
+    }
+
+    #[test]
+    fn rejects_missing_r_prefix() {
+        // Same payload, leading 'r' swapped for 'x'.
+        assert!(decode_classic_address_to_20bytes("xHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").is_none());
+    }
+
+    #[test]
+    fn rejects_bad_checksum() {
+        // Last character flipped — payload is fine, checksum no longer matches.
+        assert!(decode_classic_address_to_20bytes("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTa").is_none());
+    }
+
+    #[test]
+    fn rejects_too_short() {
+        assert!(decode_classic_address_to_20bytes("rTooShort").is_none());
+    }
+
+    #[test]
+    fn rejects_chars_outside_xrpl_alphabet() {
+        // '0', 'O', 'I', 'l' are excluded from the XRPL base58 alphabet — bs58
+        // decoding must fail before we even reach length / checksum checks.
+        assert!(decode_classic_address_to_20bytes("r0b9CJAWyB4rj91VRWn96DkukG4bwdtyTh").is_none());
+    }
+
+    #[test]
+    fn rejects_empty() {
+        assert!(decode_classic_address_to_20bytes("").is_none());
+    }
+
+    #[test]
+    fn rejects_bare_r() {
+        assert!(decode_classic_address_to_20bytes("r").is_none());
+    }
+}

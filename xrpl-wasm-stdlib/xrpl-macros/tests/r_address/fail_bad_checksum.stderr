@@ -1,5 +1,0 @@
-error: Invalid r-address: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTa
- --> tests/r_address/fail_bad_checksum.rs:6:16
-  |
-6 |     r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTa");
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

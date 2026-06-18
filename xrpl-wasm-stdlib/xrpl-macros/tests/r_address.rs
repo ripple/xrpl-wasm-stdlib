@@ -1,14 +1,18 @@
 //! Compile-fail tests for the `r_address!` macro.
 //!
-//! These verify that invalid inputs produce useful, stable compile errors.
-//! The expected error output is captured in the matching `.stderr` files;
-//! regenerate them with `TRYBUILD=overwrite cargo test -p xrpl-macros --test r_address`.
+//! trybuild only covers `fail_non_literal` — the parser-level error that has
+//! no decode-function equivalent. All other rejection paths (bad checksum,
+//! missing `r` prefix, wrong length, wrong version byte, …) are unit-tested
+//! directly against `decode_classic_address_to_20bytes` next to the decoder,
+//! which is faster and avoids fragile `.stderr` snapshots.
+//!
+//! Happy-path coverage lives in `xrpl-wasm-stdlib/tests/macros.rs`.
+//!
+//! Regenerate snapshots with:
+//!   TRYBUILD=overwrite cargo test -p xrpl-macros --test r_address
 
 #[test]
 fn r_address_compile_fail() {
     let t = trybuild::TestCases::new();
-    t.compile_fail("tests/r_address/fail_not_r_prefix.rs");
-    t.compile_fail("tests/r_address/fail_bad_checksum.rs");
-    t.compile_fail("tests/r_address/fail_too_short.rs");
     t.compile_fail("tests/r_address/fail_non_literal.rs");
 }

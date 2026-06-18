@@ -1,5 +1,0 @@
-error: Invalid r-address: xHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh
- --> tests/r_address/fail_not_r_prefix.rs:6:16
-  |
-6 |     r_address!("xHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

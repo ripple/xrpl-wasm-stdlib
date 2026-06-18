@@ -1,5 +1,0 @@
-error: Invalid r-address: rTooShort
- --> tests/r_address/fail_too_short.rs:5:16
-  |
-5 |     r_address!("rTooShort");
-  |                ^^^^^^^^^^^
