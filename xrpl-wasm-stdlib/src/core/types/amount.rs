@@ -168,7 +168,7 @@ impl Amount {
                 currency,
             } => {
                 // IOU format for tracing: opaque float + currency + issuer
-                bytes[0..8].copy_from_slice(&amount.0);
+                bytes[0..8].copy_from_slice(&amount.0[..8]);
                 bytes[8..28].copy_from_slice(currency.as_bytes());
                 bytes[28..48].copy_from_slice(&issuer.0);
                 // No padding needed - uses all 48 bytes
@@ -250,7 +250,24 @@ impl Amount {
 
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
-            let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();
+            let mut float_out = [0u8; 12];
+            let rescode = unsafe {
+                crate::host::float_from_stamount(
+                    opaque_float_amount_bytes.as_ptr(),
+                    8,
+                    float_out.as_mut_ptr(),
+                    12,
+                    0,
+                )
+            };
+            let opaque_float = match crate::host::error_codes::match_result_code_with_expected_bytes(
+                rescode,
+                12,
+                || OpaqueFloat(float_out),
+            ) {
+                Ok(f) => f,
+                Err(e) => return Err(e),
+            };
 
             // Parse the Amount::IOU from the first 9 bytes
             // let mut amount_bytes = [0u8; 9];
@@ -365,6 +382,8 @@ impl CurrentTxFieldGetter for Amount {
 mod tests {
     use super::*;
     use crate::core::types::opaque_float::OpaqueFloat;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
 
     #[test]
     fn test_parse_xrp_amount() {
@@ -429,6 +448,15 @@ mod tests {
 
     #[test]
     fn test_parse_iou_amount() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xCCu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
         // IOU with exponent = 5, mantissa = 12345
         const EXPONENT: u8 = 5; // 1 byte
         const MANTISSA: u64 = 12345; // 57 bits (so need or 8 bytes)
@@ -493,7 +521,7 @@ mod tests {
                 issuer,
                 currency,
             } => {
-                assert_eq!(amount, OpaqueFloat(eight_input_bytes));
+                assert_eq!(amount, OpaqueFloat([0xCC; 12]));
                 assert_eq!(issuer, AccountID::from(ISSUER_BYTES));
                 assert_eq!(currency, Currency::from(CURRENCY_BYTES));
             }
@@ -650,6 +678,15 @@ mod tests {
 
     #[test]
     fn test_round_trip_iou_positive() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xBBu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
         // Test positive IOU amount
         const EXPONENT: u8 = 7;
         const MANTISSA: u64 = 98765;
@@ -678,7 +715,7 @@ mod tests {
         opaque_float_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat(opaque_float_bytes),
+            amount: OpaqueFloat([0xBB; 12]),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -691,13 +728,14 @@ mod tests {
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
         // Test from_bytes -> to_bytes round trip
+        // (float_from_stamount converts 8-byte STAmount to 12-byte STNumber via mock)
         let parsed = Amount::from_bytes(&expected_bytes).unwrap();
         assert_eq!(parsed, original);
 
-        // Test to_stamount_bytes format
+        // Test to_stamount_bytes format (first 8 bytes of the 12-byte STNumber float)
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &opaque_float_bytes); // OpaqueFloat
+        assert_eq!(&stamount_bytes[0..8], &[0xBBu8; 8]); // First 8 bytes of STNumber
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
@@ -705,6 +743,15 @@ mod tests {
 
     #[test]
     fn test_round_trip_iou_negative() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xAAu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
         // Test negative IOU amount
         const EXPONENT: u8 = 3;
         const MANTISSA: u64 = 12345;
@@ -733,7 +780,7 @@ mod tests {
         opaque_float_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat(opaque_float_bytes),
+            amount: OpaqueFloat([0xAA; 12]),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -746,13 +793,14 @@ mod tests {
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
         // Test from_bytes -> to_bytes round trip
+        // (float_from_stamount converts 8-byte STAmount to 12-byte STNumber via mock)
         let parsed = Amount::from_bytes(&expected_bytes).unwrap();
         assert_eq!(parsed, original);
 
-        // Test to_stamount_bytes format
+        // Test to_stamount_bytes format (first 8 bytes of the 12-byte STNumber float)
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &opaque_float_bytes); // OpaqueFloat
+        assert_eq!(&stamount_bytes[0..8], &[0xAAu8; 8]); // First 8 bytes of STNumber
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
