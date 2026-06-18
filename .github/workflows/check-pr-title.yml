@@ -1,0 +1,50 @@
+name: Check PR title
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - main
+      - "release-*"
+      - "release/*"
+      - "staging/*"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check_title:
+    if: ${{ github.event.pull_request.draft != true }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: ytanikin/pr-conventional-commits@639145d78959c53c43112365837e3abd21ed67c1 # 1.5.2
+        # This workflow is used in both pull_request and merge_queue events.
+        # But we only want to check the title for pull requests, not for merge queue events.
+        #
+        # In merge queue events, the PR titles are already validated in individual PRs.
+        #
+        # Since the check is required, we still have to run the action, but it turns out to be no-op for merge queue events.
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore", "release", "example"]'
+          add_label: false
+
+      - name: Check if title starts with capital letter after prefix
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ ! "${TITLE}" =~ ^[a-z]+:\ [\[A-Z] ]]; then
+              echo "Error: Title must start with an uppercase letter after the prefix."
+              exit 1
+          fi
