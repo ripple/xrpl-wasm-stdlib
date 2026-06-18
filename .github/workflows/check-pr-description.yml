@@ -37,6 +37,6 @@ jobs:
       - name: Check PR description differs from template
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          python .github/scripts/check-pr-description.py \
+          python3 .github/scripts/check-pr-description.py \
               --template-file .github/pull_request_template.md \
               --pr-body-file pr_body.md
