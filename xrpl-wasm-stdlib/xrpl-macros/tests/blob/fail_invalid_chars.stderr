@@ -1,5 +1,0 @@
-error: Invalid blob hex: ZZZZ
- --> tests/blob/fail_invalid_chars.rs:5:11
-  |
-5 |     blob!("ZZZZ");
-  |           ^^^^^^

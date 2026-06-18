@@ -1,5 +1,0 @@
-error: Invalid currency: U$D
- --> tests/currency/fail_invalid_chars.rs:5:15
-  |
-5 |     currency!("U$D");
-  |               ^^^^^

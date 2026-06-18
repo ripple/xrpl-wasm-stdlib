@@ -1,14 +1,19 @@
-//! Consolidated compile-fail tests for every macro in `xrpl-macros`.
+//! Compile-fail tests for every macro in `xrpl-macros`.
 //!
-//! Each `tests/<macro>/fail_*.rs` file is paired with a captured `.stderr`
-//! snapshot. Regenerate the snapshots with:
+//! For the typed-constant macros (`hash256!`, `pubkey!`, `currency!`, `blob!`)
+//! trybuild only covers `fail_non_literal` — the parser-level errors that have
+//! no decode-function equivalent. All other rejection paths (wrong length,
+//! invalid hex, bad prefix, XRP, capacity overflow, …) are unit-tested
+//! directly against the per-macro `decode_*` / `check_*` helpers, which is
+//! faster and avoids fragile `.stderr` snapshots.
 //!
-//! ```sh
-//! TRYBUILD=overwrite cargo test -p xrpl-macros --test compile_fail
-//! ```
+//! `r_address!` still exercises its full set of fixtures here (no decoder
+//! unit tests exist for it yet).
 //!
-//! Happy-path coverage for these macros lives in
-//! `xrpl-wasm-stdlib/tests/macros.rs`.
+//! Happy-path coverage lives in `xrpl-wasm-stdlib/tests/macros.rs`.
+//!
+//! Regenerate snapshots with:
+//!   TRYBUILD=overwrite cargo test -p xrpl-macros --test compile_fail
 
 #[test]
 fn compile_fail() {
