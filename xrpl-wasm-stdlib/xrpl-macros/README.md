@@ -32,7 +32,7 @@ A compile-time macro for converting XRPL classic addresses (r-addresses) to type
 ## Features
 
 - **Zero runtime overhead**: Address decoding happens at compile time
-- **Type safe**: Invalid addresses cause compilation errors; the result is a typed `AccountID`, not a raw byte array
+- **Type safe**: Invalid addresses cause compilation errors; the result is a typed `AccountID`
 - **No binary bloat**: The final WASM contains only the raw 20-byte `AccountID`, no decoding logic
 - **no-std compatible**: The macro runs at compile time on the host, so its dependencies never affect the target
   environment
