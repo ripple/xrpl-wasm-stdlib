@@ -47,7 +47,7 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if [[ ! "${TITLE}" =~ ^[a-z]+:\ [\[A-Z] ]]; then
+          if [[ ! "${TITLE}" =~ ^[a-z]+:\ [A-Z] ]]; then
               echo "Error: Title must start with an uppercase letter after the prefix."
               exit 1
           fi
