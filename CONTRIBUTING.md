@@ -40,6 +40,48 @@
 - Follow general code style guidelines (enforced by CI) and [naming conventions](./docs/NAMING_CONVENTIONS.md).
 - Include tests for new functionality
 - Update documentation as needed
+- Use a Conventional Commits PR title (see below) and a non-empty description filled in from the PR template
+
+### Conventional Commits
+
+PR titles are checked in CI and must follow this format:
+
+```
+<type>: <Description>
+```
+
+- `<type>` is one of the allowed types in the table below, all lowercase.
+- The description must start with a capital letter.
+- Keep the title short and imperative (e.g. "Add typed AMM accessor", not "Added typed AMM accessor").
+
+Allowed types:
+
+| Type       | Use for                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `feat`     | A new feature (host function, helper, public API addition, etc.) |
+| `fix`      | A bug fix                                                        |
+| `docs`     | Documentation-only changes                                       |
+| `style`    | Formatting, missing semicolons, etc.; no code behavior change    |
+| `refactor` | Code change that neither fixes a bug nor adds a feature          |
+| `perf`     | Performance improvement                                          |
+| `test`     | Adding or correcting tests                                       |
+| `build`    | Build system, Cargo, toolchain, or dependency changes            |
+| `ci`       | CI configuration and workflow changes                            |
+| `chore`    | Maintenance that doesn't fit the categories above                |
+| `release`  | Release-related changes (version bumps, changelog updates, etc.) |
+| `example`  | Adding or changing a sample contract under `examples/`           |
+
+Examples:
+
+- `feat: Add typed accessor for AMM ledger object`
+- `fix: Correct return code for missing keylet`
+- `docs: Document hello_world build steps`
+- `ci: Enforce conventional commit PR titles`
+- `example: Add freelancer escrow sample`
+
+When a PR is merged with squash-and-merge, the PR title becomes the commit message — keeping titles in this format keeps `git log` on `main` clean and machine-readable.
+
+When merging without squashing, individual commits are also checked; commits that do not follow the format will be flagged by the `Check PR commits` workflow.
 
 **For new examples:**
 
