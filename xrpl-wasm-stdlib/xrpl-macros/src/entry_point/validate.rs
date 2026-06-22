@@ -1,0 +1,17 @@
+//! Signature validation for entry-point macros.
+
+use super::parse::EntryFn;
+
+pub(crate) struct ValidationRules<'a> {
+    pub expected_ctx_type: &'a str,
+}
+
+pub(crate) enum ReturnKind {
+    ResultBool,
+    ResultUnit,
+    I32,
+}
+
+pub(crate) fn validate(_entry: &EntryFn, _rules: &ValidationRules<'_>) -> syn::Result<ReturnKind> {
+    todo!("entry-point signature validation")
+}
