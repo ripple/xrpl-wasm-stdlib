@@ -1,4 +1,5 @@
 //! Entry-point function parsing.
+#![allow(dead_code)]
 //!
 //! Converts a raw [`proc_macro::TokenStream`] into an [`EntryFn`] IR by
 //! parsing it as a `syn::ItemFn`. Keeping the parsed form in one place lets

@@ -1,4 +1,5 @@
 //! Token generation for entry-point macros.
+#![allow(dead_code)]
 
 use proc_macro2::TokenStream;
 

@@ -1,4 +1,5 @@
 //! Signature validation for entry-point macros.
+#![allow(dead_code)]
 
 use super::parse::EntryFn;
 
