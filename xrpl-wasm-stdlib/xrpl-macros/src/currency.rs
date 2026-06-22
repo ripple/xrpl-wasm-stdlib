@@ -1,7 +1,13 @@
-//! `currency!` — compile-time XRPL currency code → `Currency` (20 bytes).
+//! `currency!` — compile-time XRPL currency code → 20-byte `Currency`.
 //!
-//! Accepts either a 3-char ASCII standard code (e.g. `"USD"`, stored in bytes
-//! 12..15) or a 40-char hex non-standard code. `"XRP"` is reserved and rejected.
+//! Two forms:
+//! - **Standard (3 ASCII alphanumeric chars)**: stored verbatim in bytes 12–14;
+//!   bytes 0–11 and 15–19 are zero. `"XRP"` is reserved and rejected.
+//! - **Non-standard (40 hex chars)**: interpreted as a raw 20-byte value; must
+//!   not start with `00`.
+//!
+//! Standard codes are case-sensitive — `"USD"` and `"usd"` are distinct
+//! on-ledger identifiers. Use uppercase by convention.
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -63,6 +69,12 @@ fn decode_nonstandard_currency(input: &str) -> Option<[u8; 20]> {
 mod tests {
     use super::decode_currency;
 
+    const NONSTANDARD_KEY: &str = "0158415500000000C1F76FF6ECB0BAC600000000";
+    const NONSTANDARD_BYTES: [u8; 20] = [
+        0x01, 0x58, 0x41, 0x55, 0x00, 0x00, 0x00, 0x00, 0xC1, 0xF7, 0x6F, 0xF6, 0xEC, 0xB0, 0xBA,
+        0xC6, 0x00, 0x00, 0x00, 0x00,
+    ];
+
     #[test]
     fn standard_three_char() {
         let bytes = decode_currency("USD").unwrap();
@@ -92,9 +104,8 @@ mod tests {
 
     #[test]
     fn nonstandard_hex() {
-        let key = "0158415500000000C1F76FF6ECB0BAC600000000";
-        let bytes = decode_currency(key).unwrap();
-        assert_eq!(bytes[0], 0x01);
+        let bytes = decode_currency(NONSTANDARD_KEY).unwrap();
+        assert_eq!(bytes, NONSTANDARD_BYTES);
     }
 
     #[test]
@@ -114,5 +125,17 @@ mod tests {
         assert!(decode_currency("US").is_none());
         assert!(decode_currency("USDT").is_none());
         assert!(decode_currency("01584155").is_none());
+    }
+
+    #[test]
+    fn lowercase_standard_code_stored_as_is() {
+        // XRPL 3-char codes are stored as raw ASCII bytes, so "usd" and "USD"
+        // are distinct currency identifiers on-ledger. This test documents that
+        // the macro does NOT normalise case — callers should use uppercase.
+        let lower = decode_currency("usd").unwrap();
+        let upper = decode_currency("USD").unwrap();
+        assert_ne!(lower, upper);
+        assert_eq!(&lower[12..15], b"usd");
+        assert_eq!(&upper[12..15], b"USD");
     }
 }

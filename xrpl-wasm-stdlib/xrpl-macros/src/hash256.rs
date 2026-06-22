@@ -1,4 +1,4 @@
-//! `hash256!` — compile-time 64-hex-char string → `Hash256` (`UInt<32>`).
+//! `hash256!` — compile-time 64-hex-char string → 32-byte `Hash256` (`UInt<32>`).
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -36,14 +36,18 @@ fn decode_hash256(input: &str) -> Option<Vec<u8>> {
 mod tests {
     use super::decode_hash256;
 
+    const HASH_BYTES: [u8; 32] = [
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
+        0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
+        0xCD, 0xEF,
+    ];
+
     #[test]
     fn decodes_uppercase() {
         let bytes =
             decode_hash256("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
                 .unwrap();
-        assert_eq!(bytes.len(), 32);
-        assert_eq!(bytes[0], 0x01);
-        assert_eq!(bytes[31], 0xEF);
+        assert_eq!(bytes, HASH_BYTES);
     }
 
     #[test]
@@ -51,7 +55,7 @@ mod tests {
         let bytes =
             decode_hash256("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
                 .unwrap();
-        assert_eq!(bytes[1], 0x23);
+        assert_eq!(bytes, HASH_BYTES);
     }
 
     #[test]
@@ -59,7 +63,7 @@ mod tests {
         let bytes =
             decode_hash256("0123456789AbCdEf0123456789aBcDeF0123456789AbCdEf0123456789aBcDeF")
                 .unwrap();
-        assert_eq!(bytes.len(), 32);
+        assert_eq!(bytes, HASH_BYTES);
     }
 
     #[test]
