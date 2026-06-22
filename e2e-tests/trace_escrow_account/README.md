@@ -25,6 +25,10 @@ cargo build --target wasm32v1-none --release
 
 ```shell
 cd ../..
+if ! docker ps -q --filter ancestor=rippleci/xrpld:ripple--se--supported | grep -q .; then
+  docker run -d --rm -p 5005:5005 -p 6006:6006 --volume "$(pwd)/.ci-config/":"/etc/xrpld/" \
+    --entrypoint bash rippleci/xrpld:ripple--se--supported -c "xrpld -a"
+fi
 ./scripts/run-tests.sh e2e-tests/trace_escrow_account
 ```
 
