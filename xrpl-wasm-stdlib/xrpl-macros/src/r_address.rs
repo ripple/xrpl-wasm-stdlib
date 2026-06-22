@@ -1,23 +1,9 @@
-//! The `r_address!` macro for compile-time address conversion converts XRPL classic addresses (r-addresses)
-//! to an [`AccountID`] at compile time.
+//! `r_address!` — compile-time XRPL classic address → 20-byte [`AccountID`].
 //!
-//! **Important**: The macro only accepts string literals, not runtime values.
-//! It runs during compilation and outputs only the final `AccountID` value - no
-//! base58 decoding code is included in the WASM binary.
-//!
-//! # Example
-//! ```shell
-//! use xrpl_wasm_stdlib::r_address;
-//! use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-//!
-//! // ✅ Works - compile-time literal
-//! const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-//!
-//! // ❌ Does NOT work - runtime value
-//! // fn convert(addr: &str) -> AccountID {
-//! //     r_address!(addr)  // ERROR: expected string literal
-//! // }
-//! ```
+//! Accepts a Base58Check-encoded string literal starting with `'r'`. Checksum
+//! verification and Base58 decoding run at compile time; no decoding code is
+//! included in the WASM binary. Only string literals are accepted — passing a
+//! runtime `&str` is a compile error.
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{LitStr, parse_macro_input};
