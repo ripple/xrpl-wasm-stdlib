@@ -10,7 +10,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let hash_lit = parse_macro_input!(input as LitStr);
     let hash = hash_lit.value();
     match decode_hash256(&hash) {
-        Some(bytes) => {
+        Ok(bytes) => {
             let bytes_tokens = bytes.iter().map(|b| quote! {#b});
             // `Hash256` is a type alias for `UInt<32>`, which cannot be used as a tuple-struct
             // constructor — so emit the underlying generic struct directly.
@@ -19,17 +19,20 @@ pub fn expand(input: TokenStream) -> TokenStream {
             };
             TokenStream::from(expanded)
         }
-        None => syn::Error::new(hash_lit.span(), format!("Invalid hash: {hash}"))
+        Err(reason) => syn::Error::new(hash_lit.span(), format!("Invalid hash: {reason}"))
             .to_compile_error()
             .into(),
     }
 }
 
-fn decode_hash256(input: &str) -> Option<Vec<u8>> {
-    if input.len() != 64 || !input.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
+fn decode_hash256(input: &str) -> Result<Vec<u8>, &'static str> {
+    if input.len() != 64 {
+        return Err("expected 64 hex characters");
     }
-    Some(decode_hex(input))
+    if !input.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("non-hex character");
+    }
+    Ok(decode_hex(input))
 }
 
 #[cfg(test)]
@@ -68,14 +71,14 @@ mod tests {
 
     #[test]
     fn rejects_wrong_length() {
-        assert!(decode_hash256("abc").is_none());
+        assert!(decode_hash256("abc").is_err());
     }
 
     #[test]
     fn rejects_non_hex() {
         assert!(
             decode_hash256("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-                .is_none()
+                .is_err()
         );
     }
 }

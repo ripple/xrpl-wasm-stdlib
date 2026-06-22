@@ -13,28 +13,31 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let key_lit = parse_macro_input!(input as LitStr);
     let key = key_lit.value();
     match decode_pubkey(&key) {
-        Some(bytes) => {
+        Ok(bytes) => {
             let bytes_tokens = bytes.iter().map(|b| quote! {#b});
             let expanded = quote! {
                 ::xrpl_wasm_stdlib::core::types::public_key::PublicKey([#(#bytes_tokens),*])
             };
             TokenStream::from(expanded)
         }
-        None => syn::Error::new(key_lit.span(), format!("Invalid key: {key}"))
+        Err(reason) => syn::Error::new(key_lit.span(), format!("Invalid key: {reason}"))
             .to_compile_error()
             .into(),
     }
 }
 
-fn decode_pubkey(input: &str) -> Option<Vec<u8>> {
-    if input.len() != 66 || !input.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
+fn decode_pubkey(input: &str) -> Result<Vec<u8>, &'static str> {
+    if input.len() != 66 {
+        return Err("expected 66 hex characters");
+    }
+    if !input.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("non-hex character");
     }
     let prefix = input[..2].to_ascii_uppercase();
     if prefix != "02" && prefix != "03" && prefix != "ED" {
-        return None;
+        return Err("invalid prefix: expected 02, 03, or ED");
     }
-    Some(decode_hex(input))
+    Ok(decode_hex(input))
 }
 
 #[cfg(test)]
@@ -90,23 +93,23 @@ mod tests {
     #[test]
     fn rejects_bad_prefix() {
         let key = "04C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70";
-        assert!(decode_pubkey(key).is_none());
+        assert!(decode_pubkey(key).is_err());
     }
 
     #[test]
     fn rejects_too_short() {
-        assert!(decode_pubkey("02C7387FFC").is_none());
+        assert!(decode_pubkey("02C7387FFC").is_err());
     }
 
     #[test]
     fn rejects_too_long() {
         let key = format!("{SECP256K1_02}AA");
-        assert!(decode_pubkey(&key).is_none());
+        assert!(decode_pubkey(&key).is_err());
     }
 
     #[test]
     fn rejects_non_hex_chars() {
         let key = "02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFEZZ";
-        assert!(decode_pubkey(key).is_none());
+        assert!(decode_pubkey(key).is_err());
     }
 }

@@ -34,9 +34,9 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let hex_str = hex.value();
 
     let bytes = match decode_blob_hex(&hex_str) {
-        Some(b) => b,
-        None => {
-            return syn::Error::new(hex.span(), format!("Invalid blob hex: {hex_str}"))
+        Ok(b) => b,
+        Err(reason) => {
+            return syn::Error::new(hex.span(), format!("Invalid blob hex: {reason}"))
                 .to_compile_error()
                 .into();
         }
@@ -68,14 +68,14 @@ pub fn expand(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn decode_blob_hex(input: &str) -> Option<Vec<u8>> {
+fn decode_blob_hex(input: &str) -> Result<Vec<u8>, &'static str> {
     if !input.len().is_multiple_of(2) {
-        return None;
+        return Err("hex string must have an even number of characters");
     }
     if !input.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
+        return Err("non-hex character");
     }
-    Some(decode_hex(input))
+    Ok(decode_hex(input))
 }
 
 fn check_capacity(bytes_len: usize, capacity: usize) -> Result<(), String> {
@@ -118,12 +118,12 @@ mod tests {
 
     #[test]
     fn rejects_odd_length() {
-        assert!(decode_blob_hex("ABC").is_none());
+        assert!(decode_blob_hex("ABC").is_err());
     }
 
     #[test]
     fn rejects_non_hex() {
-        assert!(decode_blob_hex("ZZ").is_none());
+        assert!(decode_blob_hex("ZZ").is_err());
     }
 
     #[test]

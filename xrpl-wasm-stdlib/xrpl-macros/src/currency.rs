@@ -19,50 +19,50 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let curr_lit = parse_macro_input!(input as LitStr);
     let curr = curr_lit.value();
     match decode_currency(&curr) {
-        Some(bytes) => {
+        Ok(bytes) => {
             let bytes_tokens = bytes.iter().map(|b| quote! {#b});
             let expanded = quote! {
                 ::xrpl_wasm_stdlib::core::types::currency::Currency([#(#bytes_tokens),*])
             };
             TokenStream::from(expanded)
         }
-        None => syn::Error::new(curr_lit.span(), format!("Invalid currency: {curr}"))
+        Err(reason) => syn::Error::new(curr_lit.span(), format!("Invalid currency: {reason}"))
             .to_compile_error()
             .into(),
     }
 }
 
-fn decode_currency(input: &str) -> Option<[u8; 20]> {
+fn decode_currency(input: &str) -> Result<[u8; 20], &'static str> {
     match input.len() {
         3 => decode_standard_currency(input),
         40 => decode_nonstandard_currency(input),
-        _ => None,
+        _ => Err("expected a 3-char standard code or 40-char hex non-standard code"),
     }
 }
 
-fn decode_standard_currency(input: &str) -> Option<[u8; 20]> {
+fn decode_standard_currency(input: &str) -> Result<[u8; 20], &'static str> {
     if !input.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return None;
+        return Err("standard currency must be ASCII alphanumeric");
     }
     if input.eq_ignore_ascii_case("XRP") {
-        return None;
+        return Err("XRP is a reserved currency code");
     }
     let mut bytes = [0u8; 20];
     bytes[12..15].copy_from_slice(input.as_bytes());
-    Some(bytes)
+    Ok(bytes)
 }
 
-fn decode_nonstandard_currency(input: &str) -> Option<[u8; 20]> {
+fn decode_nonstandard_currency(input: &str) -> Result<[u8; 20], &'static str> {
     if !input.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
+        return Err("non-standard currency must be valid hex");
     }
     if input[..2].eq_ignore_ascii_case("00") {
-        return None;
+        return Err("non-standard currency must not start with 00");
     }
     let vec = decode_hex(input);
     let mut bytes = [0u8; 20];
     bytes.copy_from_slice(&vec);
-    Some(bytes)
+    Ok(bytes)
 }
 
 #[cfg(test)]
@@ -92,14 +92,14 @@ mod tests {
 
     #[test]
     fn rejects_xrp_any_case() {
-        assert!(decode_currency("XRP").is_none());
-        assert!(decode_currency("xrp").is_none());
-        assert!(decode_currency("Xrp").is_none());
+        assert!(decode_currency("XRP").is_err());
+        assert!(decode_currency("xrp").is_err());
+        assert!(decode_currency("Xrp").is_err());
     }
 
     #[test]
     fn rejects_non_alphanumeric() {
-        assert!(decode_currency("U$D").is_none());
+        assert!(decode_currency("U$D").is_err());
     }
 
     #[test]
@@ -111,20 +111,20 @@ mod tests {
     #[test]
     fn rejects_nonstandard_zero_prefix() {
         let key = "0000000000000000000000005553440000000000";
-        assert!(decode_currency(key).is_none());
+        assert!(decode_currency(key).is_err());
     }
 
     #[test]
     fn rejects_nonstandard_non_hex() {
         let key = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
-        assert!(decode_currency(key).is_none());
+        assert!(decode_currency(key).is_err());
     }
 
     #[test]
     fn rejects_wrong_length() {
-        assert!(decode_currency("US").is_none());
-        assert!(decode_currency("USDT").is_none());
-        assert!(decode_currency("01584155").is_none());
+        assert!(decode_currency("US").is_err());
+        assert!(decode_currency("USDT").is_err());
+        assert!(decode_currency("01584155").is_err());
     }
 
     #[test]
