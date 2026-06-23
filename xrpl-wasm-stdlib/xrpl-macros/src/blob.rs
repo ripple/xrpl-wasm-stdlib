@@ -4,10 +4,10 @@
 //! - `blob!("DEADBEEF", 128)` — `Blob<128>` zero-padded after the decoded bytes.
 //!   `len` is set to the hex byte count in both forms.
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{LitInt, LitStr, Token, parse_macro_input};
+use syn::{LitInt, LitStr, Token};
 
 use crate::hex_util::decode_hex;
 
@@ -29,30 +29,19 @@ impl Parse for BlobInput {
     }
 }
 
-pub fn expand(input: TokenStream) -> TokenStream {
-    let BlobInput { hex, capacity } = parse_macro_input!(input as BlobInput);
+pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let BlobInput { hex, capacity } = syn::parse2::<BlobInput>(input)?;
     let hex_str = hex.value();
 
-    let bytes = match decode_blob_hex(&hex_str) {
-        Ok(b) => b,
-        Err(reason) => {
-            return syn::Error::new(hex.span(), format!("Invalid blob hex: {reason}"))
-                .to_compile_error()
-                .into();
-        }
-    };
+    let bytes = decode_blob_hex(&hex_str)
+        .map_err(|reason| syn::Error::new(hex.span(), format!("Invalid blob hex: {reason}")))?;
 
     let n = match &capacity {
-        Some(lit) => match lit.base10_parse::<usize>() {
-            Ok(v) => v,
-            Err(e) => return e.to_compile_error().into(),
-        },
+        Some(lit) => lit.base10_parse::<usize>()?,
         None => bytes.len(),
     };
 
-    if let Err(msg) = check_capacity(bytes.len(), n) {
-        return syn::Error::new(hex.span(), msg).to_compile_error().into();
-    }
+    check_capacity(bytes.len(), n).map_err(|msg| syn::Error::new(hex.span(), msg))?;
 
     let len = bytes.len();
     let mut data = bytes;
@@ -65,7 +54,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
             len: #len,
         }
     };
-    TokenStream::from(expanded)
+    Ok(expanded)
 }
 
 fn decode_blob_hex(input: &str) -> Result<Vec<u8>, &'static str> {
@@ -90,7 +79,8 @@ fn check_capacity(bytes_len: usize, capacity: usize) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_capacity, decode_blob_hex};
+    use super::{check_capacity, decode_blob_hex, expand};
+    use quote::quote;
 
     #[test]
     fn decodes_uppercase() {
@@ -118,12 +108,14 @@ mod tests {
 
     #[test]
     fn rejects_odd_length() {
-        assert!(decode_blob_hex("ABC").is_err());
+        let err = decode_blob_hex("ABC").unwrap_err();
+        assert_eq!(err, "hex string must have an even number of characters");
     }
 
     #[test]
     fn rejects_non_hex() {
-        assert!(decode_blob_hex("ZZ").is_err());
+        let err = decode_blob_hex("ZZ").unwrap_err();
+        assert_eq!(err, "non-hex character");
     }
 
     #[test]
@@ -147,5 +139,38 @@ mod tests {
         let err = check_capacity(8, 4).unwrap_err();
         assert!(err.contains("8 bytes"));
         assert!(err.contains("4 bytes"));
+    }
+
+    #[test]
+    fn expand_emits_tokens_for_valid_hex() {
+        let input = quote! { "DEADBEEF" };
+        assert!(expand(input).is_ok());
+    }
+
+    #[test]
+    fn expand_errors_on_invalid_hex() {
+        let input = quote! { "ZZ" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("non-hex character"));
+    }
+
+    #[test]
+    fn expand_errors_on_odd_length_hex() {
+        let input = quote! { "ABC" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("even number of characters"));
+    }
+
+    #[test]
+    fn expand_errors_on_capacity_overflow() {
+        let input = quote! { "DEADBEEF", 1 };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("exceeds declared capacity"));
+    }
+
+    #[test]
+    fn expand_errors_on_capacity_too_large_for_usize() {
+        let input = quote! { "DEADBEEF", 99999999999999999999 };
+        assert!(expand(input).is_err());
     }
 }

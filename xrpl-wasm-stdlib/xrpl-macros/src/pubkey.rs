@@ -3,27 +3,24 @@
 //! Only `02`/`03` (secp256k1) and `ED` (Ed25519) prefixes are accepted. The
 //! prefix check is case-insensitive — `ed` is normalised to `0xED`.
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{LitStr, parse_macro_input};
+use syn::LitStr;
 
 use crate::hex_util::decode_hex;
 
-pub fn expand(input: TokenStream) -> TokenStream {
-    let key_lit = parse_macro_input!(input as LitStr);
+pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let key_lit = syn::parse2::<LitStr>(input)?;
     let key = key_lit.value();
-    match decode_pubkey(&key) {
-        Ok(bytes) => {
-            let bytes_tokens = bytes.iter().map(|b| quote! {#b});
-            let expanded = quote! {
-                ::xrpl_wasm_stdlib::core::types::public_key::PublicKey([#(#bytes_tokens),*])
-            };
-            TokenStream::from(expanded)
-        }
-        Err(reason) => syn::Error::new(key_lit.span(), format!("Invalid key: {reason}"))
-            .to_compile_error()
-            .into(),
-    }
+
+    let bytes = decode_pubkey(&key)
+        .map_err(|reason| syn::Error::new(key_lit.span(), format!("Invalid key: {reason}")))?;
+
+    let bytes_tokens = bytes.iter().map(|b| quote! {#b});
+    let expanded = quote! {
+        ::xrpl_wasm_stdlib::core::types::public_key::PublicKey([#(#bytes_tokens),*])
+    };
+    Ok(expanded)
 }
 
 fn decode_pubkey(input: &str) -> Result<Vec<u8>, &'static str> {
@@ -42,7 +39,8 @@ fn decode_pubkey(input: &str) -> Result<Vec<u8>, &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::decode_pubkey;
+    use super::{decode_pubkey, expand};
+    use quote::quote;
 
     const SECP256K1_02: &str = "02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70";
     const SECP256K1_03: &str = "03C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70";
@@ -93,23 +91,47 @@ mod tests {
     #[test]
     fn rejects_bad_prefix() {
         let key = "04C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70";
-        assert!(decode_pubkey(key).is_err());
+        let err = decode_pubkey(key).unwrap_err();
+        assert_eq!(err, "invalid prefix: expected 02, 03, or ED");
     }
 
     #[test]
     fn rejects_too_short() {
-        assert!(decode_pubkey("02C7387FFC").is_err());
+        let err = decode_pubkey("02C7387FFC").unwrap_err();
+        assert_eq!(err, "expected 66 hex characters");
     }
 
     #[test]
     fn rejects_too_long() {
         let key = format!("{SECP256K1_02}AA");
-        assert!(decode_pubkey(&key).is_err());
+        let err = decode_pubkey(&key).unwrap_err();
+        assert_eq!(err, "expected 66 hex characters");
     }
 
     #[test]
     fn rejects_non_hex_chars() {
         let key = "02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFEZZ";
-        assert!(decode_pubkey(key).is_err());
+        let err = decode_pubkey(key).unwrap_err();
+        assert_eq!(err, "non-hex character");
+    }
+
+    #[test]
+    fn expand_emits_tokens_for_valid_key() {
+        let input = quote! { "02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70" };
+        assert!(expand(input).is_ok());
+    }
+
+    #[test]
+    fn expand_errors_on_bad_prefix() {
+        let input = quote! { "04C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("invalid prefix"));
+    }
+
+    #[test]
+    fn expand_errors_on_wrong_length() {
+        let input = quote! { "02DEADBEEF" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("expected 66 hex characters"));
     }
 }

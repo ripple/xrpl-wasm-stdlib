@@ -9,27 +9,25 @@
 //! Standard codes are case-sensitive — `"USD"` and `"usd"` are distinct
 //! on-ledger identifiers. Use uppercase by convention.
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{LitStr, parse_macro_input};
+use syn::LitStr;
 
 use crate::hex_util::decode_hex;
 
-pub fn expand(input: TokenStream) -> TokenStream {
-    let curr_lit = parse_macro_input!(input as LitStr);
+pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let curr_lit = syn::parse2::<LitStr>(input)?;
     let curr = curr_lit.value();
-    match decode_currency(&curr) {
-        Ok(bytes) => {
-            let bytes_tokens = bytes.iter().map(|b| quote! {#b});
-            let expanded = quote! {
-                ::xrpl_wasm_stdlib::core::types::currency::Currency([#(#bytes_tokens),*])
-            };
-            TokenStream::from(expanded)
-        }
-        Err(reason) => syn::Error::new(curr_lit.span(), format!("Invalid currency: {reason}"))
-            .to_compile_error()
-            .into(),
-    }
+
+    let bytes = decode_currency(&curr).map_err(|reason| {
+        syn::Error::new(curr_lit.span(), format!("Invalid currency: {reason}"))
+    })?;
+
+    let bytes_tokens = bytes.iter().map(|b| quote! {#b});
+    let expanded = quote! {
+        ::xrpl_wasm_stdlib::core::types::currency::Currency([#(#bytes_tokens),*])
+    };
+    Ok(expanded)
 }
 
 fn decode_currency(input: &str) -> Result<[u8; 20], &'static str> {
@@ -67,7 +65,8 @@ fn decode_nonstandard_currency(input: &str) -> Result<[u8; 20], &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::decode_currency;
+    use super::{decode_currency, expand};
+    use quote::quote;
 
     const NONSTANDARD_KEY: &str = "0158415500000000C1F76FF6ECB0BAC600000000";
     const NONSTANDARD_BYTES: [u8; 20] = [
@@ -92,14 +91,24 @@ mod tests {
 
     #[test]
     fn rejects_xrp_any_case() {
-        assert!(decode_currency("XRP").is_err());
-        assert!(decode_currency("xrp").is_err());
-        assert!(decode_currency("Xrp").is_err());
+        assert_eq!(
+            decode_currency("XRP").unwrap_err(),
+            "XRP is a reserved currency code"
+        );
+        assert_eq!(
+            decode_currency("xrp").unwrap_err(),
+            "XRP is a reserved currency code"
+        );
+        assert_eq!(
+            decode_currency("Xrp").unwrap_err(),
+            "XRP is a reserved currency code"
+        );
     }
 
     #[test]
     fn rejects_non_alphanumeric() {
-        assert!(decode_currency("U$D").is_err());
+        let err = decode_currency("U$D").unwrap_err();
+        assert_eq!(err, "standard currency must be ASCII alphanumeric");
     }
 
     #[test]
@@ -111,20 +120,23 @@ mod tests {
     #[test]
     fn rejects_nonstandard_zero_prefix() {
         let key = "0000000000000000000000005553440000000000";
-        assert!(decode_currency(key).is_err());
+        let err = decode_currency(key).unwrap_err();
+        assert_eq!(err, "non-standard currency must not start with 00");
     }
 
     #[test]
     fn rejects_nonstandard_non_hex() {
         let key = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
-        assert!(decode_currency(key).is_err());
+        let err = decode_currency(key).unwrap_err();
+        assert_eq!(err, "non-standard currency must be valid hex");
     }
 
     #[test]
     fn rejects_wrong_length() {
-        assert!(decode_currency("US").is_err());
-        assert!(decode_currency("USDT").is_err());
-        assert!(decode_currency("01584155").is_err());
+        let expected = "expected a 3-char standard code or 40-char hex non-standard code";
+        assert_eq!(decode_currency("US").unwrap_err(), expected);
+        assert_eq!(decode_currency("USDT").unwrap_err(), expected);
+        assert_eq!(decode_currency("01584155").unwrap_err(), expected);
     }
 
     #[test]
@@ -137,5 +149,31 @@ mod tests {
         assert_ne!(lower, upper);
         assert_eq!(&lower[12..15], b"usd");
         assert_eq!(&upper[12..15], b"USD");
+    }
+
+    #[test]
+    fn expand_emits_tokens_for_standard_code() {
+        let input = quote! { "USD" };
+        assert!(expand(input).is_ok());
+    }
+
+    #[test]
+    fn expand_emits_tokens_for_nonstandard_code() {
+        let input = quote! { "0158415500000000C1F76FF6ECB0BAC600000000" };
+        assert!(expand(input).is_ok());
+    }
+
+    #[test]
+    fn expand_errors_on_reserved_xrp() {
+        let input = quote! { "XRP" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("reserved"));
+    }
+
+    #[test]
+    fn expand_errors_on_wrong_length() {
+        let input = quote! { "US" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("3-char standard code"));
     }
 }

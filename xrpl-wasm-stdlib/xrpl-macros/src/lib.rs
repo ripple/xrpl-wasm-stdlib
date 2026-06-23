@@ -54,7 +54,10 @@ pub fn r_address(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn hash256(input: TokenStream) -> TokenStream {
-    hash256::expand(input)
+    match hash256::expand(input.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
 
 /// Converts a 66-character hex string to a 33-byte [`PublicKey`] at compile time.
@@ -75,7 +78,10 @@ pub fn hash256(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn pubkey(input: TokenStream) -> TokenStream {
-    pubkey::expand(input)
+    match pubkey::expand(input.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
 
 /// Converts an XRPL currency code to a 20-byte [`Currency`] at compile time.
@@ -100,7 +106,10 @@ pub fn pubkey(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn currency(input: TokenStream) -> TokenStream {
-    currency::expand(input)
+    match currency::expand(input.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
 
 /// Converts a hex string to a compile-time [`Blob<N>`].
@@ -125,5 +134,8 @@ pub fn currency(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn blob(input: TokenStream) -> TokenStream {
-    blob::expand(input)
+    match blob::expand(input.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
