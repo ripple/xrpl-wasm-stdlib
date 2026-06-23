@@ -1,7 +1,9 @@
 use crate::core::ledger_objects::{current_ledger_object, ledger_object};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
-use crate::core::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, StandardBlob};
+use crate::core::types::blob::{
+    CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob,
+};
 use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use crate::core::types::uint::{Hash128, Hash256};
 
@@ -186,7 +188,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
+    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
         current_ledger_object::get_field_optional(sfield::FinishFunction)
     }
 
@@ -354,7 +356,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
+    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 
@@ -431,7 +433,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
 
     /// A domain associated with this account. In JSON, this is the hexadecimal for the ASCII representation of the
     /// domain. Cannot be more than 256 bytes in length.
-    fn domain(&self) -> Result<Option<StandardBlob>> {
+    fn domain(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Domain)
     }
 
@@ -454,7 +456,8 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// A public key that may be used to send encrypted messages to this account. In JSON, uses hexadecimal.
     /// Must be exactly 33 bytes, with the first byte indicating the key type: 0x02 or 0x03 for secp256k1 keys,
     /// 0xED for Ed25519 keys.
-    fn message_key(&self) -> Result<Option<StandardBlob>> {
+    // TODO: See https://github.com/ripple/xrpl-wasm-stdlib/issues/106
+    fn message_key(&self) -> Result<Option<PublicKeyBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MessageKey)
     }
 
@@ -663,6 +666,8 @@ mod tests {
 
     mod account_fields {
         use super::*;
+        use crate::core::types::account_id::ACCOUNT_ID_SIZE;
+        use crate::core::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
         use crate::host::setup_mock;
 
         #[test]
@@ -707,20 +712,20 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::Balance, 48, 1);
             // burned_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
-            // domain - StandardBlob uses 1024 bytes
-            expect_ledger_field(&mut mock, 1, sfield::Domain, 1024, 1);
+            // domain
+            expect_ledger_field(&mut mock, 1, sfield::Domain, DOMAIN_BLOB_SIZE, 1);
             // email_hash
             expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
             // first_nf_token_sequence
             expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
-            // message_key - StandardBlob uses 1024 bytes
-            expect_ledger_field(&mut mock, 1, sfield::MessageKey, 1024, 1);
+            // message_key
+            expect_ledger_field(&mut mock, 1, sfield::MessageKey, PUBLIC_KEY_BLOB_SIZE, 1);
             // minted_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
             // nf_token_minter
             expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
             // regular_key
-            expect_ledger_field(&mut mock, 1, sfield::RegularKey, 20, 1);
+            expect_ledger_field(&mut mock, 1, sfield::RegularKey, ACCOUNT_ID_SIZE, 1);
             // ticket_count
             expect_ledger_field(&mut mock, 1, sfield::TicketCount, 4, 1);
             // tick_size
@@ -776,9 +781,9 @@ mod tests {
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // domain - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // domain - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Domain), always(), eq(1024))
+                .with(eq(1), eq(sfield::Domain), always(), eq(DOMAIN_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| 0);
             // email_hash
@@ -791,9 +796,14 @@ mod tests {
                 .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // message_key - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // message_key - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::MessageKey), always(), eq(1024))
+                .with(
+                    eq(1),
+                    eq(sfield::MessageKey),
+                    always(),
+                    eq(PUBLIC_KEY_BLOB_SIZE),
+                )
                 .times(1)
                 .returning(|_, _, _, _| 0);
             // minted_nf_tokens
@@ -808,7 +818,7 @@ mod tests {
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // regular_key
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::RegularKey), always(), eq(20))
+                .with(eq(1), eq(sfield::RegularKey), always(), eq(ACCOUNT_ID_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // ticket_count
@@ -984,6 +994,7 @@ mod tests {
     mod current_escrow_fields {
         use super::*;
         use crate::core::ledger_objects::current_escrow::CurrentEscrow;
+        use crate::core::types::blob::WASM_BLOB_SIZE;
         use crate::host::setup_mock;
 
         #[test]
@@ -1026,7 +1037,7 @@ mod tests {
             // get_cancel_after
             expect_current_field(&mut mock, sfield::CancelAfter, 4, 1);
             // get_condition
-            expect_current_field(&mut mock, sfield::Condition, 128, 1);
+            expect_current_field(&mut mock, sfield::Condition, CONDITION_BLOB_SIZE, 1);
             // get_destination_node
             expect_current_field(&mut mock, sfield::DestinationNode, 8, 1);
             // get_destination_tag
@@ -1035,8 +1046,8 @@ mod tests {
             expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
-            // get_finish_function - StandardBlob uses 1024 bytes
-            expect_current_field(&mut mock, sfield::FinishFunction, 1024, 1);
+            // get_finish_function
+            expect_current_field(&mut mock, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -1063,7 +1074,7 @@ mod tests {
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_condition - returns 0 for None
             mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Condition), always(), eq(128))
+                .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
             // get_destination_node
@@ -1086,9 +1097,9 @@ mod tests {
                 .with(eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::FinishFunction), always(), eq(1024))
+                .with(eq(sfield::FinishFunction), always(), eq(WASM_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
 
@@ -1170,6 +1181,7 @@ mod tests {
     mod escrow_fields {
         use super::*;
         use crate::core::ledger_objects::escrow::Escrow;
+        use crate::core::types::blob::WASM_BLOB_SIZE;
         use crate::host::setup_mock;
 
         #[test]
@@ -1212,7 +1224,7 @@ mod tests {
             // get_cancel_after
             expect_ledger_field(&mut mock, 1, sfield::CancelAfter, 4, 1);
             // get_condition
-            expect_ledger_field(&mut mock, 1, sfield::Condition, 128, 1);
+            expect_ledger_field(&mut mock, 1, sfield::Condition, CONDITION_BLOB_SIZE, 1);
             // get_destination_node
             expect_ledger_field(&mut mock, 1, sfield::DestinationNode, 8, 1);
             // get_destination_tag
@@ -1221,8 +1233,8 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
-            // get_finish_function - StandardBlob uses 1024 bytes
-            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 1024, 1);
+            // get_finish_function
+            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -1249,7 +1261,12 @@ mod tests {
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_condition - returns 0 for None
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Condition), always(), eq(128))
+                .with(
+                    eq(1),
+                    eq(sfield::Condition),
+                    always(),
+                    eq(CONDITION_BLOB_SIZE),
+                )
                 .times(1)
                 .returning(|_, _, _, _| 0);
             // get_destination_node
@@ -1272,9 +1289,14 @@ mod tests {
                 .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
+            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::FinishFunction), always(), eq(1024))
+                .with(
+                    eq(1),
+                    eq(sfield::FinishFunction),
+                    always(),
+                    eq(WASM_BLOB_SIZE),
+                )
                 .times(1)
                 .returning(|_, _, _, _| 0);
 
