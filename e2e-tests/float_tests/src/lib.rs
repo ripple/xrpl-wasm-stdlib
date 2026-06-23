@@ -12,7 +12,7 @@ use xrpl_wasm_stdlib::host::trace::DataRepr::AsHex;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
 use xrpl_wasm_stdlib::host::{
     FLOAT_ROUNDING_MODES_TO_NEAREST, cache_ledger_obj, float_add, float_compare, float_divide,
-    float_from_int, float_from_uint, float_log, float_multiply, float_pow, float_root, float_set,
+    float_from_int, float_from_mant_exp, float_from_uint, float_multiply, float_pow, float_root,
     float_subtract, get_ledger_obj_array_len, get_ledger_obj_field, get_ledger_obj_nested_field,
     trace_opaque_float,
 };
@@ -88,7 +88,9 @@ fn test_float_from_wasm() {
         let _ = trace("  float from u64 12300: failed");
     }
 
-    if 8 == unsafe { float_set(2, 123, f.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
+    if 8 == unsafe {
+        float_from_mant_exp(123, 2, f.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST)
+    } {
         let _ = trace_float("  float from exp 2, mantissa 123:", &f);
     } else {
         let _ = trace("  float from exp 2, mantissa 3: failed");
@@ -225,7 +227,7 @@ fn test_float_multiply_divide() {
         };
     }
     let mut f01: [u8; 8] = [0u8; 8];
-    unsafe { float_set(-1, 1, f01.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_mant_exp(1, -1, f01.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
 
     if 0 == unsafe { float_compare(f_compute.as_ptr(), 8, f01.as_ptr(), 8) } {
         let _ = trace("  repeated divide: good");
@@ -380,31 +382,6 @@ fn test_float_root() {
     let _ = trace_float("  float 6th root of 1000000:", &f_compute);
 }
 
-fn test_float_log() {
-    let _ = trace("\n$$$ test_float_log $$$");
-
-    let mut f1000000: [u8; 8] = [0u8; 8];
-    unsafe {
-        float_from_int(
-            1000000,
-            f1000000.as_mut_ptr(),
-            8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
-        )
-    };
-    let mut f_compute: [u8; 8] = [0u8; 8];
-    unsafe {
-        float_log(
-            f1000000.as_ptr(),
-            8,
-            f_compute.as_mut_ptr(),
-            8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
-        )
-    };
-    let _ = trace_float("  log_10 of 1000000:", &f_compute);
-}
-
 fn test_float_negate() {
     let _ = trace("\n$$$ test_float_negate $$$");
 
@@ -494,7 +471,6 @@ pub extern "C" fn finish() -> i32 {
     test_float_multiply_divide();
     test_float_pow();
     test_float_root();
-    test_float_log();
     test_float_negate();
     test_float_invert();
 

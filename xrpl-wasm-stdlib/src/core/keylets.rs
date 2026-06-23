@@ -1119,3 +1119,242 @@ where
 
     match_result_code_with_expected_bytes(result_code, XRPL_KEYLET_SIZE, || keylet_buffer)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::host::error_codes::INTERNAL_ERROR;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+
+    const EXPECTED_KEYLET: KeyletBytes = [0xCC; XRPL_KEYLET_SIZE];
+
+    /// Writes `0xCC` into the output buffer and returns `XRPL_KEYLET_SIZE` as success.
+    fn write_keylet_to_buffer(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
+        assert_eq!(out_buff_len, XRPL_KEYLET_SIZE);
+        unsafe {
+            for i in 0..XRPL_KEYLET_SIZE {
+                *out_buff_ptr.add(i) = 0xCC;
+            }
+        }
+        XRPL_KEYLET_SIZE as i32
+    }
+
+    /// Generates a mock `returning` closure that delegates to `write_keylet_to_buffer`.
+    /// Pass the number of prefix parameters (before the out_buff_ptr/out_buff_len pair)
+    /// to match the host function arity.
+    macro_rules! write_keylet_returning {
+        (2) => {
+            |_, _, out_buff_ptr, out_buff_len| write_keylet_to_buffer(out_buff_ptr, out_buff_len)
+        };
+        (4) => {
+            |_, _, _, _, out_buff_ptr, out_buff_len| {
+                write_keylet_to_buffer(out_buff_ptr, out_buff_len)
+            }
+        };
+        (6) => {
+            |_, _, _, _, _, _, out_buff_ptr, out_buff_len| {
+                write_keylet_to_buffer(out_buff_ptr, out_buff_len)
+            }
+        };
+    }
+
+    /// Generates a mock `returning` closure that returns INTERNAL_ERROR.
+    /// Pass the total number of parameters of the host function.
+    macro_rules! error_returning {
+        (4) => {
+            |_, _, _, _| INTERNAL_ERROR
+        };
+        (6) => {
+            |_, _, _, _, _, _| INTERNAL_ERROR
+        };
+        (8) => {
+            |_, _, _, _, _, _, _, _| INTERNAL_ERROR
+        };
+    }
+
+    /// Generates a test module with success and error tests for a keylet function.
+    ///
+    /// Arguments:
+    /// - `$mod_name`: name for the test module
+    /// - `$expect_fn`: mock expectation method (e.g., `expect_account_keylet`)
+    /// - `$success_arity`: number of prefix params for write_keylet_returning (2, 4, or 6)
+    /// - `$error_arity`: total number of params for error_returning (4, 6, or 8)
+    /// - `$call_block`: block that sets up args and returns the keylet function call result
+    macro_rules! keylet_test {
+        ($mod_name:ident, $expect_fn:ident, $success_arity:tt, $error_arity:tt, $call_block:block) => {
+            mod $mod_name {
+                use super::*;
+
+                #[test]
+                fn test_success() {
+                    let mut mock = MockHostBindings::new();
+                    mock.$expect_fn()
+                        .times(1)
+                        .returning(write_keylet_returning!($success_arity));
+                    let _guard = setup_mock(mock);
+
+                    let result = $call_block;
+                    assert!(result.is_ok());
+                    assert_eq!(result.unwrap(), EXPECTED_KEYLET);
+                }
+
+                #[test]
+                fn test_error() {
+                    let mut mock = MockHostBindings::new();
+                    mock.$expect_fn()
+                        .times(1)
+                        .returning(error_returning!($error_arity));
+                    let _guard = setup_mock(mock);
+
+                    let result = $call_block;
+                    assert!(result.is_err());
+                    assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+                }
+            }
+        };
+    }
+
+    keylet_test!(account_keylet_tests, expect_account_keylet, 2, 4, {
+        let account_id = AccountID::from([0xBB; 20]);
+        account_keylet(&account_id)
+    });
+
+    keylet_test!(check_keylet_tests, expect_check_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        check_keylet(&owner, 12345)
+    });
+
+    keylet_test!(delegate_keylet_tests, expect_delegate_keylet, 4, 6, {
+        let account = AccountID::from([0xBB; 20]);
+        let authorize = AccountID::from([0xBB; 20]);
+        delegate_keylet(&account, &authorize)
+    });
+
+    keylet_test!(credential_keylet_tests, expect_credential_keylet, 6, 8, {
+        let subject = AccountID::from([0xBB; 20]);
+        let issuer = AccountID::from([0xBB; 20]);
+        let cred_type: &[u8] = b"termsandconditions";
+        credential_keylet(&subject, &issuer, cred_type)
+    });
+
+    keylet_test!(amm_keylet_tests, expect_amm_keylet, 4, 6, {
+        use crate::core::types::issue::{Issue, XrpIssue};
+        let issue1 = Issue::XRP(XrpIssue {});
+        let issue2 = Issue::XRP(XrpIssue {});
+        amm_keylet(&issue1, &issue2)
+    });
+
+    keylet_test!(
+        deposit_preauth_keylet_tests,
+        expect_deposit_preauth_keylet,
+        4,
+        6,
+        {
+            let account = AccountID::from([0xBB; 20]);
+            let authorize = AccountID::from([0xBB; 20]);
+            deposit_preauth_keylet(&account, &authorize)
+        }
+    );
+
+    keylet_test!(did_keylet_tests, expect_did_keylet, 2, 4, {
+        let account_id = AccountID::from([0xBB; 20]);
+        did_keylet(&account_id)
+    });
+
+    keylet_test!(escrow_keylet_tests, expect_escrow_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        escrow_keylet(&owner, 12345)
+    });
+
+    keylet_test!(line_keylet_tests, expect_line_keylet, 6, 8, {
+        use crate::core::types::currency::Currency;
+        let account1 = AccountID::from([0xBB; 20]);
+        let account2 = AccountID::from([0xBB; 20]);
+        let currency = Currency::from([0xBB; 20]);
+        line_keylet(&account1, &account2, &currency)
+    });
+
+    keylet_test!(
+        mpt_issuance_keylet_tests,
+        expect_mpt_issuance_keylet,
+        4,
+        6,
+        {
+            let owner = AccountID::from([0xBB; 20]);
+            mpt_issuance_keylet(&owner, 12345)
+        }
+    );
+
+    keylet_test!(mptoken_keylet_tests, expect_mptoken_keylet, 4, 6, {
+        use crate::core::types::mpt_id::MptId;
+        let issuer = AccountID::from([0xBB; 20]);
+        let mptid = MptId::new(1, issuer);
+        let holder = AccountID::from([0xBB; 20]);
+        mptoken_keylet(&mptid, &holder)
+    });
+
+    keylet_test!(nft_offer_keylet_tests, expect_nft_offer_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        nft_offer_keylet(&owner, 12345)
+    });
+
+    keylet_test!(offer_keylet_tests, expect_offer_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        offer_keylet(&owner, 12345)
+    });
+
+    keylet_test!(oracle_keylet_tests, expect_oracle_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        oracle_keylet(&owner, 12345)
+    });
+
+    keylet_test!(paychan_keylet_tests, expect_paychan_keylet, 6, 8, {
+        let account = AccountID::from([0xBB; 20]);
+        let destination = AccountID::from([0xBB; 20]);
+        paychan_keylet(&account, &destination, 12345)
+    });
+
+    keylet_test!(
+        permissioned_domain_keylet_tests,
+        expect_permissioned_domain_keylet,
+        4,
+        6,
+        {
+            let account = AccountID::from([0xBB; 20]);
+            permissioned_domain_keylet(&account, 12345)
+        }
+    );
+
+    keylet_test!(signers_keylet_tests, expect_signers_keylet, 2, 4, {
+        let account_id = AccountID::from([0xBB; 20]);
+        signers_keylet(&account_id)
+    });
+
+    keylet_test!(ticket_keylet_tests, expect_ticket_keylet, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        ticket_keylet(&owner, 12345)
+    });
+
+    keylet_test!(vault_keylet_tests, expect_vault_keylet, 4, 6, {
+        let account = AccountID::from([0xBB; 20]);
+        vault_keylet(&account, 12345)
+    });
+
+    #[test]
+    fn test_wrong_size_returns_internal_error() {
+        let mut mock = MockHostBindings::new();
+
+        // Return 16 instead of 32 — positive but wrong size
+        mock.expect_account_keylet()
+            .times(1)
+            .returning(|_, _, _, _| 16);
+
+        let _guard = setup_mock(mock);
+
+        let account_id = AccountID::from([0xBB; 20]);
+        let result = account_keylet(&account_id);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+    }
+}
