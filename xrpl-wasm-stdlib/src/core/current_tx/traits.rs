@@ -230,17 +230,24 @@ pub trait TransactionCommonFields {
     ///
     /// # Returns
     ///
-    /// Returns a `Result<PublicKey>` where:
-    /// * `Ok(PublicKey)` - The 33-byte compressed public key used for signing
-    /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
+    /// Returns a `Result<Option<PublicKey>>` where:
+    /// * `Ok(Some(PublicKey))` - The 33-byte compressed public key for single-signature transactions
+    /// * `Ok(None)` - Empty SigningPubKey field, indicating a multi-signature transaction
+    /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size (not 0 or 33 bytes)
     ///
     /// # Security Note
     ///
     /// The presence of this field doesn't guarantee the signature is valid. Instead, this field
     /// only provides the key claimed to be used for signing. The XRPL network performs signature
     /// validation before transaction execution.
-    fn get_signing_pub_key(&self) -> Result<PublicKey> {
-        get_field(sfield::SigningPubKey)
+    fn get_signing_pub_key(&self) -> Result<Option<PublicKey>> {
+        get_field(sfield::SigningPubKey).and_then(|blob| match blob.len {
+            0 => Result::Ok(None), // Multi-signature transaction
+            33 => Result::Ok(Some(PublicKey::from(blob.data))), // Single-signature transaction
+            _ => Result::Err(crate::host::Error::from_code(
+                crate::host::error_codes::INTERNAL_ERROR,
+            )),
+        })
     }
 
     /// Retrieves the ticket sequence from the current transaction.
@@ -1119,8 +1126,11 @@ mod tests {
                 let seq_result = tx.get_sequence();
                 assert!(seq_result.is_err());
 
+                // SigningPubKey is special: zero length indicates multi-signature transaction
+                // and should return Ok(None), not an error
                 let signing_key_result = tx.get_signing_pub_key();
-                assert!(signing_key_result.is_err());
+                assert!(signing_key_result.is_ok());
+                assert!(signing_key_result.unwrap().is_none());
             }
 
             #[test]
