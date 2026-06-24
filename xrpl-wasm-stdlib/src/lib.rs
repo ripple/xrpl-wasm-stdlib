@@ -4,6 +4,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+// Re-export macros for convenient access
 pub use xrpl_macros::blob;
 pub use xrpl_macros::currency;
 pub use xrpl_macros::hash256;
