@@ -18,21 +18,22 @@ Then use the macro:
 
 ```rust
 use xrpl_wasm_stdlib::r_address;
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 
-const ACCOUNT: [u8; 20] = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
 
 ---
 
 ## About This Crate
 
-A compile-time macro for converting XRPL classic addresses (r-addresses) to 20-byte arrays.
+A compile-time macro for converting XRPL classic addresses (r-addresses) to typed `AccountID` values.
 
 ## Features
 
 - **Zero runtime overhead**: Address decoding happens at compile time
-- **Type safe**: Invalid addresses cause compilation errors
-- **No binary bloat**: The final WASM contains only the raw 20-byte array, no decoding logic
+- **Type safe**: Invalid addresses cause compilation errors; the result is a typed `AccountID`
+- **No binary bloat**: The final WASM contains only the raw 20-byte `AccountID`, no decoding logic
 - **no-std compatible**: The macro runs at compile time on the host, so its dependencies never affect the target
   environment
 
@@ -44,18 +45,18 @@ means:
 - The macro's dependencies (`bs58`, `sha2`, `syn`, `quote`) run during compilation only
 - These dependencies are NEVER included in your final WASM binary
 - The `xrpl-wasm-stdlib` library remains fully `no-std` compatible
-- The macro only outputs a simple `[u8; 20]` array literal in your code
+- The macro only outputs an `AccountID(...)` literal containing the 20 decoded bytes
 
 For example, this code:
 
 ```rust
-const ACCOUNT: [u8; 20] = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
 
 Gets expanded at compile time to:
 
 ```rust
-const ACCOUNT: [u8; 20] = [132, 45, 67, 89, ...]; // actual 20 bytes
+const ACCOUNT: AccountID = AccountID([132, 45, 67, 89, ...]); // actual 20 bytes
 ```
 
 No runtime code from the macro or its dependencies exists in the final binary.
@@ -64,13 +65,14 @@ No runtime code from the macro or its dependencies exists in the final binary.
 
 ```rust
 use xrpl_wasm_stdlib::r_address;
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 
-// Convert r-address to [u8; 20] at compile time
-const ACCOUNT: [u8; 20] = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+// Convert r-address to AccountID at compile time
+const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 
 // Multiple accounts can be defined
-const NOTARY: [u8; 20] = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
-const ADMIN: [u8; 20] = r_address!("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn");
+const NOTARY: AccountID = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+const ADMIN: AccountID = r_address!("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn");
 ```
 
 ## Why Use This Macro?

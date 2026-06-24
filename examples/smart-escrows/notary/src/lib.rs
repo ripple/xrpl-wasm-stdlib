@@ -5,13 +5,14 @@ extern crate std;
 
 use xrpl_wasm_stdlib::core::current_tx::escrow_finish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::host::trace::trace_num;
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::r_address;
 
 // The notary account that is authorized to complete escrows
 // Using example notary account for testing
-const NOTARY_ACCOUNT: [u8; 20] = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const NOTARY_ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
@@ -24,5 +25,5 @@ pub extern "C" fn finish() -> i32 {
         }
     };
 
-    (tx_account.0 == NOTARY_ACCOUNT) as i32 // <-- Finish the escrow to indicate a successful outcome
+    (tx_account == NOTARY_ACCOUNT) as i32 // <-- Finish the escrow to indicate a successful outcome
 }
