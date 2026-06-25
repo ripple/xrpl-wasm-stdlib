@@ -76,12 +76,12 @@ cargo run --package wasm-host-simulator --bin wasm-host-simulator -- --dir examp
 The notary account is defined as a constant in `src/lib.rs` using the `r_address!` macro:
 
 ```rust
-const NOTARY_ACCOUNT: [u8; 20] = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+const NOTARY_ACCOUNT: AccountID = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
 ```
 
-To use a different notary account, simply edit this line with your desired r-address. The macro validates the address at compile time and converts it to the 20-byte AccountID.
+To use a different notary account, simply edit this line with your desired r-address. The macro validates the address at compile time and converts it to an `AccountID`.
 
 ## Notes
 
-- The contract compares raw 20-byte AccountIDs. Classic addresses are converted at compile-time by the `r_address!` macro.
+- The contract compares `AccountID` values directly. Classic addresses are converted at compile-time by the `r_address!` macro.
 - Make sure the hardcoded notary address in `src/lib.rs` matches the account you'll use in step 4 to submit `EscrowFinish`.
