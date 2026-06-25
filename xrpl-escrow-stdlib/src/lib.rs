@@ -7,4 +7,5 @@ extern crate std;
 pub mod ctx;
 
 pub use ctx::escrow_finish::EscrowFinishContext;
+pub use ctx::finish_result::FinishResult;
 pub use xrpl_wasm_stdlib::*;

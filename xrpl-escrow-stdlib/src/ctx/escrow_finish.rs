@@ -5,13 +5,14 @@ use xrpl_wasm_stdlib::host;
 
 /// Entry-point context for a Smart Escrow finish operation.
 ///
-/// Provides access to the current [`EscrowFinish`] transaction via [`SmartFeatureContext::tx`]
-/// and to the escrow ledger object via [`escrow`](EscrowFinishContext::escrow). Escrow-unique
-/// host functions (e.g., [`update_data`](EscrowFinishContext::update_data)) are exposed as safe
-/// inherent methods; no `unsafe` code is needed in user crates.
+/// Provides access to the current [`EscrowFinish`] transaction via
+/// [`SmartFeatureContext::tx`] and to the escrow ledger object via
+/// [`escrow`](EscrowFinishContext::escrow). Escrow-unique host functions
+/// (e.g., [`update_data`](EscrowFinishContext::update_data)) are exposed as
+/// safe inherent methods; no `unsafe` code is needed in user crates.
 ///
-/// The `#[smart_escrow]` entry-point macro constructs this type via `Default::default()` and
-/// passes it to the user function. Direct construction is not needed in normal usage.
+/// The `#[smart_escrow]` macro constructs this via `Default::default()` and
+/// passes it to the user function.
 pub struct EscrowFinishContext {
     tx: EscrowFinish,
     escrow: CurrentEscrow,
@@ -63,7 +64,6 @@ mod tests {
     #[test]
     fn tx_and_escrow_accessors() {
         let ctx = EscrowFinishContext::default();
-        // Compile-time: verify return types are correct.
         let _tx: &EscrowFinish = ctx.tx();
         let _escrow: &CurrentEscrow = ctx.escrow();
     }
