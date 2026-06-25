@@ -8,10 +8,7 @@ use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
-use crate::host::{
-    Result, cache_ledger_obj as host_cache_ledger_obj, get_current_ledger_obj_field,
-    get_ledger_obj_field,
-};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 
 /// Trait for types that can be retrieved from ledger object fields.
 ///
@@ -336,15 +333,6 @@ impl LedgerObjectFieldGetter for Hash192 {
         match_result_code_with_expected_bytes_optional(result_code, HASH192_SIZE, || {
             Some(Hash192::from(unsafe { buffer.assume_init() }))
         })
-    }
-}
-
-pub fn cache_ledger_obj(keylet: &[u8], cache_num: i32) -> Result<i32> {
-    let rescode = unsafe { host_cache_ledger_obj(keylet.as_ptr(), keylet.len(), cache_num) };
-    if rescode < 0 {
-        Result::Err(crate::host::Error::from_code(rescode))
-    } else {
-        Result::Ok(rescode)
     }
 }
 
@@ -1169,39 +1157,6 @@ pub mod ledger_object {
         #[should_panic]
         fn test_object_get_field_optional_with_slot_panics() {
             let _ = ledger_object::get_field_optional(0, sfield::Memo);
-        }
-
-        // ========================================
-        // cache_ledger_obj tests
-        // ========================================
-
-        #[test]
-        fn test_cache_ledger_obj_success() {
-            let mut mock = MockHostBindings::new();
-            mock.expect_cache_ledger_obj()
-                .with(always(), always(), eq(0))
-                .times(1)
-                .returning(|_, _, _| 0);
-            let _guard = setup_mock(mock);
-
-            let keylet = [0u8; 34];
-            let result = crate::core::ledger_objects::cache_ledger_obj(&keylet, 0);
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), 0);
-        }
-
-        #[test]
-        fn test_cache_ledger_obj_error() {
-            use crate::host::error_codes::INTERNAL_ERROR;
-
-            let mut mock = MockHostBindings::new();
-            mock.expect_cache_ledger_obj()
-                .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
-            let _guard = setup_mock(mock);
-
-            let keylet = [0u8; 34];
-            assert!(crate::core::ledger_objects::cache_ledger_obj(&keylet, 0).is_err());
         }
     }
 }
