@@ -24,34 +24,34 @@ pub fn object_exists<T, const CODE: i32>(
 ) -> Result<bool> {
     match id_result {
         Ok(id) => {
-            let _ = trace_data(id_type, &id, DataRepr::AsHex);
+            trace_data(id_type, &id, DataRepr::AsHex);
 
             let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
             if slot < 0 {
-                let _ = trace_num("Error: ", slot.into());
+                trace_num("Error: ", slot.into());
                 return Err(Error::from_code(slot));
             }
             if CODE == 0 {
                 let field_code: i32 = sfield::PreviousTxnID.into();
-                let _ = trace_num("Getting field: ", field_code as i64);
+                trace_num("Getting field: ", field_code as i64);
                 match ledger_object::get_field(slot, sfield::PreviousTxnID) {
                     Ok(data) => {
-                        let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
+                        trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }
                     Err(result_code) => {
-                        let _ = trace_num("Error getting field: ", result_code.into());
+                        trace_num("Error getting field: ", result_code.into());
                         return Err(result_code);
                     }
                 }
             } else {
                 let field_code: i32 = field.into();
-                let _ = trace_num("Getting field: ", field_code as i64);
+                trace_num("Getting field: ", field_code as i64);
                 match ledger_object::get_field(slot, sfield::Account) {
                     Ok(data) => {
-                        let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
+                        trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }
                     Err(result_code) => {
-                        let _ = trace_num("Error getting field: ", result_code.into());
+                        trace_num("Error getting field: ", result_code.into());
                         return Err(result_code);
                     }
                 }
@@ -60,7 +60,7 @@ pub fn object_exists<T, const CODE: i32>(
             Ok(true)
         }
         Err(error) => {
-            let _ = trace_num("Error getting ledger entry ID: ", error.into());
+            trace_num("Error getting ledger entry ID: ", error.into());
             Err(error)
         }
     }
@@ -68,15 +68,15 @@ pub fn object_exists<T, const CODE: i32>(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn escrow_finish() -> i32 {
-    let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
+    trace("$$$$$ STARTING WASM EXECUTION $$$$$");
 
     let escrow: CurrentEscrow = get_current_escrow();
 
     let account = escrow.get_account().unwrap_or_panic();
-    let _ = trace_acct("Account:", &account);
+    trace_acct("Account:", &account);
 
     let destination = escrow.get_destination().unwrap_or_panic();
-    let _ = trace_acct("Destination:", &destination);
+    trace_acct("Destination:", &destination);
 
     let mut seq = 5;
 
@@ -85,13 +85,13 @@ pub extern "C" fn escrow_finish() -> i32 {
             match object_exists($id, $type, $field) {
                 Ok(_exists) => {
                     // false isn't returned
-                    let _ = trace(concat!(
+                    trace(concat!(
                         $type,
                         " object exists, proceeding with escrow finish."
                     ));
                 }
                 Err(error) => {
-                    let _ = trace_num("Current seq value:", seq.try_into().unwrap());
+                    trace_num("Current seq value:", seq.try_into().unwrap());
                     return error.code();
                 }
             }

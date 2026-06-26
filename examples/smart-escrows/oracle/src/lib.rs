@@ -26,16 +26,16 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
     let series_len = match oracle.path().field(sfield::PriceDataSeries).array_len() {
         Ok(len) => len,
         Err(error) => {
-            let _ = trace_num("Error getting PriceDataSeries length", error.code() as i64);
+            trace_num("Error getting PriceDataSeries length", error.code() as i64);
             return Err(error);
         }
     };
-    let _ = trace_num(
+    trace_num(
         "get_price_from_oracle: price_data_series_len=",
         series_len as i64,
     );
     if series_len == 0 {
-        let _ = trace("get_price_from_oracle: oracle has no price data");
+        trace("get_price_from_oracle: oracle has no price data");
         return Err(Error::FieldNotFound);
     }
 
@@ -49,11 +49,11 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
 
     match asset_price {
         Ok(price) => {
-            let _ = trace_num("get_price_from_oracle: asset_price=", price as i64);
+            trace_num("get_price_from_oracle: asset_price=", price as i64);
             Ok(price)
         }
         Err(error) => {
-            let _ = trace_num("Error getting asset_price", error.code() as i64);
+            trace_num("Error getting asset_price", error.code() as i64);
             Err(error) // Must return to short circuit.
         }
     }
@@ -64,7 +64,7 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
     let oracle_id = match oracle_id(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
         Ok(id) => id,
         Err(error) => {
-            let _ = trace_num("finish: oracle_id error_code=", error.code() as i64);
+            trace_num("finish: oracle_id error_code=", error.code() as i64);
             return error.code().into();
         }
     };
@@ -72,10 +72,10 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
     let slot: i32;
     unsafe {
         slot = host::cache_le(oracle_id.as_ptr(), oracle_id.len(), 0);
-        let _ = trace_num("finish: cache_le slot=", slot as i64);
+        trace_num("finish: cache_le slot=", slot as i64);
 
         if slot < 0 {
-            let _ = trace_num("finish: cache_le failed, returning 0", 0);
+            trace_num("finish: cache_le failed, returning 0", 0);
             return FinishResult::reject();
         };
     }

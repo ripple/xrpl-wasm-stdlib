@@ -30,8 +30,8 @@ use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn escrow_finish() -> i32 {
-    let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
-    let _ = trace("");
+    trace("$$$$$ STARTING WASM EXECUTION $$$$$");
+    trace("");
 
     let current_escrow: CurrentEscrow = get_current_escrow();
 
@@ -39,35 +39,35 @@ pub extern "C" fn escrow_finish() -> i32 {
     // Trace All Current Escrow Ledger Object Fields
     // ########################################
     {
-        let _ = trace("### Trace Current Escrow Ledger Object Fields");
-        let _ = trace("{ ");
-        let _ = trace("  -- Common Fields");
+        trace("### Trace Current Escrow Ledger Object Fields");
+        trace("{ ");
+        trace("  -- Common Fields");
 
         // Trace Field: Account
         let account = current_escrow.get_account().unwrap();
         test_utils::assert_eq!(account.0.len(), 20);
-        let _ = trace_data("  Account:", &account.0, DataRepr::AsHex);
+        trace_data("  Account:", &account.0, DataRepr::AsHex);
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
-        let _ = trace_amt("  Amount:", &amount);
+        trace_amt("  Amount:", &amount);
 
         // Trace Field: LedgerEntryType
         let ledger_entry_type = current_escrow.get_ledger_entry_type().unwrap();
         test_utils::assert_eq!(ledger_entry_type, 117);
-        let _ = trace_num("  LedgerEntryType:", ledger_entry_type as i64);
+        trace_num("  LedgerEntryType:", ledger_entry_type as i64);
 
         // Trace Field: CancelAfter (optional - require it for testing)
         let opt_cancel_after = current_escrow.get_cancel_after().unwrap();
         let cancel_after = opt_cancel_after.expect("CancelAfter should be set for testing");
-        let _ = trace_num("  CancelAfter:", cancel_after as i64);
+        trace_num("  CancelAfter:", cancel_after as i64);
 
         // Trace Field: Condition (optional)
         match current_escrow.get_condition() {
             Ok(opt_condition) => {
                 if let Some(condition) = opt_condition {
-                    let _ = trace_num("  Condition length:", condition.len() as i64);
-                    let _ = trace_data(
+                    trace_num("  Condition length:", condition.len() as i64);
+                    trace_data(
                         "  Condition (full hex):",
                         condition.as_slice(),
                         DataRepr::AsHex,
@@ -83,14 +83,14 @@ pub extern "C" fn escrow_finish() -> i32 {
                         &EXPECTED_CONDITION[..],
                         "Condition bytes mismatch"
                     );
-                    let _ = trace("  ✓ Condition matches expected value");
+                    trace("  ✓ Condition matches expected value");
                 } else {
-                    let _ = trace("  Condition: not present");
+                    trace("  Condition: not present");
                 }
             }
             Err(e) => {
-                let _ = trace("  ERROR getting Condition");
-                let _ = trace_num("  error_code=", e as i64);
+                trace("  ERROR getting Condition");
+                trace_num("  error_code=", e as i64);
                 return e.code();
             }
         }
@@ -99,27 +99,27 @@ pub extern "C" fn escrow_finish() -> i32 {
         let destination = current_escrow.get_destination().unwrap();
         // Destination is set in runTest.js (destWallet), just verify it's a valid AccountID
         test_utils::assert_eq!(destination.0.len(), 20);
-        let _ = trace_data("  Destination:", &destination.0, DataRepr::AsHex);
+        trace_data("  Destination:", &destination.0, DataRepr::AsHex);
 
         // Trace Field: DestinationTag (optional - already set in runTest.js)
         let opt_destination_tag = current_escrow.get_destination_tag().unwrap();
         let destination_tag =
             opt_destination_tag.expect("DestinationTag should be set for testing");
         test_utils::assert_eq!(destination_tag, 23480);
-        let _ = trace_num("  DestinationTag:", destination_tag as i64);
+        trace_num("  DestinationTag:", destination_tag as i64);
 
         // Trace Field: FinishAfter (optional - require it for testing)
         let opt_finish_after = current_escrow.get_finish_after().unwrap();
         let finish_after = opt_finish_after.expect("FinishAfter should be set for testing");
-        let _ = trace_num("  FinishAfter:", finish_after as i64);
+        trace_num("  FinishAfter:", finish_after as i64);
 
         // Trace Field: Flags
         let result = current_escrow.get_flags();
         if let Ok(flags) = result {
             // Flags is typically 0 for escrows
-            let _ = trace_num("  Flags:", flags as i64);
+            trace_num("  Flags:", flags as i64);
         } else if let Err(error) = result {
-            let _ = trace_num("  Error getting Flags. error_code = ", error.code() as i64);
+            trace_num("  Error getting Flags. error_code = ", error.code() as i64);
         }
 
         // TODO: Uncomment this once https://github.com/ripple/xrpl-wasm-stdlib/issues/86 is fixed.
@@ -127,8 +127,8 @@ pub extern "C" fn escrow_finish() -> i32 {
         // let opt_bytecode = current_escrow.get_bytecode().unwrap();
         // if let Some(bytecode) = opt_bytecode {
         //     Bytecode is the WASM code - just verify it exists and has reasonable length
-        // let _ = trace_num("  Bytecode length:", bytecode.len as i64);
-        // let _ = trace_data(
+        // trace_num("  Bytecode length:", bytecode.len as i64);
+        // trace_data(
         //     "  Bytecode:",
         //     &bytecode.data[..bytecode.len],
         //     DataRepr::AsHex,
@@ -138,15 +138,15 @@ pub extern "C" fn escrow_finish() -> i32 {
         // Trace Field: OwnerNode
         let owner_node = current_escrow.get_owner_node().unwrap();
         // OwnerNode is system-generated, typically 0 for first entry
-        let _ = trace_num("  OwnerNode:", owner_node as i64);
+        trace_num("  OwnerNode:", owner_node as i64);
 
         // Trace Field: DestinationNode (optional - system-generated, may or may not be present)
         let opt_destination_node = current_escrow.get_destination_node().unwrap();
         if let Some(destination_node) = opt_destination_node {
             // DestinationNode is system-generated, typically 0 for first entry
-            let _ = trace_num("  DestinationNode:", destination_node as i64);
+            trace_num("  DestinationNode:", destination_node as i64);
         } else {
-            let _ = trace("  DestinationNode: not present");
+            trace("  DestinationNode: not present");
         }
 
         // Trace Field: PreviousTxnID
@@ -154,18 +154,18 @@ pub extern "C" fn escrow_finish() -> i32 {
         // PreviousTxnID is the hash of the EscrowCreate transaction - unpredictable
         // Just verify it's 32 bytes (valid Hash256)
         test_utils::assert_eq!(previous_txn_id.0.len(), 32);
-        let _ = trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
+        trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
 
         // Trace Field: PreviousTxnLgrSeq
         let previous_txn_lgr_seq = current_escrow.get_previous_txn_lgr_seq().unwrap();
         // PreviousTxnLgrSeq is system-generated - just verify it's non-zero
-        let _ = trace_num("  PreviousTxnLgrSeq:", previous_txn_lgr_seq as i64);
+        trace_num("  PreviousTxnLgrSeq:", previous_txn_lgr_seq as i64);
 
         // Trace Field: SourceTag (optional - already set in runTest.js)
         let opt_source_tag = current_escrow.get_source_tag().unwrap();
         let source_tag = opt_source_tag.expect("SourceTag should be set for testing");
         test_utils::assert_eq!(source_tag, 11747);
-        let _ = trace_num("  SourceTag:", source_tag as i64);
+        trace_num("  SourceTag:", source_tag as i64);
 
         // Trace Field: Data (contract data)
         // Note: Data field is optional and only present if set during EscrowCreate or
@@ -175,16 +175,16 @@ pub extern "C" fn escrow_finish() -> i32 {
         if let Ok(contract_data) = data_result
             && contract_data.len > 0
         {
-            let _ = trace_num("  Data length:", contract_data.len as i64);
-            let _ = trace_data(
+            trace_num("  Data length:", contract_data.len as i64);
+            trace_data(
                 "  Data:",
                 &contract_data.data[..contract_data.len],
                 DataRepr::AsHex,
             );
         }
 
-        let _ = trace("}");
-        let _ = trace("");
+        trace("}");
+        trace("");
     }
 
     // ########################################
@@ -196,7 +196,7 @@ pub extern "C" fn escrow_finish() -> i32 {
     // getter above — that equality is what proves the locator encoding and the host dispatch are
     // both correct against a real ledger object, not just against mocks.
     {
-        let _ = trace("### Current Escrow Ledger Object Fields via path()");
+        trace("### Current Escrow Ledger Object Fields via path()");
 
         // Path Read: Account
         let path_account = current_escrow
@@ -205,7 +205,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .get::<AccountID>()
             .unwrap();
         test_utils::assert_eq!(path_account.0, current_escrow.get_account().unwrap().0);
-        let _ = trace_data("  Account (via path):", &path_account.0, DataRepr::AsHex);
+        trace_data("  Account (via path):", &path_account.0, DataRepr::AsHex);
 
         // Path Read: OwnerNode
         let path_owner_node = current_escrow
@@ -214,7 +214,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .get::<u64>()
             .unwrap();
         test_utils::assert_eq!(path_owner_node, current_escrow.get_owner_node().unwrap());
-        let _ = trace_num("  OwnerNode (via path):", path_owner_node as i64);
+        trace_num("  OwnerNode (via path):", path_owner_node as i64);
 
         // Path Read: PreviousTxnLgrSeq
         let path_prev_lgr_seq = current_escrow
@@ -226,7 +226,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             path_prev_lgr_seq,
             current_escrow.get_previous_txn_lgr_seq().unwrap()
         );
-        let _ = trace_num("  PreviousTxnLgrSeq (via path):", path_prev_lgr_seq as i64);
+        trace_num("  PreviousTxnLgrSeq (via path):", path_prev_lgr_seq as i64);
 
         // Path Read: DestinationTag, an optional field that runTest.js does set. Both routes must
         // agree it is present, and agree on the value.
@@ -239,7 +239,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         test_utils::assert!(path_dest_tag.is_some());
         test_utils::assert!(flat_dest_tag.is_some());
         test_utils::assert_eq!(path_dest_tag.unwrap(), flat_dest_tag.unwrap());
-        let _ = trace_num(
+        trace_num(
             "  DestinationTag (via path):",
             path_dest_tag.unwrap() as i64,
         );
@@ -257,18 +257,18 @@ pub extern "C" fn escrow_finish() -> i32 {
         let non_array_len = current_escrow.path().field(sfield::Account).array_len();
         match non_array_len {
             Ok(len) => {
-                let _ = trace_num("  array_len on non-array returned:", len as i64);
+                trace_num("  array_len on non-array returned:", len as i64);
             }
             Err(error) => {
-                let _ = trace_num("  array_len on non-array errored:", error.code() as i64);
+                trace_num("  array_len on non-array errored:", error.code() as i64);
             }
         }
         test_utils::assert!(non_array_len.is_err());
 
-        let _ = trace("");
+        trace("");
     }
 
-    let _ = trace("$$$$$ WASM EXECUTION COMPLETE $$$$$");
+    trace("$$$$$ WASM EXECUTION COMPLETE $$$$$");
     1 // <-- Finish the escrow to indicate a successful outcome
 }
 

@@ -1515,12 +1515,8 @@ pub trait HostBindings {
     /// - `as_hex`: If 0 treat the data_read_ptr as pointing at a string of text, otherwise treat it
     ///   as data and print hex.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Trace is fire-and-forget logging: it returns nothing and cannot fail from the guest's
+    /// perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1531,7 +1527,7 @@ pub trait HostBindings {
         data_read_ptr: *const u8,
         data_read_len: usize,
         as_hex: i32,
-    ) -> i32;
+    );
 
     /// Print a number to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1541,16 +1537,12 @@ pub trait HostBindings {
     /// * `msg_read_len`: The byte length of the text to send to the trace log.
     /// * `number`: Any integer you wish to display after the text.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Trace is fire-and-forget logging: it returns nothing and cannot fail from the guest's
+    /// perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
+    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64);
 
     /// Print an account to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1561,12 +1553,8 @@ pub trait HostBindings {
     /// * `account_ptr`: A pointer to an account.
     /// * `account_len`: The byte length of the account.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Trace is fire-and-forget logging: it returns nothing and cannot fail from the guest's
+    /// perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1576,7 +1564,7 @@ pub trait HostBindings {
         msg_read_len: usize,
         account_ptr: *const u8,
         account_len: usize,
-    ) -> i32;
+    );
 
     /// Print an OpaqueFloat number to the trace log on XRPLd. Any XRPLd instance set to \"trace\"
     /// log level will see this.
@@ -1587,12 +1575,8 @@ pub trait HostBindings {
     /// * `opaque_float_ptr`: A pointer to an array of 8 bytes containing the u64 opaque pointer value.
     /// * `opaque_float_len`: The byte length of the opaque float data.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Trace is fire-and-forget logging: it returns nothing and cannot fail from the guest's
+    /// perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1602,7 +1586,7 @@ pub trait HostBindings {
         msg_read_len: usize,
         opaque_float_ptr: *const u8,
         opaque_float_len: usize,
-    ) -> i32;
+    );
 
     /// Print an amount to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1613,12 +1597,8 @@ pub trait HostBindings {
     /// * `amount_ptr`: A pointer to an amount.
     /// * `amount_len`: The byte length of the amount.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Trace is fire-and-forget logging: it returns nothing and cannot fail from the guest's
+    /// perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1628,5 +1608,5 @@ pub trait HostBindings {
         msg_read_len: usize,
         amount_ptr: *const u8,
         amount_len: usize,
-    ) -> i32;
+    );
 }

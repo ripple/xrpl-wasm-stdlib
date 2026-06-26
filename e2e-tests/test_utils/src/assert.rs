@@ -26,7 +26,7 @@ macro_rules! impl_trace_numeric {
             impl TraceValue for $t {
                 #[inline]
                 fn trace_value(msg: &str, value: &$t) {
-                    let _ = trace_num(msg, *value as i64);
+                    trace_num(msg, *value as i64);
                 }
             }
         )*
@@ -44,11 +44,11 @@ impl TraceValue for u64 {
     #[inline]
     fn trace_value(msg: &str, value: &u64) {
         if *value <= i64::MAX as u64 {
-            let _ = trace_num(msg, *value as i64);
+            trace_num(msg, *value as i64);
         } else {
             // Value too large for i64, use hex representation
             let bytes = value.to_be_bytes();
-            let _ = trace_data(msg, &bytes, DataRepr::AsHex);
+            trace_data(msg, &bytes, DataRepr::AsHex);
         }
     }
 }
@@ -57,11 +57,11 @@ impl TraceValue for usize {
     #[inline]
     fn trace_value(msg: &str, value: &usize) {
         if *value <= i64::MAX as usize {
-            let _ = trace_num(msg, *value as i64);
+            trace_num(msg, *value as i64);
         } else {
             // Value too large for i64, use hex representation
             let bytes = value.to_be_bytes();
-            let _ = trace_data(msg, &bytes, DataRepr::AsHex);
+            trace_data(msg, &bytes, DataRepr::AsHex);
         }
     }
 }
@@ -70,7 +70,7 @@ impl TraceValue for usize {
 impl<const N: usize> TraceValue for [u8; N] {
     #[inline]
     fn trace_value(msg: &str, value: &[u8; N]) {
-        let _ = trace_data(msg, value, DataRepr::AsHex);
+        trace_data(msg, value, DataRepr::AsHex);
     }
 }
 
@@ -78,7 +78,7 @@ impl<const N: usize> TraceValue for [u8; N] {
 impl TraceValue for &[u8] {
     #[inline]
     fn trace_value(msg: &str, value: &&[u8]) {
-        let _ = trace_data(msg, value, DataRepr::AsHex);
+        trace_data(msg, value, DataRepr::AsHex);
     }
 }
 
@@ -87,7 +87,7 @@ impl TraceValue for &[u8] {
 impl<const N: usize> TraceValue for &[u8; N] {
     #[inline]
     fn trace_value(msg: &str, value: &&[u8; N]) {
-        let _ = trace_data(msg, *value, DataRepr::AsHex);
+        trace_data(msg, *value, DataRepr::AsHex);
     }
 }
 
@@ -95,7 +95,7 @@ impl<const N: usize> TraceValue for &[u8; N] {
 impl TraceValue for TransactionType {
     #[inline]
     fn trace_value(msg: &str, value: &TransactionType) {
-        let _ = trace_num(msg, *value as i64);
+        trace_num(msg, *value as i64);
     }
 }
 
@@ -105,7 +105,7 @@ pub fn trace_value_generic<T>(msg: &str, value: &T) {
     let data_ptr = value as *const T as *const u8;
     let data_len = core::mem::size_of::<T>();
     let data_slice = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
-    let _ = trace_data(msg, data_slice, DataRepr::AsHex);
+    trace_data(msg, data_slice, DataRepr::AsHex);
 }
 
 /// Asserts that two expressions are equal.
@@ -133,7 +133,7 @@ macro_rules! assert_eq {
             #[cfg(target_arch = "wasm32")]
             {
                 if left_val != right_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " != ", stringify!($right)));
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " != ", stringify!($right)));
                     <_ as $crate::assert::TraceValue>::trace_value("  left: ", &left_val);
                     <_ as $crate::assert::TraceValue>::trace_value("  right: ", &right_val);
                     panic!("assertion failed: {} != {}", stringify!($left), stringify!($right));
@@ -148,10 +148,10 @@ macro_rules! assert_eq {
             #[cfg(target_arch = "wasm32")]
             {
                 if left_val != right_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " != ", stringify!($right)));
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " != ", stringify!($right)));
                     <_ as $crate::assert::TraceValue>::trace_value("  left: ", &left_val);
                     <_ as $crate::assert::TraceValue>::trace_value("  right: ", &right_val);
-                    let _ = xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
+                    xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
                     panic!("assertion failed: {} != {}: {}", stringify!($left), stringify!($right), format_args!($($arg)+));
                 }
             }
@@ -183,7 +183,7 @@ macro_rules! assert {
             #[cfg(target_arch = "wasm32")]
             {
                 if !cond_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($cond)));
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($cond)));
                     panic!("assertion failed: {}", stringify!($cond));
                 }
             }
@@ -195,8 +195,8 @@ macro_rules! assert {
             #[cfg(target_arch = "wasm32")]
             {
                 if !cond_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($cond)));
-                    let _ = xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($cond)));
+                    xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
                     panic!("assertion failed: {}: {}", stringify!($cond), format_args!($($arg)+));
                 }
             }
@@ -229,7 +229,7 @@ macro_rules! assert_ne {
             #[cfg(target_arch = "wasm32")]
             {
                 if left_val == right_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " == ", stringify!($right)));
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " == ", stringify!($right)));
                     <_ as $crate::assert::TraceValue>::trace_value("  value: ", &left_val);
                     panic!("assertion failed: {} == {}", stringify!($left), stringify!($right));
                 }
@@ -243,9 +243,9 @@ macro_rules! assert_ne {
             #[cfg(target_arch = "wasm32")]
             {
                 if left_val == right_val {
-                    let _ = xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " == ", stringify!($right)));
+                    xrpl_common_stdlib::host::trace::trace(concat!("Assertion failed: ", stringify!($left), " == ", stringify!($right)));
                     <_ as $crate::assert::TraceValue>::trace_value("  value: ", &left_val);
-                    let _ = xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
+                    xrpl_common_stdlib::host::trace::trace("  message: (see panic message for details)");
                     panic!("assertion failed: {} == {}: {}", stringify!($left), stringify!($right), format_args!($($arg)+));
                 }
             }
