@@ -1,3 +1,14 @@
+//! Smart Feature context primitives shared by all entry points.
+//!
+//! This module exposes the [`SmartFeatureContext`] trait — the narrow context
+//! type implemented by feature-specific contexts (e.g., `EscrowFinishContext`)
+//! — and [`FinishResult`], the return type smart features use to signal
+//! whether the native transaction should proceed.
+
+pub mod finish_result;
+
+pub use finish_result::FinishResult;
+
 use crate::core::current_tx::traits::TransactionCommonFields;
 
 /// Narrow context trait shared by all Smart Escrow and Smart Contract entry points.
