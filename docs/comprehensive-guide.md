@@ -483,7 +483,7 @@ use xrpl_common_stdlib::host::trace::trace_num;
 
 let result = unsafe { some_host_function(params) };
 if result < 0 {
-    let _ = trace_num("Host function failed with error:", result as i64);
+    trace_num("Host function failed with error:", result as i64);
     return result; // or handle appropriately
 }
 ```
@@ -763,15 +763,15 @@ use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
-    trace("Contract starting").ok();
+    trace("Contract starting");
 
     let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
+            trace_data("Account", &acc.0, DataRepr::AsHex);
             acc
         },
         Err(e) => {
-            let _ = trace_num("Error getting account, code:", e.code() as i64);
+            trace_num("Error getting account, code:", e.code() as i64);
             return e.code().into();
         }
     };

@@ -158,10 +158,18 @@ export_host_functions! {
     fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) -> i32;
-    fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) -> i32;
-    fn trace_acct(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
-    fn trace_xfloat(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
-    fn trace_amt(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
-
 }
+
+// Host Function Category: TRACE
+// Fire-and-forget: these return nothing, so they can't go through the stub macro above
+// (it coerces the last parameter into an i32 return value).
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) {}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) {}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_acct(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) {}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_xfloat(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) {}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_amt(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) {}

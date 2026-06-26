@@ -128,11 +128,11 @@ use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
-    trace("Contract starting").ok();
+    trace("Contract starting");
 
     let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
+            trace_data("Account", &acc.0, DataRepr::AsHex);
             acc
         },
         Err(e) => {

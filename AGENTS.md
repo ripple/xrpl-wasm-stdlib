@@ -151,7 +151,7 @@ use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn run(_ctx: EscrowFinishContext) -> FinishResult {
-    let _ = trace("Hello World");
+    trace("Hello World");
     FinishResult::succeed()
 }
 ```

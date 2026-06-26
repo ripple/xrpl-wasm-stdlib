@@ -96,14 +96,14 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
 /// 5. Stores the counterpart ledger entry ID + deadline in the data field
 /// 6. Returns 0 to wait for Phase 2
 fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
-    let _ = trace_num("Phase 1: Initialization", 0);
+    trace_num("Phase 1: Initialization", 0);
 
     // Extract the counterpart escrow ledger entry ID from transaction memo
     let (memo, memo_len) = match get_first_memo() {
         Ok(v) => match v {
             Some(v) => v,
             None => {
-                let _ = trace_num(
+                trace_num(
                     "No memo provided - atomic swap requires counterpart reference",
                     0,
                 );
@@ -111,21 +111,21 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
             }
         },
         Err(e) => {
-            let _ = trace_num("Error getting first memo:", e.code() as i64);
+            trace_num("Error getting first memo:", e.code() as i64);
             return e.code();
         }
     };
 
     // Validate memo contains a full 32-byte ledger entry ID
     if memo_len != XRPL_LEDGER_ENTRY_ID_SIZE {
-        let _ = trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
+        trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
         return VALIDATION_FAILED;
     }
 
     // Extract the counterpart escrow ledger entry ID (first 32 bytes of memo)
     let counterpart_escrow_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] =
         memo.data[0..32].try_into().unwrap();
-    let _ = trace_data(
+    trace_data(
         "Counterpart escrow ID from memo:",
         &counterpart_escrow_id,
         DataRepr::AsHex,
@@ -140,7 +140,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         )
     };
     if counterpart_slot < 0 {
-        let _ = trace_num(
+        trace_num(
             "Failed to cache counterpart escrow, error:",
             counterpart_slot as i64,
         );
@@ -148,13 +148,13 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     }
 
     let counterpart_escrow = Escrow::new(counterpart_slot);
-    let _ = trace_num("Starting counterpart security validation", 0);
+    trace_num("Starting counterpart security validation", 0);
 
     // Data Field Validation: Verify counterpart's data field structure
     let counterpart_data = match counterpart_escrow.get_data() {
         Ok(data) => data,
         Err(e) => {
-            let _ = trace_num("Error getting counterpart data:", e.code() as i64);
+            trace_num("Error getting counterpart data:", e.code() as i64);
             return e.code();
         }
     };
@@ -163,14 +163,14 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     if counterpart_data.len != XRPL_LEDGER_ENTRY_ID_SIZE
         && counterpart_data.len != LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE
     {
-        let _ = trace_num(
+        trace_num(
             "Counterpart data field invalid length, expected 32 or 36 bytes, got:",
             counterpart_data.len as i64,
         );
         return VALIDATION_FAILED;
     }
 
-    let _ = trace_data(
+    trace_data(
         "Counterpart data field:",
         &counterpart_data.data[0..counterpart_data.len],
         DataRepr::AsHex,
@@ -180,7 +180,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let current_account = match current_escrow.get_account() {
         Ok(account) => account,
         Err(e) => {
-            let _ = trace_num("Error getting current escrow account:", e.code() as i64);
+            trace_num("Error getting current escrow account:", e.code() as i64);
             return e.code();
         }
     };
@@ -188,7 +188,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let current_destination = match current_escrow.get_destination() {
         Ok(destination) => destination,
         Err(e) => {
-            let _ = trace_num("Error getting current escrow destination:", e.code() as i64);
+            trace_num("Error getting current escrow destination:", e.code() as i64);
             return e.code();
         }
     };
@@ -197,7 +197,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let counterpart_account = match counterpart_escrow.get_account() {
         Ok(account) => account,
         Err(e) => {
-            let _ = trace_num("Error getting counterpart escrow account:", e.code() as i64);
+            trace_num("Error getting counterpart escrow account:", e.code() as i64);
             return e.code();
         }
     };
@@ -205,7 +205,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let counterpart_destination = match counterpart_escrow.get_destination() {
         Ok(destination) => destination,
         Err(e) => {
-            let _ = trace_num(
+            trace_num(
                 "Error getting counterpart escrow destination:",
                 e.code() as i64,
             );
@@ -215,8 +215,8 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 
     // ATOMIC SWAP VALIDATION: Verify inverted account correlations
     if current_account.0 != counterpart_destination.0 {
-        let _ = trace_data("Current account:", &current_account.0, DataRepr::AsHex);
-        let _ = trace_data(
+        trace_data("Current account:", &current_account.0, DataRepr::AsHex);
+        trace_data(
             "Expected counterpart destination:",
             &counterpart_destination.0,
             DataRepr::AsHex,
@@ -225,12 +225,12 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     }
 
     if current_destination.0 != counterpart_account.0 {
-        let _ = trace_data(
+        trace_data(
             "Current destination:",
             &current_destination.0,
             DataRepr::AsHex,
         );
-        let _ = trace_data(
+        trace_data(
             "Expected counterpart account:",
             &counterpart_account.0,
             DataRepr::AsHex,
@@ -238,22 +238,22 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         return VALIDATION_FAILED;
     }
 
-    let _ = trace_num("All counterpart security validations passed", 0);
+    trace_num("All counterpart security validations passed", 0);
 
     // Get current escrow's CancelAfter field - this becomes our swap deadline
     let cancel_after = match current_escrow.get_cancel_after() {
         Ok(Some(cancel_after)) => cancel_after,
         Ok(None) => {
-            let _ = trace_num("Current escrow has no CancelAfter field", 0);
+            trace_num("Current escrow has no CancelAfter field", 0);
             return VALIDATION_FAILED;
         }
         Err(e) => {
-            let _ = trace_num("Error getting CancelAfter:", e.code() as i64);
+            trace_num("Error getting CancelAfter:", e.code() as i64);
             return e.code();
         }
     };
 
-    let _ = trace_num("Current escrow CancelAfter:", cancel_after as i64);
+    trace_num("Current escrow CancelAfter:", cancel_after as i64);
 
     // Build new data field: counterpart ledger entry ID (32 bytes) + CancelAfter (4 bytes)
     let mut new_data = xrpl_common_stdlib::types::contract_data::ContractData {
@@ -266,8 +266,8 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         .copy_from_slice(&cancel_after_bytes);
     new_data.len = LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE;
 
-    let _ = trace_num("Updated data length:", new_data.len as i64);
-    let _ = trace_data(
+    trace_num("Updated data length:", new_data.len as i64);
+    trace_data(
         "Updated data:",
         &new_data.data[0..new_data.len],
         DataRepr::AsHex,
@@ -276,16 +276,16 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     // Persist the updated data field to the escrow object
     match <CurrentEscrow as CurrentEscrowFields>::update_current_escrow_data(new_data) {
         Ok(()) => {
-            let _ = trace_num("Successfully updated escrow data", 0);
+            trace_num("Successfully updated escrow data", 0);
         }
         Err(e) => {
-            let _ = trace_num("Error updating escrow data:", e.code() as i64);
+            trace_num("Error updating escrow data:", e.code() as i64);
             return e.code();
         }
     }
 
     // Return 0 (failure) to indicate phase 1 complete, wait for phase 2
-    let _ = trace_num("Phase 1 complete - waiting for Phase 2", 0);
+    trace_num("Phase 1 complete - waiting for Phase 2", 0);
     0
 }
 
@@ -297,11 +297,11 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
 fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::ContractData) -> i32 {
-    let _ = trace_num("Phase 2: Timing validation", 0);
+    trace_num("Phase 2: Timing validation", 0);
 
     // Validate data field contains at least 36 bytes (32 bytes ledger entry ID + 4 bytes timing)
     if current_data.len < LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE {
-        let _ = trace_num(
+        trace_num(
             "Invalid data length for Phase 2, expected at least 36 bytes, got:",
             current_data.len as i64,
         );
@@ -314,7 +314,7 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
         .try_into()
         .unwrap();
     let cancel_after = u32::from_le_bytes(cancel_after_bytes);
-    let _ = trace_num("Extracted CancelAfter:", cancel_after as i64);
+    trace_num("Extracted CancelAfter:", cancel_after as i64);
 
     // Get current ledger time for deadline comparison
     let mut time_buffer = [0u8; 4];
@@ -326,19 +326,19 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
     }) {
         Ok(time) => time,
         Err(e) => {
-            let _ = trace_num("Failed to get parent ledger time:", e.code() as i64);
+            trace_num("Failed to get parent ledger time:", e.code() as i64);
             return VALIDATION_FAILED;
         }
     };
 
-    let _ = trace_num("Current ledger time:", current_time as i64);
+    trace_num("Current ledger time:", current_time as i64);
 
     // ATOMIC SWAP TIMING VALIDATION
     if current_time < cancel_after {
-        let _ = trace_num("Atomic swap executed before CancelAfter - success!", 0);
+        trace_num("Atomic swap executed before CancelAfter - success!", 0);
         1 // Success - escrow completes within deadline
     } else {
-        let _ = trace_num("Atomic swap attempted after CancelAfter - failed", 0);
+        trace_num("Atomic swap attempted after CancelAfter - failed", 0);
         0 // Failure - deadline exceeded, swap expired
     }
 }
@@ -369,15 +369,15 @@ fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
         Err(e) => {
             // If the data field doesn't exist, this is Phase 1
             if e.code() == xrpl_common_stdlib::host::error_codes::FIELD_NOT_FOUND {
-                let _ = trace_num("No data field found - this is Phase 1", 0);
+                trace_num("No data field found - this is Phase 1", 0);
                 return phase1_initialize(current_escrow);
             }
-            let _ = trace_num("Error getting current escrow data:", e.code() as i64);
+            trace_num("Error getting current escrow data:", e.code() as i64);
             return e.code();
         }
     };
 
-    let _ = trace_num("Current data length:", current_data.len as i64);
+    trace_num("Current data length:", current_data.len as i64);
 
     // STATE MACHINE: Determine execution phase based on data field length
     // Phase 1: data.len == 0 (no state stored yet)

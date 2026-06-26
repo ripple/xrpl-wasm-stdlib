@@ -189,22 +189,12 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     mock.expect_float_root()
         .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
 
-    // Helper to calculate sum of two lengths, clamping to i32::MAX
-    let sum_lengths = |len1: usize, len2: usize| -> i32 {
-        len1.saturating_add(len2).min(i32::MAX as usize) as i32
-    };
-
-    // Trace functions - return sum of lengths (matching old host_bindings_for_testing.rs)
-    mock.expect_trace()
-        .returning(move |_, msg_len, _, data_len, _| sum_lengths(msg_len, data_len));
-    mock.expect_trace_num()
-        .returning(move |_, msg_len, _| sum_lengths(msg_len, 8));
-    mock.expect_trace_acct()
-        .returning(move |_, msg_len, _, acc_len| sum_lengths(msg_len, acc_len));
-    mock.expect_trace_xfloat()
-        .returning(move |_, msg_len, _, float_len| sum_lengths(msg_len, float_len));
-    mock.expect_trace_amt()
-        .returning(move |_, msg_len, _, amt_len| sum_lengths(msg_len, amt_len));
+    // Trace functions - fire-and-forget logging, return nothing
+    mock.expect_trace().returning(|_, _, _, _, _| ());
+    mock.expect_trace_num().returning(|_, _, _| ());
+    mock.expect_trace_acct().returning(|_, _, _, _| ());
+    mock.expect_trace_xfloat().returning(|_, _, _, _| ());
+    mock.expect_trace_amt().returning(|_, _, _, _| ());
 }
 
 // #[cfg(test)]
@@ -330,11 +320,11 @@ export_host_functions! {
     fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> i32;
-    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-    fn trace_acct(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> i32;
-    fn trace_xfloat(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
-    fn trace_amt(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
+    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> ();
+    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> ();
+    fn trace_acct(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> ();
+    fn trace_xfloat(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> ();
+    fn trace_amt(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> ();
 
 }
 
@@ -409,32 +399,31 @@ mod tests {
     fn test_trace_functions_with_mock() {
         let mut mock = MockHostBindings::new();
 
-        // Mock trace function
-        mock.expect_trace().times(1).returning(
-            |_msg_ptr, msg_len, _data_ptr, data_len, _as_hex| (msg_len + data_len) as i32,
-        );
+        // Mock trace function (fire-and-forget, returns nothing)
+        mock.expect_trace()
+            .times(1)
+            .returning(|_msg_ptr, _msg_len, _data_ptr, _data_len, _as_hex| ());
 
-        // Mock trace_num function
+        // Mock trace_num function (fire-and-forget, returns nothing)
         mock.expect_trace_num()
             .times(1)
-            .returning(|_msg_ptr, msg_len, _number| msg_len as i32);
+            .returning(|_msg_ptr, _msg_len, _number| ());
 
-        // Test trace functions
+        // Test trace functions. Nothing is returned, so `.times(1)` on each expectation is
+        // what verifies the calls actually happened.
         let message = b"Test message";
         let data = b"Test data";
 
         unsafe {
-            let result = mock.trace(
+            mock.trace(
                 message.as_ptr(),
                 message.len(),
                 data.as_ptr(),
                 data.len(),
                 0,
             );
-            assert_eq!(result, (message.len() + data.len()) as i32);
 
-            let result = mock.trace_num(message.as_ptr(), message.len(), 42);
-            assert_eq!(result, message.len() as i32);
+            mock.trace_num(message.as_ptr(), message.len(), 42);
         }
     }
 

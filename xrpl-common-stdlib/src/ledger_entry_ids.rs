@@ -43,10 +43,10 @@ pub type LedgerEntryIdBytes = [u8; XRPL_LEDGER_ENTRY_ID_SIZE];
 ///   );
 ///   match accountroot_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -99,10 +99,10 @@ pub fn accountroot_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///  let issue2 = Issue::IOU(IouIssue::new(issuer, currency));
 ///  match amm_id(&issue1, &issue2) {
 ///    xrpl_common_stdlib::host::Result::Ok(id) => {
-///      let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///      trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
-///      let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///      trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///    }
 ///  }
 ///  Ok(())
@@ -157,10 +157,10 @@ pub fn amm_id(issue1: &Issue, issue2: &Issue) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match check_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -214,10 +214,10 @@ pub fn check_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///     let cred_type: &[u8] = b"termsandconditions";
 ///     match credential_id(&subject, &issuer, cred_type) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///         trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
@@ -274,10 +274,10 @@ pub fn credential_id(
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match delegate_id(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///         trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
@@ -328,10 +328,10 @@ pub fn delegate_id(account: &AccountID, authorize: &AccountID) -> Result<LedgerE
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match deposit_preauth_id(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///         trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
@@ -386,10 +386,10 @@ pub fn deposit_preauth_id(
 ///   );
 ///   match did_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -440,10 +440,10 @@ pub fn did_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match escrow_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -499,10 +499,10 @@ pub fn escrow_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///  let currency: Currency = Currency::from(*currency);
 ///  match trustline_id(&account1, &account2, &currency) {
 ///    xrpl_common_stdlib::host::Result::Ok(id) => {
-///      let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///      trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
-///      let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///      trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///    }
 ///  }
 ///  Ok(())
@@ -561,10 +561,10 @@ pub fn trustline_id(
 ///   let sequence = 12345;
 ///   match mpt_issuance_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -618,10 +618,10 @@ pub fn mpt_issuance_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match mptoken_id(&mptid, &holder) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///         trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
@@ -674,10 +674,10 @@ pub fn mptoken_id(mptid: &MptId, holder: &AccountID) -> Result<LedgerEntryIdByte
 ///   let sequence = 12345;
 ///   match nft_offer_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -731,10 +731,10 @@ pub fn nft_offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match offer_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -788,10 +788,10 @@ pub fn offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let document_id = 12345;
 ///   match oracle_id(&owner, document_id) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -848,10 +848,10 @@ pub fn oracle_id(owner: &AccountID, document_id: u32) -> Result<LedgerEntryIdByt
 ///   let sequence = 12345;
 ///   match paychan_id(&account, &destination, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -911,10 +911,10 @@ pub fn paychan_id(
 ///   let sequence = 12345;
 ///   match permissioned_domain_id(&account, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -967,10 +967,10 @@ pub fn permissioned_domain_id(account: &AccountID, seq: u32) -> Result<LedgerEnt
 ///   );
 ///   match signers_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -1021,10 +1021,10 @@ pub fn signers_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match ticket_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
@@ -1078,10 +1078,10 @@ pub fn ticket_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match vault_id(&account, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
