@@ -746,16 +746,16 @@ use xrpl_wasm_stdlib::host::Result::{Ok, Err};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-    trace("Contract starting").ok();
+    trace("Contract starting");
 
     let tx = EscrowFinish;
     let account = match tx.get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
+            trace_data("Account", &acc.0, DataRepr::AsHex);
             acc
         },
         Err(e) => {
-            trace_num("Error getting account: {:?}", e as i64).ok();
+            trace_num("Error getting account: {:?}", e as i64);
             return 0;
         }
     };

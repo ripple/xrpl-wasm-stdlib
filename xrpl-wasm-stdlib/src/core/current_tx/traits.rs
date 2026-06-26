@@ -860,7 +860,7 @@ mod tests {
                 // Mock trace_num calls (2 calls per field for byte mismatch: expected + actual)
                 mock.expect_trace_num()
                     .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
+                    .returning(|_, _, _| ())
                     .times(12); // 6 fields * 2 calls each
 
                 let _guard = setup_mock(mock);
@@ -914,7 +914,7 @@ mod tests {
                 // Mock trace_num calls (1 call per field for error codes)
                 mock.expect_trace_num()
                     .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
+                    .returning(|_, _, _| ())
                     .times(6); // 6 fields * 1 call each
 
                 let _guard = setup_mock(mock);
@@ -985,7 +985,7 @@ mod tests {
                 // Mock trace_num calls (1 call per field for error codes)
                 mock.expect_trace_num()
                     .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
+                    .returning(|_, _, _| ())
                     .times(6); // 6 fields * 1 call each
 
                 let _guard = setup_mock(mock);

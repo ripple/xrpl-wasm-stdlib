@@ -741,7 +741,8 @@ fn test_utility_functions() -> i32 {
     // Test 6.3: trace() - Debug logging with data
     let trace_message = b"Test trace message";
     let trace_data_payload = b"payload";
-    let trace_result = unsafe {
+    // trace() is fire-and-forget logging; it returns nothing and cannot fail.
+    unsafe {
         host::trace(
             trace_message.as_ptr(),
             trace_message.len(),
@@ -750,30 +751,12 @@ fn test_utility_functions() -> i32 {
             1, // as_hex = true
         )
     };
-
-    if trace_result < 0 {
-        let _ = trace_num("ERROR: trace() failed:", trace_result as i64);
-        return -603; // Trace function failed
-    }
-    let _ = trace_num("Trace function bytes written:", trace_result as i64);
+    let _ = trace("Trace function called");
 
     // Test 6.4: trace_num() - Debug logging with number
     let test_number = 42i64;
-    let trace_num_result = trace_num("Test number trace", test_number);
-
-    use xrpl_wasm_stdlib::host::Result;
-    match trace_num_result {
-        Result::Ok(_) => {
-            let _ = trace_num("Trace_num function succeeded", 0);
-        }
-        Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_num() failed:",
-                trace_num_result.err().unwrap().code() as i64,
-            );
-            return -604; // Trace number function failed
-        }
-    }
+    trace_num("Test number trace", test_number);
+    let _ = trace_num("Trace_num function succeeded", 0);
 
     // Test 6.5: trace_amount() - Debug logging with Amount
     match test_trace_amount_functions() {
@@ -818,37 +801,15 @@ fn test_trace_amount_functions() -> i32 {
     let xrp_amount = Amount::XRP {
         num_drops: 1_000_000, // 1 XRP
     };
-    let trace_result = trace_amount("Test XRP amount (1 XRP)", &xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with positive XRP");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -605; // Trace amount XRP failed
-        }
-    }
+    trace_amount("Test XRP amount (1 XRP)", &xrp_amount);
+    let _ = trace("SUCCESS: trace_amount with positive XRP");
 
     // Test 6.5.2: trace_amount() with negative XRP amount
     let negative_xrp_amount = Amount::XRP {
         num_drops: -500_000, // -0.5 XRP
     };
-    let trace_result = trace_amount("Test negative XRP amount (-0.5 XRP)", &negative_xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with negative XRP");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount negative XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -606; // Trace amount negative XRP failed
-        }
-    }
+    trace_amount("Test negative XRP amount (-0.5 XRP)", &negative_xrp_amount);
+    let _ = trace("SUCCESS: trace_amount with negative XRP");
 
     // Test 6.5.3: trace_amount() with zero XRP amount
     // TODO: uncomment when new devnet is deployed
@@ -869,37 +830,15 @@ fn test_trace_amount_functions() -> i32 {
 
     // Test 6.5.4: trace_amount() with small XRP amount (fee-like)
     let fee_amount = Amount::XRP { num_drops: 10 }; // 10 drops (typical fee)
-    let trace_result = trace_amount("Test small XRP amount (10 drops)", &fee_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with small XRP");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount small XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -608; // Trace amount small XRP failed
-        }
-    }
+    trace_amount("Test small XRP amount (10 drops)", &fee_amount);
+    let _ = trace("SUCCESS: trace_amount with small XRP");
 
     // Test 6.5.5: trace_amount() with large XRP amount
     let large_xrp_amount = Amount::XRP {
         num_drops: 100_000_000_000, // 100,000 XRP
     };
-    let trace_result = trace_amount("Test large XRP amount (100,000 XRP)", &large_xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with large XRP");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount large XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -609; // Trace amount large XRP failed
-        }
-    }
+    trace_amount("Test large XRP amount (100,000 XRP)", &large_xrp_amount);
+    let _ = trace("SUCCESS: trace_amount with large XRP");
 
     let _ = trace("SUCCESS: trace_amount XRP tests completed");
 
@@ -928,19 +867,8 @@ fn test_trace_amount_functions() -> i32 {
         issuer,
         currency,
     };
-    let trace_result = trace_amount("Test IOU amount", &iou_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with IOU");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount IOU failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -610; // Trace amount IOU failed
-        }
-    }
+    trace_amount("Test IOU amount", &iou_amount);
+    let _ = trace("SUCCESS: trace_amount with IOU");
 
     // Test 6.5.7: trace_amount() with MPT amount (positive)
     const MPT_VALUE: u64 = 500_000;
@@ -954,19 +882,8 @@ fn test_trace_amount_functions() -> i32 {
         is_positive: true,
         mpt_id,
     };
-    let trace_result = trace_amount("Test positive MPT amount", &mpt_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with positive MPT");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount positive MPT failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -611; // Trace amount positive MPT failed
-        }
-    }
+    trace_amount("Test positive MPT amount", &mpt_amount);
+    let _ = trace("SUCCESS: trace_amount with positive MPT");
 
     // Test 6.5.8: trace_amount() with MPT amount (negative)
     let negative_mpt_amount = Amount::MPT {
@@ -974,19 +891,8 @@ fn test_trace_amount_functions() -> i32 {
         is_positive: false,
         mpt_id,
     };
-    let trace_result = trace_amount("Test negative MPT amount", &negative_mpt_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            let _ = trace("SUCCESS: trace_amount with negative MPT");
-        }
-        host::Result::Err(_) => {
-            let _ = trace_num(
-                "ERROR: trace_amount negative MPT failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -612; // Trace amount negative MPT failed
-        }
-    }
+    trace_amount("Test negative MPT amount", &negative_mpt_amount);
+    let _ = trace("SUCCESS: trace_amount with negative MPT");
 
     // Test 6.5.9: trace_amount() with zero MPT amount
     // TODO: uncomment when new devnet is deployed

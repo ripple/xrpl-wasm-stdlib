@@ -156,12 +156,44 @@ export_host_functions! {
     fn float_divide(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _pow: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
+}
 
-    // Host Function Category: TRACE
-    fn trace(_msg_read_ptr: *const u8, _msg_read_len: usize, _data_read_ptr: *const u8, _data_read_len: usize, _as_hex: i32) -> i32;
-    fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) -> i32;
-    fn trace_account(_msg_read_ptr: *const u8, _msg_read_len: usize, _account_ptr: *const u8, _account_len: usize) -> i32;
-    fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
-    fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
-
+// Host Function Category: TRACE
+// Trace functions are fire-and-forget logging: they return nothing. The generic stub macro
+// above always returns the last parameter `as i32`, so these unit-returning stubs are defined
+// explicitly as no-ops instead.
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace(
+    _msg_read_ptr: *const u8,
+    _msg_read_len: usize,
+    _data_read_ptr: *const u8,
+    _data_read_len: usize,
+    _as_hex: i32,
+) {
+}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_num(_msg_read_ptr: *const u8, _msg_read_len: usize, _number: i64) {}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_account(
+    _msg_read_ptr: *const u8,
+    _msg_read_len: usize,
+    _account_ptr: *const u8,
+    _account_len: usize,
+) {
+}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_opaque_float(
+    _msg_read_ptr: *const u8,
+    _msg_read_len: usize,
+    _opaque_float_ptr: *const u8,
+    _opaque_float_len: usize,
+) {
+}
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn trace_amount(
+    _msg_read_ptr: *const u8,
+    _msg_read_len: usize,
+    _amount_ptr: *const u8,
+    _amount_len: usize,
+) {
 }
