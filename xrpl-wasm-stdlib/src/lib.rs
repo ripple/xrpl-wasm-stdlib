@@ -7,9 +7,6 @@ extern crate std;
 // Re-export the r_address macro for convenient access
 pub use xrpl_macros::r_address;
 
-// Re-export the wasm_export macro for convenient access
-pub use xrpl_parameter_macro::wasm_export;
-
 pub mod core;
 pub mod ctx;
 pub mod host;

@@ -3,13 +3,13 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::current_tx::contract_call::{ContractCall, get_current_contract_call};
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::submit::inner_objects::build_memo;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
-use xrpl_wasm_stdlib::host::{add_txn_field, build_txn, emit_built_txn};
-use xrpl_wasm_stdlib::sfield;
+use xrpl_contract_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_contract_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::core::types::transaction_type::TransactionType;
+use xrpl_contract_stdlib::current_tx::contract_call::{ContractCall, get_current_contract_call};
+use xrpl_contract_stdlib::host::{add_txn_field, build_txn, emit_built_txn};
+use xrpl_contract_stdlib::sfield;
+use xrpl_contract_stdlib::submit::inner_objects::build_memo;
 
 // ============================================================================
 // Constants

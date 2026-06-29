@@ -3,10 +3,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::trace::{trace, trace_num};
-use xrpl_wasm_stdlib::wasm_export;
+use xrpl_contract_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::core::types::amount::Amount;
+use xrpl_contract_stdlib::host::trace::{trace, trace_num};
+use xrpl_contract_stdlib::wasm_export;
 
 const SUCCESS: i32 = 0;
 const BAD_PARAM: i32 = -1;

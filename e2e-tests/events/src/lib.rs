@@ -3,8 +3,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::event::codec_v3::{EventBuffer, event_add};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::event::codec_v3::{EventBuffer, event_add};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn events() -> i32 {

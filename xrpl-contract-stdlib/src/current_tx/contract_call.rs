@@ -3,7 +3,8 @@
 //! This module provides functionality for handling ContractCall transactions within the
 //! XRPL Programmability environment.
 
-use crate::core::current_tx::traits::{ContractCallFields, TransactionCommonFields};
+use crate::current_tx::traits::ContractCallFields;
+use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 
 /// Represents an ContractCall transaction in the XRPL Programmability environment.
 ///

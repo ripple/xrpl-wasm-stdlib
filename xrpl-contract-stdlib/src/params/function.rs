@@ -1,17 +1,17 @@
-use crate::core::params::types::{FuncParamBytes, ParamError};
-use crate::core::type_codes::{
+use crate::params::types::{FuncParamBytes, ParamError};
+use xrpl_wasm_stdlib::core::type_codes::{
     STI_ACCOUNT, STI_AMOUNT, STI_NUMBER, STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64,
     STI_UINT128, STI_UINT160, STI_UINT192, STI_UINT256,
 };
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::currency::Currency;
-use crate::core::types::number::Number;
-use crate::core::types::uint::Hash160;
-use crate::core::types::uint::Hash192;
-use crate::core::types::uint::Hash256;
-use crate::host::function_param;
-use crate::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::core::types::amount::Amount;
+use xrpl_wasm_stdlib::core::types::currency::Currency;
+use xrpl_wasm_stdlib::core::types::number::Number;
+use xrpl_wasm_stdlib::core::types::uint::Hash160;
+use xrpl_wasm_stdlib::core::types::uint::Hash192;
+use xrpl_wasm_stdlib::core::types::uint::Hash256;
+use xrpl_wasm_stdlib::host::function_param;
+use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 
 // ============================================================================
 // Generic Functions

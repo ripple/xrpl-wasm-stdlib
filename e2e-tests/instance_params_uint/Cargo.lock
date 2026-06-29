@@ -69,7 +69,7 @@ dependencies = [
 name = "instance_params_uint"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-contract-stdlib",
 ]
 
 [[package]]
@@ -152,10 +152,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "xrpl-contract-stdlib"
+version = "0.1.0"
+dependencies = [
+ "xrpl-parameter-macro",
+ "xrpl-wasm-stdlib",
+]
+
+[[package]]
 name = "xrpl-macros"
 version = "0.1.0"
 dependencies = [
  "bs58",
+ "proc-macro2",
  "quote",
  "sha2",
  "syn",
@@ -175,5 +184,4 @@ name = "xrpl-wasm-stdlib"
 version = "0.8.0"
 dependencies = [
  "xrpl-macros",
- "xrpl-parameter-macro",
 ]

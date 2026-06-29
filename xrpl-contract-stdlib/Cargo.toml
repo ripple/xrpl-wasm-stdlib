@@ -1,0 +1,16 @@
+[package]
+name = "xrpl-contract-stdlib"
+version = "0.1.0"
+edition = "2024"
+description = "Smart Contract support crate for XRPL WebAssembly contracts"
+license.workspace = true
+repository.workspace = true
+keywords = ["xrpl", "wasm", "smart-contract", "no-std"]
+categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
+
+[dependencies]
+xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-parameter-macro = { path = "./xrpl-parameter-macro" }
+
+[dev-dependencies]
+xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }

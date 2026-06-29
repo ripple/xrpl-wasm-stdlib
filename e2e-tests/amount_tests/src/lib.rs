@@ -3,10 +3,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::params::function::get_function_param;
-use xrpl_wasm_stdlib::core::params::instance::get_instance_param;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_num};
+use xrpl_contract_stdlib::core::types::amount::Amount;
+use xrpl_contract_stdlib::host::trace::{DataRepr, trace, trace_data, trace_num};
+use xrpl_contract_stdlib::params::function::get_function_param;
+use xrpl_contract_stdlib::params::instance::get_instance_param;
 
 // ============================================================================
 // Instance Parameter Tests

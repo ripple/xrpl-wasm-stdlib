@@ -14,12 +14,8 @@
 pub mod chain;
 pub mod constants;
 pub mod current_tx;
-pub mod data;
-pub mod event;
 pub mod keylets;
 pub mod ledger_objects;
 pub mod locator;
-pub mod params;
-pub mod submit;
 pub mod type_codes;
 pub mod types;

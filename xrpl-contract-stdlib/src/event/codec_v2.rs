@@ -1,9 +1,9 @@
-use crate::core::type_codes::{
+use core::mem::MaybeUninit;
+use xrpl_wasm_stdlib::core::type_codes::{
     STI_ACCOUNT, STI_AMOUNT, STI_CURRENCY, STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64,
     STI_UINT128, STI_UINT160, STI_UINT192, STI_UINT256, STI_VL,
 };
-use crate::host::emit_event;
-use core::mem::MaybeUninit;
+use xrpl_wasm_stdlib::host::emit_event;
 
 // Minimal event buffer that just tracks position
 pub struct EventBuffer {

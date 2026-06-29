@@ -23,4 +23,4 @@ crate-type = ["cdylib"]
 panic = "unwind" # For debugging, allows unwinding if code is executed as Rust (e.g., unit tests)
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../../xrpl-wasm-stdlib" }
+xrpl-contract-stdlib = { path = "../../xrpl-contract-stdlib" }

@@ -3,12 +3,12 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::data::codec::{
+use xrpl_contract_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::data::codec::{
     get_array_element, get_data, get_nested_array_element, get_nested_data, set_array_element,
     set_data, set_nested_array_element, set_nested_data,
 };
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::trace::{trace, trace_num};
+use xrpl_contract_stdlib::host::trace::{trace, trace_num};
 
 // Different accounts for different test patterns
 const ACCOUNT: [u8; 20] = [

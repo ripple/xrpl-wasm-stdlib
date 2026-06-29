@@ -1,9 +1,9 @@
-use crate::core::type_codes::{
+use xrpl_wasm_stdlib::core::type_codes::{
     STI_ACCOUNT, STI_AMOUNT, STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64, STI_UINT128,
     STI_UINT160, STI_UINT256,
 };
-use crate::core::types::account_id::AccountID;
-use crate::host::{
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::host::{
     get_data_array_element_field, get_data_nested_array_element_field,
     get_data_nested_object_field, get_data_object_field, set_data_array_element_field,
     set_data_nested_array_element_field, set_data_nested_object_field, set_data_object_field,

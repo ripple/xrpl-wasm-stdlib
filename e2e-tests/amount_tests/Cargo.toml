@@ -23,4 +23,4 @@ overflow-checks = false
 panic = "unwind"
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../../xrpl-wasm-stdlib" }
+xrpl-contract-stdlib = { path = "../../xrpl-contract-stdlib" }

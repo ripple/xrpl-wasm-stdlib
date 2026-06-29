@@ -58,7 +58,6 @@
 //! let _flags = tx.get_flags().unwrap_or_panic();
 //! ```
 
-pub mod contract_call;
 pub mod escrow_finish;
 pub mod traits;
 

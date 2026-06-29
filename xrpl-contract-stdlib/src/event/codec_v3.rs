@@ -1,9 +1,9 @@
-use crate::core::type_codes::{
+use xrpl_wasm_stdlib::core::type_codes::{
     STI_ACCOUNT, STI_AMOUNT, STI_CURRENCY, STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64,
     STI_UINT128, STI_UINT160, STI_UINT192, STI_UINT256, STI_VL,
 };
-use crate::core::types::account_id::AccountID;
-use crate::host::emit_event;
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::host::emit_event;
 
 use core::mem::MaybeUninit;
 

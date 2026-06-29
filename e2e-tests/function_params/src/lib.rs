@@ -4,22 +4,22 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::params::function::get_function_param;
-use xrpl_wasm_stdlib::core::type_codes::{
+use xrpl_contract_stdlib::core::type_codes::{
     STI_ACCOUNT, STI_AMOUNT, STI_ARRAY, STI_CURRENCY, STI_NUMBER, STI_OBJECT, STI_UINT8,
     STI_UINT16, STI_UINT32, STI_UINT64, STI_UINT128, STI_UINT160, STI_UINT192, STI_UINT256, STI_VL,
 };
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::types::number::Number;
-use xrpl_wasm_stdlib::core::types::opaque_float::OpaqueFloat;
-use xrpl_wasm_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
-use xrpl_wasm_stdlib::core::types::uint::Hash160;
-use xrpl_wasm_stdlib::core::types::uint::Hash192;
-use xrpl_wasm_stdlib::core::types::uint::Hash256;
-use xrpl_wasm_stdlib::host::function_param;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
-use xrpl_wasm_stdlib::host::{FLOAT_ROUNDING_MODES_TO_NEAREST, float_add, float_set};
+use xrpl_contract_stdlib::core::types::account_id::AccountID;
+use xrpl_contract_stdlib::core::types::amount::Amount;
+use xrpl_contract_stdlib::core::types::number::Number;
+use xrpl_contract_stdlib::core::types::opaque_float::OpaqueFloat;
+use xrpl_contract_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
+use xrpl_contract_stdlib::core::types::uint::Hash160;
+use xrpl_contract_stdlib::core::types::uint::Hash192;
+use xrpl_contract_stdlib::core::types::uint::Hash256;
+use xrpl_contract_stdlib::host::function_param;
+use xrpl_contract_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
+use xrpl_contract_stdlib::host::{FLOAT_ROUNDING_MODES_TO_NEAREST, float_add, float_from_mant_exp};
+use xrpl_contract_stdlib::params::function::get_function_param;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn function_params_uint() -> i32 {
@@ -364,9 +364,9 @@ pub extern "C" fn function_params_other() -> i32 {
 
     let mut opaque_float_buf = [0x00; 8];
     let result = unsafe {
-        float_set(
-            number.exponent,
+        float_from_mant_exp(
             number.mantissa,
+            number.exponent,
             opaque_float_buf.as_mut_ptr(),
             8,
             FLOAT_ROUNDING_MODES_TO_NEAREST,

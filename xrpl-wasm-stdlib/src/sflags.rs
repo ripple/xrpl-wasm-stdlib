@@ -226,17 +226,3 @@ pub const tfUntilFailure: u32 = 0x00040000;
 pub const tfIndependent: u32 = 0x00080000;
 pub const tfBatchMask: u32 =
     !(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
-
-// Contract flags:
-pub const tfImmutable: u32 = 0x00010000;
-pub const tfCodeImmutable: u32 = 0x00020000;
-pub const tfABIImmutable: u32 = 0x00040000;
-pub const tfUndeletable: u32 = 0x00080000;
-pub const tfContractMask: u32 =
-    !(tfUniversal | tfImmutable | tfCodeImmutable | tfABIImmutable | tfUndeletable);
-
-// Contract parameter flags:
-pub const tfSendAmount: u32 = 0x00010000;
-pub const tfSendNFToken: u32 = 0x00020000;
-pub const tfAuthorizeToken: u32 = 0x00040000;
-pub const tfContractParameterMask: u32 = !(tfSendAmount | tfSendNFToken | tfAuthorizeToken);
