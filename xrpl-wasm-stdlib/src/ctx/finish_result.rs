@@ -1,17 +1,17 @@
-use core::num::NonZeroI32;
-
 /// Return type for Smart Feature entry points.
 ///
 /// Wraps the `i32` the host inspects after a Smart Feature's WASM function
 /// returns:
 /// - positive (`> 0`) → the Smart Feature allows the native transaction to proceed
 /// - `0`              → the Smart Feature blocks the transaction (no specific error)
-/// - negative (`< 0`) → the Smart Feature blocks and propagates a host error code
+/// - negative (`< 0`) → the Smart Feature blocks and propagates an error code
 ///
 /// Both `0` and negative values are rejections (per XLS-100: a return value
 /// greater than zero allows the operation, otherwise it is blocked). The
-/// distinction is purely for diagnostics: `0` is a clean rejection, while a
-/// negative value carries an error code from a failed host call.
+/// distinction is purely for diagnostic purposes: `0` is a clean rejection, while a
+/// negative value carries an error code whose meaning is defined by the contract author.
+/// For example, `-6` might represent the result of a failed host call, but the same
+/// value could carry a different contract-defined meaning.
 ///
 /// Construct with [`FinishResult::succeed`] / [`FinishResult::reject`] for the
 /// common cases, or [`FinishResult::succeed_with`] / [`FinishResult::reject_with`]
@@ -34,28 +34,34 @@ impl FinishResult {
 
     /// Allow the Smart Feature with a custom positive code.
     ///
-    /// Returns `None` if `code <= 0`, since a non-positive code would be
-    /// interpreted by the host as a rejection.
-    pub fn succeed_with(code: NonZeroI32) -> Option<Self> {
-        (code.get() > 0).then_some(Self(code.get()))
+    /// `N` must be a positive compile-time constant; passing a non-positive value
+    /// is a compile-time error. The code is recorded in the `WasmReturnCode`
+    /// ledger metadata field and can be used for diagnostics.
+    ///
+    /// ```
+    /// # use xrpl_wasm_stdlib::FinishResult;
+    /// let result = FinishResult::succeed_with::<42>();
+    /// assert_eq!(i32::from(result), 42);
+    /// ```
+    pub fn succeed_with<const N: i32>() -> Self {
+        const { assert!(N > 0, "succeed_with requires a positive code") };
+        Self(N)
     }
 
     /// Block the Smart Feature with a custom negative error code.
     ///
-    /// Returns `None` if `code >= 0`, since a non-negative code would not
-    /// carry an error signal.
-    pub fn reject_with(code: NonZeroI32) -> Option<Self> {
-        (code.get() < 0).then_some(Self(code.get()))
-    }
-
-    /// Returns `true` if this result allows the transaction to proceed.
-    pub const fn is_succeed(self) -> bool {
-        self.0 > 0
-    }
-
-    /// Returns `true` if this result blocks the transaction.
-    pub const fn is_reject(self) -> bool {
-        self.0 <= 0
+    /// `N` must be a negative compile-time constant; passing a non-negative value
+    /// is a compile-time error. The code is recorded in the `WasmReturnCode`
+    /// ledger metadata field and can be used for diagnostics.
+    ///
+    /// ```
+    /// # use xrpl_wasm_stdlib::FinishResult;
+    /// let result = FinishResult::reject_with::<-5>();
+    /// assert_eq!(i32::from(result), -5);
+    /// ```
+    pub fn reject_with<const N: i32>() -> Self {
+        const { assert!(N < 0, "reject_with requires a negative code") };
+        Self(N)
     }
 }
 
@@ -87,50 +93,32 @@ mod tests {
         assert_eq!(i32::from(FinishResult::reject()), 0);
     }
 
-    // --- succeed_with / reject_with validation ---
+    // --- succeed_with / reject_with ---
 
     #[test]
-    fn succeed_with_positive_is_some() {
-        let r = FinishResult::succeed_with(NonZeroI32::new(42).unwrap()).unwrap();
-        assert_eq!(i32::from(r), 42);
+    fn succeed_with_positive_uses_code() {
+        assert_eq!(i32::from(FinishResult::succeed_with::<42>()), 42);
     }
 
     #[test]
-    fn succeed_with_negative_is_none() {
-        assert!(FinishResult::succeed_with(NonZeroI32::new(-1).unwrap()).is_none());
+    fn succeed_with_i32_max_uses_code() {
+        assert_eq!(
+            i32::from(FinishResult::succeed_with::<{ i32::MAX }>()),
+            i32::MAX
+        );
     }
 
     #[test]
-    fn succeed_with_i32_max_is_some() {
-        let r = FinishResult::succeed_with(NonZeroI32::new(i32::MAX).unwrap()).unwrap();
-        assert_eq!(i32::from(r), i32::MAX);
+    fn reject_with_negative_uses_code() {
+        assert_eq!(i32::from(FinishResult::reject_with::<-5>()), -5);
     }
 
     #[test]
-    fn reject_with_negative_is_some() {
-        let r = FinishResult::reject_with(NonZeroI32::new(-5).unwrap()).unwrap();
-        assert_eq!(i32::from(r), -5);
-    }
-
-    #[test]
-    fn reject_with_positive_is_none() {
-        assert!(FinishResult::reject_with(NonZeroI32::new(1).unwrap()).is_none());
-    }
-
-    // --- predicate accessors ---
-
-    #[test]
-    fn predicates_match_sign() {
-        assert!(FinishResult::succeed().is_succeed());
-        assert!(!FinishResult::succeed().is_reject());
-
-        assert!(FinishResult::reject().is_reject());
-        assert!(!FinishResult::reject().is_succeed());
-
-        // A negative host error code is also a rejection.
-        let err = FinishResult::from(-15);
-        assert!(err.is_reject());
-        assert!(!err.is_succeed());
+    fn reject_with_i32_min_uses_code() {
+        assert_eq!(
+            i32::from(FinishResult::reject_with::<{ i32::MIN }>()),
+            i32::MIN
+        );
     }
 
     // --- From<i32> (used for error-code propagation: `e.code().into()`) ---
@@ -151,8 +139,8 @@ mod tests {
     }
 
     #[test]
-    fn from_i32_preserves_host_error_code_exactly() {
-        // Simulates: `return e.code().into();` where e.code() is a negative host error code.
+    fn from_i32_preserves_error_code_exactly() {
+        // Simulates: `return e.code().into();` where e.code() is a negative error code.
         let host_error_code: i32 = -15; // INVALID_PARAMS
         assert_eq!(
             i32::from(FinishResult::from(host_error_code)),
