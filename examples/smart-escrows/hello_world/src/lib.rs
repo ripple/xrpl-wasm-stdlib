@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::host::trace::trace;
+use xrpl_escrow_stdlib::host::trace::trace;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {

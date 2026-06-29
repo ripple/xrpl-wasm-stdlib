@@ -32,7 +32,7 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! { #b });
     let expanded = quote! {
-        ::xrpl_wasm_stdlib::core::types::account_id::AccountID([#(#bytes_tokens),*])
+        ::xrpl_escrow_stdlib::core::types::account_id::AccountID([#(#bytes_tokens),*])
     };
 
     Ok(expanded)

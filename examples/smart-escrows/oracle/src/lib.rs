@@ -3,14 +3,14 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::keylets::oracle_keylet;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::error_codes::match_result_code;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::r_address;
-use xrpl_wasm_stdlib::{host, sfield};
+use xrpl_escrow_stdlib::core::keylets::oracle_keylet;
+use xrpl_escrow_stdlib::core::locator::Locator;
+use xrpl_escrow_stdlib::core::types::account_id::AccountID;
+use xrpl_escrow_stdlib::host::error_codes::match_result_code;
+use xrpl_escrow_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_escrow_stdlib::host::{Result, Result::Err, Result::Ok};
+use xrpl_escrow_stdlib::r_address;
+use xrpl_escrow_stdlib::{host, sfield};
 
 const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 const ORACLE_DOCUMENT_ID: u32 = 1;

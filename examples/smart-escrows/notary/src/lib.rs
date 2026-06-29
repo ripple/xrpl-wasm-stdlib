@@ -3,12 +3,12 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::trace::trace_num;
-use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::r_address;
+use xrpl_escrow_stdlib::core::current_tx::escrow_finish;
+use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_escrow_stdlib::core::types::account_id::AccountID;
+use xrpl_escrow_stdlib::host::trace::trace_num;
+use xrpl_escrow_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_escrow_stdlib::r_address;
 
 // The notary account that is authorized to complete escrows
 // Using example notary account for testing
