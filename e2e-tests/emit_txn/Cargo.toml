@@ -1,0 +1,26 @@
+[package]
+name = "emit_txn"
+version = "0.1.0"
+edition = "2024"
+description = ""
+license = "MIT"
+
+# This empty workspace definition keeps this project independent of the parent workspace
+[workspace]
+resolver = "2"
+
+[profile.release]
+opt-level = "s"   # Optimize for size
+lto = true        # Link-time optimization
+codegen-units = 1 # Compile in one unit for better optimization and smaller binary size
+panic = "abort"   # `no-std` can't unwind on panic, so choose abort (plus no panic handler means smaller binary)
+
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.dev]
+panic = "unwind" # For debugging, allows unwinding if code is executed as Rust (e.g., unit tests)
+
+[dependencies]
+xrpl-contract-stdlib = { path = "../../xrpl-contract-stdlib" }

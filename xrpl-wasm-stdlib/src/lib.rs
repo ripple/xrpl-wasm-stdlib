@@ -11,6 +11,7 @@ pub mod core;
 pub mod ctx;
 pub mod host;
 pub mod sfield;
+pub mod sflags;
 pub mod types;
 
 /// Complete Developer Guide

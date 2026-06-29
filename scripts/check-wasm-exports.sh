@@ -1,6 +1,8 @@
 #!/bin/bash
 # WASM contract exports checking script
-# Checks that all WASM examples export the required finish function
+# Checks that all WASM crates export at least one callable entry point.
+# Smart escrows export finish() -> i32; smart contracts export named functions
+# via #[unsafe(no_mangle)].
 
 set -euo pipefail
 
@@ -10,15 +12,16 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "🔍 Checking WASM contract exports..."
-# Check that all WASM examples export the required finish function
 check_src_dir_exports() {
     local src_dir="$1"
     local dir=$(dirname "$src_dir")
     [[ "$dir" == *"test_utils"* ]] && return 0
     echo "🔧 Checking exports in $dir"
     if [[ -f "$src_dir/lib.rs" ]]; then
-        grep -q "finish() -> i32" "$src_dir/lib.rs" || {
-            echo "❌ Missing required finish() -> i32 export in $dir"
+        # Accept escrow-style (finish() -> i32), contract-style (#[unsafe(no_mangle)]),
+        # or macro-style (#[wasm_export(...)]) entry points
+        grep -q 'finish() -> i32\|#\[unsafe(no_mangle)\]\|#\[wasm_export' "$src_dir/lib.rs" || {
+            echo "❌ Missing required export in $dir (expected finish() -> i32, #[unsafe(no_mangle)], or #[wasm_export])"
             exit 1
         }
     else

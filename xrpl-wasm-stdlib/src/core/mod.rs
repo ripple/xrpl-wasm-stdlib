@@ -17,4 +17,5 @@ pub mod current_tx;
 pub mod keylets;
 pub mod ledger_objects;
 pub mod locator;
+pub mod type_codes;
 pub mod types;
