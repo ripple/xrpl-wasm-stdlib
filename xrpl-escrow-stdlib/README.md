@@ -12,7 +12,7 @@ stays fully safe.
 ```rust,ignore
 use xrpl_escrow_stdlib::*;
 
-fn run(ctx: EscrowFinishContext) -> Result<bool, ()> {
+fn run(ctx: EscrowFinishContext) -> FinishResult {
     let destination = ctx.escrow().fetch_destination()?;
     // ... evaluate conditions ...
     Ok(true)
