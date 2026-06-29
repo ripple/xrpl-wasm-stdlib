@@ -9,10 +9,10 @@ use crate::host;
 use crate::host::Error::InternalError;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::trace::trace_num;
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 use crate::host::{add_txn_field, build_txn, emit_built_txn, float_from_int};
 use crate::sfield;
+use crate::sfield::SField;
 
 pub const AMOUNT_SIZE: usize = 48;
 
@@ -399,13 +399,9 @@ impl Amount {
 
 impl From<[u8; AMOUNT_SIZE]> for Amount {
     fn from(bytes: [u8; AMOUNT_SIZE]) -> Self {
-        // Use the existing from_bytes method with a slice reference
         match Self::from_bytes(&bytes) {
             Ok(amount) => amount,
-            Err(error) => {
-                let _ = trace_num("Error parsing amount", error.code() as i64);
-                panic!("Invalid Amount byte array");
-            }
+            Err(_) => unreachable!("from_bytes only errors on len != 48; caller provides [u8; 48]"),
         }
     }
 }
@@ -423,32 +419,40 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
 /// No strict byte count validation is performed since amounts can vary in size.
 impl LedgerObjectFieldGetter for Amount {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
@@ -469,18 +473,21 @@ impl LedgerObjectFieldGetter for Amount {
 /// internally. No strict byte count validation is performed since amounts can vary in size.
 impl CurrentTxFieldGetter for Amount {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
             get_tx_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
+            i32::from(field),
+            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+        )
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }

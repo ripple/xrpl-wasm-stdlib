@@ -21,5 +21,11 @@ proc-macro = true
 version = "2.0"
 features = ["full"]
 
+[dependencies.proc-macro2]
+version = "1.0"
+
 [dependencies.quote]
 version = "1.0"
+
+[dev-dependencies]
+trybuild = "1.0"

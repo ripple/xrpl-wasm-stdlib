@@ -11,6 +11,7 @@
 //! Start with [`current_tx::escrow_finish::EscrowFinish`] to access EscrowFinish TX fields,
 //! or [`ledger_objects::current_escrow::get_current_escrow`] to access the active escrow.
 
+pub mod chain;
 pub mod constants;
 pub mod current_tx;
 pub mod data;
