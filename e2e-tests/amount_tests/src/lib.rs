@@ -6,7 +6,7 @@ extern crate std;
 use xrpl_wasm_stdlib::core::params::function::get_function_param;
 use xrpl_wasm_stdlib::core::params::instance::get_instance_param;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::trace::{trace, trace_num, trace_data, DataRepr};
+use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_num};
 
 // ============================================================================
 // Instance Parameter Tests
@@ -59,16 +59,19 @@ pub extern "C" fn instance_amount_iou() -> i32 {
     };
 
     match &amount {
-        Amount::IOU { amount: opaque, issuer, currency } => {
+        Amount::IOU {
+            amount: opaque,
+            issuer,
+            currency,
+        } => {
             let _ = trace_data("IOU amount bytes:", &opaque.0, DataRepr::AsHex);
             let _ = trace_data("IOU issuer:", &issuer.0, DataRepr::AsHex);
             let _ = trace_data("IOU currency:", &currency.0, DataRepr::AsHex);
 
             // Verify currency is USD (0x00..00 + "USD" + 0x00..00)
             let expected_usd: [u8; 20] = [
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x00,
-                0x00, 0x00, 0x00, 0x00
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0x53,
+                0x44, 0x00, 0x00, 0x00, 0x00, 0x00,
             ];
             if currency.0 != expected_usd {
                 let _ = trace("Currency mismatch - expected USD");
@@ -107,7 +110,11 @@ pub extern "C" fn instance_amount_mpt() -> i32 {
     };
 
     match &amount {
-        Amount::MPT { num_units, is_positive, mpt_id } => {
+        Amount::MPT {
+            num_units,
+            is_positive,
+            mpt_id,
+        } => {
             let _ = trace_num("MPT units:", *num_units as i64);
             let _ = trace_num("MPT positive:", *is_positive as i64);
             let _ = trace_data("MPT id:", mpt_id.as_bytes(), DataRepr::AsHex);
@@ -175,15 +182,18 @@ pub extern "C" fn function_amount_all() -> i32 {
         }
     };
     match &iou {
-        Amount::IOU { amount: opaque, issuer, currency } => {
+        Amount::IOU {
+            amount: opaque,
+            issuer,
+            currency,
+        } => {
             let _ = trace_data("IOU amount:", &opaque.0, DataRepr::AsHex);
             let _ = trace_data("IOU issuer:", &issuer.0, DataRepr::AsHex);
             let _ = trace_data("IOU currency:", &currency.0, DataRepr::AsHex);
 
             let expected_usd: [u8; 20] = [
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x55, 0x53, 0x44, 0x00,
-                0x00, 0x00, 0x00, 0x00
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0x53,
+                0x44, 0x00, 0x00, 0x00, 0x00, 0x00,
             ];
             if currency.0 != expected_usd {
                 let _ = trace("Param 1: currency mismatch - expected USD");
@@ -205,7 +215,11 @@ pub extern "C" fn function_amount_all() -> i32 {
         }
     };
     match &mpt {
-        Amount::MPT { num_units, is_positive, mpt_id } => {
+        Amount::MPT {
+            num_units,
+            is_positive,
+            mpt_id,
+        } => {
             let _ = trace_num("MPT units:", *num_units as i64);
             let _ = trace_num("MPT positive:", *is_positive as i64);
             let _ = trace_data("MPT id:", mpt_id.as_bytes(), DataRepr::AsHex);
