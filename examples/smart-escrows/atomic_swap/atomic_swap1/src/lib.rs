@@ -3,20 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::core::keylets::XRPL_KEYLET_SIZE;
-use xrpl_escrow_stdlib::core::ledger_objects::current_escrow::{self, CurrentEscrow};
-use xrpl_escrow_stdlib::core::ledger_objects::escrow::Escrow;
-use xrpl_escrow_stdlib::core::ledger_objects::traits::{CurrentEscrowFields, EscrowFields};
-use xrpl_escrow_stdlib::core::locator::Locator;
-use xrpl_escrow_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
-use xrpl_escrow_stdlib::host;
-use xrpl_escrow_stdlib::host::Error::InternalError;
-use xrpl_escrow_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_escrow_stdlib::host::get_tx_nested_field;
-use xrpl_escrow_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_escrow_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_escrow_stdlib::sfield;
-use xrpl_escrow_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
+use xrpl_escrow_stdlib::*;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
@@ -55,8 +42,11 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// - Returns the memo data as a byte array and its length
 /// - Used to get the 32-byte keylet of the counterpart escrow
 #[unsafe(no_mangle)]
-pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
-    let mut data: ContractData = [0; TX_CONTRACT_DATA_SIZE];
+pub fn get_first_memo() -> Result<Option<ContractData>> {
+    let mut data = ContractData {
+        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
+        len: 0,
+    };
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
@@ -65,13 +55,16 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
         get_tx_nested_field(
             locator.as_ptr(),
             locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
+            data.data.as_mut_ptr(),
+            data.data.len(),
         )
     };
 
     match result_code {
-        result_code if result_code > 0 => Ok(Some((data, result_code as usize))),
+        result_code if result_code > 0 => {
+            data.len = result_code as usize;
+            Ok(Some(data))
+        }
         0 => Err(InternalError),
         result_code => Err(Error::from_code(result_code)),
     }
@@ -90,7 +83,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Phase 1: Initialization", 0);
 
     // Extract the counterpart escrow keylet from transaction memo
-    let (memo, memo_len) = match get_first_memo() {
+    let memo = match get_first_memo() {
         Ok(v) => match v {
             Some(v) => v,
             None => {
@@ -108,13 +101,13 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     };
 
     // Validate memo contains a full 32-byte keylet
-    if memo_len != XRPL_KEYLET_SIZE {
-        let _ = trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
+    if memo.len != XRPL_KEYLET_SIZE {
+        let _ = trace_num("Memo too short, expected 32 bytes, got:", memo.len as i64);
         return VALIDATION_FAILED;
     }
 
     // Extract the counterpart escrow keylet (first 32 bytes of memo)
-    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo[0..32].try_into().unwrap();
+    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo.data[0..32].try_into().unwrap();
     let _ = trace_data(
         "Counterpart escrow ID from memo:",
         &counterpart_escrow_id,
@@ -246,7 +239,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Current escrow CancelAfter:", cancel_after as i64);
 
     // Build new data field: counterpart keylet (32 bytes) + CancelAfter (4 bytes)
-    let mut new_data = xrpl_escrow_stdlib::core::types::contract_data::ContractData {
+    let mut new_data = ContractData {
         data: [0u8; XRPL_CONTRACT_DATA_SIZE],
         len: 0,
     };
@@ -286,9 +279,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 /// 2. Gets the current ledger time
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
-fn phase2_complete(
-    current_data: &xrpl_escrow_stdlib::core::types::contract_data::ContractData,
-) -> i32 {
+fn phase2_complete(current_data: &ContractData) -> i32 {
     let _ = trace_num("Phase 2: Timing validation", 0);
 
     // Validate data field contains at least 36 bytes (32 bytes keylet + 4 bytes timing)

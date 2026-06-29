@@ -3,20 +3,14 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::core::ledger_objects::current_escrow;
-use xrpl_escrow_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_escrow_stdlib::core::locator::Locator;
-use xrpl_escrow_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
-use xrpl_escrow_stdlib::host::Error::InternalError;
-use xrpl_escrow_stdlib::host::get_tx_nested_field;
-use xrpl_escrow_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_escrow_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_escrow_stdlib::sfield;
-use xrpl_escrow_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_escrow_stdlib::*;
 
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<ContractData>> {
-    let mut data: ContractData = [0; XRPL_CONTRACT_DATA_SIZE];
+    let mut data = ContractData {
+        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
+        len: 0,
+    };
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
@@ -25,14 +19,15 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
         get_tx_nested_field(
             locator.as_ptr(),
             locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
+            data.data.as_mut_ptr(),
+            data.data.len(),
         )
     };
 
     match result_code {
         result_code if result_code > 0 => {
-            Ok(Some(data)) // <-- Move the buffer into an AccountID
+            data.len = result_code as usize;
+            Ok(Some(data))
         }
         0 => Err(InternalError),
         result_code => Err(Error::from_code(result_code)),
@@ -55,7 +50,7 @@ pub extern "C" fn finish() -> i32 {
     };
 
     // Extract NFT ID from memo (first 32 bytes) and create NFToken
-    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo[0..32].try_into().unwrap();
+    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..32].try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
     let _ = trace_data("NFT ID from memo:", nft_token.as_bytes(), DataRepr::AsHex);
 

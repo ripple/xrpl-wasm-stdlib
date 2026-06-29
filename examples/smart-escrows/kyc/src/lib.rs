@@ -3,12 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::core::keylets::credential_keylet;
-use xrpl_escrow_stdlib::core::ledger_objects::current_escrow;
-use xrpl_escrow_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
-use xrpl_escrow_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_escrow_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_escrow_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_escrow_stdlib::*;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
@@ -27,9 +22,7 @@ pub extern "C" fn finish() -> i32 {
         Ok(keylet) => {
             let _ = trace_data("cred_keylet", &keylet, DataRepr::AsHex);
 
-            let slot = unsafe {
-                xrpl_escrow_stdlib::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0)
-            };
+            let slot = unsafe { cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
             if slot < 0 {
                 let _ = trace_num("CACHE ERROR", i64::from(slot));
                 return 0;

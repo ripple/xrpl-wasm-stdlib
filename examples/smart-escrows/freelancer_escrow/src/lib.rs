@@ -3,18 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::core::current_tx::escrow_finish::get_current_escrow_finish;
-use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_escrow_stdlib::core::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
-use xrpl_escrow_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_escrow_stdlib::core::locator::Locator;
-use xrpl_escrow_stdlib::core::types::account_id::AccountID;
-use xrpl_escrow_stdlib::core::types::contract_data::ContractData;
-use xrpl_escrow_stdlib::host::get_parent_ledger_time;
-use xrpl_escrow_stdlib::host::get_tx_nested_field;
-use xrpl_escrow_stdlib::host::trace::trace_num;
-use xrpl_escrow_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_escrow_stdlib::sfield;
+use xrpl_escrow_stdlib::*;
 
 macro_rules! try_or_trace {
     ($e:expr, $label:literal) => {
@@ -105,8 +94,8 @@ struct State {
 
 impl State {
     const SIZE: usize = 27;
-    const ARBITRATOR: core::ops::Range<usize> = 0..20;
-    const DEADLINE: core::ops::Range<usize> = 20..24;
+    const ARBITRATOR: ::core::ops::Range<usize> = 0..20;
+    const DEADLINE: ::core::ops::Range<usize> = 20..24;
     const CLIENT_CONFIRMED: usize = 24;
     const FREELANCER_CONFIRMED: usize = 25;
     const DISPUTING_PARTY: usize = 26;
