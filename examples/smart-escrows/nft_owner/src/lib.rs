@@ -7,7 +7,6 @@ use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
-use xrpl_wasm_stdlib::host::Error::InternalError;
 use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
@@ -34,7 +33,9 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
         result_code if result_code > 0 => {
             Ok(Some(data)) // <-- Move the buffer into an AccountID
         }
-        0 => Err(InternalError),
+        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
+        // same as an absent field and let the caller decide.
+        0 => Ok(None),
         result_code => Err(Error::from_code(result_code)),
     }
 }
