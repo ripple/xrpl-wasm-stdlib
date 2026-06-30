@@ -946,35 +946,32 @@ pub mod ledger_object {
 
         #[test]
         fn test_amount_decodes_iou_variant() {
+            // IOU amount bytes: byte0 bit7=1 (IOU type), rest are arbitrary mantissa/exponent data
+            const AMOUNT_BYTES: [u8; 8] = [0x80, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+
             let mut mock = MockHostBindings::new();
             mock.expect_get_current_ledger_obj_field()
                 .with(eq::<i32>(sfield::Amount.into()), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
-                    // IOU: byte0 bit7=1; bytes[0..8]=XFloat (opaque, content
-                    // doesn't matter for variant detection), bytes[8..28]=currency,
-                    // bytes[28..48]=issuer.
+                    // IOU STAmount layout: bytes[0..8]=8-byte float, bytes[8..28]=currency, bytes[28..48]=issuer
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
                     slice.fill(0);
-                    slice[0] = 0x80;
+                    slice[0..8].copy_from_slice(&AMOUNT_BYTES);
                     slice[8..28].fill(0xCC);
                     slice[28..48].fill(0xDD);
                     48
                 });
-            mock.expect_float_from_stamount().times(1).returning(
-                |_, _, out_buff, out_buff_len, _| {
-                    unsafe { out_buff.copy_from_nonoverlapping([0u8; 12].as_ptr(), 12) }
-                    out_buff_len as i32
-                },
-            );
-
             let _guard = setup_mock(mock);
 
             let amount = Amount::get_from_current_ledger_obj(sfield::Amount.into()).unwrap();
             match amount {
                 Amount::IOU {
-                    issuer, currency, ..
+                    amount,
+                    issuer,
+                    currency,
                 } => {
+                    assert_eq!(amount, AMOUNT_BYTES);
                     assert_eq!(issuer, AccountID::from([0xDD; 20]));
                     assert_eq!(currency, Currency::from([0xCC; 20]));
                 }
