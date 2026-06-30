@@ -1,0 +1,5 @@
+error: expected string literal
+ --> tests/hash256/fail_non_literal.rs:5:14
+  |
+5 |     hash256!(hash);
+  |              ^^^^
