@@ -1,40 +1,41 @@
 //! `hash256!` — compile-time 64-hex-char string → 32-byte `Hash256` (`UInt<32>`).
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{LitStr, parse_macro_input};
+use syn::LitStr;
 
 use crate::hex_util::decode_hex;
 
-pub fn expand(input: TokenStream) -> TokenStream {
-    let hash_lit = parse_macro_input!(input as LitStr);
+pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let hash_lit = syn::parse2::<LitStr>(input)?;
     let hash = hash_lit.value();
-    match decode_hash256(&hash) {
-        Some(bytes) => {
-            let bytes_tokens = bytes.iter().map(|b| quote! {#b});
-            // `Hash256` is a type alias for `UInt<32>`, which cannot be used as a tuple-struct
-            // constructor — so emit the underlying generic struct directly.
-            let expanded = quote! {
-                ::xrpl_wasm_stdlib::core::types::uint::UInt::<32>([#(#bytes_tokens),*])
-            };
-            TokenStream::from(expanded)
-        }
-        None => syn::Error::new(hash_lit.span(), format!("Invalid hash: {hash}"))
-            .to_compile_error()
-            .into(),
-    }
+
+    let bytes = decode_hash256(&hash)
+        .map_err(|reason| syn::Error::new(hash_lit.span(), format!("Invalid hash: {reason}")))?;
+
+    let bytes_tokens = bytes.iter().map(|b| quote! {#b});
+    // `Hash256` is a type alias for `UInt<32>`, which cannot be used as a tuple-struct
+    // constructor — so emit the underlying generic struct directly.
+    let expanded = quote! {
+        ::xrpl_wasm_stdlib::core::types::uint::UInt::<32>([#(#bytes_tokens),*])
+    };
+    Ok(expanded)
 }
 
-fn decode_hash256(input: &str) -> Option<Vec<u8>> {
-    if input.len() != 64 || !input.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
+fn decode_hash256(input: &str) -> Result<Vec<u8>, &'static str> {
+    if input.len() != 64 {
+        return Err("expected 64 hex characters");
     }
-    Some(decode_hex(input))
+    if !input.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("non-hex character");
+    }
+    Ok(decode_hex(input))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::decode_hash256;
+    use super::{decode_hash256, expand};
+    use quote::quote;
 
     const HASH_BYTES: [u8; 32] = [
         0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
@@ -68,14 +69,35 @@ mod tests {
 
     #[test]
     fn rejects_wrong_length() {
-        assert!(decode_hash256("abc").is_none());
+        let err = decode_hash256("abc").unwrap_err();
+        assert_eq!(err, "expected 64 hex characters");
     }
 
     #[test]
     fn rejects_non_hex() {
-        assert!(
+        let err =
             decode_hash256("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-                .is_none()
-        );
+                .unwrap_err();
+        assert_eq!(err, "non-hex character");
+    }
+
+    #[test]
+    fn expand_emits_tokens_for_valid_hash() {
+        let input = quote! { "0000000000000000000000000000000000000000000000000000000000000001" };
+        assert!(expand(input).is_ok());
+    }
+
+    #[test]
+    fn expand_errors_on_wrong_length() {
+        let input = quote! { "abc" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("expected 64 hex characters"));
+    }
+
+    #[test]
+    fn expand_errors_on_non_hex() {
+        let input = quote! { "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG" };
+        let err = expand(input).unwrap_err();
+        assert!(err.to_string().contains("non-hex character"));
     }
 }
