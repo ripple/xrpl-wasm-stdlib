@@ -46,19 +46,9 @@
 //! - Buffer allocations are stack-based and have minimal cost
 //! - Host function calls are the primary performance bottleneck
 //!
-//! ## Example
-//!
-//! Get sender Account and optional flags:
-//!
-//! ```no_run
-//! use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-//! use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-//! let tx = EscrowFinish;
-//! let account = tx.get_account().unwrap_or_panic();
-//! let _flags = tx.get_flags().unwrap_or_panic();
-//! ```
+//! Concrete transaction wrappers (e.g., `EscrowFinish`) live in their respective
+//! companion crates (`xrpl-escrow-stdlib` for escrow flows).
 
-pub mod escrow_finish;
 pub mod traits;
 
 use crate::host::error_codes::{
