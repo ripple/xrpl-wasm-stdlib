@@ -1,0 +1,5 @@
+error: expected string literal
+ --> tests/currency/fail_non_literal.rs:5:15
+  |
+5 |     currency!(code);
+  |               ^^^^
