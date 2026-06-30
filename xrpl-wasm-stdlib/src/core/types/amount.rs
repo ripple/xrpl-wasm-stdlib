@@ -97,7 +97,7 @@ pub enum Amount {
     },
     IOU {
         // amount: Amount::IOU,
-        amount: XFloat, // TODO: Make a helper to detect sign from 2nd bit (trait?)
+        amount: [u8; 8],
         issuer: AccountID,
         currency: Currency,
     },
@@ -168,7 +168,7 @@ impl Amount {
                 currency,
             } => {
                 // IOU format for tracing: opaque float + currency + issuer
-                bytes[0..8].copy_from_slice(&amount.0[..8]);
+                bytes[0..8].copy_from_slice(amount);
                 bytes[8..28].copy_from_slice(currency.as_bytes());
                 bytes[28..48].copy_from_slice(&issuer.0);
                 // No padding needed - uses all 48 bytes
@@ -176,6 +176,43 @@ impl Amount {
         }
 
         (bytes, AMOUNT_SIZE)
+    }
+
+    /// Converts this `Amount` to an `XFloat` via the host's `float_from_stamount` function.
+    pub fn to_xfloat(&self, rounding_mode: host::RoundingMode) -> Result<XFloat> {
+        let (stamount_bytes, len) = self.to_stamount_bytes();
+        let mut float_out = [0u8; 12];
+        let rescode = unsafe {
+            host::float_from_stamount(
+                stamount_bytes.as_ptr(),
+                len,
+                float_out.as_mut_ptr(),
+                12,
+                rounding_mode.into(),
+            )
+        };
+        host::error_codes::match_result_code_with_expected_bytes(rescode, 12, || XFloat(float_out))
+    }
+
+    /// Creates an `Amount::IOU` from a mantissa and exponent.
+    ///
+    /// `rounding_mode` is forwarded to the host.
+    pub fn iou_from_mant_exp(
+        mantissa: i64,
+        exponent: i32,
+        issuer: AccountID,
+        currency: Currency,
+        rounding_mode: host::RoundingMode,
+    ) -> Result<Self> {
+        XFloat::from_mant_exp(mantissa, exponent, rounding_mode).map(|xfloat| {
+            let mut amount = [0u8; 8];
+            amount.copy_from_slice(&xfloat.0[0..8]);
+            Amount::IOU {
+                amount,
+                issuer,
+                currency,
+            }
+        })
     }
 
     /// Parses a Amount from a byte array.
@@ -203,8 +240,9 @@ impl Amount {
         let is_positive: bool = byte0 & 0x40 == 0x40; // Bit 6
 
         if is_xrp_or_mpt {
+            // XRP STAmount: [0/type][0/sign][6/reserved][64/value]
             if is_xrp {
-                // If we get here, we'll have 8 bytes.
+                // If we get here, we'll have 8 bytes (type/sign/reserved stripped off)
                 let mut amount_bytes = [0u8; 8];
                 amount_bytes.copy_from_slice(&bytes[0..8]);
 
@@ -222,9 +260,9 @@ impl Amount {
                 Ok(amount)
             }
             // is_mpt
+            // MPT STAmount: [0/type][1/sign][1/is-mpt][5/reserved][64/value]
             else {
-                // If we get here, we'll have 33 bytes.
-                // MPT amount: [0/type][1/sign][1/is-mpt][5/reserved][64/value]
+                // If we get here, we'll have 33 bytes (type/sign/reserved stripped off)
                 let mut num_units_bytes = [0u8; 8];
                 // Skip the first MPT byte, which is control bytes. Grab the next 8 for the u64
                 num_units_bytes.copy_from_slice(&bytes[1..9]);
@@ -246,32 +284,9 @@ impl Amount {
         }
         // is_iou
         else {
-            // If we get here, we'll have 48 bytes.
-
-            // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
-            let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
-            let mut float_out = [0u8; 12];
-            let rescode = unsafe {
-                crate::host::float_from_stamount(
-                    opaque_float_amount_bytes.as_ptr(),
-                    8,
-                    float_out.as_mut_ptr(),
-                    12,
-                    0,
-                )
-            };
-            let opaque_float = match crate::host::error_codes::match_result_code_with_expected_bytes(
-                rescode,
-                12,
-                || XFloat(float_out),
-            ) {
-                Ok(f) => f,
-                Err(e) => return Err(e),
-            };
-
-            // Parse the Amount::IOU from the first 9 bytes
-            // let mut amount_bytes = [0u8; 9];
-            // amount_bytes.copy_from_slice(&bytes[0..9]);
+            // IOU STAmount: [1/type][1/sign][6/reserved][64/amount][160/currency][160/issuer]
+            // If we get here, we'll have 48 bytes (type/sign/reserved stripped off)
+            let amount: [u8; 8] = bytes[0..8].try_into().unwrap();
 
             // Parse the Currency from the next 20 bytes
             let mut currency_bytes = [0u8; 20];
@@ -284,7 +299,7 @@ impl Amount {
             let issuer = AccountID::from(issuer_bytes);
 
             let amount = Amount::IOU {
-                amount: opaque_float,
+                amount,
                 issuer,
                 currency,
             };
@@ -448,15 +463,6 @@ mod tests {
 
     #[test]
     fn test_parse_iou_amount() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_float_from_stamount()
-            .times(1)
-            .returning(|_, _, out_buff, out_buff_len, _| {
-                unsafe { out_buff.copy_from_nonoverlapping([0xCCu8; 12].as_ptr(), 12) }
-                out_buff_len as i32
-            });
-        let _guard = setup_mock(mock);
-
         // IOU with exponent = 5, mantissa = 12345
         const EXPONENT: u8 = 5; // 1 byte
         const MANTISSA: u64 = 12345; // 57 bits (so need or 8 bytes)
@@ -521,7 +527,7 @@ mod tests {
                 issuer,
                 currency,
             } => {
-                assert_eq!(amount, XFloat([0xCC; 12]));
+                assert_eq!(amount, eight_input_bytes);
                 assert_eq!(issuer, AccountID::from(ISSUER_BYTES));
                 assert_eq!(currency, Currency::from(CURRENCY_BYTES));
             }
@@ -678,44 +684,35 @@ mod tests {
 
     #[test]
     fn test_round_trip_iou_positive() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_float_from_stamount()
-            .times(1)
-            .returning(|_, _, out_buff, out_buff_len, _| {
-                unsafe { out_buff.copy_from_nonoverlapping([0xBBu8; 12].as_ptr(), 12) }
-                out_buff_len as i32
-            });
-        let _guard = setup_mock(mock);
-
         // Test positive IOU amount
         const EXPONENT: u8 = 7;
         const MANTISSA: u64 = 98765;
         const CURRENCY_BYTES: [u8; 20] = [0xEF; 20];
         const ISSUER_BYTES: [u8; 20] = [0x12; 20];
 
-        // Create the XFloat bytes manually
+        // Create the IOU.amount bytes manually
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa]
-        let mut opaque_float_bytes = [0u8; 8];
+        let mut iou_amount_bytes = [0u8; 8];
 
         // First byte: IOU positive flag (0xC0) with exponent bits
-        opaque_float_bytes[0] = 0xC0 | ((EXPONENT >> 2) & 0x3F);
+        iou_amount_bytes[0] = 0xC0 | ((EXPONENT >> 2) & 0x3F);
 
         // Second byte: first 2 bits for exponent, rest will be part of mantissa
-        opaque_float_bytes[1] = (EXPONENT & 0x03) << 6;
+        iou_amount_bytes[1] = (EXPONENT & 0x03) << 6;
 
         let mantissa_bytes = MANTISSA.to_be_bytes();
 
         // Copy the mantissa bytes, preserving the exponent bits in opaque_float_bytes[1]
-        opaque_float_bytes[1] |= mantissa_bytes[0] & 0x3F;
-        opaque_float_bytes[2] = mantissa_bytes[1];
-        opaque_float_bytes[3] = mantissa_bytes[2];
-        opaque_float_bytes[4] = mantissa_bytes[3];
-        opaque_float_bytes[5] = mantissa_bytes[4];
-        opaque_float_bytes[6] = mantissa_bytes[5];
-        opaque_float_bytes[7] = mantissa_bytes[6];
+        iou_amount_bytes[1] |= mantissa_bytes[0] & 0x3F;
+        iou_amount_bytes[2] = mantissa_bytes[1];
+        iou_amount_bytes[3] = mantissa_bytes[2];
+        iou_amount_bytes[4] = mantissa_bytes[3];
+        iou_amount_bytes[5] = mantissa_bytes[4];
+        iou_amount_bytes[6] = mantissa_bytes[5];
+        iou_amount_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: XFloat([0xBB; 12]),
+            amount: iou_amount_bytes,
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -723,19 +720,18 @@ mod tests {
         // Create the expected byte layout for IOU
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa][160/currency][160/issuer]
         let mut expected_bytes = [0u8; 48];
-        expected_bytes[0..8].copy_from_slice(&opaque_float_bytes);
+        expected_bytes[0..8].copy_from_slice(&iou_amount_bytes);
         expected_bytes[8..28].copy_from_slice(&CURRENCY_BYTES);
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
         // Test from_bytes -> to_bytes round trip
-        // (float_from_stamount converts 8-byte STAmount to 12-byte STNumber via mock)
         let parsed = Amount::from_bytes(&expected_bytes).unwrap();
         assert_eq!(parsed, original);
 
-        // Test to_stamount_bytes format (first 8 bytes of the 12-byte STNumber float)
+        // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &[0xBBu8; 8]); // First 8 bytes of STNumber
+        assert_eq!(&stamount_bytes[0..8], &iou_amount_bytes); // Raw 8-byte STAmount float
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
@@ -743,44 +739,35 @@ mod tests {
 
     #[test]
     fn test_round_trip_iou_negative() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_float_from_stamount()
-            .times(1)
-            .returning(|_, _, out_buff, out_buff_len, _| {
-                unsafe { out_buff.copy_from_nonoverlapping([0xAAu8; 12].as_ptr(), 12) }
-                out_buff_len as i32
-            });
-        let _guard = setup_mock(mock);
-
         // Test negative IOU amount
         const EXPONENT: u8 = 3;
         const MANTISSA: u64 = 12345;
         const CURRENCY_BYTES: [u8; 20] = [0x34; 20];
         const ISSUER_BYTES: [u8; 20] = [0x56; 20];
 
-        // Create the XFloat bytes manually for negative amount
+        // Create the IOU.amount bytes manually for negative amount
         // IOU format: [1/type][0/sign][8/exponent][54/mantissa]
-        let mut opaque_float_bytes = [0u8; 8];
+        let mut iou_amount_bytes = [0u8; 8];
 
         // First byte: IOU negative flag (0x80) with exponent bits
-        opaque_float_bytes[0] = 0x80 | ((EXPONENT >> 2) & 0x3F);
+        iou_amount_bytes[0] = 0x80 | ((EXPONENT >> 2) & 0x3F);
 
         // Second byte: first 2 bits for exponent, rest will be part of mantissa
-        opaque_float_bytes[1] = (EXPONENT & 0x03) << 6;
+        iou_amount_bytes[1] = (EXPONENT & 0x03) << 6;
 
         let mantissa_bytes = MANTISSA.to_be_bytes();
 
-        // Copy the mantissa bytes, preserving the exponent bits in opaque_float_bytes[1]
-        opaque_float_bytes[1] |= mantissa_bytes[0] & 0x3F;
-        opaque_float_bytes[2] = mantissa_bytes[1];
-        opaque_float_bytes[3] = mantissa_bytes[2];
-        opaque_float_bytes[4] = mantissa_bytes[3];
-        opaque_float_bytes[5] = mantissa_bytes[4];
-        opaque_float_bytes[6] = mantissa_bytes[5];
-        opaque_float_bytes[7] = mantissa_bytes[6];
+        // Copy the mantissa bytes, preserving the exponent bits in iou_amount_bytes[1]
+        iou_amount_bytes[1] |= mantissa_bytes[0] & 0x3F;
+        iou_amount_bytes[2] = mantissa_bytes[1];
+        iou_amount_bytes[3] = mantissa_bytes[2];
+        iou_amount_bytes[4] = mantissa_bytes[3];
+        iou_amount_bytes[5] = mantissa_bytes[4];
+        iou_amount_bytes[6] = mantissa_bytes[5];
+        iou_amount_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: XFloat([0xAA; 12]),
+            amount: iou_amount_bytes,
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -788,19 +775,18 @@ mod tests {
         // Create the expected byte layout for negative IOU
         // IOU format: [1/type][0/sign][8/exponent][54/mantissa][160/currency][160/issuer]
         let mut expected_bytes = [0u8; 48];
-        expected_bytes[0..8].copy_from_slice(&opaque_float_bytes);
+        expected_bytes[0..8].copy_from_slice(&iou_amount_bytes);
         expected_bytes[8..28].copy_from_slice(&CURRENCY_BYTES);
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
         // Test from_bytes -> to_bytes round trip
-        // (float_from_stamount converts 8-byte STAmount to 12-byte STNumber via mock)
         let parsed = Amount::from_bytes(&expected_bytes).unwrap();
         assert_eq!(parsed, original);
 
-        // Test to_stamount_bytes format (first 8 bytes of the 12-byte STNumber float)
+        // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &[0xAAu8; 8]); // First 8 bytes of STNumber
+        assert_eq!(&stamount_bytes[0..8], &iou_amount_bytes); // Raw 8-byte STAmount float
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
@@ -858,5 +844,139 @@ mod tests {
 
         let parsed_large_xrp = Amount::from_bytes(&large_xrp_bytes).unwrap();
         assert_eq!(parsed_large_xrp, large_xrp);
+    }
+
+    #[test]
+    fn test_to_xfloat_xrp() {
+        let expected = XFloat([0xAA; 12]);
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xAAu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::XRP {
+            num_drops: 1_000_000,
+        };
+        let result = amount.to_xfloat(host::RoundingMode::ToNearest).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_to_xfloat_iou() {
+        let expected = XFloat([0xBB; 12]);
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xBBu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::IOU {
+            amount: [0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39],
+            issuer: AccountID::from([0x11; 20]),
+            currency: Currency::from([0x22; 20]),
+        };
+        let result = amount.to_xfloat(host::RoundingMode::ToNearest).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_to_xfloat_mpt() {
+        let expected = XFloat([0xCC; 12]);
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping([0xCCu8; 12].as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        let issuer = AccountID::from([0x33; 20]);
+        let mpt_id = MptId::new(42, issuer);
+        let amount = Amount::MPT {
+            num_units: 500_000,
+            is_positive: true,
+            mpt_id,
+        };
+        let result = amount.to_xfloat(host::RoundingMode::ToNearest).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_to_xfloat_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_stamount()
+            .times(1)
+            .returning(|_, _, _, _, _| -19); // INVALID_FLOAT_INPUT
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::XRP { num_drops: 0 };
+        assert!(amount.to_xfloat(host::RoundingMode::ToNearest).is_err());
+    }
+
+    #[test]
+    fn test_iou_from_mant_exp_success() {
+        const EXPECTED_AMOUNT: [u8; 8] = [0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00];
+        const XFLOAT_BYTES: [u8; 12] = [
+            0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        const ISSUER_BYTES: [u8; 20] = [0x33; 20];
+        const CURRENCY_BYTES: [u8; 20] = [0x44; 20];
+
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_mant_exp()
+            .times(1)
+            .returning(|_, _, out_buff, out_buff_len, _| {
+                unsafe { out_buff.copy_from_nonoverlapping(XFLOAT_BYTES.as_ptr(), 12) }
+                out_buff_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        let issuer = AccountID::from(ISSUER_BYTES);
+        let currency = Currency::from(CURRENCY_BYTES);
+        let result = Amount::iou_from_mant_exp(
+            5_000_000_000_000_000,
+            -15,
+            issuer,
+            currency,
+            host::RoundingMode::ToNearest,
+        )
+        .unwrap();
+
+        match result {
+            Amount::IOU {
+                amount,
+                issuer: i,
+                currency: c,
+            } => {
+                assert_eq!(amount, EXPECTED_AMOUNT);
+                assert_eq!(i, AccountID::from(ISSUER_BYTES));
+                assert_eq!(c, Currency::from(CURRENCY_BYTES));
+            }
+            _ => panic!("Expected Amount::IOU"),
+        }
+    }
+
+    #[test]
+    fn test_iou_from_mant_exp_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_mant_exp()
+            .times(1)
+            .returning(|_, _, _, _, _| -19); // INVALID_FLOAT_INPUT
+        let _guard = setup_mock(mock);
+
+        let issuer = AccountID::from([0x01; 20]);
+        let currency = Currency::from([0x02; 20]);
+        assert!(
+            Amount::iou_from_mant_exp(0, 0, issuer, currency, host::RoundingMode::ToNearest)
+                .is_err()
+        );
     }
 }

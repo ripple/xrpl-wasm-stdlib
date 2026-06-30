@@ -31,7 +31,6 @@ use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
 use xrpl_wasm_stdlib::core::types::currency::Currency;
 use xrpl_wasm_stdlib::core::types::mpt_id::MptId;
-use xrpl_wasm_stdlib::core::types::xfloat::XFloat;
 use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::trace::{
     DataRepr, trace, trace_account_buf, trace_amount, trace_data, trace_num,
@@ -909,26 +908,23 @@ fn test_trace_amount_functions() -> i32 {
     currency_bytes[12..15].copy_from_slice(b"USD");
     let issuer_bytes = [3u8; 20]; // Test issuer
 
-    // Create a valid IOU amount: $5 USD
-    // Mantissa = 5000000000000000, Exponent = -15 (raw exponent = 82)
-    // Actual value = 5000000000000000 × 10^-15 = 5
-    // Format: [Type=1][Sign=1][Exponent=82][Mantissa=54bits]
-    // Type bit (bit 63) = 1, Sign bit (bit 62) = 1
-    // Exponent 82 = 0b01010010
-    // Top byte: 0b11010100 = 0xD4
-    // Second byte: 0b10010001 = 0x91
-    let amount_bytes = [
-        0xD4, 0x91, 0xC3, 0x79, 0x37, 0xE0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]; // Valid IOU: $5 USD (12-byte XFloat: first 8 bytes are STAmount wire format, trailing 4 zero-pad)
-
     let currency = Currency::from(currency_bytes);
     let issuer = AccountID::from(issuer_bytes);
-    let amount = XFloat(amount_bytes);
 
-    let iou_amount = Amount::IOU {
-        amount,
+    // Create a valid IOU amount: $5 USD
+    // Mantissa = 5000000000000000, Exponent = -15 (actual value = 5)
+    let iou_amount = match Amount::iou_from_mant_exp(
+        5_000_000_000_000_000,
+        -15,
         issuer,
         currency,
+        host::RoundingMode::ToNearest,
+    ) {
+        host::Result::Ok(a) => a,
+        host::Result::Err(e) => {
+            let _ = trace_num("ERROR: iou_from_mant_exp failed:", e.code() as i64);
+            return -610;
+        }
     };
     let trace_result = trace_amount("Test IOU amount", &iou_amount);
     match trace_result {

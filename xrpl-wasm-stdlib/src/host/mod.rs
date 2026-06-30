@@ -23,15 +23,21 @@ pub mod error_codes;
 pub mod field_helpers;
 pub mod trace;
 
-// Float rounding mode constants (same as in host_bindings.rs)
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
+/// Rounding mode for host float operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum RoundingMode {
+    ToNearest = 0,
+    TowardsZero = 1,
+    Downward = 2,
+    Upward = 3,
+}
+
+impl From<RoundingMode> for i32 {
+    fn from(mode: RoundingMode) -> i32 {
+        mode as i32
+    }
+}
 
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.
@@ -334,5 +340,71 @@ impl Error {
 impl From<Error> for i64 {
     fn from(val: Error) -> Self {
         val as i64
+    }
+}
+
+#[cfg(test)]
+mod rounding_mode_tests {
+    use super::*;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use mockall::predicate::eq;
+
+    // Verify integer values match rippled's Number::rounding_mode C++ enum:
+    // enum rounding_mode { to_nearest, towards_zero, downward, upward };
+    // (unscoped C++ enum defaults: 0, 1, 2, 3)
+    #[test]
+    fn test_rounding_mode_integer_values() {
+        assert_eq!(RoundingMode::ToNearest as i32, 0);
+        assert_eq!(RoundingMode::TowardsZero as i32, 1);
+        assert_eq!(RoundingMode::Downward as i32, 2);
+        assert_eq!(RoundingMode::Upward as i32, 3);
+    }
+
+    #[test]
+    fn test_rounding_mode_into_i32() {
+        assert_eq!(i32::from(RoundingMode::ToNearest), 0);
+        assert_eq!(i32::from(RoundingMode::TowardsZero), 1);
+        assert_eq!(i32::from(RoundingMode::Downward), 2);
+        assert_eq!(i32::from(RoundingMode::Upward), 3);
+    }
+
+    fn make_mock_expecting_rounding_mode(expected_mode: i32) -> MockHostBindings {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_from_mant_exp()
+            .with(
+                eq(1i64),
+                eq(0i32),
+                mockall::predicate::always(),
+                mockall::predicate::always(),
+                eq(expected_mode),
+            )
+            .times(1)
+            .returning(|_, _, _, out_buff_len, _| out_buff_len as i32);
+        mock
+    }
+
+    #[test]
+    fn test_rounding_mode_to_nearest_passed_to_host() {
+        let _guard = setup_mock(make_mock_expecting_rounding_mode(0));
+        let _ = crate::core::types::xfloat::XFloat::from_mant_exp(1, 0, RoundingMode::ToNearest);
+    }
+
+    #[test]
+    fn test_rounding_mode_towards_zero_passed_to_host() {
+        let _guard = setup_mock(make_mock_expecting_rounding_mode(1));
+        let _ = crate::core::types::xfloat::XFloat::from_mant_exp(1, 0, RoundingMode::TowardsZero);
+    }
+
+    #[test]
+    fn test_rounding_mode_downward_passed_to_host() {
+        let _guard = setup_mock(make_mock_expecting_rounding_mode(2));
+        let _ = crate::core::types::xfloat::XFloat::from_mant_exp(1, 0, RoundingMode::Downward);
+    }
+
+    #[test]
+    fn test_rounding_mode_upward_passed_to_host() {
+        let _guard = setup_mock(make_mock_expecting_rounding_mode(3));
+        let _ = crate::core::types::xfloat::XFloat::from_mant_exp(1, 0, RoundingMode::Upward);
     }
 }

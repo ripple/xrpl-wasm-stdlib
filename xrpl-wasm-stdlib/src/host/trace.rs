@@ -212,20 +212,16 @@ mod tests {
         // Create a test IOU Amount
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::xfloat::XFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [
-            0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00,
-        ];
+        let amount_bytes = [0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39];
 
         let currency = Currency::from(currency_bytes);
         let issuer = AccountID::from(issuer_bytes);
-        let amount = XFloat(amount_bytes);
 
         let amount = Amount::IOU {
-            amount,
+            amount: amount_bytes,
             issuer,
             currency,
         };
@@ -286,22 +282,19 @@ mod tests {
         // Test IOU format
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::xfloat::XFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
-        let amount_bytes = [
-            0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00,
-        ];
+        let amount_bytes: [u8; 8] = [0xC0u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39];
 
         let iou_amount = Amount::IOU {
-            amount: XFloat(amount_bytes),
+            amount: amount_bytes,
             issuer: AccountID::from(issuer_bytes),
             currency: Currency::from(currency_bytes),
         };
         let (bytes, len) = iou_amount.to_stamount_bytes();
         assert_eq!(len, 48); // All Amount types should return 48 bytes
-        assert_eq!(&bytes[0..8], &amount_bytes[..8]); // First 8 bytes of the 12-byte STNumber float
+        assert_eq!(&bytes[0..8], &amount_bytes); // Raw 8-byte float amount from the STAmount encoding
 
         // Test MPT format
         use crate::core::types::mpt_id::MptId;
