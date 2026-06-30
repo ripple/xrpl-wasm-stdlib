@@ -8,7 +8,7 @@ pub mod issue;
 pub mod mpt_id;
 pub mod nft;
 pub mod object;
-pub mod opaque_float;
 pub mod public_key;
 pub mod transaction_type;
 pub mod uint;
+pub mod xfloat;

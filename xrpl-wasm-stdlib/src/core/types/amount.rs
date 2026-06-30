@@ -3,7 +3,7 @@ use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
-use crate::core::types::opaque_float::OpaqueFloat;
+use crate::core::types::xfloat::XFloat;
 use crate::host;
 use crate::host::Error::InternalError;
 use crate::host::Result::{Err, Ok};
@@ -97,7 +97,7 @@ pub enum Amount {
     },
     IOU {
         // amount: Amount::IOU,
-        amount: OpaqueFloat, // TODO: Make a helper to detect sign from 2nd bit (trait?)
+        amount: XFloat, // TODO: Make a helper to detect sign from 2nd bit (trait?)
         issuer: AccountID,
         currency: Currency,
     },
@@ -118,7 +118,7 @@ impl Amount {
     /// The format follows the XRPL binary layout:
     /// - XRP: Raw drop amount with sign bit in first 8 bytes + 40 bytes padding
     /// - MPT: Flag byte (0b_0110_0000) in byte 0, raw amount in bytes 1-9, MptId in bytes 9-33 + 15 bytes padding
-    /// - IOU: OpaqueFloat in first 8 bytes, Currency in bytes 8-28, AccountID in bytes 28-48
+    /// - IOU: XFloat in first 8 bytes, Currency in bytes 8-28, AccountID in bytes 28-48
     ///
     /// Returns a tuple of (bytes, length) where length is always 48.
     pub fn to_stamount_bytes(&self) -> ([u8; AMOUNT_SIZE], usize) {
@@ -263,7 +263,7 @@ impl Amount {
             let opaque_float = match crate::host::error_codes::match_result_code_with_expected_bytes(
                 rescode,
                 12,
-                || OpaqueFloat(float_out),
+                || XFloat(float_out),
             ) {
                 Ok(f) => f,
                 Err(e) => return Err(e),
@@ -381,7 +381,7 @@ impl CurrentTxFieldGetter for Amount {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::types::opaque_float::OpaqueFloat;
+    use crate::core::types::xfloat::XFloat;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
 
@@ -521,7 +521,7 @@ mod tests {
                 issuer,
                 currency,
             } => {
-                assert_eq!(amount, OpaqueFloat([0xCC; 12]));
+                assert_eq!(amount, XFloat([0xCC; 12]));
                 assert_eq!(issuer, AccountID::from(ISSUER_BYTES));
                 assert_eq!(currency, Currency::from(CURRENCY_BYTES));
             }
@@ -693,7 +693,7 @@ mod tests {
         const CURRENCY_BYTES: [u8; 20] = [0xEF; 20];
         const ISSUER_BYTES: [u8; 20] = [0x12; 20];
 
-        // Create the OpaqueFloat bytes manually
+        // Create the XFloat bytes manually
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa]
         let mut opaque_float_bytes = [0u8; 8];
 
@@ -715,7 +715,7 @@ mod tests {
         opaque_float_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat([0xBB; 12]),
+            amount: XFloat([0xBB; 12]),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -758,7 +758,7 @@ mod tests {
         const CURRENCY_BYTES: [u8; 20] = [0x34; 20];
         const ISSUER_BYTES: [u8; 20] = [0x56; 20];
 
-        // Create the OpaqueFloat bytes manually for negative amount
+        // Create the XFloat bytes manually for negative amount
         // IOU format: [1/type][0/sign][8/exponent][54/mantissa]
         let mut opaque_float_bytes = [0u8; 8];
 
@@ -780,7 +780,7 @@ mod tests {
         opaque_float_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat([0xAA; 12]),
+            amount: XFloat([0xAA; 12]),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };

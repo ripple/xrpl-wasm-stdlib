@@ -6,7 +6,7 @@
 extern crate std;
 
 use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
+use xrpl_wasm_stdlib::core::types::xfloat::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
 use xrpl_wasm_stdlib::decode_hex_32;
 use xrpl_wasm_stdlib::host::trace::DataRepr::AsHex;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};

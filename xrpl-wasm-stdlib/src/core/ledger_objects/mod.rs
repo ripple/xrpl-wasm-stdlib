@@ -951,7 +951,7 @@ pub mod ledger_object {
                 .with(eq::<i32>(sfield::Amount.into()), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
-                    // IOU: byte0 bit7=1; bytes[0..8]=OpaqueFloat (opaque, content
+                    // IOU: byte0 bit7=1; bytes[0..8]=XFloat (opaque, content
                     // doesn't matter for variant detection), bytes[8..28]=currency,
                     // bytes[28..48]=issuer.
                     let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };

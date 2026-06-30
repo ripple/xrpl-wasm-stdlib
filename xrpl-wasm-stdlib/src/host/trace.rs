@@ -212,7 +212,7 @@ mod tests {
         // Create a test IOU Amount
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
+        use crate::core::types::xfloat::XFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
@@ -222,7 +222,7 @@ mod tests {
 
         let currency = Currency::from(currency_bytes);
         let issuer = AccountID::from(issuer_bytes);
-        let amount = OpaqueFloat(amount_bytes);
+        let amount = XFloat(amount_bytes);
 
         let amount = Amount::IOU {
             amount,
@@ -286,7 +286,7 @@ mod tests {
         // Test IOU format
         use crate::core::types::account_id::AccountID;
         use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
+        use crate::core::types::xfloat::XFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
@@ -295,7 +295,7 @@ mod tests {
         ];
 
         let iou_amount = Amount::IOU {
-            amount: OpaqueFloat(amount_bytes),
+            amount: XFloat(amount_bytes),
             issuer: AccountID::from(issuer_bytes),
             currency: Currency::from(currency_bytes),
         };
