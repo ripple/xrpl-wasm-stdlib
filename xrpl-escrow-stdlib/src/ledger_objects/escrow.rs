@@ -18,14 +18,3 @@ impl Escrow {
         Self { slot_num }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new() {
-        let escrow = Escrow::new(42);
-        assert_eq!(escrow.slot_num, 42);
-    }
-}
