@@ -60,7 +60,7 @@ impl FinishResult {
     /// assert_eq!(i32::from(result), -5);
     /// ```
     pub fn reject_with<const N: i32>() -> Self {
-        const { assert!(N < 0, "reject_with requires a negative code") };
+        const { assert!(N <= 0, "reject_with requires a negative code") };
         Self(N)
     }
 }
@@ -119,6 +119,11 @@ mod tests {
             i32::from(FinishResult::reject_with::<{ i32::MIN }>()),
             i32::MIN
         );
+    }
+
+    #[test]
+    fn reject_with_zero_uses_code() {
+        assert_eq!(i32::from(FinishResult::reject_with::<0>()), 0);
     }
 
     // --- From<i32> (used for error-code propagation: `e.code().into()`) ---
