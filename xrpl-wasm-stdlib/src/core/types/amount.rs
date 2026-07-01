@@ -5,7 +5,7 @@ use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::core::types::opaque_float::OpaqueFloat;
 use crate::host;
-use crate::host::Error::InternalError;
+use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
@@ -186,12 +186,12 @@ impl Amount {
     /// - MPT: 33 bytes
     /// - IOU: 48 bytes
     ///
-    /// Returns None if the byte array is not a valid Amount.
+    /// Returns `Err(InvalidParams)` if the byte array is not a valid Amount.
     pub fn from_bytes(bytes: &[u8]) -> host::Result<Self> {
         // TODO: Move to trait!
 
         if bytes.len() != 48 {
-            return Err(InternalError);
+            return Err(InvalidParams);
         }
 
         let byte0 = bytes[0]; // Get the first byte for flag extraction
@@ -515,24 +515,43 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_amount() {
+        // A byte array whose length is not 48 is a caller/input error, reported as
+        // `InvalidParams` (not an internal invariant trip).
+        let expected = InvalidParams as i32;
+
         // Test with an empty byte array
-        assert!(Amount::from_bytes(&[]).is_err());
+        assert_eq!(Amount::from_bytes(&[]).err().unwrap().code(), expected);
 
         // Test with a byte array that's too short for XRP
-        assert!(Amount::from_bytes(&[0x40, 0, 0]).is_err());
+        assert_eq!(
+            Amount::from_bytes(&[0x40, 0, 0]).err().unwrap().code(),
+            expected
+        );
 
         // Test with a byte array that's too short for MPT
         let mut mpt_bytes = [0u8; 20];
         mpt_bytes[0] = 0x60; // MPT positive flag
-        assert!(Amount::from_bytes(&mpt_bytes).is_err());
+        assert_eq!(
+            Amount::from_bytes(&mpt_bytes).err().unwrap().code(),
+            expected
+        );
 
         // Test with a byte array that's too short for IOU
         let mut iou_bytes = [0u8; 30];
         iou_bytes[0] = 0xC0; // IOU positive flag
-        assert!(Amount::from_bytes(&iou_bytes).is_err());
+        assert_eq!(
+            Amount::from_bytes(&iou_bytes).err().unwrap().code(),
+            expected
+        );
 
         // Test with an invalid type bit pattern
-        assert!(Amount::from_bytes(&[0xA0, 0, 0, 0, 0, 0, 0, 0]).is_err());
+        assert_eq!(
+            Amount::from_bytes(&[0xA0, 0, 0, 0, 0, 0, 0, 0])
+                .err()
+                .unwrap()
+                .code(),
+            expected
+        );
     }
 
     #[test]
