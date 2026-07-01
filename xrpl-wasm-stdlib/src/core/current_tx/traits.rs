@@ -233,7 +233,13 @@ pub trait TransactionCommonFields {
     /// Returns a `Result<Option<PublicKey>>` where:
     /// * `Ok(Some(PublicKey))` - The 33-byte compressed public key for single-signature transactions
     /// * `Ok(None)` - Empty SigningPubKey field, indicating a multi-signature transaction
-    /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size (not 0 or 33 bytes)
+    /// * `Err(Error)` - If the field cannot be retrieved
+    ///
+    /// # Panics
+    ///
+    /// Panics if the field is present with a length other than 0 or 33 bytes. rippled's
+    /// preflight rejects such transactions before they are applied, so this is an internal
+    /// invariant violation rather than recoverable input.
     ///
     /// # Security Note
     ///
@@ -244,9 +250,8 @@ pub trait TransactionCommonFields {
         get_field(sfield::SigningPubKey).and_then(|blob| match blob.len {
             0 => Result::Ok(None), // Multi-signature transaction
             33 => Result::Ok(Some(PublicKey::from(blob.data))), // Single-signature transaction
-            _ => Result::Err(crate::host::Error::from_code(
-                crate::host::error_codes::INTERNAL_ERROR,
-            )),
+            // Unreachable in practice (see `# Panics`); fail fast if the invariant breaks.
+            len => panic!("internal invariant violated: SigningPubKey has unexpected length {len} (expected 0 or 33)"),
         })
     }
 
@@ -615,31 +620,33 @@ mod tests {
                 assert!(escrow.get_offer_sequence().is_ok());
             }
 
-            #[test]
-            fn test_mandatory_fields_return_error_when_zero_length() {
-                let mut mock = MockHostBindings::new();
+            // Zero length for a mandatory fixed-size field panics (byte mismatch). One test
+            // per field, since `#[should_panic]` only catches the first panic.
 
-                // get_owner - returns 0 (zero length)
+            #[test]
+            #[should_panic]
+            fn test_get_owner_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
-                    .times(1)
-                    .returning(|_, _, _| 0);
-                // get_offer_sequence - returns 0 (zero length)
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::OfferSequence), always(), eq(4))
-                    .times(1)
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
 
-                let escrow = EscrowFinish;
+                let _ = EscrowFinish.get_owner();
+            }
 
-                // Mandatory fields should return Err when zero length (INTERNAL_ERROR due to byte mismatch)
-                let owner_result = escrow.get_owner();
-                assert!(owner_result.is_err());
+            #[test]
+            #[should_panic]
+            fn test_get_offer_sequence_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .returning(|_, _, _| 0);
 
-                let offer_seq_result = escrow.get_offer_sequence();
-                assert!(offer_seq_result.is_err());
+                let _guard = setup_mock(mock);
+
+                let _ = EscrowFinish.get_offer_sequence();
             }
 
             #[test]
@@ -1066,33 +1073,64 @@ mod tests {
                 assert!(tx.get_txn_signature().is_ok());
             }
 
-            #[test]
-            fn test_mandatory_fields_return_error_when_zero_length() {
-                let mut mock = MockHostBindings::new();
+            // Zero length for a mandatory fixed-size field panics (byte mismatch). One test
+            // per field, since `#[should_panic]` only catches the first panic.
 
-                // get_account - returns 0 (zero length)
+            #[test]
+            #[should_panic]
+            fn test_get_account_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
-                    .times(1)
                     .returning(|_, _, _| 0);
-                // get_transaction_type - returns 0 (zero length)
+
+                let _guard = setup_mock(mock);
+                let _ = EscrowFinish.get_account();
+            }
+
+            #[test]
+            #[should_panic]
+            fn test_get_transaction_type_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
-                    .times(1)
                     .returning(|_, _, _| 0);
-                // get_computation_allowance - returns 0 (zero length)
+
+                let _guard = setup_mock(mock);
+                let _ = EscrowFinish.get_transaction_type();
+            }
+
+            #[test]
+            #[should_panic]
+            fn test_get_computation_allowance_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::ComputationAllowance), always(), eq(4))
-                    .times(1)
                     .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+                let _ = EscrowFinish.get_computation_allowance();
+            }
+
+            #[test]
+            #[should_panic]
+            fn test_get_sequence_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Sequence), always(), eq(4))
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+                let _ = EscrowFinish.get_sequence();
+            }
+
+            #[test]
+            fn test_variable_size_fields_ok_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+
                 // get_fee - returns 0 (zero length)
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
-                    .times(1)
-                    .returning(|_, _, _| 0);
-                // get_sequence - returns 0 (zero length)
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::Sequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_signing_pub_key - returns 0 (zero length)
@@ -1109,28 +1147,36 @@ mod tests {
 
                 let tx = EscrowFinish;
 
-                // Fixed-size mandatory fields should return Err when zero length (byte mismatch)
-                let account_result = tx.get_account();
-                assert!(account_result.is_err());
-
-                let tx_type_result = tx.get_transaction_type();
-                assert!(tx_type_result.is_err());
-
-                let comp_allow_result = tx.get_computation_allowance();
-                assert!(comp_allow_result.is_err());
-
                 // Variable-size field (Amount) returns Ok with zero length
                 let fee_result = tx.get_fee();
                 assert!(fee_result.is_ok());
-
-                let seq_result = tx.get_sequence();
-                assert!(seq_result.is_err());
 
                 // SigningPubKey is special: zero length indicates multi-signature transaction
                 // and should return Ok(None), not an error
                 let signing_key_result = tx.get_signing_pub_key();
                 assert!(signing_key_result.is_ok());
                 assert!(signing_key_result.unwrap().is_none());
+            }
+
+            #[test]
+            #[should_panic]
+            fn test_get_signing_pub_key_panics_on_unexpected_length() {
+                let mut mock = MockHostBindings::new();
+
+                // A SigningPubKey that is neither empty (0, multisign) nor a valid key (33)
+                // can never reach a running escrow: rippled's preflight rejects it. Observing
+                // such a length is an internal invariant violation and must panic.
+                mock.expect_get_tx_field()
+                    .with(
+                        eq(sfield::SigningPubKey),
+                        always(),
+                        eq(PUBLIC_KEY_BUFFER_SIZE),
+                    )
+                    .returning(|_, _, _| 16);
+
+                let _guard = setup_mock(mock);
+
+                let _ = EscrowFinish.get_signing_pub_key();
             }
 
             #[test]

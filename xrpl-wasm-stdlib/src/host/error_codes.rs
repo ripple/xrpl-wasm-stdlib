@@ -1,4 +1,4 @@
-use crate::host::Error::{InternalError, PointerOutOfBounds};
+use crate::host::Error::PointerOutOfBounds;
 use crate::host::trace::trace_num;
 use crate::host::{Error, Result, Result::Err, Result::Ok};
 
@@ -131,8 +131,13 @@ where
 ///
 /// Returns a `Result<T>` where:
 /// * `Ok(T)` - Contains the value returned by the closure if result_code matches expected_num_bytes
-/// * `Err(InternalError)` - If result_code is non-negative but doesn't match expected bytes
 /// * `Err(Error)` - For negative result codes
+///
+/// # Panics
+///
+/// Panics if `result_code` is non-negative but doesn't match `expected_num_bytes`. This
+/// signals an internal invariant violation (a host or stdlib bug) for which the caller has
+/// no recoverable course of action, rather than an input error.
 ///
 /// # Note
 ///
@@ -149,7 +154,12 @@ where
 {
     match result_code {
         code if code as usize == expected_num_bytes => Ok(on_success()),
-        code if code >= 0 => Err(InternalError), // If here, this is a bug
+        // Non-negative but wrong byte count: internal invariant violation (see `# Panics`).
+        code if code >= 0 => {
+            panic!(
+                "internal invariant violated: host wrote {code} bytes but {expected_num_bytes} were expected"
+            );
+        }
         code => Err(Error::from_code(code)),
     }
 }
@@ -289,12 +299,12 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn test_match_result_code_with_expected_bytes_mismatch() {
         let expected_bytes = 32;
-        let result =
-            match_result_code_with_expected_bytes(16, expected_bytes, || "should_not_execute");
-        assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        // A non-negative code that doesn't match the expected byte count is an internal
+        // invariant violation and must panic.
+        let _ = match_result_code_with_expected_bytes(16, expected_bytes, || "should_not_execute");
     }
 
     #[test]
