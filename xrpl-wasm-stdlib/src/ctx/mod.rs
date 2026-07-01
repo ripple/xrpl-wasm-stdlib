@@ -5,10 +5,6 @@
 //! — and [`FinishResult`], the return type smart features use to signal
 //! whether the native transaction should proceed.
 
-pub mod finish_result;
-
-pub use finish_result::FinishResult;
-
 use crate::core::current_tx::traits::TransactionCommonFields;
 
 /// Narrow context trait shared by all Smart Escrow and Smart Contract entry points.

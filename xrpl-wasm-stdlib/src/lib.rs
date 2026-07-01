@@ -13,8 +13,6 @@ pub mod host;
 pub mod sfield;
 pub mod types;
 
-pub use ctx::FinishResult;
-
 /// Complete Developer Guide
 ///
 /// This comprehensive guide covers everything you need to develop smart escrows using
