@@ -2,8 +2,6 @@
 //!
 //! This module exposes the [`SmartFeatureContext`] trait — the narrow context
 //! type implemented by feature-specific contexts (e.g., `EscrowFinishContext`)
-//! — and [`FinishResult`], the return type smart features use to signal
-//! whether the native transaction should proceed.
 
 use crate::core::current_tx::traits::TransactionCommonFields;
 
