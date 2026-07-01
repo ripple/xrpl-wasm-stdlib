@@ -194,8 +194,11 @@ fn read_intent() -> Result<Intent> {
         )
     };
     if code <= 0 {
+        // Zero length is a present-but-empty memo (protocol-valid input): no intent byte
+        // was provided, which is an invalid request for this contract — same as an
+        // unrecognized intent byte below.
         return Err(if code == 0 {
-            Error::InternalError
+            Error::InvalidParams
         } else {
             Error::from_code(code)
         });

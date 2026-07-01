@@ -251,31 +251,33 @@ mod tests {
                 assert!(escrow.get_offer_sequence().is_ok());
             }
 
-            #[test]
-            fn test_mandatory_fields_return_error_when_zero_length() {
-                let mut mock = MockHostBindings::new();
+            // Zero length for a mandatory fixed-size field panics (byte mismatch). One test
+            // per field, since `#[should_panic]` only catches the first panic.
 
-                // get_owner - returns 0 (zero length)
+            #[test]
+            #[should_panic]
+            fn test_get_owner_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
-                    .times(1)
-                    .returning(|_, _, _| 0);
-                // get_offer_sequence - returns 0 (zero length)
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::OfferSequence), always(), eq(4))
-                    .times(1)
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
 
-                let escrow = EscrowFinish;
+                let _ = EscrowFinish.get_owner();
+            }
 
-                // Mandatory fields should return Err when zero length (INTERNAL_ERROR due to byte mismatch)
-                let owner_result = escrow.get_owner();
-                assert!(owner_result.is_err());
+            #[test]
+            #[should_panic]
+            fn test_get_offer_sequence_panics_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::OfferSequence), always(), eq(4))
+                    .returning(|_, _, _| 0);
 
-                let offer_seq_result = escrow.get_offer_sequence();
-                assert!(offer_seq_result.is_err());
+                let _guard = setup_mock(mock);
+
+                let _ = EscrowFinish.get_offer_sequence();
             }
 
             #[test]

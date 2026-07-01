@@ -2,7 +2,7 @@
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 edition = "2024"
-description = "Smart Escrow types and host-function wrappers for XRPL WebAssembly contracts"
+description = "Smart Escrow types, entry-point context, and host-function wrappers for XRPL WebAssembly contracts"
 license.workspace = true
 repository.workspace = true
 keywords = ["xrpl", "wasm", "smart-escrow", "no-std"]

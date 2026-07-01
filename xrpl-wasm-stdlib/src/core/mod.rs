@@ -11,6 +11,7 @@
 //! Escrow-specific wrappers (`EscrowFinish`, `CurrentEscrow`, `Escrow`) live in the
 //! companion `xrpl-escrow-stdlib` crate.
 
+pub mod chain;
 pub mod constants;
 pub mod current_tx;
 pub mod keylets;

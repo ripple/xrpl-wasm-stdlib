@@ -352,7 +352,8 @@ mod tests {
     }
 
     #[test]
-    fn test_field_getter_returns_err_on_size_mismatch() {
+    #[should_panic]
+    fn test_field_getter_panics_on_size_mismatch() {
         let mut mock = MockHostBindings::new();
         mock.expect_get_tx_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
@@ -361,7 +362,7 @@ mod tests {
 
         let _guard = setup_mock(mock);
 
-        assert!(u32::get_from_current_tx(sfield::Sequence).is_err());
+        let _ = u32::get_from_current_tx(sfield::Sequence);
     }
 
     // get_field / get_field_optional are thin wrappers over get_from_current_tx / get_from_current_tx_optional,
