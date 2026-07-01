@@ -101,6 +101,7 @@ npm install
 Let's create a simple escrow that releases funds when an account balance exceeds 10 XRP:
 
 ```rust ignore
+```rust ignore
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
@@ -390,6 +391,7 @@ fn main() {
 
 #### Transaction Fields
 
+```rust ignore
 ```rust ignore
 // Use the high-level trait methods instead of low-level host functions
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
