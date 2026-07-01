@@ -1,7 +1,8 @@
-use crate::core::ledger_objects::traits::{EscrowFields, LedgerObjectCommonFields};
+use xrpl_wasm_stdlib::core::ledger_objects::traits::LedgerObjectCommonFields;
+
+use crate::ledger_objects::traits::EscrowFields;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct Escrow {
     pub(crate) slot_num: i32,
 }
@@ -17,16 +18,5 @@ impl EscrowFields for Escrow {}
 impl Escrow {
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new() {
-        let escrow = Escrow::new(42);
-        assert_eq!(escrow.slot_num, 42);
     }
 }
