@@ -39,7 +39,7 @@ impl FinishResult {
     /// ledger metadata field and can be used for diagnostics.
     ///
     /// ```
-    /// # use xrpl_wasm_stdlib::FinishResult;
+    /// # use xrpl_escrow_stdlib::FinishResult;
     /// let result = FinishResult::succeed_with::<42>();
     /// assert_eq!(i32::from(result), 42);
     /// ```
