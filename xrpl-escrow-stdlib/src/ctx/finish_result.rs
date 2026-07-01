@@ -48,19 +48,19 @@ impl FinishResult {
         Self(N)
     }
 
-    /// Block the Smart Feature with a custom negative error code.
+    /// Block the Smart Feature with a custom non-positive error code.
     ///
-    /// `N` must be a negative compile-time constant; passing a non-negative value
+    /// `N` must be non-positive (≤ 0) at compile time; passing a positive value
     /// is a compile-time error. The code is recorded in the `WasmReturnCode`
     /// ledger metadata field and can be used for diagnostics.
     ///
     /// ```
-    /// # use xrpl_wasm_stdlib::FinishResult;
+    /// # use xrpl_escrow_stdlib::FinishResult;
     /// let result = FinishResult::reject_with::<-5>();
     /// assert_eq!(i32::from(result), -5);
     /// ```
     pub fn reject_with<const N: i32>() -> Self {
-        const { assert!(N <= 0, "reject_with requires a negative code") };
+        const { assert!(N <= 0, "reject_with requires a non-positive code") };
         Self(N)
     }
 }

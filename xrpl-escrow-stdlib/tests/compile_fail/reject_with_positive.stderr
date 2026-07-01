@@ -1,0 +1,17 @@
+error[E0080]: evaluation panicked: reject_with requires a non-positive code
+ --> src/ctx/finish_result.rs
+  |
+  |         const { assert!(N <= 0, "reject_with requires a non-positive code") };
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `xrpl_escrow_stdlib::FinishResult::reject_with::<1>::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/ctx/finish_result.rs
+  |
+  |         const { assert!(N <= 0, "reject_with requires a non-positive code") };
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: the above error was encountered while instantiating `fn xrpl_escrow_stdlib::FinishResult::reject_with::<1>`
+ --> tests/compile_fail/reject_with_positive.rs:4:13
+  |
+4 |     let _ = FinishResult::reject_with::<1>();
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
