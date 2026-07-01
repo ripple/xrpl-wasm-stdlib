@@ -3,7 +3,6 @@ use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use crate::current_tx::traits::EscrowFinishFields;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct EscrowFinish;
 
 impl TransactionCommonFields for EscrowFinish {}

@@ -3,7 +3,6 @@ use xrpl_wasm_stdlib::core::ledger_objects::traits::LedgerObjectCommonFields;
 use crate::ledger_objects::traits::EscrowFields;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct Escrow {
     pub(crate) slot_num: i32,
 }

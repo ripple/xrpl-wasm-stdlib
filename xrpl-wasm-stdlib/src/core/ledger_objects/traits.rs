@@ -598,4 +598,86 @@ mod tests {
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
+
+    mod current_ledger_object_common_fields {
+        use super::*;
+        use crate::host::setup_mock;
+
+        struct TestCurrentLedgerObject;
+        impl CurrentLedgerObjectCommonFields for TestCurrentLedgerObject {}
+
+        #[test]
+        fn test_mandatory_fields_return_ok() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags
+            expect_current_field(&mut mock, sfield::Flags, 4, 1);
+            // get_ledger_entry_type
+            expect_current_field(&mut mock, sfield::LedgerEntryType, 2, 1);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+
+            // All mandatory fields should return Ok
+            assert!(escrow.get_flags().is_ok());
+            assert!(escrow.get_ledger_entry_type().is_ok());
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INTERNAL_ERROR
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_get_ledger_entry_type_returns_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::LedgerEntryType), always(), eq(2))
+                .times(1)
+                .returning(|_, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_ledger_entry_type();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            // get_flags with INVALID_FIELD
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq(sfield::Flags), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_flags();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+    }
 }

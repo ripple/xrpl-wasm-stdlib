@@ -3,7 +3,6 @@ use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFie
 use crate::ledger_objects::traits::CurrentEscrowFields;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct CurrentEscrow;
 
 impl CurrentLedgerObjectCommonFields for CurrentEscrow {}
