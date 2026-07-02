@@ -8,8 +8,7 @@ pub(crate) struct ValidationRules<'a> {
 }
 
 pub(crate) enum ReturnKind {
-    ResultBool,
-    ResultUnit,
+    FinishResult,
     I32,
 }
 
