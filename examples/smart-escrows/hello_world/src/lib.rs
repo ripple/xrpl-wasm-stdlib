@@ -3,11 +3,11 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult, smart_escrow};
 use xrpl_wasm_stdlib::host::trace::trace;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let _ = trace("Hello World!");
-
-    1 // <-- Finish the escrow to indicate a successful outcome
+#[smart_escrow]
+fn run(_ctx: EscrowFinishContext) -> FinishResult {
+    let _ = trace("Hello World");
+    FinishResult::succeed()
 }

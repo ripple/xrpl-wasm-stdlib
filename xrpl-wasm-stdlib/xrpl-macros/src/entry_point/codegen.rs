@@ -19,14 +19,14 @@ pub(crate) fn emit(entry: &EntryFn, kind: &ReturnKind, cfg: &CodegenConfig) -> T
     let ctx = &cfg.ctx_path;
 
     let call = match kind {
-        ReturnKind::FinishResult => quote! { i32::from(#fn_name) },
+        ReturnKind::FinishResult => quote! { i32::from(#fn_name(ctx)) },
         ReturnKind::I32 => quote! { #fn_name(ctx) },
     };
 
     quote! {
         #user_fn
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn #export() -> i32 {
             let ctx = #ctx::default();
             #call
