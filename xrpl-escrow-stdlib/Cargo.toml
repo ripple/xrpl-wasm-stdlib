@@ -13,3 +13,4 @@ xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
 
 [dev-dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+trybuild = "1"
