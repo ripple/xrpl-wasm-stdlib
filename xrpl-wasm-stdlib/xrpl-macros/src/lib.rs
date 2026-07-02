@@ -150,7 +150,7 @@ pub fn blob(input: TokenStream) -> TokenStream {
 ///
 /// The annotated function must:
 /// - Take `EscrowFinishContext` as its first (and only) argument.
-/// - Return `Result<bool, E>`, `Result<(), E>`, or `i32`.
+/// - Return `FinishResult` or `i32`.
 /// - The attribute takes no arguments — `#[smart_escrow(anything)]` is a compile error.
 ///
 /// Any other signature is a compile error pointing at the offending token.
@@ -161,13 +161,50 @@ pub fn blob(input: TokenStream) -> TokenStream {
 /// `EscrowFinishContext`. Importing directly from `xrpl_macros` is unsupported
 /// because the generated code references types in `xrpl_escrow_stdlib`.
 ///
+/// `FinishResult` and `i32` convert into each other (`From<i32>` /
+/// `From<FinishResult>`), so a host error code can be propagated with
+/// `.into()` either way:
+///
 /// ```rust,ignore
 /// // Import from the feature crate, not from xrpl_macros directly.
-/// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext};
+/// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
+/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::core::types::amount::Amount;
 ///
 /// #[smart_escrow]
-/// fn finish(ctx: EscrowFinishContext) -> Result<bool, MyError> {
-///     Ok(ctx.tx().fetch_amount()?.drops() > 1000)
+/// fn finish(ctx: EscrowFinishContext) -> FinishResult {
+///     let fee = match ctx.tx().get_fee() {
+///         Ok(f) => f,
+///         Err(e) => return e.code().into(), // i32 -> FinishResult
+///     };
+///
+///     match fee {
+///         Amount::XRP { num_drops } if num_drops > 1000 => FinishResult::succeed(),
+///         _ => FinishResult::reject(),
+///     }
+/// }
+/// ```
+///
+/// Returning `i32` directly skips the macro's `FinishResult` handling:
+///
+/// ```rust,ignore
+/// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
+/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::core::types::amount::Amount;
+///
+/// #[smart_escrow]
+/// fn finish(ctx: EscrowFinishContext) -> i32 {
+///     let fee = match ctx.tx().get_fee() {
+///         Ok(f) => f,
+///         Err(e) => return e.code(),
+///     };
+///
+///     let result = match fee {
+///         Amount::XRP { num_drops } if num_drops > 1000 => FinishResult::succeed(),
+///         _ => FinishResult::reject(),
+///     };
+///
+///     result.into()
 /// }
 /// ```
 #[proc_macro_attribute]
