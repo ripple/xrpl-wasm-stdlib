@@ -25,7 +25,7 @@ test-host-bindings = ["dep:mockall"]
 
 [dependencies]
 xrpl-macros = { version = "0.1.0", path = "xrpl-macros" }
-mockall = { version = "0.14.0", optional = true }
+mockall = { version = "0.15.0", optional = true }
 
 [dev-dependencies]
-mockall = "0.14.0"
+mockall = "0.15.0"
