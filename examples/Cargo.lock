@@ -6,6 +6,7 @@ version = 4
 name = "atomic_swap1"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -13,6 +14,7 @@ dependencies = [
 name = "atomic_swap2"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -73,6 +75,7 @@ dependencies = [
 name = "freelancer_escrow"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -98,6 +101,7 @@ dependencies = [
 name = "kyc"
 version = "0.0.1"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -105,6 +109,7 @@ dependencies = [
 name = "ledger_sqn"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -118,6 +123,7 @@ checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 name = "nft_owner"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -125,6 +131,7 @@ dependencies = [
 name = "notary"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -132,6 +139,7 @@ dependencies = [
 name = "oracle"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 

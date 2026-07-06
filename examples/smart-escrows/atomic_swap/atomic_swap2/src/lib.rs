@@ -3,8 +3,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_wasm_stdlib::core::keylets::XRPL_KEYLET_SIZE;
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{self, CurrentEscrow};
+use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_wasm_stdlib::core::ledger_objects::escrow::Escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::{CurrentEscrowFields, EscrowFields};
 use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
@@ -12,6 +13,7 @@ use xrpl_wasm_stdlib::host;
 use xrpl_wasm_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_wasm_stdlib::smart_escrow;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
@@ -78,9 +80,9 @@ fn is_valid_atomic_swap1_wasm(wasm_bytes: &[u8]) -> bool {
 ///
 /// The two-phase design provides built-in timing coordination and prevents
 /// stale swap attempts after the deadline expires.
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let current_escrow = current_escrow::get_current_escrow();
+#[smart_escrow]
+fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
+    let current_escrow = ctx.escrow();
 
     // Get the current data field - this stores the atomic swap state
     let mut current_data = match current_escrow.get_data() {

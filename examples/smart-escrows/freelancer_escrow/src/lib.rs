@@ -3,18 +3,19 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::get_current_escrow_finish;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
+use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::contract_data::ContractData;
+use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host::get_parent_ledger_time;
 use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::trace_num;
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::sfield;
+use xrpl_wasm_stdlib::{sfield, smart_escrow};
 
 macro_rules! try_or_trace {
     ($e:expr, $label:literal) => {
@@ -22,7 +23,7 @@ macro_rules! try_or_trace {
             Ok(v) => v,
             Err(e) => {
                 let _ = trace_num($label, e.code() as i64);
-                return e.code();
+                return e.code().into();
             }
         }
     };
@@ -247,11 +248,11 @@ fn deadline_release(state: &State) -> Result<bool> {
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let tx = get_current_escrow_finish();
+#[smart_escrow]
+fn escrow(ctx: EscrowFinishContext) -> FinishResult {
+    let tx = ctx.tx();
     let tx_account = try_or_trace!(tx.get_account(), "tx_account");
-    let escrow = get_current_escrow();
+    let escrow = *ctx.escrow();
     let client = try_or_trace!(escrow.get_account(), "client");
     let freelancer = try_or_trace!(escrow.get_destination(), "freelancer");
     let mut state = try_or_trace!(State::load(&escrow), "state");
@@ -259,7 +260,7 @@ pub extern "C" fn finish() -> i32 {
 
     let role = match identify(tx_account, client, freelancer, state.arbitrator()) {
         Some(r) => r,
-        None => return 0,
+        None => return FinishResult::reject(),
     };
 
     // Auto-release is sticky: once the freelancer has confirmed and the deadline has
@@ -267,7 +268,7 @@ pub extern "C" fn finish() -> i32 {
     // before any state mutation, so no intent (confirm, deconfirm, or dispute) can
     // clear a condition that is already met.
     if try_or_trace!(deadline_release(&state), "ledger_time") {
-        return 1;
+        return FinishResult::succeed();
     }
 
     match (role, intent, state.dispute()) {
@@ -281,7 +282,7 @@ pub extern "C" fn finish() -> i32 {
             let release = state.client_confirmed() && state.freelancer_confirmed()
                 || try_or_trace!(deadline_release(&state), "ledger_time");
             try_or_trace!(state.persist(), "persist");
-            release as i32
+            (release as i32).into()
         }
         // Participant raises a dispute, clears confirmations
         (Role::Client | Role::Freelancer, Intent::Dispute, DisputeState::None) => {
@@ -289,7 +290,7 @@ pub extern "C" fn finish() -> i32 {
             state.set_confirmation(Party::Freelancer, false);
             state.set_dispute(DisputeState::ActiveBy(party_of(role)));
             try_or_trace!(state.persist(), "persist");
-            0
+            FinishResult::reject()
         }
         // Disputing party withdraws their own dispute
         (Role::Client | Role::Freelancer, Intent::Undispute, DisputeState::ActiveBy(by))
@@ -297,18 +298,18 @@ pub extern "C" fn finish() -> i32 {
         {
             state.set_dispute(DisputeState::None);
             try_or_trace!(state.persist(), "persist");
-            0
+            FinishResult::reject()
         }
         // Arbitrator rules on an active dispute
         (Role::Arbitrator, _, DisputeState::ActiveBy(_)) => match ArbRuling::from_intent(intent) {
-            Some(ArbRuling::ForFreelancer) => 1,
+            Some(ArbRuling::ForFreelancer) => FinishResult::succeed(),
             Some(ArbRuling::ForClient) => {
                 state.set_dispute(DisputeState::ArbLocked);
                 try_or_trace!(state.persist(), "persist");
-                0
+                FinishResult::reject()
             }
-            None => 0,
+            None => FinishResult::reject(),
         },
-        _ => 0,
+        _ => FinishResult::reject(),
     }
 }

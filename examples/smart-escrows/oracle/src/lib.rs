@@ -3,6 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_wasm_stdlib::core::keylets::oracle_keylet;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
@@ -10,6 +11,7 @@ use xrpl_wasm_stdlib::host::error_codes::match_result_code;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::r_address;
+use xrpl_wasm_stdlib::smart_escrow;
 use xrpl_wasm_stdlib::{host, sfield};
 
 const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
@@ -47,13 +49,13 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
     Ok(asset_price)
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
     let oracle_keylet = match oracle_keylet(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
         Ok(keylet) => keylet,
         Err(error) => {
             let _ = trace_num("finish: oracle_keylet error_code=", error.code() as i64);
-            return error.code();
+            return error.code().into();
         }
     };
 
@@ -64,14 +66,15 @@ pub extern "C" fn finish() -> i32 {
 
         if slot < 0 {
             let _ = trace_num("finish: cache_ledger_obj failed, returning 0", 0);
-            return 0;
+            return FinishResult::reject();
         };
     }
 
     let price = match get_price_from_oracle(slot) {
         Ok(v) => v,
-        Err(e) => return e.code(),
+        Err(e) => return e.code().into(),
     };
 
-    (price > 1) as i32 // <-- Finish the escrow to indicate a successful outcome
+    // <-- Finish the escrow to indicate a successful outcome
+    ((price > 1) as i32).into()
 }

@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
@@ -11,6 +11,7 @@ use xrpl_wasm_stdlib::host::get_tx_nested_field;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::sfield;
+use xrpl_wasm_stdlib::smart_escrow;
 use xrpl_wasm_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 
 #[unsafe(no_mangle)]
@@ -40,18 +41,18 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
     let memo: ContractData = match get_first_memo() {
         Ok(v) => {
             match v {
                 Some(v) => v,
-                None => return 0, // <-- Do not execute the escrow.
+                None => return FinishResult::reject(), // <-- Do not execute the escrow.
             }
         }
         Err(e) => {
             let _ = trace_num("Error getting first memo:", e.code() as i64);
-            return e.code(); // <-- Do not execute the escrow.
+            return e.code().into(); // <-- Do not execute the escrow.
         }
     };
 
@@ -89,12 +90,11 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_num("NFT Token Sequence:", token_sequence as i64);
     }
 
-    let current_escrow = current_escrow::get_current_escrow();
-    let destination = match current_escrow.get_destination() {
+    let destination = match ctx.escrow().get_destination() {
         Ok(destination) => destination,
         Err(e) => {
             let _ = trace_num("Error getting current ledger destination:", e.code() as i64);
-            return e.code(); // <-- Do not execute the escrow.
+            return e.code().into(); // <-- Do not execute the escrow.
         }
     };
 
@@ -102,14 +102,14 @@ pub extern "C" fn finish() -> i32 {
     match nft_token.uri(&destination) {
         Ok(_uri) => {
             let _ = trace_data("NFT is owned by destination", &[], DataRepr::AsHex);
-            1 // <-- Finish the escrow successfully
+            FinishResult::succeed() // <-- Finish the escrow successfully
         }
         Err(e) => {
             let _ = trace_num(
                 "NFT is NOT owned by destination. Error code:",
                 e.code() as i64,
             );
-            0 // <-- Do not execute the escrow
+            FinishResult::reject() // <-- Do not execute the escrow
         }
     }
 }
