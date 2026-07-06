@@ -205,7 +205,7 @@ async function main() {
   const outputFile =
     process.argv.length == 4
       ? process.argv[3]
-      : path.join(__dirname, "../xrpl-wasm-stdlib/src/sfield.rs")
+      : path.join(__dirname, "../xrpl-common-stdlib/src/sfield.rs")
   try {
     // Read existing file to preserve type definitions and impl blocks
     let existingContent = ""

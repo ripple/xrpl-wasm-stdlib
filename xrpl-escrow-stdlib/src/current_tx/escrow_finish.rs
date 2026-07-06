@@ -1,4 +1,4 @@
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
 
 use crate::current_tx::traits::EscrowFinishFields;
 

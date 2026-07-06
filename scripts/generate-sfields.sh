@@ -14,7 +14,7 @@ cd "$REPO_ROOT"
 RIPPLED_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
 
 # Output file (can be overridden with second argument)
-OUTPUT_FILE="${2:-xrpl-wasm-stdlib/src/sfield.rs}"
+OUTPUT_FILE="${2:-xrpl-common-stdlib/src/sfield.rs}"
 
 echo "🔧 Generating SField constants..."
 echo "📦 Source: $RIPPLED_SOURCE"

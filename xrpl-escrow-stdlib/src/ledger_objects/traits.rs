@@ -1,20 +1,20 @@
 //! Escrow-specific ledger-object field accessor traits.
 
-use xrpl_wasm_stdlib::core::ledger_objects::traits::{
+use xrpl_common_stdlib::core::ledger_objects::traits::{
     CurrentLedgerObjectCommonFields, LedgerObjectCommonFields,
 };
-use xrpl_wasm_stdlib::core::ledger_objects::{current_ledger_object, ledger_object};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, WasmBlob};
-use xrpl_wasm_stdlib::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use xrpl_wasm_stdlib::core::types::uint::Hash256;
-use xrpl_wasm_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
-use xrpl_wasm_stdlib::host::{
+use xrpl_common_stdlib::core::ledger_objects::{current_ledger_object, ledger_object};
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::core::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, WasmBlob};
+use xrpl_common_stdlib::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::core::types::uint::Hash256;
+use xrpl_common_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
+use xrpl_common_stdlib::host::{
     Error, get_current_ledger_obj_field, get_ledger_obj_field, update_data,
 };
-use xrpl_wasm_stdlib::host::{Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::sfield;
 
 /// Trait providing access to fields specific to Escrow objects in the current ledger.
 pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
@@ -216,10 +216,10 @@ pub trait EscrowFields: LedgerObjectCommonFields {
 mod tests {
     use super::*;
     use mockall::predicate::{always, eq};
-    use xrpl_wasm_stdlib::core::ledger_objects::LedgerObjectFieldGetter;
-    use xrpl_wasm_stdlib::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
-    use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_wasm_stdlib::sfield::SField;
+    use xrpl_common_stdlib::core::ledger_objects::LedgerObjectFieldGetter;
+    use xrpl_common_stdlib::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+    use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
+    use xrpl_common_stdlib::sfield::SField;
 
     fn expect_current_field<
         T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
@@ -264,8 +264,8 @@ mod tests {
     mod current_escrow_fields {
         use super::*;
         use crate::ledger_objects::current_escrow::CurrentEscrow;
-        use xrpl_wasm_stdlib::core::types::blob::WASM_BLOB_SIZE;
-        use xrpl_wasm_stdlib::host::setup_mock;
+        use xrpl_common_stdlib::core::types::blob::WASM_BLOB_SIZE;
+        use xrpl_common_stdlib::host::setup_mock;
 
         #[test]
         fn test_mandatory_fields_return_ok() {
@@ -451,8 +451,8 @@ mod tests {
     mod escrow_fields {
         use super::*;
         use crate::ledger_objects::escrow::Escrow;
-        use xrpl_wasm_stdlib::core::types::blob::WASM_BLOB_SIZE;
-        use xrpl_wasm_stdlib::host::setup_mock;
+        use xrpl_common_stdlib::core::types::blob::WASM_BLOB_SIZE;
+        use xrpl_common_stdlib::host::setup_mock;
 
         #[test]
         fn test_mandatory_fields_return_ok() {

@@ -1,4 +1,4 @@
-use xrpl_wasm_stdlib::core::ledger_objects::traits::LedgerObjectCommonFields;
+use xrpl_common_stdlib::core::ledger_objects::traits::LedgerObjectCommonFields;
 
 use crate::ledger_objects::traits::EscrowFields;
 

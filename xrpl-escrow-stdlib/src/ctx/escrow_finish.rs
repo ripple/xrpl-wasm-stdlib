@@ -1,5 +1,5 @@
-use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
-use xrpl_wasm_stdlib::host;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::host;
 
 use crate::current_tx::escrow_finish::EscrowFinish;
 use crate::ledger_objects::current_escrow::CurrentEscrow;
@@ -54,8 +54,8 @@ impl EscrowFinishContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_wasm_stdlib::host::setup_mock;
+    use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
+    use xrpl_common_stdlib::host::setup_mock;
 
     #[test]
     fn default_constructs() {

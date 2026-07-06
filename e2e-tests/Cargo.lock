@@ -59,15 +59,15 @@ dependencies = [
 name = "float_tests"
 version = "0.8.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
 name = "gas_benchmark"
 version = "0.8.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -84,16 +84,16 @@ dependencies = [
 name = "host_functions_test"
 version = "0.8.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "keylet_exists"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -146,7 +146,7 @@ dependencies = [
 name = "test_utils"
 version = "0.8.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -169,8 +169,8 @@ name = "trace_escrow_account"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -178,8 +178,8 @@ name = "trace_escrow_finish"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -187,8 +187,8 @@ name = "trace_escrow_ledger_object"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -210,10 +210,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "xrpl-common-stdlib"
+version = "0.8.0"
+dependencies = [
+ "xrpl-macros",
+]
+
+[[package]]
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -225,11 +232,4 @@ dependencies = [
  "quote",
  "sha2",
  "syn",
-]
-
-[[package]]
-name = "xrpl-wasm-stdlib"
-version = "0.8.0"
-dependencies = [
- "xrpl-macros",
 ]

@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "xrpl-wasm-stdlib",
-    "xrpl-wasm-stdlib/xrpl-macros",
+    "xrpl-common-stdlib",
+    "xrpl-common-stdlib/xrpl-macros",
     "xrpl-escrow-stdlib",
 ]
 exclude = [

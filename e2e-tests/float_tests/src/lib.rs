@@ -5,18 +5,18 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
-use xrpl_wasm_stdlib::decode_hex_32;
-use xrpl_wasm_stdlib::host::trace::DataRepr::AsHex;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
-use xrpl_wasm_stdlib::host::{
+use xrpl_common_stdlib::core::locator::Locator;
+use xrpl_common_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
+use xrpl_common_stdlib::decode_hex_32;
+use xrpl_common_stdlib::host::trace::DataRepr::AsHex;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
+use xrpl_common_stdlib::host::{
     FLOAT_ROUNDING_MODES_TO_NEAREST, cache_ledger_obj, float_add, float_compare, float_divide,
     float_from_int, float_from_mant_exp, float_from_uint, float_multiply, float_pow, float_root,
     float_subtract, get_ledger_obj_array_len, get_ledger_obj_field, get_ledger_obj_nested_field,
     trace_opaque_float,
 };
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::sfield;
 
 fn test_float_from_host() {
     let _ = trace("\n$$$ test_float_from_host $$$");
@@ -485,7 +485,7 @@ mod coverage_tests {
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.

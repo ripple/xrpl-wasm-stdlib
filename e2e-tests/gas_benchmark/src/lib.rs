@@ -3,18 +3,18 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
-use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
-use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::host::Result;
-use xrpl_wasm_stdlib::host::error_codes::{
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::locator::Locator;
+use xrpl_common_stdlib::host::Result;
+use xrpl_common_stdlib::host::error_codes::{
     match_result_code, match_result_code_optional, match_result_code_with_expected_bytes,
     match_result_code_with_expected_bytes_optional,
 };
-use xrpl_wasm_stdlib::host::trace::trace;
-use xrpl_wasm_stdlib::{decode_hex_20, decode_hex_32, sfield};
+use xrpl_common_stdlib::host::trace::trace;
+use xrpl_common_stdlib::{decode_hex_20, decode_hex_32, sfield};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 const ITERATIONS: usize = 100;
 
@@ -313,7 +313,7 @@ fn benchmark_locator_repack_last() -> u64 {
 fn benchmark_blob_creation() -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        use xrpl_wasm_stdlib::core::types::blob::Blob;
+        use xrpl_common_stdlib::core::types::blob::Blob;
         let blob = Blob {
             data: [0u8; 102400],
             len: 102400,
@@ -387,7 +387,7 @@ fn benchmark_blob_field_access(escrow_finish: &EscrowFinish) -> u64 {
 fn benchmark_optional_field_some(escrow_finish: &EscrowFinish) -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        if let xrpl_wasm_stdlib::host::Result::Ok(Some(_)) = escrow_finish.get_account_txn_id() {
+        if let xrpl_common_stdlib::host::Result::Ok(Some(_)) = escrow_finish.get_account_txn_id() {
             count += 1
         }
     }
@@ -398,7 +398,7 @@ fn benchmark_optional_field_some(escrow_finish: &EscrowFinish) -> u64 {
 fn benchmark_optional_field_none(escrow_finish: &EscrowFinish) -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        if let xrpl_wasm_stdlib::host::Result::Ok(None) = escrow_finish.get_account_txn_id() {
+        if let xrpl_common_stdlib::host::Result::Ok(None) = escrow_finish.get_account_txn_id() {
             count += 1
         }
     }
@@ -413,7 +413,7 @@ mod coverage_tests {
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.

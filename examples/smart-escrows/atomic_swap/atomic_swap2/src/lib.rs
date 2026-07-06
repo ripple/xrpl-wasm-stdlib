@@ -3,12 +3,12 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::keylets::XRPL_KEYLET_SIZE;
-use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
-use xrpl_wasm_stdlib::host;
-use xrpl_wasm_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_common_stdlib::core::keylets::XRPL_KEYLET_SIZE;
+use xrpl_common_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
+use xrpl_common_stdlib::host;
+use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;

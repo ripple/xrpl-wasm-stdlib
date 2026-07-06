@@ -6,16 +6,16 @@ version = 4
 name = "atomic_swap1"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "atomic_swap2"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -75,8 +75,8 @@ dependencies = [
 name = "freelancer_escrow"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -93,22 +93,22 @@ dependencies = [
 name = "hello_world"
 version = "1.0.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
 name = "kyc"
 version = "0.0.1"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "ledger_sqn"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -121,23 +121,23 @@ checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 name = "nft_owner"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "notary"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "oracle"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -214,10 +214,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "xrpl-common-stdlib"
+version = "0.8.0"
+dependencies = [
+ "xrpl-macros",
+]
+
+[[package]]
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -229,11 +236,4 @@ dependencies = [
  "quote",
  "sha2",
  "syn",
-]
-
-[[package]]
-name = "xrpl-wasm-stdlib"
-version = "0.8.0"
-dependencies = [
- "xrpl-macros",
 ]

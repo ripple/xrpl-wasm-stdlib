@@ -12,9 +12,9 @@ categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 crate-type = ["lib"]
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }
 mockall = "0.14.0"
 trybuild = "1"

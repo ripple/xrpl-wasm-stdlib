@@ -238,7 +238,7 @@ async function main() {
   {
     const rustHostFunctionFile = await readFile(
       __dirname,
-      "../xrpl-wasm-stdlib/src/host/host_bindings_trait.rs",
+      "../xrpl-common-stdlib/src/host/host_bindings_trait.rs",
     )
 
     // Match multiline function declarations - need to match across newlines
@@ -282,7 +282,7 @@ async function main() {
   {
     const rustHostfunctionFile = await readFile(
       __dirname,
-      "../xrpl-wasm-stdlib/src/host/host_bindings_wasm.rs",
+      "../xrpl-common-stdlib/src/host/host_bindings_wasm.rs",
     )
 
     // Match multiline function declarations
@@ -324,7 +324,7 @@ async function main() {
   {
     const rustHostFunctionFile = await readFile(
       __dirname,
-      "../xrpl-wasm-stdlib/src/host/host_bindings_test.rs",
+      "../xrpl-common-stdlib/src/host/host_bindings_test.rs",
     )
 
     // Extract only the export_host_functions! macro invocation (not the definition)
@@ -379,7 +379,7 @@ async function main() {
   {
     const rustHostFunctionFile = await readFile(
       __dirname,
-      "../xrpl-wasm-stdlib/src/host/host_bindings_empty.rs",
+      "../xrpl-common-stdlib/src/host/host_bindings_empty.rs",
     )
 
     // Extract only the export_host_functions! macro invocation (not the definition)

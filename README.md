@@ -17,10 +17,10 @@ There is an interface available at <https://ripple.github.io/xrpl-wasm-stdlib/ui
 
 ## Documentation
 
-| Section                                                                                                     | Description                                     |
-| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **[Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_wasm_stdlib/guide/index.html)** | Comprehensive guide with working internal links |
-| **[Rust API Docs](https://ripple.github.io/xrpl-wasm-stdlib)**                                              | Generated API documentation (`cargo doc`)       |
+| Section                                                                                                       | Description                                     |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **[Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html)** | Comprehensive guide with working internal links |
+| **[Rust API Docs](https://ripple.github.io/xrpl-wasm-stdlib)**                                                | Generated API documentation (`cargo doc`)       |
 
 The complete developer guide includes:
 
