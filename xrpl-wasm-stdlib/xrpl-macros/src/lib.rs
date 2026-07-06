@@ -6,11 +6,16 @@
 //! - **Typed-constant macros** (`r_address!`, `hash256!`, `pubkey!`,
 //!   `currency!`, `blob!`): validate at compile time and emit a typed XRPL
 //!   value. `hex_util` holds decode helpers shared across these macros.
+//! - **Entry-point macros** (`#[smart_escrow]`, `#[smart_contract]`): wrap
+//!   user functions in the `extern "C"` symbols the XRPL host calls. All
+//!   three stages — parse, validate, codegen — live in `entry_point/` and are
+//!   shared between the two macros so adding a third follows the same pattern.
 
 use proc_macro::TokenStream;
 
 mod blob;
 mod currency;
+mod entry_point;
 mod hash256;
 mod hex_util;
 mod pubkey;
@@ -138,4 +143,77 @@ pub fn blob(input: TokenStream) -> TokenStream {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
+}
+
+/// Wraps a Smart Escrow finish function in the `extern "C" fn finish()` entry point
+/// the XRPL host calls when an `EscrowFinish` transaction invokes the feature.
+///
+/// The annotated function must:
+/// - Take `EscrowFinishContext` as its first (and only) argument.
+/// - Return `FinishResult` or `i32`.
+/// - The attribute takes no arguments — `#[smart_escrow(anything)]` is a compile error.
+///
+/// Any other signature is a compile error pointing at the offending token.
+///
+/// # Usage
+///
+/// Import this attribute from `xrpl_escrow_stdlib`, which re-exports it alongside
+/// `EscrowFinishContext`. Importing directly from `xrpl_macros` is unsupported
+/// because the generated code references types in `xrpl_escrow_stdlib`.
+///
+/// `FinishResult` and `i32` convert into each other (`From<i32>` /
+/// `From<FinishResult>`), so a host error code can be propagated with
+/// `.into()` either way:
+///
+/// ```rust,ignore
+/// // Import from the feature crate, not from xrpl_macros directly.
+/// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
+/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::core::types::amount::Amount;
+///
+/// #[smart_escrow]
+/// fn finish(ctx: EscrowFinishContext) -> FinishResult {
+///     let fee = match ctx.tx().get_fee() {
+///         Ok(f) => f,
+///         Err(e) => return e.code().into(), // i32 -> FinishResult
+///     };
+///
+///     match fee {
+///         Amount::XRP { num_drops } if num_drops > 1000 => FinishResult::succeed(),
+///         _ => FinishResult::reject(),
+///     }
+/// }
+/// ```
+///
+/// Returning `i32` directly skips the macro's `FinishResult` handling:
+///
+/// ```rust,ignore
+/// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
+/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::core::types::amount::Amount;
+///
+/// #[smart_escrow]
+/// fn finish(ctx: EscrowFinishContext) -> i32 {
+///     let fee = match ctx.tx().get_fee() {
+///         Ok(f) => f,
+///         Err(e) => return e.code(),
+///     };
+///
+///     let result = match fee {
+///         Amount::XRP { num_drops } if num_drops > 1000 => FinishResult::succeed(),
+///         _ => FinishResult::reject(),
+///     };
+///
+///     result.into()
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn smart_escrow(attr: TokenStream, item: TokenStream) -> TokenStream {
+    entry_point::smart_escrow::expand(attr, item)
+}
+
+/// Wraps a Smart Contract entry function in the appropriate `extern "C"` export.
+#[proc_macro_attribute]
+pub fn smart_contract(attr: TokenStream, item: TokenStream) -> TokenStream {
+    entry_point::smart_contract::expand(attr, item)
 }
