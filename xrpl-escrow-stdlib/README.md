@@ -11,22 +11,16 @@ stays fully safe.
 
 ```rust,ignore
 use xrpl_escrow_stdlib::*;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 
-#[smart_escrow]
 fn run(ctx: EscrowFinishContext) -> FinishResult {
-    let destination = match ctx.escrow().get_destination() {
-        Ok(d) => d,
-        Err(e) => return e.code().into(),
-    };
+    let destination = ctx.escrow().fetch_destination()?;
     // ... evaluate conditions ...
-    FinishResult::succeed()
+    Ok(true)
 }
 ```
 
-The `#[smart_escrow]` entry-point macro (in `xrpl-macros`, re-exported here) constructs the context via
-`EscrowFinishContext::default()` and passes it to your function automatically, then converts your `FinishResult`
-(or `i32`) into the `extern "C" fn finish() -> i32` the XRPL host calls.
+The `#[smart_escrow]` entry-point macro (in `xrpl-macros`) constructs the context via
+`EscrowFinishContext::default()` and passes it to your function automatically.
 
 ## Crate layout
 

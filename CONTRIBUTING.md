@@ -124,32 +124,26 @@ cargo build --target wasm32v1-none --release
 These debugging statements will show up in the `debug.log` for rippled.
 
 ```rust
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host::trace::{trace, trace_data, DataRepr};
-use xrpl_wasm_stdlib::smart_escrow;
-use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 
-#[smart_escrow]
-fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
+#[unsafe(no_mangle)]
+pub extern "C" fn finish() -> i32 {
     trace("Contract starting").ok();
 
-    let account = match ctx.tx().get_account() {
+    let account = match EscrowFinish.get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
+            trace_data("Account", &acc.as_bytes(), DataRepr::AsHex).ok();
             acc
         },
         Err(e) => {
-            return e.code().into();
+            trace(&format!("Error: {:?}", e)).ok();
+            return 0;
         }
     };
 
     // Rest of logic...
-    FinishResult::succeed()
 }
 ```
-
-The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` export; your annotated function can be named anything except `finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 
