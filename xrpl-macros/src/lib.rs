@@ -31,7 +31,11 @@ mod r_address;
 ///
 /// ```rust,ignore
 /// use xrpl_common_stdlib::r_address;
+<<<<<<<< HEAD:xrpl-macros/src/lib.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
+========
+/// use xrpl_common_stdlib::core::types::account_id::AccountID;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/lib.rs
 ///
 /// const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 /// ```
@@ -52,7 +56,11 @@ pub fn r_address(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_common_stdlib::hash256;
+<<<<<<<< HEAD:xrpl-macros/src/lib.rs
 /// use xrpl_common_stdlib::types::uint::Hash256;
+========
+/// use xrpl_common_stdlib::core::types::uint::Hash256;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/lib.rs
 ///
 /// const H: Hash256 =
 ///     hash256!("0000000000000000000000000000000000000000000000000000000000000001");
@@ -76,7 +84,11 @@ pub fn hash256(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_common_stdlib::pubkey;
+<<<<<<<< HEAD:xrpl-macros/src/lib.rs
 /// use xrpl_common_stdlib::types::public_key::PublicKey;
+========
+/// use xrpl_common_stdlib::core::types::public_key::PublicKey;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/lib.rs
 ///
 /// const KEY: PublicKey =
 ///     pubkey!("02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70");
@@ -104,7 +116,11 @@ pub fn pubkey(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_common_stdlib::currency;
+<<<<<<<< HEAD:xrpl-macros/src/lib.rs
 /// use xrpl_common_stdlib::types::currency::Currency;
+========
+/// use xrpl_common_stdlib::core::types::currency::Currency;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/lib.rs
 ///
 /// const USD: Currency = currency!("USD");
 /// const CUSTOM: Currency = currency!("0158415500000000C1F76FF6ECB0BAC600000000");
@@ -132,7 +148,11 @@ pub fn currency(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_common_stdlib::blob;
+<<<<<<<< HEAD:xrpl-macros/src/lib.rs
 /// use xrpl_common_stdlib::types::blob::Blob;
+========
+/// use xrpl_common_stdlib::core::types::blob::Blob;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/lib.rs
 ///
 /// const EXACT: Blob<4> = blob!("DEADBEEF");
 /// const PADDED: Blob<32> = blob!("DEADBEEF", 32);

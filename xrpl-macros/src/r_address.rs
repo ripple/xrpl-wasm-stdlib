@@ -8,7 +8,11 @@
 //! # Example
 //! ```shell
 //! use xrpl_common_stdlib::r_address;
+<<<<<<<< HEAD:xrpl-macros/src/r_address.rs
 //! use xrpl_common_stdlib::types::account_id::AccountID;
+========
+//! use xrpl_common_stdlib::core::types::account_id::AccountID;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/r_address.rs
 //!
 //! // ✅ Works - compile-time literal
 //! const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
@@ -32,7 +36,11 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! { #b });
     let expanded = quote! {
+<<<<<<<< HEAD:xrpl-macros/src/r_address.rs
         ::xrpl_common_stdlib::types::account_id::AccountID([#(#bytes_tokens),*])
+========
+        ::xrpl_common_stdlib::core::types::account_id::AccountID([#(#bytes_tokens),*])
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/r_address.rs
     };
 
     Ok(expanded)

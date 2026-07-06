@@ -18,7 +18,11 @@ Then use the macro:
 
 ```rust
 use xrpl_common_stdlib::r_address;
+<<<<<<<< HEAD:xrpl-macros/README.md
 use xrpl_common_stdlib::types::account_id::AccountID;
+========
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/README.md
 
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
@@ -70,7 +74,11 @@ No runtime code from the macro or its dependencies exists in the final binary.
 
 ```rust
 use xrpl_common_stdlib::r_address;
+<<<<<<<< HEAD:xrpl-macros/README.md
 use xrpl_common_stdlib::types::account_id::AccountID;
+========
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/README.md
 
 // Convert r-address to AccountID at compile time
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");

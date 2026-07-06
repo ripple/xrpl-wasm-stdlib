@@ -49,7 +49,11 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
     let data_tokens = data.iter().map(|b| quote! { #b });
 
     let expanded = quote! {
+<<<<<<<< HEAD:xrpl-macros/src/blob.rs
         ::xrpl_common_stdlib::types::blob::Blob::<#n> {
+========
+        ::xrpl_common_stdlib::core::types::blob::Blob::<#n> {
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/blob.rs
             data: [#(#data_tokens),*],
             len: #len,
         }

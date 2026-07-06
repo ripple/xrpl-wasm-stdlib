@@ -48,7 +48,11 @@ pub const WASM_BLOB_SIZE: usize = 4096;
 /// # Examples
 ///
 /// ```
+<<<<<<<< HEAD:xrpl-common-stdlib/src/types/blob.rs
 /// use xrpl_common_stdlib::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
+========
+/// use xrpl_common_stdlib::core::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/types/blob.rs
 ///
 /// // Create a standard 1024-byte blob
 /// let standard_blob: Blob<DEFAULT_BLOB_SIZE> = Blob::new();

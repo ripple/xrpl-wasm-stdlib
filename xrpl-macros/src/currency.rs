@@ -25,7 +25,11 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! {#b});
     let expanded = quote! {
+<<<<<<<< HEAD:xrpl-macros/src/currency.rs
         ::xrpl_common_stdlib::types::currency::Currency([#(#bytes_tokens),*])
+========
+        ::xrpl_common_stdlib::core::types::currency::Currency([#(#bytes_tokens),*])
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/currency.rs
     };
     Ok(expanded)
 }

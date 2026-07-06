@@ -18,7 +18,11 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! {#b});
     let expanded = quote! {
+<<<<<<<< HEAD:xrpl-macros/src/pubkey.rs
         ::xrpl_common_stdlib::types::public_key::PublicKey([#(#bytes_tokens),*])
+========
+        ::xrpl_common_stdlib::core::types::public_key::PublicKey([#(#bytes_tokens),*])
+>>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/xrpl-macros/src/pubkey.rs
     };
     Ok(expanded)
 }
