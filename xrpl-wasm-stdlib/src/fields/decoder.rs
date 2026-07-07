@@ -80,6 +80,9 @@ macro_rules! field_source {
     };
 }
 
+#[allow(unused_imports)]
+pub(crate) use field_source;
+
 #[cfg(test)]
 mod tests {
     use super::*;
