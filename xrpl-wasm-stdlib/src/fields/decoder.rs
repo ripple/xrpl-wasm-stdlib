@@ -52,6 +52,34 @@ pub trait FromCurrentTx: FieldDecoder {}
 /// Marker trait for fields that can be decoded from a ledger object.
 pub trait FromLedger: FieldDecoder {}
 
+/// Implements [`FromCurrentTx`] and/or [`FromLedger`] for a type, based on which field
+/// sources it supports.
+///
+/// # Examples
+///
+/// ```ignore
+/// field_source!(MyType : tx);        // decodable from the current transaction only
+/// field_source!(MyType : obj);       // decodable from a ledger object only
+/// field_source!(MyType : tx, obj);   // decodable from either source
+/// ```
+#[allow(unused_macros)]
+macro_rules! field_source {
+    ($ty:ty : tx) => {
+        impl FromCurrentTx for $ty {}
+    };
+    ($ty:ty : obj) => {
+        impl FromLedger for $ty {}
+    };
+    ($ty:ty : tx, obj) => {
+        impl FromCurrentTx for $ty {}
+        impl FromLedger for $ty {}
+    };
+    ($ty:ty : obj, tx) => {
+        impl FromCurrentTx for $ty {}
+        impl FromLedger for $ty {}
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -70,7 +98,7 @@ mod tests {
                 .ok_or(Error::FieldNotFound)
         }
     }
-    impl FromCurrentTx for TxOnly {}
+    field_source!(TxOnly : tx);
 
     #[derive(Debug, PartialEq, Eq)]
     struct ObjOnly(u8);
@@ -86,7 +114,7 @@ mod tests {
                 .ok_or(Error::FieldNotFound)
         }
     }
-    impl FromLedger for ObjOnly {}
+    field_source!(ObjOnly : obj);
 
     #[derive(Debug, PartialEq, Eq)]
     struct TxAndObj(u8);
@@ -102,8 +130,23 @@ mod tests {
                 .ok_or(Error::FieldNotFound)
         }
     }
-    impl FromCurrentTx for TxAndObj {}
-    impl FromLedger for TxAndObj {}
+    field_source!(TxAndObj : tx, obj);
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct ObjAndTx(u8);
+
+    impl FieldDecoder for ObjAndTx {
+        type Buffer = [u8; 1];
+
+        fn decode(bytes: &[u8]) -> Result<Self, Error> {
+            bytes
+                .first()
+                .copied()
+                .map(ObjAndTx)
+                .ok_or(Error::FieldNotFound)
+        }
+    }
+    field_source!(ObjAndTx : obj, tx);
 
     // These take no arguments and are never called; if a type didn't actually implement
     // the trait, the crate would fail to compile.
@@ -124,6 +167,12 @@ mod tests {
     fn tx_and_obj_implements_both() {
         assert_from_current_tx::<TxAndObj>();
         assert_from_ledger::<TxAndObj>();
+    }
+
+    #[test]
+    fn obj_and_tx_implements_both() {
+        assert_from_current_tx::<ObjAndTx>();
+        assert_from_ledger::<ObjAndTx>();
     }
 
     #[test]
