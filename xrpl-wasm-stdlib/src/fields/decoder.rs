@@ -2,6 +2,37 @@
 //!
 //! This module defines a lightweight, host-independent decoding contract for types that
 //! are constructed directly from a raw byte buffer.
+//!
+//! # Examples
+//!
+//! ```
+//! use xrpl_wasm_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx};
+//! use xrpl_wasm_stdlib::host::Error;
+//!
+//! /// A toy field: a single boolean flag byte (0 or 1).
+//! struct Flag(bool);
+//!
+//! impl FieldDecoder for Flag {
+//!     type Buffer = [u8; 1];
+//!
+//!     fn decode(bytes: &[u8]) -> Result<Self, Error> {
+//!         match bytes {
+//!             [0] => Ok(Flag(false)),
+//!             [1] => Ok(Flag(true)),
+//!             _ => Err(Error::InvalidDecoding),
+//!         }
+//!     }
+//! }
+//!
+//! // Declares that `Flag` can be decoded from the currently executing transaction.
+//! // `FromLedger` is implemented the same way for fields readable from ledger objects.
+//! impl FromCurrentTx for Flag {}
+//!
+//! let flag = Flag::decode(&[1]).unwrap();
+//! assert!(flag.0);
+//!
+//! assert!(Flag::decode(&[2]).is_err());
+//! ```
 
 use crate::host::Error;
 
