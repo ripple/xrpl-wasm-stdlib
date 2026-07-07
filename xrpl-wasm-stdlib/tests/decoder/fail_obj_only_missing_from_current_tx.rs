@@ -7,7 +7,7 @@ use xrpl_wasm_stdlib::host::Error;
 struct ObjOnly;
 
 impl FieldDecoder for ObjOnly {
-    const BUFFER_SIZE: usize = 1;
+    type Buffer = [u8; 1];
 
     fn decode(_bytes: &[u8]) -> Result<Self, Error> {
         Ok(ObjOnly)

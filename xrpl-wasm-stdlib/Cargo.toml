@@ -29,4 +29,4 @@ mockall = { version = "0.14.0", optional = true }
 
 [dev-dependencies]
 mockall = "0.14.0"
-trybuild = "1"
+trybuild = "1.0"
