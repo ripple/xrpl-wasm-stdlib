@@ -1,8 +1,8 @@
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
+use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 
 pub const CURRENCY_SIZE: usize = 20;

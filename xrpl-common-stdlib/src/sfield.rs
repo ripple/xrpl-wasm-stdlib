@@ -1,15 +1,15 @@
 #![allow(non_upper_case_globals)]
 
-use crate::core::ledger_objects::array_object::{Array, Object};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::blob::{
+use crate::objects::array_object::{Array, Object};
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::blob::{
     ConditionBlob, FulfillmentBlob, PublicKeyBlob, SignatureBlob, StandardBlob, UriBlob, WasmBlob,
 };
-use crate::core::types::currency::Currency;
-use crate::core::types::issue::Issue;
-use crate::core::types::transaction_type::TransactionType;
-use crate::core::types::uint::{Hash128, Hash160, Hash192, Hash256};
+use crate::types::currency::Currency;
+use crate::types::issue::Issue;
+use crate::types::transaction_type::TransactionType;
+use crate::types::uint::{Hash128, Hash160, Hash192, Hash256};
 use core::borrow::Borrow;
 use core::marker::PhantomData;
 
@@ -24,11 +24,11 @@ use core::marker::PhantomData;
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::core::ledger_objects::ledger_object;
-/// use xrpl_common_stdlib::core::current_tx;
-/// use xrpl_common_stdlib::core::types::amount::Amount;
+/// use xrpl_common_stdlib::objects::ledger_object;
+/// use xrpl_common_stdlib::fields::current_tx;
+/// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
+/// use xrpl_common_stdlib::types::account_id::AccountID;
 ///
 /// // Type is automatically inferred from the SField constant, for both ledger_objects and current_transaction:
 /// let flags:u32 = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32

@@ -103,9 +103,9 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 ```rust ignore
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_common_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 
 #[unsafe(no_mangle)]
@@ -219,7 +219,7 @@ let escrow_sequence = tx.get_escrow_sequence().unwrap();
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::sfield;
 
 let tx = EscrowFinish;
@@ -241,8 +241,8 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_common_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::sfield;
 
 let account = AccountID::from([0u8; 20]); // Replace with real account
@@ -258,8 +258,8 @@ let balance = get_account_balance(&account);
 
 ```rust ignore
 // NFT functionality uses the NFToken type
-use xrpl_common_stdlib::core::types::nft::NFToken;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::types::nft::NFToken;
+use xrpl_common_stdlib::types::account_id::AccountID;
 
 let owner = AccountID::from([0u8; 20]);
 let nft_id_bytes = [0u8; 32]; // 32-byte NFT identifier
@@ -292,7 +292,7 @@ let uri = nft_token.uri(&owner)?;
 #### Core Types
 
 ```rust ignore
-use xrpl_common_stdlib::core::types::{
+use xrpl_common_stdlib::types::{
     account_id::AccountID,           // 20-byte XRPL account identifier
     amount::Amount, // Token amounts (XRP, IOU, MPT)
 };
@@ -316,14 +316,14 @@ let nft: NFT = [0u8; 32];
 Keylets are used to locate objects in the ledger:
 
 ```rust ignore
-use xrpl_common_stdlib::core::keylets::{
+use xrpl_common_stdlib::keylets::{
     account_keylet,
     line_keylet,
     escrow_keylet,
     oracle_keylet,
 };
-use xrpl_common_stdlib::core::types::account_id::AccountID;
-use xrpl_common_stdlib::core::types::amount::asset::Asset;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::asset::Asset;
 
 let account = AccountID::from([0u8; 20]);
 let sequence = 12345i32;
@@ -352,10 +352,10 @@ Low-level host function access through the `host` module.
 
 ```rust
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_common_stdlib::core::ledger_objects::account_root::AccountRoot;
-use xrpl_common_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
-use xrpl_common_stdlib::core::keylets::account_keylet;
+use xrpl_common_stdlib::objects::account_root::AccountRoot;
+use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::keylets::account_keylet;
 use xrpl_common_stdlib::host::cache_ledger_obj;
 use xrpl_common_stdlib::host::Error;
 
@@ -379,7 +379,7 @@ fn main() {
 ```rust ignore
 // Use the high-level trait methods instead of low-level host functions
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
 use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 fn main() {
@@ -403,12 +403,12 @@ The library uses custom `Result` types for comprehensive error handling:
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::ledger_objects::account_root::{get_account_balance, AccountRoot};
-use xrpl_common_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
-use xrpl_common_stdlib::core::types::amount::Amount;
-use xrpl_common_stdlib::core::keylets::account_keylet;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::objects::account_root::{get_account_balance, AccountRoot};
+use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::keylets::account_keylet;
 use xrpl_common_stdlib::host::{cache_ledger_obj, Error, Result};
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 
@@ -742,7 +742,7 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 ```rust ignore
 use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 
 #[unsafe(no_mangle)]

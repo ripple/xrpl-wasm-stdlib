@@ -2,13 +2,13 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
-use crate::core::ledger_objects::{current_ledger_object, ledger_object};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::blob::{PublicKeyBlob, UriBlob};
-use crate::core::types::uint::{Hash128, Hash256};
 use crate::host::Result;
+use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::blob::{PublicKeyBlob, UriBlob};
+use crate::types::uint::{Hash128, Hash256};
 
 /// Trait providing access to common fields present in all ledger objects.
 ///
@@ -214,10 +214,10 @@ pub trait AccountFields: LedgerObjectCommonFields {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::ledger_objects::LedgerObjectFieldGetter;
-    use crate::core::ledger_objects::account_root::AccountRoot;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::objects::LedgerObjectFieldGetter;
+    use crate::objects::account_root::AccountRoot;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
 
@@ -354,9 +354,9 @@ mod tests {
 
     mod account_fields {
         use super::*;
-        use crate::core::types::account_id::ACCOUNT_ID_SIZE;
-        use crate::core::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
         use crate::host::setup_mock;
+        use crate::types::account_id::ACCOUNT_ID_SIZE;
+        use crate::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
 
         #[test]
         fn test_mandatory_fields_return_ok() {

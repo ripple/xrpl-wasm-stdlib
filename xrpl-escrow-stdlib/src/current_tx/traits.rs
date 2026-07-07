@@ -1,12 +1,12 @@
 //! Escrow-finish-specific transaction field accessor trait.
 
-use xrpl_common_stdlib::core::current_tx::get_field;
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
-use xrpl_common_stdlib::core::types::blob::{ConditionBlob, FulfillmentBlob};
+use xrpl_common_stdlib::fields::current_tx::get_field;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::error_codes::match_result_code_optional;
 use xrpl_common_stdlib::host::{Result, get_tx_field};
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::blob::{ConditionBlob, FulfillmentBlob};
 
 /// Trait providing access to fields specific to EscrowFinish transactions.
 pub trait EscrowFinishFields: TransactionCommonFields {
@@ -74,15 +74,13 @@ mod tests {
             use crate::current_tx::escrow_finish::EscrowFinish;
             use crate::current_tx::traits::EscrowFinishFields;
             use crate::current_tx::traits::tests::expect_tx_field;
-            use xrpl_common_stdlib::core::types::blob::{
-                CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE,
-            };
             use xrpl_common_stdlib::host::error_codes::{
                 FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
             };
             use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
             use xrpl_common_stdlib::host::setup_mock;
             use xrpl_common_stdlib::sfield;
+            use xrpl_common_stdlib::types::blob::{CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE};
 
             use mockall::predicate::{always, eq};
             use xrpl_common_stdlib::sfield::{Condition, Fulfillment};
@@ -227,13 +225,13 @@ mod tests {
             use crate::current_tx::traits::EscrowFinishFields;
             use crate::current_tx::traits::tests::expect_tx_field;
             use mockall::predicate::{always, eq};
-            use xrpl_common_stdlib::core::types::account_id::ACCOUNT_ID_SIZE;
             use xrpl_common_stdlib::host::error_codes::{
                 FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
             };
             use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
             use xrpl_common_stdlib::host::setup_mock;
             use xrpl_common_stdlib::sfield;
+            use xrpl_common_stdlib::types::account_id::ACCOUNT_ID_SIZE;
 
             #[test]
             fn test_mandatory_fields_return_ok() {

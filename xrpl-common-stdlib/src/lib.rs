@@ -11,9 +11,11 @@ pub use xrpl_macros::hash256;
 pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
 
-pub mod core;
 pub mod ctx;
+pub mod fields;
 pub mod host;
+pub mod keylets;
+pub mod objects;
 pub mod sfield;
 pub mod types;
 

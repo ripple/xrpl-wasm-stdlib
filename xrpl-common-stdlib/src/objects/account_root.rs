@@ -1,8 +1,8 @@
-use crate::core::keylets::account_keylet;
-use crate::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
 use crate::host;
+use crate::keylets::account_keylet;
+use crate::objects::traits::{AccountFields, LedgerObjectCommonFields};
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
 use host::Error;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -40,12 +40,12 @@ pub fn get_account_balance(account_id: &AccountID) -> host::Result<Option<Amount
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::keylets::XRPL_KEYLET_SIZE;
-    use crate::core::types::amount::AMOUNT_SIZE;
     use crate::host::error_codes::INTERNAL_ERROR;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
+    use crate::keylets::XRPL_KEYLET_SIZE;
     use crate::sfield;
+    use crate::types::amount::AMOUNT_SIZE;
     use mockall::predicate::{always, eq};
 
     /// Mock account_keylet to write 0xCC bytes and return success.

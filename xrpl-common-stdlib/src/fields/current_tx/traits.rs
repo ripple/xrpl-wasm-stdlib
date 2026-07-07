@@ -38,15 +38,15 @@
 //! - **PublicKey**: 33-byte compressed public keys
 //! - **TransactionType**: Enumerated transaction type identifiers
 
-use crate::core::current_tx::{get_field, get_field_optional};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::blob::SignatureBlob;
-use crate::core::types::public_key::PublicKey;
-use crate::core::types::transaction_type::TransactionType;
-use crate::core::types::uint::Hash256;
+use crate::fields::current_tx::{get_field, get_field_optional};
 use crate::host::Result;
 use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::blob::SignatureBlob;
+use crate::types::public_key::PublicKey;
+use crate::types::transaction_type::TransactionType;
+use crate::types::uint::Hash256;
 
 /// Trait providing access to common fields present in all XRPL transactions.
 ///
@@ -301,7 +301,7 @@ pub trait TransactionCommonFields {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::current_tx::traits::TransactionCommonFields;
+    use crate::fields::current_tx::traits::TransactionCommonFields;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
@@ -329,14 +329,14 @@ mod tests {
     mod transaction_common_fields {
 
         mod optional_fields {
-            use crate::core::current_tx::traits::TransactionCommonFields;
-            use crate::core::current_tx::traits::tests::TestTransaction;
-            use crate::core::current_tx::traits::tests::expect_tx_field;
-            use crate::core::types::uint::HASH256_SIZE;
+            use crate::fields::current_tx::traits::TransactionCommonFields;
+            use crate::fields::current_tx::traits::tests::TestTransaction;
+            use crate::fields::current_tx::traits::tests::expect_tx_field;
             use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
+            use crate::types::uint::HASH256_SIZE;
             use mockall::predicate::{always, eq};
 
             #[test]
@@ -615,17 +615,17 @@ mod tests {
         }
 
         mod required_fields {
-            use crate::core::current_tx::traits::TransactionCommonFields;
-            use crate::core::current_tx::traits::tests::TestTransaction;
-            use crate::core::current_tx::traits::tests::expect_tx_field;
-            use crate::core::types::account_id::ACCOUNT_ID_SIZE;
-            use crate::core::types::amount::AMOUNT_SIZE;
-            use crate::core::types::blob::SIGNATURE_BLOB_SIZE;
-            use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
+            use crate::fields::current_tx::traits::TransactionCommonFields;
+            use crate::fields::current_tx::traits::tests::TestTransaction;
+            use crate::fields::current_tx::traits::tests::expect_tx_field;
             use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
+            use crate::types::account_id::ACCOUNT_ID_SIZE;
+            use crate::types::amount::AMOUNT_SIZE;
+            use crate::types::blob::SIGNATURE_BLOB_SIZE;
+            use crate::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
             use mockall::predicate::{always, eq};
 
             #[test]

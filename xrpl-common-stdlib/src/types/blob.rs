@@ -1,7 +1,7 @@
-use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
+use crate::fields::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 
 /// Default blob size for general use (memos, etc.)
@@ -48,7 +48,7 @@ pub const WASM_BLOB_SIZE: usize = 4096;
 /// # Examples
 ///
 /// ```
-/// use xrpl_common_stdlib::core::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
+/// use xrpl_common_stdlib::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
 ///
 /// // Create a standard 1024-byte blob
 /// let standard_blob: Blob<DEFAULT_BLOB_SIZE> = Blob::new();

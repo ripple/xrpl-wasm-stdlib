@@ -1,4 +1,4 @@
-use crate::core::types::account_id::AccountID;
+use crate::types::account_id::AccountID;
 
 pub const MPT_ID_SIZE: usize = 24;
 pub const MPT_SEQUENCE_NUM_SIZE: usize = 4;

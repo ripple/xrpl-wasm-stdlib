@@ -17,10 +17,10 @@
 //! └─> Flags (16 bits)
 //! ```
 
-use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
-use crate::core::types::blob::{URI_BLOB_SIZE, UriBlob};
 use crate::host;
 use crate::host::{Error, Result};
+use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+use crate::types::blob::{URI_BLOB_SIZE, UriBlob};
 
 /// Size of an NFTokenID in bytes (256 bits)
 pub const NFT_ID_SIZE: usize = 32;

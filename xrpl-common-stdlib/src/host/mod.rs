@@ -1,7 +1,8 @@
 //! Host bindings and utilities exposed to WASM smart contracts.
 //!
 //! This module exposes the low-level host ABI plus typed primitives (Result, Error, helpers).
-//! Most users should prefer the safe, high-level APIs in [`crate::core`], which wrap these bindings.
+//! Most users should prefer the safe, high-level APIs in [`crate::fields`] and [`crate::objects`],
+//! which wrap these bindings.
 //!
 //! ## Float Operations for Fungible Tokens (IOUs)
 //!
@@ -19,6 +20,7 @@
 //!
 //! See the host_bindings documentation for detailed function signatures.
 
+pub mod chain;
 pub mod error_codes;
 pub mod field_helpers;
 pub mod trace;
