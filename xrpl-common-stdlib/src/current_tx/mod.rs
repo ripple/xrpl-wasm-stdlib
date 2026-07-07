@@ -77,6 +77,7 @@ use crate::sfield::SField;
 ///
 /// ```rust,no_run
 <<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
 /// use xrpl_common_stdlib::current_tx::{get_field, get_field_optional};
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::amount::Amount;
@@ -85,6 +86,11 @@ use crate::sfield::SField;
 /// use xrpl_common_stdlib::core::types::account_id::AccountID;
 /// use xrpl_common_stdlib::core::types::amount::Amount;
 >>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/current_tx/mod.rs
+========
+/// use xrpl_common_stdlib::fields::current_tx::{get_field, get_field_optional};
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::types::amount::Amount;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/mod.rs
 /// use xrpl_common_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
@@ -239,10 +245,14 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 ///
 /// ```rust,no_run
 <<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
 /// use xrpl_common_stdlib::current_tx::get_field;
 ========
 /// use xrpl_common_stdlib::core::current_tx::get_field;
 >>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/current_tx/mod.rs
+========
+/// use xrpl_common_stdlib::fields::current_tx::get_field;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/mod.rs
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
@@ -271,10 +281,14 @@ pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE
 ///
 /// ```rust,no_run
 <<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/mod.rs
 /// use xrpl_common_stdlib::current_tx::get_field_optional;
 ========
 /// use xrpl_common_stdlib::core::current_tx::get_field_optional;
 >>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/current_tx/mod.rs
+========
+/// use xrpl_common_stdlib::fields::current_tx::get_field_optional;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/mod.rs
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant

@@ -38,7 +38,11 @@
 //! - **PublicKey**: 33-byte compressed public keys
 //! - **TransactionType**: Enumerated transaction type identifiers
 
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/traits.rs
 use crate::current_tx::{get_field, get_field_optional};
+========
+use crate::fields::current_tx::{get_field, get_field_optional};
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/traits.rs
 use crate::host::Result;
 use crate::sfield;
 use crate::types::account_id::AccountID;
@@ -301,7 +305,11 @@ pub trait TransactionCommonFields {
 
 #[cfg(test)]
 mod tests {
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/traits.rs
     use crate::current_tx::traits::TransactionCommonFields;
+========
+    use crate::fields::current_tx::traits::TransactionCommonFields;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/traits.rs
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
@@ -329,9 +337,15 @@ mod tests {
     mod transaction_common_fields {
 
         mod optional_fields {
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/traits.rs
             use crate::current_tx::traits::TransactionCommonFields;
             use crate::current_tx::traits::tests::TestTransaction;
             use crate::current_tx::traits::tests::expect_tx_field;
+========
+            use crate::fields::current_tx::traits::TransactionCommonFields;
+            use crate::fields::current_tx::traits::tests::TestTransaction;
+            use crate::fields::current_tx::traits::tests::expect_tx_field;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/traits.rs
             use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
@@ -615,9 +629,15 @@ mod tests {
         }
 
         mod required_fields {
+<<<<<<<< HEAD:xrpl-common-stdlib/src/current_tx/traits.rs
             use crate::current_tx::traits::TransactionCommonFields;
             use crate::current_tx::traits::tests::TestTransaction;
             use crate::current_tx::traits::tests::expect_tx_field;
+========
+            use crate::fields::current_tx::traits::TransactionCommonFields;
+            use crate::fields::current_tx::traits::tests::TestTransaction;
+            use crate::fields::current_tx::traits::tests::expect_tx_field;
+>>>>>>>> c621dc8 (common reorg):xrpl-common-stdlib/src/fields/current_tx/traits.rs
             use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
