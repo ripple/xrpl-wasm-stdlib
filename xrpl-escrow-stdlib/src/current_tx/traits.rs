@@ -251,12 +251,11 @@ mod tests {
                 assert!(escrow.get_offer_sequence().is_ok());
             }
 
-            // Zero length for a mandatory fixed-size field panics (byte mismatch). One test
-            // per field, since `#[should_panic]` only catches the first panic.
+            // A zero-length read of a mandatory fixed-size field fails `FieldDecoder::decode`'s
+            // length check and surfaces as `Err(InvalidDecoding)`.
 
             #[test]
-            #[should_panic]
-            fn test_get_owner_panics_when_zero_length() {
+            fn test_get_owner_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
@@ -264,12 +263,16 @@ mod tests {
 
                 let _guard = setup_mock(mock);
 
-                let _ = EscrowFinish.get_owner();
+                let result = EscrowFinish.get_owner();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    xrpl_common_stdlib::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
-            #[should_panic]
-            fn test_get_offer_sequence_panics_when_zero_length() {
+            fn test_get_offer_sequence_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::OfferSequence), always(), eq(4))
@@ -277,7 +280,12 @@ mod tests {
 
                 let _guard = setup_mock(mock);
 
-                let _ = EscrowFinish.get_offer_sequence();
+                let result = EscrowFinish.get_offer_sequence();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    xrpl_common_stdlib::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]

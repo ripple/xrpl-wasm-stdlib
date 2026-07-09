@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `ObjOnly: FromCurrentTx` is not satisfied
+  --> tests/decoder/fail_obj_only_missing_from_current_tx.rs:26:32
+   |
+26 |     requires_from_current_tx::<ObjOnly>();
+   |                                ^^^^^^^ the trait `FromCurrentTx` is not implemented for `ObjOnly`
+   |
+   = help: the following other types implement trait `FromCurrentTx`:
+             AccountID
+             Amount
+             Blob<N>
+             TransactionType
+             UInt<xrpl_common_stdlib::::types::uint::UInt256::{constant#0}>
+             u16
+             u32
+             u64
+             u8
+note: required by a bound in `requires_from_current_tx`
+  --> tests/decoder/fail_obj_only_missing_from_current_tx.rs:23:32
+   |
+23 | fn requires_from_current_tx<T: FromCurrentTx>() {}
+   |                                ^^^^^^^^^^^^^ required by this bound in `requires_from_current_tx`

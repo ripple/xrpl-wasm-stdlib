@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `TxOnly: FromLedger` is not satisfied
+  --> tests/decoder/fail_tx_only_missing_from_ledger.rs:26:28
+   |
+26 |     requires_from_ledger::<TxOnly>();
+   |                            ^^^^^^ the trait `FromLedger` is not implemented for `TxOnly`
+   |
+   = help: the following other types implement trait `FromLedger`:
+             AccountID
+             Amount
+             Blob<N>
+             UInt<xrpl_common_stdlib::::types::uint::UInt256::{constant#0}>
+             u16
+             u32
+             u64
+             u8
+note: required by a bound in `requires_from_ledger`
+  --> tests/decoder/fail_tx_only_missing_from_ledger.rs:23:28
+   |
+23 | fn requires_from_ledger<T: FromLedger>() {}
+   |                            ^^^^^^^^^^ required by this bound in `requires_from_ledger`
