@@ -2,7 +2,7 @@
 //! independent capabilities: implementing one does not grant the other.
 //!
 //! Regenerate snapshots with:
-//!   TRYBUILD=overwrite cargo test -p xrpl-wasm-stdlib --test decoder_compile_fail
+//!   TRYBUILD=overwrite cargo test -p xrpl-common-stdlib --test decoder_compile_fail
 
 #[test]
 fn compile_fail() {

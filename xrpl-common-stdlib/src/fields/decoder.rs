@@ -1,55 +1,36 @@
-//! Field decoding traits for XRPL transaction and ledger object fields.
+//! Context-independent decode logic for typed field values.
 //!
-//! This module defines a lightweight, host-independent decoding contract for types that
-//! are constructed directly from a raw byte buffer.
-//!
-//! # Examples
-//!
-//! ```
-//! use xrpl_common_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx};
-//! use xrpl_common_stdlib::host::Error;
-//!
-//! /// A toy field: a single boolean flag byte (0 or 1).
-//! struct Flag(bool);
-//!
-//! impl FieldDecoder for Flag {
-//!     type Buffer = [u8; 1];
-//!
-//!     fn decode(bytes: &[u8]) -> Result<Self, Error> {
-//!         match bytes {
-//!             [0] => Ok(Flag(false)),
-//!             [1] => Ok(Flag(true)),
-//!             _ => Err(Error::InvalidDecoding),
-//!         }
-//!     }
-//! }
-//!
-//! // Declares that `Flag` can be decoded from the currently executing transaction.
-//! // `FromLedger` is implemented the same way for fields readable from ledger objects.
-//! impl FromCurrentTx for Flag {}
-//!
-//! let flag = Flag::decode(&[1]).unwrap();
-//! assert!(flag.0);
-//!
-//! assert!(Flag::decode(&[2]).is_err());
-//! ```
+//! Reading a field always looks the same: call a host function into a buffer, then turn the
+//! bytes it wrote into a typed value. [`FieldDecoder`] captures only that second step, so a type
+//! implements it once regardless of how many contexts (current transaction, ledger object, ...)
+//! can produce those bytes. The marker traits below record which contexts are valid for a given
+//! type at compile time; the context-specific `get_field` functions (see
+//! [`crate::fields::current_tx`], [`crate::fields::ledger_obj`]) require the matching marker.
 
-use crate::host::Error;
+use crate::types::decode_error::DecodeError;
 
-/// Decodes a fixed-format XRPL field from its raw byte representation.
+/// Decodes a typed value from the raw bytes a host function wrote.
 pub trait FieldDecoder: Sized {
-    /// A stack buffer sized to hold this field's raw bytes, used by generic host-field
-    /// getters to read into before calling [`decode`](FieldDecoder::decode).
-    type Buffer: AsMut<[u8]> + Default;
+    /// The buffer a `get_field` caller allocates before invoking the host function. Each type
+    /// picks its own size (an associated type, not a `const`, so this stays on stable Rust).
+    ///
+    /// Note: this is `AsMut<[u8]>` only, not `+ Default` — `[u8; N]: Default` is only
+    /// implemented by std for a handful of small `N`, not arbitrary const generics, so
+    /// zero-initialization goes through [`FieldDecoder::empty_buffer`] instead.
+    type Buffer: AsMut<[u8]>;
 
-    /// Decodes `Self` from `bytes`, returning an error if the bytes are malformed.
-    fn decode(bytes: &[u8]) -> Result<Self, Error>;
+    /// Returns a zero-initialized buffer of this type's `Buffer` size.
+    fn empty_buffer() -> Self::Buffer;
+
+    /// Decodes `Self` from exactly the bytes the host wrote (not the full, possibly
+    /// zero-padded, `Buffer`).
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError>;
 }
 
-/// Marker trait for fields that can be decoded from the currently executing transaction.
+/// Marker: this type can be read from the current transaction via [`crate::fields::current_tx`].
 pub trait FromCurrentTx: FieldDecoder {}
 
-/// Marker trait for fields that can be decoded from a ledger object.
+/// Marker: this type can be read from a ledger object via [`crate::fields::ledger_obj`].
 pub trait FromLedger: FieldDecoder {}
 
 #[cfg(test)]
@@ -62,12 +43,12 @@ mod tests {
     impl FieldDecoder for TxOnly {
         type Buffer = [u8; 1];
 
-        fn decode(bytes: &[u8]) -> Result<Self, Error> {
-            bytes
-                .first()
-                .copied()
-                .map(TxOnly)
-                .ok_or(Error::FieldNotFound)
+        fn empty_buffer() -> Self::Buffer {
+            [0u8; 1]
+        }
+
+        fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+            bytes.first().copied().map(TxOnly).ok_or(DecodeError)
         }
     }
     impl FromCurrentTx for TxOnly {}
@@ -78,12 +59,12 @@ mod tests {
     impl FieldDecoder for ObjOnly {
         type Buffer = [u8; 1];
 
-        fn decode(bytes: &[u8]) -> Result<Self, Error> {
-            bytes
-                .first()
-                .copied()
-                .map(ObjOnly)
-                .ok_or(Error::FieldNotFound)
+        fn empty_buffer() -> Self::Buffer {
+            [0u8; 1]
+        }
+
+        fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+            bytes.first().copied().map(ObjOnly).ok_or(DecodeError)
         }
     }
     impl FromLedger for ObjOnly {}
@@ -94,19 +75,21 @@ mod tests {
     impl FieldDecoder for TxAndObj {
         type Buffer = [u8; 1];
 
-        fn decode(bytes: &[u8]) -> Result<Self, Error> {
-            bytes
-                .first()
-                .copied()
-                .map(TxAndObj)
-                .ok_or(Error::FieldNotFound)
+        fn empty_buffer() -> Self::Buffer {
+            [0u8; 1]
+        }
+
+        fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+            bytes.first().copied().map(TxAndObj).ok_or(DecodeError)
         }
     }
     impl FromCurrentTx for TxAndObj {}
     impl FromLedger for TxAndObj {}
 
     // These take no arguments and are never called; if a type didn't actually implement
-    // the trait, the crate would fail to compile.
+    // the trait, the crate would fail to compile. The negative direction (a type that
+    // implements only one marker being rejected by the other) is covered by the
+    // `tests/decoder_compile_fail.rs` trybuild cases.
     fn assert_from_current_tx<T: FromCurrentTx>() {}
     fn assert_from_ledger<T: FromLedger>() {}
 
@@ -128,20 +111,17 @@ mod tests {
 
     #[test]
     fn decode_returns_value_on_success() {
-        let decoded = TxOnly::decode(&[42]).unwrap();
-        assert_eq!(decoded, TxOnly(42));
+        assert_eq!(TxOnly::decode(&[42]), Ok(TxOnly(42)));
     }
 
     #[test]
     fn decode_returns_error_on_empty_input() {
-        let result = TxOnly::decode(&[]);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().code(), Error::FieldNotFound.code());
+        assert_eq!(TxOnly::decode(&[]), Err(DecodeError));
     }
 
     #[test]
-    fn buffer_type_has_expected_length() {
-        let mut buffer = <TxOnly as FieldDecoder>::Buffer::default();
+    fn empty_buffer_has_expected_length() {
+        let mut buffer = <TxOnly as FieldDecoder>::empty_buffer();
         assert_eq!(buffer.as_mut().len(), 1);
     }
 }

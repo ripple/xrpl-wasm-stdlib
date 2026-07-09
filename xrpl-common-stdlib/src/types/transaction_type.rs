@@ -1,9 +1,5 @@
-use crate::current_tx::CurrentTxFieldGetter;
-use crate::host::field_helpers::{
-    get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
-};
-use crate::host::{Result, get_tx_field};
-use crate::sfield::SField;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx};
+use crate::types::decode_error::DecodeError;
 
 /// The type of any given XRPL transaction.
 ///
@@ -159,33 +155,26 @@ impl From<TransactionType> for [u8; 2] {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for XRPL TransactionType enums.
-///
-/// This implementation handles 2-byte transaction type fields in XRPL transactions.
-///
-/// # Buffer Management
-///
-/// Uses a 2-byte buffer and validates that exactly 2 bytes are returned from the host function.
-impl CurrentTxFieldGetter for TransactionType {
+/// `FieldDecoder` for XRPL transaction types: decodes a 2-byte buffer via the existing
+/// (infallible) `i16` mapping, failing only if the host wrote a different number of bytes.
+impl FieldDecoder for TransactionType {
+    type Buffer = [u8; 2];
+
     #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<2, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|buffer| i16::from_le_bytes(buffer).into())
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 2]
     }
 
     #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<2, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| i16::from_le_bytes(b).into()))
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let array: [u8; 2] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(array.into())
     }
 }
+
+// Tx-only: the transaction type is a transaction field. Ledger objects carry `LedgerEntryType`
+// as `SField<u16, _>`, not `SField<TransactionType, _>`, so there is no `FromLedger` impl here.
+impl FromCurrentTx for TransactionType {}
 
 #[cfg(test)]
 mod tests {

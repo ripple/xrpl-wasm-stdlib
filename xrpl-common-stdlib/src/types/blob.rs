@@ -1,8 +1,9 @@
-use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
+use crate::types::decode_error::DecodeError;
 
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
@@ -48,11 +49,7 @@ pub const WASM_BLOB_SIZE: usize = 4096;
 /// # Examples
 ///
 /// ```
-<<<<<<<< HEAD:xrpl-common-stdlib/src/types/blob.rs
 /// use xrpl_common_stdlib::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
-========
-/// use xrpl_common_stdlib::core::types::blob::{Blob, StandardBlob, UriBlob, DEFAULT_BLOB_SIZE};
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/types/blob.rs
 ///
 /// // Create a standard 1024-byte blob
 /// let standard_blob: Blob<DEFAULT_BLOB_SIZE> = Blob::new();
@@ -218,41 +215,25 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for variable-length binary data.
-///
-/// This implementation handles blob fields in XRPL transactions, which can contain
-/// arbitrary binary data such as transaction signatures, memos, fulfillment data,
-/// and other variable-length content that doesn't fit into fixed-size types.
-///
-/// # Buffer Management
-///
-/// Uses a buffer of size `N` to accommodate blob field data. The actual
-/// length of the data is determined by the return value from the host function
-/// and stored in the Blob's `len` field. No strict byte count validation is
-/// performed since blobs can vary significantly in size.
-///
-/// # Type Parameters
-///
-/// * `N` - The maximum capacity of the blob buffer in bytes
-impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
+/// `FieldDecoder` for any `Blob<N>`: copies whatever bytes the host wrote (at most `N`) into a
+/// `Blob<N>`, recording the actual length. Unlike fixed-size types, this never fails — blobs are
+/// variable-length by design.
+impl<const N: usize> FieldDecoder for Blob<N> {
+    type Buffer = [u8; N];
+
     #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(data, len)| Blob { data, len })
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; N]
     }
 
     #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|opt| opt.map(|(data, len)| Blob { data, len }))
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        Ok(Blob::from_slice(bytes))
     }
 }
+
+impl<const N: usize> FromCurrentTx for Blob<N> {}
+impl<const N: usize> FromLedger for Blob<N> {}
 
 #[cfg(test)]
 mod tests {

@@ -1,13 +1,14 @@
-use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
+use crate::types::decode_error::DecodeError;
 use crate::types::mpt_id::MptId;
 use crate::types::opaque_float::OpaqueFloat;
 
@@ -205,8 +206,7 @@ impl Amount {
 
         if is_xrp_or_mpt {
             if is_xrp {
-                // Only the first 8 bytes are meaningful; the rest is padding.
-
+                // If we get here, we'll have 8 bytes.
                 let mut amount_bytes = [0u8; 8];
                 amount_bytes.copy_from_slice(&bytes[0..8]);
 
@@ -225,8 +225,7 @@ impl Amount {
             }
             // is_mpt
             else {
-                // Only the first 33 bytes are meaningful; the rest is padding.
-
+                // If we get here, we'll have 33 bytes.
                 // MPT amount: [0/type][1/sign][1/is-mpt][5/reserved][64/value]
                 let mut num_units_bytes = [0u8; 8];
                 // Skip the first MPT byte, which is control bytes. Grab the next 8 for the u64
@@ -249,11 +248,15 @@ impl Amount {
         }
         // is_iou
         else {
-            // IOU amounts are 48 bytes
+            // If we get here, we'll have 48 bytes.
 
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
             let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();
+
+            // Parse the Amount::IOU from the first 9 bytes
+            // let mut amount_bytes = [0u8; 9];
+            // amount_bytes.copy_from_slice(&bytes[0..9]);
 
             // Parse the Currency from the next 20 bytes
             let mut currency_bytes = [0u8; 20];
@@ -338,38 +341,28 @@ impl LedgerObjectFieldGetter for Amount {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for XRPL amount values.
-///
-/// This implementation handles amount fields in XRPL transactions, which can represent
-/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
-/// and issuer information). Common uses include transaction fees, payment amounts,
-/// offer amounts, and escrow amounts.
-///
-/// # Buffer Management
-///
-/// Uses a 48-byte buffer (AMOUNT_SIZE) to accommodate the largest possible amount
-/// representation. The Amount type handles the parsing of different amount formats
-/// internally. No strict byte count validation is performed since amounts can vary in size.
-impl CurrentTxFieldGetter for Amount {
+/// `FieldDecoder` for XRPL amount values: zero-pads whatever bytes the host wrote (an XRP amount
+/// is only 8 bytes, MPT 33, IOU the full 48) up to `AMOUNT_SIZE`, then parses via
+/// `Amount::from_bytes`, mapping any parse failure to `DecodeError`.
+impl FieldDecoder for Amount {
+    type Buffer = [u8; AMOUNT_SIZE];
+
     #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(buffer, _len)| Amount::from(buffer))
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; AMOUNT_SIZE]
     }
 
     #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let mut padded = [0u8; AMOUNT_SIZE];
+        let n = bytes.len().min(AMOUNT_SIZE);
+        padded[..n].copy_from_slice(&bytes[..n]);
+        Amount::from_bytes(&padded).ok().ok_or(DecodeError)
     }
 }
+
+impl FromCurrentTx for Amount {}
+impl FromLedger for Amount {}
 
 #[cfg(test)]
 mod tests {
