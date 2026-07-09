@@ -252,10 +252,10 @@ fn deadline_release(state: &State) -> Result<bool> {
 fn escrow(ctx: EscrowFinishContext) -> FinishResult {
     let tx = ctx.tx();
     let tx_account = try_or_trace!(tx.get_account(), "tx_account");
-    let escrow = *ctx.escrow();
+    let escrow: &CurrentEscrow = ctx.escrow();
     let client = try_or_trace!(escrow.get_account(), "client");
     let freelancer = try_or_trace!(escrow.get_destination(), "freelancer");
-    let mut state = try_or_trace!(State::load(&escrow), "state");
+    let mut state = try_or_trace!(State::load(escrow), "state");
     let intent = try_or_trace!(read_intent(), "intent");
 
     let role = match identify(tx_account, client, freelancer, state.arbitrator()) {

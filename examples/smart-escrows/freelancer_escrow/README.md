@@ -196,11 +196,8 @@ macro generates the `extern "C" fn finish() -> i32` export the XRPL host actuall
 
 ## Building
 
-From the repo root:
-
 ```shell
-cd examples
-cargo build -p freelancer_escrow --target wasm32v1-none --release
+cargo build --target wasm32v1-none --release
 ```
 
 The compiled WASM is written to `examples/target/wasm32v1-none/release/freelancer_escrow.wasm`.
