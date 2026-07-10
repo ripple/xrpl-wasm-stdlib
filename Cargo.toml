@@ -2,7 +2,8 @@
 resolver = "2"
 members = [
     "xrpl-wasm-stdlib",
-    "xrpl-wasm-stdlib/xrpl-macros",
+    "xrpl-macros",
+    "xrpl-escrow-stdlib",
 ]
 exclude = [
     "examples",

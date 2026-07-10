@@ -44,6 +44,7 @@ pub fn get_fixed_size_field_with_expected_bytes<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
+    // uninit is safe: assume_init is only called when result_code == N, meaning the host wrote exactly N bytes.
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
     let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_with_expected_bytes(result_code, N, || unsafe { buffer.assume_init() })
@@ -86,6 +87,8 @@ pub fn get_fixed_size_field_with_expected_bytes_optional<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
+    // uninit is safe: assume_init is only called when result_code == N,
+    // meaning the host wrote exactly N bytes.
     let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
     let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_with_expected_bytes_optional(result_code, N, || {
@@ -135,11 +138,13 @@ pub fn get_variable_size_field<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
-    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
+    // zeroed (not uninit): result_code == 0 is a valid success for variable-size fields
+    // (e.g. an empty SigningPubKey signals a multi-signature transaction), so the buffer
+    // must be valid before the host writes anything.
+    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::zeroed();
     let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code(result_code, || {
-        let len = result_code as usize;
-        (unsafe { buffer.assume_init() }, len)
+        (unsafe { buffer.assume_init() }, result_code as usize)
     })
 }
 
@@ -180,10 +185,12 @@ pub fn get_variable_size_field_optional<const N: usize, F>(
 where
     F: FnOnce(i32, *mut u8, usize) -> i32,
 {
-    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::uninit();
+    // zeroed (not uninit): result_code == 0 is a valid success for variable-size fields
+    // (e.g. an empty SigningPubKey signals a multi-signature transaction), so the buffer
+    // must be valid before the host writes anything.
+    let mut buffer = core::mem::MaybeUninit::<[u8; N]>::zeroed();
     let result_code = host_fn(field_code.into(), buffer.as_mut_ptr().cast(), N);
     match_result_code_optional(result_code, || {
-        let len = result_code as usize;
-        Some((unsafe { buffer.assume_init() }, len))
+        Some((unsafe { buffer.assume_init() }, result_code as usize))
     })
 }

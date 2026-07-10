@@ -8,10 +8,11 @@
 //! The host provides float arithmetic functions for XRPL's fungible token amounts.
 //! These operations use rippled's Number class via FFI to ensure exact consensus compatibility:
 //!
-//! - `float_from_int` / `float_from_uint` - Convert integers to float format
-//! - `float_set` - Create float from exponent and mantissa
+//! - `float_from_int` / `float_from_uint` / `float_from_mant_exp` - Convert values to float format
+//! - `float_from_stamount` / `float_from_stnumber` - Convert XRP ledger types to float format
+//! - `float_to_int` / `float_to_mant_exp` - Convert float to integer or decomposed form
 //! - `float_add` / `float_subtract` / `float_multiply` / `float_divide` - Arithmetic
-//! - `float_pow` / `float_root` / `float_log` - Mathematical functions
+//! - `float_pow` / `float_root` - Mathematical functions
 //! - `float_compare` - Comparison operations
 //!
 //! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
