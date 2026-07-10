@@ -39,6 +39,7 @@
 //! - **TransactionType**: Enumerated transaction type identifiers
 
 use crate::fields::current_tx::{get_field, get_field_optional};
+use crate::fields::locator::TxPathBuilder;
 use crate::host::Result;
 use crate::sfield;
 use crate::types::account_id::AccountID;
@@ -56,6 +57,27 @@ use crate::types::uint::Hash256;
 /// XRPL transaction. The trait methods assume the current transaction context is properly
 /// established by the XRPL Programmability environment.
 pub trait TransactionCommonFields {
+    /// Starts a nested-field path rooted at the current transaction.
+    ///
+    /// Use this to reach into arrays and inner objects that the flat getters above can't return
+    /// whole (e.g. `Memos[0].MemoData`). Chain [`field`](TxPathBuilder::field) /
+    /// [`index`](TxPathBuilder::index), then [`get::<T>()`](TxPathBuilder::get).
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+    /// use xrpl_common_stdlib::sfield;
+    /// # fn demo(tx: &impl TransactionCommonFields) {
+    /// let data = tx.path()
+    ///     .field(sfield::Memos)
+    ///     .index(0)
+    ///     .field(sfield::MemoData)
+    ///     .get::<u32>();
+    /// # let _ = data; }
+    /// ```
+    fn path(&self) -> TxPathBuilder {
+        TxPathBuilder::for_current_tx()
+    }
+
     /// Retrieves the account field from the current transaction.
     ///
     /// This field identifies (Required) The unique address of the account that initiated the
@@ -324,6 +346,28 @@ mod tests {
             .with(eq(field), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
+    }
+
+    #[test]
+    fn path_roots_a_current_tx_builder() {
+        use crate::host::setup_mock;
+        use crate::sfield;
+
+        // `ctx.tx().path()` must build against the current transaction and read through
+        // `get_tx_nested_field`. Memos[0] is two 4-byte segments = 8 bytes; the u32 buffer is 4.
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_tx_nested_field()
+            .with(always(), eq(8usize), always(), eq(4usize))
+            .times(1)
+            .returning(|_, _, _, _| 4);
+        let _guard = setup_mock(mock);
+
+        let result = TestTransaction
+            .path()
+            .field(sfield::Memos)
+            .index(0)
+            .get::<u32>();
+        assert!(result.is_ok());
     }
 
     mod transaction_common_fields {
