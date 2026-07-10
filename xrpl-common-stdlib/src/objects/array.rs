@@ -1,5 +1,3 @@
-//! Placeholder type for array SFields.
-
 /// Placeholder type for array SFields.
 ///
 /// Array types in XRPL (like Signers, Memos, etc.) cannot be directly retrieved as complete

@@ -1,5 +1,3 @@
-//! Placeholder type for object SFields.
-
 /// Placeholder type for object SFields.
 ///
 /// Object types in XRPL (like Memo, SignerEntry, etc.) cannot be directly retrieved as complete
