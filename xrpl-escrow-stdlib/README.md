@@ -15,11 +15,15 @@ stays fully safe.
 
 ```rust,ignore
 use xrpl_escrow_stdlib::*;
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 fn run(ctx: EscrowFinishContext) -> FinishResult {
-    let destination = ctx.escrow().fetch_destination()?;
+    let destination = match ctx.escrow().get_destination() {
+        host::Result::Ok(d) => d,
+        host::Result::Err(e) => return FinishResult::from(e.code()),
+    };
     // ... evaluate conditions ...
-    Ok(true)
+    FinishResult::succeed()
 }
 ```
 

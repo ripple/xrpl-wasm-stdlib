@@ -71,7 +71,7 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_num("  Flags:", flags as i64);
 
         // Trace the `LedgerEntryType`
-        let ledger_entry_type = account.ledger_entry_type().unwrap();
+        let ledger_entry_type = account.get_ledger_entry_type().unwrap();
         test_utils::assert_eq!(ledger_entry_type, 97); // 97 is the code for "AccountRoot"
         let _ = trace_num("  LedgerEntryType (AccountRoot):", ledger_entry_type as i64);
         let _ = trace("} ");
@@ -86,7 +86,7 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_data("  Account:", &account_id.0, DataRepr::AsHex);
 
         // Trace the `AccountTxnID` (optional - required for testing)
-        let account_txn_id_opt = account.account_txn_id().unwrap();
+        let account_txn_id_opt = account.get_account_txn_id().unwrap();
         let account_txn_id =
             account_txn_id_opt.expect("AccountTxnID should be present for testing");
         // AccountTxnID is system-generated - just verify it's 32 bytes
@@ -97,13 +97,13 @@ pub extern "C" fn finish() -> i32 {
         // Note: This is a regular account, not an AMM account, so AMMID should be None
         // The AMM we created has its own separate AccountRoot with an AMMID
         test_utils::assert!(
-            account.amm_id().unwrap().is_none(),
+            account.get_amm_id().unwrap().is_none(),
             "AMMID should be None (not an AMM account)"
         );
 
         // Trace the `Balance` (required)
         let balance_amount = account
-            .balance()
+            .get_balance()
             .unwrap()
             .expect("Balance should be present");
         let _ = trace_amount("Balance of Account Finishing the Escrow:", &balance_amount);
@@ -124,13 +124,13 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // Trace and assert the `BurnedNFTokens` (optional)
-        let burned_nf_tokens_opt = account.burned_nf_tokens().unwrap();
+        let burned_nf_tokens_opt = account.get_burned_nf_tokens().unwrap();
         let burned_nf_tokens = burned_nf_tokens_opt.unwrap_or(0);
         let _ = trace_num("  BurnedNFTokens:", burned_nf_tokens as i64);
         test_utils::assert_eq!(burned_nf_tokens, 0, "Expected 0 burned NFTokens");
 
         // Trace the `Domain` (optional - required for testing)
-        let domain_opt = account.domain().unwrap();
+        let domain_opt = account.get_domain().unwrap();
         let domain = domain_opt.expect("Domain should be set for testing");
         // Domain should be "example.com" in hex: 6578616D706C652E636F6D
         let expected_domain = b"example.com";
@@ -143,7 +143,7 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_data("  Domain:", &domain.data[..domain.len], DataRepr::AsHex);
 
         // Trace the `EmailHash` (optional - required for testing)
-        let email_hash_opt = account.email_hash().unwrap();
+        let email_hash_opt = account.get_email_hash().unwrap();
         let email_hash = email_hash_opt.expect("EmailHash should be set for testing");
         // EmailHash should be MD5 of "hello": 5D41402ABC4B2A76B9719D911017C592
         test_utils::assert_eq!(email_hash.0.len(), 16);
@@ -160,13 +160,13 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `FirstNFTokenSequence` (optional - required for testing)
         let first_nf_token_sequence = account
-            .first_nf_token_sequence()
+            .get_first_nf_token_sequence()
             .unwrap()
             .expect("FirstNFTokenSequence should be set for testing");
         let _ = trace_num("  FirstNFTokenSequence:", first_nf_token_sequence as i64);
 
         // Trace the `MessageKey` (optional - required for testing)
-        let message_key_opt = account.message_key().unwrap();
+        let message_key_opt = account.get_message_key().unwrap();
         let message_key = message_key_opt.expect("MessageKey should be set for testing");
         // MessageKey should be: 03AB40A0490F9B7ED8DF29D246BF2D6269820A0EE7742ACDD457BEA7C7D0931EDB
         test_utils::assert_eq!(message_key.len, 33, "MessageKey should be 33 bytes");
@@ -188,7 +188,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `MintedNFTokens` (optional - required for testing)
         let minted_nf_tokens = account
-            .minted_nf_tokens()
+            .get_minted_nf_tokens()
             .unwrap()
             .expect("MintedNFTokens should be set for testing");
         // We minted exactly 1 NFToken in the test
@@ -197,7 +197,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `NFTokenMinter` (optional - required for testing)
         let nf_token_minter = account
-            .nf_token_minter()
+            .get_nf_token_minter()
             .unwrap()
             .expect("NFTokenMinter should be set for testing");
         // NFTokenMinter is an AccountID - verify it's 20 bytes
@@ -205,24 +205,24 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_data("  NFTokenMinter:", &nf_token_minter.0, DataRepr::AsHex);
 
         // Trace the `OwnerCount` (required)
-        let owner_count = account.owner_count().unwrap();
+        let owner_count = account.get_owner_count().unwrap();
         // OwnerCount is system-generated based on owned objects
         let _ = trace_num("  OwnerCount:", owner_count as i64);
 
         // Trace the `PreviousTxnID` (required)
-        let previous_txn_id = account.previous_txn_id().unwrap();
+        let previous_txn_id = account.get_previous_txn_id().unwrap();
         // PreviousTxnID is system-generated - just verify it's 32 bytes
         test_utils::assert_eq!(previous_txn_id.0.len(), 32);
         let _ = trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
 
         // Trace the `PreviousTxnLgrSeq` (required)
-        let previous_txn_lgr_seq = account.previous_txn_lgr_seq().unwrap();
+        let previous_txn_lgr_seq = account.get_previous_txn_lgr_seq().unwrap();
         // PreviousTxnLgrSeq is system-generated
         let _ = trace_num("  PreviousTxnLgrSeq:", previous_txn_lgr_seq as i64);
 
         // Trace the `RegularKey` (optional - required for testing)
         let regular_key = account
-            .regular_key()
+            .get_regular_key()
             .unwrap()
             .expect("RegularKey should be set for testing");
         // RegularKey is an AccountID - verify it's 20 bytes
@@ -230,13 +230,13 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace_data("  RegularKey:", &regular_key.0, DataRepr::AsHex);
 
         // Trace the `Sequence` (required)
-        let sequence = account.sequence().unwrap();
+        let sequence = account.get_sequence().unwrap();
         // Sequence is system-generated
         let _ = trace_num("  Sequence:", sequence as i64);
 
         // Trace the `TicketCount` (optional - required for testing)
         let ticket_count = account
-            .ticket_count()
+            .get_ticket_count()
             .unwrap()
             .expect("TicketCount should be set for testing");
         // We created 5 tickets in the test
@@ -245,7 +245,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `TickSize` (optional - required for testing)
         let tick_size = account
-            .tick_size()
+            .get_tick_size()
             .unwrap()
             .expect("TickSize should be set for testing");
         // TickSize was set to 5 in the test
@@ -254,7 +254,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `TransferRate` (optional - required for testing)
         let transfer_rate = account
-            .transfer_rate()
+            .get_transfer_rate()
             .unwrap()
             .expect("TransferRate should be set for testing");
         // TransferRate was set to 1002000000 (0.2% fee) in the test
@@ -267,7 +267,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `WalletLocator` (optional - required for testing)
         let wallet_locator = account
-            .wallet_locator()
+            .get_wallet_locator()
             .unwrap()
             .expect("WalletLocator should be set for testing");
         // WalletLocator should be all 0xAA bytes (32 bytes)

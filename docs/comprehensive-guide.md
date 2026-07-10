@@ -202,17 +202,19 @@ The XRPL WASM Standard Library provides type-safe access to transaction data thr
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
+use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
 
 let tx = EscrowFinish;
 
 // Get the account finishing the escrow
 let account = tx.get_account().unwrap();
 
-// Get the destination account (receives funds if released)
-let destination = tx.get_destination().unwrap();
+// Get the account that created the escrow
+let owner = tx.get_owner().unwrap();
 
-// Get the escrow sequence number
-let escrow_sequence = tx.get_escrow_sequence().unwrap();
+// Get the sequence number of the EscrowCreate transaction
+let offer_sequence = tx.get_offer_sequence().unwrap();
 ```
 
 #### Field Access
@@ -296,7 +298,7 @@ use xrpl_common_stdlib::types::{
     account_id::AccountID,           // 20-byte XRPL account identifier
     amount::Amount, // Token amounts (XRP, IOU, MPT)
 };
-use xrpl_common_stdlib::types::NFT;      // [u8; 32] NFT identifier
+use xrpl_common_stdlib::types::nft::NFToken;      // 32-byte NFTokenID wrapper
 
 // Create AccountID from r-address at compile time
 // const ACCOUNT: AccountID = xrpl_common_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
@@ -304,8 +306,8 @@ use xrpl_common_stdlib::types::NFT;      // [u8; 32] NFT identifier
 // Create from raw bytes
 let account = AccountID::from([0u8; 20]);
 
-// NFT as byte array
-let nft: NFT = [0u8; 32];
+// NFT identifier, wrapped in NFToken for field access (see NFT Objects above)
+let nft = NFToken::new([0u8; 32]);
 
 // Note: High-level string parsing functions may not be available
 // Use the working examples for guaranteed compilable code
@@ -323,24 +325,24 @@ use xrpl_common_stdlib::keylets::{
     oracle_keylet,
 };
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::types::amount::asset::Asset;
+use xrpl_common_stdlib::types::currency::Currency;
 
 let account = AccountID::from([0u8; 20]);
-let sequence = 12345i32;
+let account2 = AccountID::from([0u8; 20]);
+let sequence = 12345u32;
 
 // Account keylet
 let keylet = account_keylet(&account);
 
-// Trust line keylet (requires Asset types)
-let asset1 = Asset::XRP(XrpAsset {});
-let asset2 = Asset::IOU(IouAsset::new(issuer, currency));
-let keylet = line_keylet(&account, &asset1, &asset2);
+// Trust line keylet (requires the two account endpoints and a Currency)
+let currency = Currency::from([0u8; 20]);
+let keylet = line_keylet(&account, &account2, &currency);
 
 // Escrow keylet
 let keylet = escrow_keylet(&account, sequence);
 
 // Oracle keylet
-let document_id = 1i32;
+let document_id = 1u32;
 let keylet = oracle_keylet(&account, document_id);
 ```
 
@@ -369,8 +371,8 @@ fn main() {
     }
 
     let account_root = AccountRoot { slot_num: slot };
-    let balance = account_root.balance();  // Returns Option<Amount>
-    let sequence = account_root.sequence(); // Returns u32
+    let balance = account_root.get_balance();  // Returns Option<Amount>
+    let sequence = account_root.get_sequence(); // Returns u32
 }
 ```
 
@@ -385,15 +387,16 @@ use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 fn main() {
     let tx = EscrowFinish;
 
-    // Access common transaction fields
-    let account = tx.get_account(); // AccountID
-    let fee = tx.get_fee(); // Amount
-    let sequence = tx.get_sequence(); // u32
+    // Access common transaction fields — each returns a `Result<T>`
+    let account = tx.get_account(); // Result<AccountID>
+    let fee = tx.get_fee(); // Result<Amount>
+    let sequence = tx.get_sequence(); // Result<u32>
 
     // Access EscrowFinish-specific fields
-    let owner = tx.get_owner(); // AccountID
-    let offer_sequence = tx.get_offer_sequence(); // u32
-    let condition = tx.get_condition(); // Option<Condition>
+    let owner = tx.get_owner(); // Result<AccountID>
+    let offer_sequence = tx.get_offer_sequence(); // Result<u32>
+    let condition = tx.get_condition(); // Result<Option<ConditionBlob>>
+    let fulfillment = tx.get_fulfillment(); // Result<Option<FulfillmentBlob>>
 }
 ```
 
@@ -435,7 +438,7 @@ fn process_escrow() -> Result<i32> {
     }
 
     let account_root = AccountRoot { slot_num: slot };
-    match account_root.sequence() {
+    match account_root.get_sequence() {
         Ok(sequence) => {
             // Use sequence
         },
@@ -675,7 +678,7 @@ let balance = get_account_balance(&account);
 let account_keylet = account_keylet(&account);
 let slot = cache_ledger_obj(&account_keylet);
 let account_root = AccountRoot { slot_num: slot };
-let sequence = account_root.sequence();
+let sequence = account_root.get_sequence();
 
 // Bad: Multiple calls for same data
 let balance = get_account_balance(&tx.get_account());
@@ -683,7 +686,7 @@ let balance = get_account_balance(&tx.get_account());
 let account_keylet = account_keylet(&tx.get_account());
 let slot = cache_ledger_obj(&account_keylet);
 let account_root = AccountRoot { slot_num: slot };
-let sequence = account_root.sequence();
+let sequence = account_root.get_sequence();
 ```
 
 **Efficient ledger object access:**
@@ -696,9 +699,9 @@ let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len
 let account_root = AccountRoot { slot_num: slot };
 
 // Use trait methods to access fields efficiently
-let balance = account_root.balance();        // Option<Amount>
-let sequence = account_root.sequence();      // u32
-let owner_count = account_root.owner_count(); // u32
+let balance = account_root.get_balance();        // Option<Amount>
+let sequence = account_root.get_sequence();      // u32
+let owner_count = account_root.get_owner_count(); // u32
 ```
 
 **Memory usage optimization:**
@@ -756,7 +759,7 @@ pub extern "C" fn finish() -> i32 {
             acc
         },
         Err(e) => {
-            trace_num("Error getting account: {:?}", e as i64).ok();
+            trace_num("Error getting account", e.code() as i64).ok();
             return 0;
         }
     };

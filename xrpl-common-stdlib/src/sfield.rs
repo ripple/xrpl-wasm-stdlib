@@ -34,7 +34,7 @@ use core::marker::PhantomData;
 ///
 /// // Type is automatically inferred from the SField constant, for both ledger_objects and current_transaction:
 /// let flags:u32 = ledger_obj::get_field(0, sfield::Flags).unwrap();  // u32
-/// let balance:Amount = ledger_obj::get_field(0, sfield::Balance).unwrap();  // u64
+/// let balance:Amount = ledger_obj::get_field(0, sfield::Balance).unwrap();  // Amount
 /// // current transaction:
 /// let account:AccountID = current_tx::get_field(sfield::Account).unwrap();  // AccountID
 /// let sequence:u32 = current_tx::get_field(sfield::Sequence).unwrap();  // u32

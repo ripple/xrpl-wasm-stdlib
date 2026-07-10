@@ -70,6 +70,83 @@ pub(crate) fn finish_field<T: FieldDecoder>(n: i32, buf: &mut T::Buffer) -> host
     }
 }
 
+// `FieldDecoder` for the fixed-width unsigned integers the host writes directly. Each reads
+// exactly its own width and reinterprets the raw bytes as the host laid them out (native-endian
+// on wasm32, hence `from_ne_bytes`). All four are readable from both a transaction and a ledger
+// object.
+
+impl FieldDecoder for u8 {
+    type Buffer = [u8; 1];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 1]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 1] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u8::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u8 {}
+impl FromLedger for u8 {}
+
+impl FieldDecoder for u16 {
+    type Buffer = [u8; 2];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 2]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 2] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u16::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u16 {}
+impl FromLedger for u16 {}
+
+impl FieldDecoder for u32 {
+    type Buffer = [u8; 4];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 4]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 4] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u32::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u32 {}
+impl FromLedger for u32 {}
+
+impl FieldDecoder for u64 {
+    type Buffer = [u8; 8];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 8]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 8] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u64::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u64 {}
+impl FromLedger for u64 {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
