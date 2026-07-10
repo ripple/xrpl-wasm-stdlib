@@ -13,6 +13,7 @@ pub use xrpl_macros::r_address;
 
 pub mod core;
 pub mod ctx;
+pub mod fields;
 pub mod host;
 pub mod sfield;
 pub mod types;
