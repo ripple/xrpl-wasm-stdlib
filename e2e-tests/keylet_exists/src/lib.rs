@@ -4,11 +4,11 @@
 extern crate std;
 
 use crate::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::fields::decoder::FromLedger;
+use xrpl_common_stdlib::fields::ledger_obj;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_account, trace_data, trace_num};
 use xrpl_common_stdlib::keylets;
-use xrpl_common_stdlib::objects::LedgerObjectFieldGetter;
-use xrpl_common_stdlib::objects::ledger_object;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::sfield::SField;
 use xrpl_common_stdlib::types::currency::Currency;
@@ -18,7 +18,7 @@ use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::get_current_escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
-pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
+pub fn object_exists<T: FromLedger, const CODE: i32>(
     keylet_result: Result<keylets::KeyletBytes>,
     keylet_type: &str,
     field: SField<T, CODE>,
@@ -35,7 +35,7 @@ pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
             if CODE == 0 {
                 let field_code: i32 = sfield::PreviousTxnID.into();
                 let _ = trace_num("Getting field: ", field_code as i64);
-                match ledger_object::get_field(slot, sfield::PreviousTxnID) {
+                match ledger_obj::get_field(slot, sfield::PreviousTxnID) {
                     Ok(data) => {
                         let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }
@@ -47,7 +47,7 @@ pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
             } else {
                 let field_code: i32 = field.into();
                 let _ = trace_num("Getting field: ", field_code as i64);
-                match ledger_object::get_field(slot, sfield::Account) {
+                match ledger_obj::get_field(slot, sfield::Account) {
                     Ok(data) => {
                         let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }

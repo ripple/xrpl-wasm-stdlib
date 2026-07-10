@@ -1,5 +1,6 @@
 //! Escrow-specific ledger-object field accessor traits.
 
+use xrpl_common_stdlib::fields::{current_ledger_obj, ledger_obj};
 use xrpl_common_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
 use xrpl_common_stdlib::host::{
     Error, get_current_ledger_obj_field, get_ledger_obj_field, update_data,
@@ -8,7 +9,6 @@ use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::{
     CurrentLedgerObjectCommonFields, LedgerObjectCommonFields,
 };
-use xrpl_common_stdlib::objects::{current_ledger_object, ledger_object};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
@@ -19,15 +19,15 @@ use xrpl_common_stdlib::types::uint::Hash256;
 /// Trait providing access to fields specific to Escrow objects in the current ledger.
 pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_account(&self) -> Result<AccountID> {
-        current_ledger_object::get_field(sfield::Account)
+        current_ledger_obj::get_field(sfield::Account)
     }
 
     fn get_amount(&self) -> Result<Amount> {
-        current_ledger_object::get_field(sfield::Amount)
+        current_ledger_obj::get_field(sfield::Amount)
     }
 
     fn get_cancel_after(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::CancelAfter)
+        current_ledger_obj::get_field_optional(sfield::CancelAfter)
     }
 
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
@@ -46,39 +46,39 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     }
 
     fn get_destination(&self) -> Result<AccountID> {
-        current_ledger_object::get_field(sfield::Destination)
+        current_ledger_obj::get_field(sfield::Destination)
     }
 
     fn get_destination_node(&self) -> Result<Option<u64>> {
-        current_ledger_object::get_field_optional(sfield::DestinationNode)
+        current_ledger_obj::get_field_optional(sfield::DestinationNode)
     }
 
     fn get_destination_tag(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::DestinationTag)
+        current_ledger_obj::get_field_optional(sfield::DestinationTag)
     }
 
     fn get_finish_after(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::FinishAfter)
+        current_ledger_obj::get_field_optional(sfield::FinishAfter)
     }
 
     fn get_owner_node(&self) -> Result<u64> {
-        current_ledger_object::get_field(sfield::OwnerNode)
+        current_ledger_obj::get_field(sfield::OwnerNode)
     }
 
     fn get_previous_txn_id(&self) -> Result<Hash256> {
-        current_ledger_object::get_field(sfield::PreviousTxnID)
+        current_ledger_obj::get_field(sfield::PreviousTxnID)
     }
 
     fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
-        current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
+        current_ledger_obj::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     fn get_source_tag(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::SourceTag)
+        current_ledger_obj::get_field_optional(sfield::SourceTag)
     }
 
     fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        current_ledger_object::get_field_optional(sfield::FinishFunction)
+        current_ledger_obj::get_field_optional(sfield::FinishFunction)
     }
 
     fn get_data(&self) -> Result<ContractData> {
@@ -106,27 +106,15 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
 /// Trait providing access to fields specific to Escrow objects in any ledger.
 pub trait EscrowFields: LedgerObjectCommonFields {
     fn get_account(&self) -> Result<AccountID> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Account)
+        ledger_obj::get_field(self.get_slot_num(), sfield::Account)
     }
 
     fn get_amount(&self) -> Result<Amount> {
-        const BUFFER_SIZE: usize = 48usize;
-        let mut buffer = [0u8; BUFFER_SIZE];
-
-        let result_code = unsafe {
-            get_ledger_obj_field(
-                self.get_slot_num(),
-                sfield::Amount.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-
-        match_result_code(result_code, || Amount::from(buffer))
+        ledger_obj::get_field(self.get_slot_num(), sfield::Amount)
     }
 
     fn get_cancel_after(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
     }
 
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
@@ -155,39 +143,39 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     fn get_destination(&self) -> Result<AccountID> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Destination)
+        ledger_obj::get_field(self.get_slot_num(), sfield::Destination)
     }
 
     fn get_destination_node(&self) -> Result<Option<u64>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
     }
 
     fn get_destination_tag(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
     }
 
     fn get_finish_after(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
     }
 
     fn get_owner_node(&self) -> Result<u64> {
-        ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
+        ledger_obj::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     fn get_previous_txn_id(&self) -> Result<Hash256> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
+        ledger_obj::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
+        ledger_obj::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     fn get_source_tag(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::SourceTag)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::SourceTag)
     }
 
     fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
+        ledger_obj::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 
     fn get_data(&self) -> Result<ContractData> {
@@ -218,13 +206,9 @@ mod tests {
     use mockall::predicate::{always, eq};
     use xrpl_common_stdlib::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_common_stdlib::objects::LedgerObjectFieldGetter;
     use xrpl_common_stdlib::sfield::SField;
 
-    fn expect_current_field<
-        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
-        const CODE: i32,
-    >(
+    fn expect_current_field<T, const CODE: i32>(
         mock: &mut MockHostBindings,
         _field: SField<T, CODE>,
         size: usize,
@@ -245,10 +229,7 @@ mod tests {
     /// - times: How many times this expectation should be matched
     ///
     /// When a test fails, mockall will show which parameter didn't match.
-    fn expect_ledger_field<
-        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
-        const CODE: i32,
-    >(
+    fn expect_ledger_field<T, const CODE: i32>(
         mock: &mut MockHostBindings,
         slot: i32,
         _field: SField<T, CODE>,

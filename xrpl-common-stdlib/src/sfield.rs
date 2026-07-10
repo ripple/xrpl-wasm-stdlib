@@ -1,6 +1,7 @@
 #![allow(non_upper_case_globals)]
 
-use crate::objects::array_object::{Array, Object};
+use crate::objects::array::Array;
+use crate::objects::object::Object;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
 use crate::types::blob::{
@@ -18,21 +19,22 @@ use core::marker::PhantomData;
 /// This struct encodes both the field code and the expected type as const generics,
 /// allowing the compiler to automatically infer the correct type when calling `get_field`.
 ///
-/// The type parameter `T` represents the expected Rust type for this field, which can be
-/// used with various field getter traits like `LedgerObjectFieldGetter` or `CurrentTxFieldGetter`.
+/// The type parameter `T` represents the expected Rust type for this field. A field can only be
+/// read from a context that its type opts into via the `FromCurrentTx` / `FromLedger` marker
+/// traits (see [`crate::fields::decoder`]).
 ///
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::objects::ledger_object;
+/// use xrpl_common_stdlib::fields::ledger_obj;
 /// use xrpl_common_stdlib::fields::current_tx;
 /// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 ///
 /// // Type is automatically inferred from the SField constant, for both ledger_objects and current_transaction:
-/// let flags:u32 = ledger_object::get_field(0, sfield::Flags).unwrap();  // u32
-/// let balance:Amount = ledger_object::get_field(0, sfield::Balance).unwrap();  // u64
+/// let flags:u32 = ledger_obj::get_field(0, sfield::Flags).unwrap();  // u32
+/// let balance:Amount = ledger_obj::get_field(0, sfield::Balance).unwrap();  // u64
 /// // current transaction:
 /// let account:AccountID = current_tx::get_field(sfield::Account).unwrap();  // AccountID
 /// let sequence:u32 = current_tx::get_field(sfield::Sequence).unwrap();  // u32

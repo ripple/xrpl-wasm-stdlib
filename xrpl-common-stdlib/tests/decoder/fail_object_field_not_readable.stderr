@@ -1,0 +1,24 @@
+error[E0277]: `Object` cannot be read from a ledger object
+ --> tests/decoder/fail_object_field_not_readable.rs:9:38
+  |
+9 |     let _ = ledger_obj::get_field(0, sfield::Memo);
+  |             ---------------------    ^^^^^^^^^^^^ the trait `FromLedger` is not implemented for `Object`
+  |             |
+  |             required by a bound introduced by this call
+  |
+  = note: array/object fields can't be decoded directly. Navigate into them with a locator (`.field(sfield::X)...`) or use a typed accessor
+  = help: the following other types implement trait `FromLedger`:
+            AccountID
+            Amount
+            Blob<N>
+            Currency
+            Issue
+            UInt<xrpl_common_stdlib::::types::uint::UInt128::{constant#0}>
+            UInt<xrpl_common_stdlib::::types::uint::UInt160::{constant#0}>
+            UInt<xrpl_common_stdlib::::types::uint::UInt192::{constant#0}>
+          and $N others
+note: required by a bound in `xrpl_common_stdlib::fields::ledger_obj::get_field`
+ --> src/fields/ledger_obj.rs
+  |
+  | pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) -> Result<T> {
+  |                     ^^^^^^^^^^ required by this bound in `get_field`

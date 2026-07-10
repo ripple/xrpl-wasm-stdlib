@@ -1,9 +1,10 @@
-error[E0277]: the trait bound `ObjOnly: FromCurrentTx` is not satisfied
+error[E0277]: `ObjOnly` cannot be read from the current transaction
   --> tests/decoder/fail_obj_only_missing_from_current_tx.rs:26:32
    |
 26 |     requires_from_current_tx::<ObjOnly>();
    |                                ^^^^^^^ the trait `FromCurrentTx` is not implemented for `ObjOnly`
    |
+   = note: array/object fields can't be decoded directly. Navigate into them with a locator (`.field(sfield::X)...`) or use a typed accessor
    = help: the following other types implement trait `FromCurrentTx`:
              AccountID
              Amount

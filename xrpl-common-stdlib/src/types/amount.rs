@@ -2,10 +2,6 @@ use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
-use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
-use crate::objects::LedgerObjectFieldGetter;
-use crate::sfield::SField;
 use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
 use crate::types::decode_error::DecodeError;
@@ -285,59 +281,6 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
             Ok(amount) => amount,
             Err(_) => unreachable!("from_bytes only errors on len != 48; caller provides [u8; 48]"),
         }
-    }
-}
-
-/// Implementation of `LedgerObjectFieldGetter` for XRPL amount values.
-///
-/// This implementation handles amount fields in XRPL ledger objects, which can represent
-/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
-/// and issuer information).
-///
-/// # Buffer Management
-///
-/// Uses a 48-byte buffer to accommodate the largest possible amount representation.
-/// The Amount type handles the parsing of different amount formats internally.
-/// No strict byte count validation is performed since amounts can vary in size.
-impl LedgerObjectFieldGetter for Amount {
-    #[inline]
-    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
-        })
-        .map(|(buffer, _len)| Amount::from(buffer))
-    }
-
-    #[inline]
-    fn get_from_current_ledger_obj_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
-        })
-        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
-        })
-        .map(|(buffer, _len)| Amount::from(buffer))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj_optional<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
-        })
-        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
 
