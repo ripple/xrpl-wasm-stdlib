@@ -1,0 +1,24 @@
+error[E0277]: `LedgerOnly` cannot be read from the current transaction
+  --> tests/locator/fail_get_from_ledger_only.rs:30:50
+   |
+30 |     let _ = Tx.path().field(sfield::Memos).get::<LedgerOnly>();
+   |                                            ---   ^^^^^^^^^^ the trait `FromCurrentTx` is not implemented for `LedgerOnly`
+   |                                            |
+   |                                            required by a bound introduced by this call
+   |
+   = note: array/object fields can't be decoded directly. Navigate into them with a locator (`.field(sfield::X)...`) or use a typed accessor
+   = help: the following other types implement trait `FromCurrentTx`:
+             AccountID
+             Amount
+             Blob<N>
+             TransactionType
+             UInt<xrpl_common_stdlib::::types::uint::UInt256::{constant#0}>
+             u16
+             u32
+             u64
+             u8
+note: required by a bound in `TxPathBuilder::get`
+  --> src/fields/locator.rs
+   |
+   |     pub fn get<T: FromCurrentTx>(&self) -> Result<T> {
+   |                   ^^^^^^^^^^^^^ required by this bound in `TxPathBuilder::get`
