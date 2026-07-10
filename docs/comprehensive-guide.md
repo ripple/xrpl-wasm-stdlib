@@ -103,7 +103,7 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 ```rust ignore
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::objects::account_root::get_account_balance;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
@@ -219,7 +219,7 @@ let escrow_sequence = tx.get_escrow_sequence().unwrap();
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::sfield;
 
 let tx = EscrowFinish;
@@ -379,7 +379,7 @@ fn main() {
 ```rust ignore
 // Use the high-level trait methods instead of low-level host functions
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 fn main() {
@@ -403,7 +403,7 @@ The library uses custom `Result` types for comprehensive error handling:
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::objects::account_root::{get_account_balance, AccountRoot};
 use xrpl_common_stdlib::objects::traits::AccountFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -742,7 +742,7 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 ```rust ignore
 use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 
 #[unsafe(no_mangle)]

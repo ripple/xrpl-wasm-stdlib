@@ -168,7 +168,7 @@ pub fn blob(input: TokenStream) -> TokenStream {
 /// ```rust,ignore
 /// // Import from the feature crate, not from xrpl_macros directly.
 /// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
-/// use xrpl_escrow_stdlib::fields::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::current_tx::traits::TransactionCommonFields;
 /// use xrpl_escrow_stdlib::types::amount::Amount;
 ///
 /// #[smart_escrow]
@@ -189,7 +189,7 @@ pub fn blob(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
-/// use xrpl_escrow_stdlib::fields::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::current_tx::traits::TransactionCommonFields;
 /// use xrpl_escrow_stdlib::types::amount::Amount;
 ///
 /// #[smart_escrow]

@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::Result;
 use xrpl_common_stdlib::host::error_codes::{

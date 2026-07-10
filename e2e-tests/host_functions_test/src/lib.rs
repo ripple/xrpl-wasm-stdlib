@@ -25,7 +25,7 @@ extern crate std;
 // -700 to -799: Data Update Functions (1 function)
 //
 
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{
     DataRepr, trace, trace_account_buf, trace_amount, trace_data, trace_num,

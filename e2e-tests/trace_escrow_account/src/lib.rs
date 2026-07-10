@@ -9,7 +9,7 @@
 //! account data correctly.
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::cache_ledger_obj;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 use xrpl_common_stdlib::keylets::account_keylet;
