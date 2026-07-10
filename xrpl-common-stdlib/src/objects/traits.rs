@@ -2,6 +2,7 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
+use crate::fields::locator::LedgerPathBuilder;
 use crate::fields::{current_ledger_obj, ledger_obj};
 use crate::host::Result;
 use crate::sfield;
@@ -28,6 +29,27 @@ pub trait LedgerObjectCommonFields {
     ///
     /// The slot number as an i32 value
     fn get_slot_num(&self) -> i32;
+
+    /// Starts a nested-field path rooted at this ledger object (read by slot).
+    ///
+    /// Use this to reach into arrays and inner objects that the flat getters can't return whole.
+    /// Chain [`field`](LedgerPathBuilder::field) / [`index`](LedgerPathBuilder::index), then
+    /// [`get::<T>()`](LedgerPathBuilder::get).
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
+    /// use xrpl_common_stdlib::sfield;
+    /// # fn demo(obj: &impl LedgerObjectCommonFields) {
+    /// let signer = obj.path()
+    ///     .field(sfield::SignerEntries)
+    ///     .index(0)
+    ///     .field(sfield::Account)
+    ///     .get::<xrpl_common_stdlib::types::account_id::AccountID>();
+    /// # let _ = signer; }
+    /// ```
+    fn path(&self) -> LedgerPathBuilder {
+        LedgerPathBuilder::for_ledger_obj(self.get_slot_num())
+    }
 
     /// Retrieves the flags field of the ledger object.
     ///
@@ -80,6 +102,25 @@ pub trait CurrentLedgerObjectCommonFields {
     /// The ledger entry type as a u16 value
     fn get_ledger_entry_type(&self) -> Result<u16> {
         current_ledger_obj::get_field(sfield::LedgerEntryType)
+    }
+
+    /// Starts a nested-field path rooted at the current ledger object (no slot).
+    ///
+    /// Use this to reach into arrays and inner objects that the flat getters can't return whole.
+    /// Chain [`field`](LedgerPathBuilder::field) / [`index`](LedgerPathBuilder::index), then
+    /// [`get::<T>()`](LedgerPathBuilder::get).
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
+    /// use xrpl_common_stdlib::sfield;
+    /// # fn demo(obj: &impl CurrentLedgerObjectCommonFields) {
+    /// let amount = obj.path()
+    ///     .field(sfield::Amount)
+    ///     .get::<xrpl_common_stdlib::types::amount::Amount>();
+    /// # let _ = amount; }
+    /// ```
+    fn path(&self) -> LedgerPathBuilder {
+        LedgerPathBuilder::for_current_ledger_obj()
     }
 }
 
@@ -335,6 +376,25 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_path_roots_a_by_slot_builder() {
+            let mut mock = MockHostBindings::new();
+            // SignerEntries[0] -> two 4-byte segments = 8 bytes; the object's slot is threaded through.
+            mock.expect_get_ledger_obj_nested_field()
+                .with(eq(1), always(), eq(8usize), always(), eq(4usize))
+                .times(1)
+                .returning(|_, _, _, _, _| 4);
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account
+                .path()
+                .field(sfield::SignerEntries)
+                .index(0)
+                .get::<u32>();
+            assert!(result.is_ok());
         }
     }
 
@@ -664,6 +724,20 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_path_roots_a_current_obj_builder() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_nested_field()
+                .with(always(), eq(4usize), always(), eq(4usize))
+                .times(1)
+                .returning(|_, _, _, _| 4);
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.path().field(sfield::Flags).get::<u32>();
+            assert!(result.is_ok());
         }
     }
 }
