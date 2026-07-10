@@ -1,9 +1,5 @@
-use crate::host::field_helpers::{
-    get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
-};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
-use crate::objects::LedgerObjectFieldGetter;
-use crate::sfield::SField;
+use crate::fields::decoder::{FieldDecoder, FromLedger};
+use crate::types::decode_error::DecodeError;
 
 pub const CURRENCY_SIZE: usize = 20;
 pub const STANDARD_CURRENCY_SIZE: usize = 3; // For standard currencies like USD, EUR, etc.
@@ -50,60 +46,24 @@ impl From<[u8; STANDARD_CURRENCY_SIZE]> for Currency {
     }
 }
 
-/// Implementation of `LedgerObjectFieldGetter` for XRPL currency codes.
-///
-/// This implementation handles 20-byte currency code fields in XRPL ledger objects.
-/// Currency codes uniquely identify different currencies and assets on the XRPL.
-///
-/// # Buffer Management
-///
-/// Uses a 20-byte buffer and validates that exactly 20 bytes are returned
-/// from the host function to ensure data integrity.
-impl LedgerObjectFieldGetter for Currency {
+/// `FieldDecoder` for XRPL currency codes: decodes a 20-byte buffer into a `Currency`, failing if
+/// the host wrote a different number of bytes.
+impl FieldDecoder for Currency {
+    type Buffer = [u8; CURRENCY_SIZE];
+
     #[inline]
-    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; CURRENCY_SIZE]
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<CURRENCY_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_ledger_obj_optional<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<CURRENCY_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let array: [u8; CURRENCY_SIZE] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(array.into())
     }
 }
+
+impl FromLedger for Currency {}
 
 #[cfg(test)]
 mod tests {

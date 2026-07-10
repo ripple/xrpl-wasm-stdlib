@@ -1,9 +1,8 @@
-use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, transpose_option};
-use crate::objects::LedgerObjectFieldGetter;
-use crate::sfield::SField;
+use crate::fields::decoder::{FieldDecoder, FromLedger};
+use crate::host::Result;
 use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
+use crate::types::decode_error::DecodeError;
 use crate::types::mpt_id::MptId;
 
 /// Struct to represent an Issue of type XRP. Exists so that other structs can restrict type
@@ -139,61 +138,33 @@ impl Issue {
     }
 }
 
-/// Implementation of `LedgerObjectFieldGetter` for XRPL issues.
-///
-/// This implementation handles issue fields in XRPL ledger objects.
-/// Supports all three Issue variants: XRP, IOU, and MPT.
-///
-/// # Buffer Management
-///
-/// Uses a 40-byte buffer to accommodate all Issue types:
-/// - XRP: 20 bytes (all zeros)
-/// - IOU: 40 bytes (20 bytes currency + 20 bytes issuer)
-/// - MPT: 24 bytes (4 bytes sequence + 20 bytes issuer)
-///
-/// The implementation detects the Issue type based on the number of bytes returned
-/// from the host function.
-impl LedgerObjectFieldGetter for Issue {
+/// `FieldDecoder` for XRPL issues: detects the variant (XRP/MPT/IOU) from the number of bytes the
+/// host wrote, zero-padding into the 40-byte buffer `Issue::from_buffer` expects. Buffers larger
+/// than 40 bytes are rejected here; the remaining variant/length validation happens inside
+/// `Issue::from_buffer`, and any failure from it maps to `DecodeError`.
+impl FieldDecoder for Issue {
+    type Buffer = [u8; 40];
+
     #[inline]
-    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
-        })
-        .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 40]
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
-        })
-        .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Self> {
-        get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
-        })
-        .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj_optional<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
-        })
-        .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        if bytes.len() > 40 {
+            return core::result::Result::Err(DecodeError);
+        }
+        let mut buffer = [0u8; 40];
+        buffer[..bytes.len()].copy_from_slice(bytes);
+        match Issue::from_buffer(buffer, bytes.len()) {
+            Result::Ok(issue) => core::result::Result::Ok(issue),
+            Result::Err(_) => core::result::Result::Err(DecodeError),
+        }
     }
 }
+
+impl FromLedger for Issue {}
 
 #[cfg(test)]
 mod tests {

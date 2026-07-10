@@ -4,12 +4,6 @@
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
-use crate::host::field_helpers::{
-    get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
-};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
-use crate::objects::LedgerObjectFieldGetter;
-use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
 
 pub const ACCOUNT_ID_SIZE: usize = 20;
@@ -32,63 +26,6 @@ pub struct AccountID(pub [u8; ACCOUNT_ID_SIZE]);
 impl From<[u8; ACCOUNT_ID_SIZE]> for AccountID {
     fn from(value: [u8; ACCOUNT_ID_SIZE]) -> Self {
         AccountID(value)
-    }
-}
-
-/// Implementation of `LedgerObjectFieldGetter` for XRPL account identifiers.
-///
-/// This implementation handles 20-byte account ID fields in XRPL ledger objects.
-/// Account IDs uniquely identify accounts on the XRPL network and are derived
-/// from public keys using cryptographic hashing.
-///
-/// # Buffer Management
-///
-/// Uses a 20-byte buffer (ACCOUNT_ID_SIZE) and validates that exactly 20 bytes
-/// are returned from the host function. The buffer is converted to an AccountID
-/// using the `From<[u8; 20]>` implementation.
-impl LedgerObjectFieldGetter for AccountID {
-    #[inline]
-    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_current_ledger_obj_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
-    }
-
-    #[inline]
-    fn get_from_ledger_obj<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_ledger_obj_optional<const CODE: i32>(
-        register_num: i32,
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
     }
 }
 

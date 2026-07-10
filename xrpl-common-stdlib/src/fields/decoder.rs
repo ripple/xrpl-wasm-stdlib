@@ -7,6 +7,7 @@
 //! type at compile time; the context-specific `get_field` functions (see
 //! [`crate::fields::current_tx`], [`crate::fields::ledger_obj`]) require the matching marker.
 
+use crate::host;
 use crate::types::decode_error::DecodeError;
 
 /// Decodes a typed value from the raw bytes a host function wrote.
@@ -28,10 +29,123 @@ pub trait FieldDecoder: Sized {
 }
 
 /// Marker: this type can be read from the current transaction via [`crate::fields::current_tx`].
+///
+/// The `on_unimplemented` message turns the otherwise cryptic trait-bound error into guidance for
+/// the common misuse: passing an array/object placeholder (e.g. `sfield::Memos`) to a getter.
+/// Those aggregate types can't be decoded whole — navigate into them with a locator instead.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be read from the current transaction",
+    note = "array/object fields can't be decoded directly. Navigate into them with a locator (`.field(sfield::X)...`) or use a typed accessor"
+)]
 pub trait FromCurrentTx: FieldDecoder {}
 
-/// Marker: this type can be read from a ledger object via [`crate::fields::ledger_obj`].
+/// Marker: this type can be read from a ledger object via [`crate::fields::ledger_obj`] or
+/// [`crate::fields::current_ledger_obj`].
+///
+/// See [`FromCurrentTx`] for why the `on_unimplemented` message is worth carrying.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be read from a ledger object",
+    note = "array/object fields can't be decoded directly. Navigate into them with a locator (`.field(sfield::X)...`) or use a typed accessor"
+)]
 pub trait FromLedger: FieldDecoder {}
+
+/// Turns the raw byte count a host `get_*_field` function returned (written into `buf`) into a
+/// decoded `T`. Shared by the by-slot and current-object getters so the error handling — negative
+/// codes, an oversized write the buffer can't have held, and decode failures — lives in one place.
+#[inline]
+pub(crate) fn finish_field<T: FieldDecoder>(n: i32, buf: &mut T::Buffer) -> host::Result<T> {
+    if n < 0 {
+        return host::Result::Err(host::Error::from_code(n));
+    }
+    let bytes = buf.as_mut();
+    let n = n as usize;
+    if n > bytes.len() {
+        // A conformant host never reports writing more bytes than the buffer holds; a positive
+        // count past our buffer means it described memory outside the allowed region.
+        return host::Result::Err(host::Error::PointerOutOfBounds);
+    }
+    match T::decode(&bytes[..n]) {
+        core::result::Result::Ok(value) => host::Result::Ok(value),
+        core::result::Result::Err(_) => host::Result::Err(host::Error::InvalidDecoding),
+    }
+}
+
+// `FieldDecoder` for the fixed-width unsigned integers the host writes directly. Each reads
+// exactly its own width and reinterprets the raw bytes as the host laid them out (native-endian
+// on wasm32, hence `from_ne_bytes`). All four are readable from both a transaction and a ledger
+// object.
+
+impl FieldDecoder for u8 {
+    type Buffer = [u8; 1];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 1]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 1] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u8::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u8 {}
+impl FromLedger for u8 {}
+
+impl FieldDecoder for u16 {
+    type Buffer = [u8; 2];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 2]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 2] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u16::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u16 {}
+impl FromLedger for u16 {}
+
+impl FieldDecoder for u32 {
+    type Buffer = [u8; 4];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 4]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 4] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u32::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u32 {}
+impl FromLedger for u32 {}
+
+impl FieldDecoder for u64 {
+    type Buffer = [u8; 8];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 8]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let array: [u8; 8] = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(u64::from_ne_bytes(array))
+    }
+}
+
+impl FromCurrentTx for u64 {}
+impl FromLedger for u64 {}
 
 #[cfg(test)]
 mod tests {

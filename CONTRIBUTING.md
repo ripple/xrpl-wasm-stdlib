@@ -167,13 +167,19 @@ runTest().catch(console.error)
 ## Project Structure
 
 ```
-xrpl-common-stdlib/
-├── src/                    # Library source code
-├── examples/smart-escrows/ # Example smart contracts
-├── scripts/                # Development and CI scripts
-├── ui/                     # Testing web interface
-├── e2e-tests/              # Integration tests
-└── docs/                   # Documentation
+xrpl-wasm-stdlib/
+├── xrpl-common-stdlib/      # Generic XRPL primitives crate (types, host bindings, keylets, trace)
+│   ├── src/                 # Library source code
+│   ├── xrpl-macros/         # Proc-macro crate (entry-point macros, r_address!, etc.), nested inside
+│   └── docs/                # Symlink to top-level docs/
+├── xrpl-escrow-stdlib/      # Smart Escrow-specific crate (EscrowFinish tx, Escrow ledger object, ctx)
+│   └── src/                 # Library source code
+├── examples/smart-escrows/  # Example smart contracts
+├── e2e-tests/               # Integration tests
+├── docs/                    # Documentation
+├── scripts/                 # Development and CI scripts
+├── tools/                   # Node-based dev tooling (gas benchmarking, sfield generation, etc.)
+└── ui/                      # Testing web interface
 ```
 
 ## Adding New Examples

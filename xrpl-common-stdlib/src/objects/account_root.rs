@@ -34,7 +34,7 @@ pub fn get_account_balance(account_id: &AccountID) -> host::Result<Option<Amount
     // Get the balance.
     // We use the trait-bound implementation so as not to duplicate accessor logic.
     let account = AccountRoot { slot_num: slot };
-    account.balance()
+    account.get_balance()
 }
 
 #[cfg(test)]
