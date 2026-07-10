@@ -3,7 +3,7 @@
 //! This type wraps a 20-byte AccountID and is returned by many accessors.
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
-use crate::fields::current_tx::CurrentTxFieldGetter;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };

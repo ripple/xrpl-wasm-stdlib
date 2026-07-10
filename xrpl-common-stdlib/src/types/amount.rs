@@ -1,4 +1,4 @@
-use crate::fields::current_tx::CurrentTxFieldGetter;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};

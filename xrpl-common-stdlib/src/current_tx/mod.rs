@@ -76,7 +76,7 @@ use crate::sfield::SField;
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::fields::current_tx::{get_field, get_field_optional};
+/// use xrpl_common_stdlib::current_tx::{get_field, get_field_optional};
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
@@ -232,7 +232,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::fields::current_tx::get_field;
+/// use xrpl_common_stdlib::current_tx::get_field;
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
@@ -260,7 +260,7 @@ pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::fields::current_tx::get_field_optional;
+/// use xrpl_common_stdlib::current_tx::get_field_optional;
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant

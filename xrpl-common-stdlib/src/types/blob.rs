@@ -1,4 +1,4 @@
-use crate::fields::current_tx::CurrentTxFieldGetter;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 use crate::objects::LedgerObjectFieldGetter;

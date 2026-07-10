@@ -12,6 +12,7 @@ pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
 
 pub mod ctx;
+pub mod current_tx;
 pub mod fields;
 pub mod host;
 pub mod keylets;

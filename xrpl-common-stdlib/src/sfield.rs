@@ -25,7 +25,7 @@ use core::marker::PhantomData;
 ///
 /// ```rust,no_run
 /// use xrpl_common_stdlib::objects::ledger_object;
-/// use xrpl_common_stdlib::fields::current_tx;
+/// use xrpl_common_stdlib::current_tx;
 /// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
 /// use xrpl_common_stdlib::types::account_id::AccountID;

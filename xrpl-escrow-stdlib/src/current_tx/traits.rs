@@ -1,7 +1,7 @@
 //! Escrow-finish-specific transaction field accessor trait.
 
-use xrpl_common_stdlib::fields::current_tx::get_field;
-use xrpl_common_stdlib::fields::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::get_field;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::error_codes::match_result_code_optional;
 use xrpl_common_stdlib::host::{Result, get_tx_field};
 use xrpl_common_stdlib::sfield;

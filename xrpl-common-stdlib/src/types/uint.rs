@@ -1,6 +1,6 @@
 //! Generic unsigned integer types with configurable bit sizes
 
-use crate::fields::current_tx::CurrentTxFieldGetter;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
