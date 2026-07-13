@@ -5,10 +5,11 @@ use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::core::types::opaque_float::OpaqueFloat;
 use crate::host;
-use crate::host::Error::InternalError;
+use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::sfield::SField;
 
 pub const AMOUNT_SIZE: usize = 48;
 
@@ -185,12 +186,12 @@ impl Amount {
     /// - MPT: 33 bytes
     /// - IOU: 48 bytes
     ///
-    /// Returns None if the byte array is not a valid Amount.
+    /// Returns `Err(InvalidParams)` if the byte array is not a valid Amount.
     pub fn from_bytes(bytes: &[u8]) -> host::Result<Self> {
         // TODO: Move to trait!
 
         if bytes.len() != 48 {
-            return Err(InternalError);
+            return Err(InvalidParams);
         }
 
         let byte0 = bytes[0]; // Get the first byte for flag extraction
@@ -299,32 +300,40 @@ impl From<[u8; AMOUNT_SIZE]> for Amount {
 /// No strict byte count validation is performed since amounts can vary in size.
 impl LedgerObjectFieldGetter for Amount {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
@@ -345,18 +354,21 @@ impl LedgerObjectFieldGetter for Amount {
 /// internally. No strict byte count validation is performed since amounts can vary in size.
 impl CurrentTxFieldGetter for Amount {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
             get_tx_field(fc, buf, size)
         })
         .map(|(buffer, _len)| Amount::from(buffer))
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(field_code, |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
+            i32::from(field),
+            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+        )
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
@@ -503,24 +515,43 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_amount() {
+        // A byte array whose length is not 48 is a caller/input error, reported as
+        // `InvalidParams` (not an internal invariant trip).
+        let expected = InvalidParams as i32;
+
         // Test with an empty byte array
-        assert!(Amount::from_bytes(&[]).is_err());
+        assert_eq!(Amount::from_bytes(&[]).err().unwrap().code(), expected);
 
         // Test with a byte array that's too short for XRP
-        assert!(Amount::from_bytes(&[0x40, 0, 0]).is_err());
+        assert_eq!(
+            Amount::from_bytes(&[0x40, 0, 0]).err().unwrap().code(),
+            expected
+        );
 
         // Test with a byte array that's too short for MPT
         let mut mpt_bytes = [0u8; 20];
         mpt_bytes[0] = 0x60; // MPT positive flag
-        assert!(Amount::from_bytes(&mpt_bytes).is_err());
+        assert_eq!(
+            Amount::from_bytes(&mpt_bytes).err().unwrap().code(),
+            expected
+        );
 
         // Test with a byte array that's too short for IOU
         let mut iou_bytes = [0u8; 30];
         iou_bytes[0] = 0xC0; // IOU positive flag
-        assert!(Amount::from_bytes(&iou_bytes).is_err());
+        assert_eq!(
+            Amount::from_bytes(&iou_bytes).err().unwrap().code(),
+            expected
+        );
 
         // Test with an invalid type bit pattern
-        assert!(Amount::from_bytes(&[0xA0, 0, 0, 0, 0, 0, 0, 0]).is_err());
+        assert_eq!(
+            Amount::from_bytes(&[0xA0, 0, 0, 0, 0, 0, 0, 0])
+                .err()
+                .unwrap()
+                .code(),
+            expected
+        );
     }
 
     #[test]
