@@ -436,6 +436,7 @@ name = "xrpl-wasm-stdlib"
 version = "0.8.0"
 dependencies = [
  "mockall",
+ "trybuild",
  "xrpl-macros",
 ]
 
