@@ -16,5 +16,5 @@ xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
 
 [dev-dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
-mockall = "0.14.0"
+mockall = "0.15.0"
 trybuild = "1"
