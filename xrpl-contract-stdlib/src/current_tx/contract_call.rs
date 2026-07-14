@@ -11,7 +11,7 @@ use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 /// This zero-sized type serves as a marker for ContractCall transactions and provides
 /// access to transaction-specific fields through trait implementations. The structure
 /// implements both common transaction fields (available to all transaction types) and
-/// contract-finish-specific fields.
+/// ContractCall-specific fields.
 ///
 /// # Field Access
 ///
@@ -25,17 +25,15 @@ use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 /// - And other standard XRPL transaction fields
 ///
 /// ## ContractCall-Specific Fields (via `ContractCallFields`)
-/// - Owner (account that created the contract)
-/// - OfferSequence (sequence number of the contractCreate transaction)
-/// - Condition (cryptographic condition, if present)
-/// - Fulfillment (cryptographic fulfillment, if present)
+/// - ContractAccount (the account of the contract being invoked)
+/// - ContractID (the identifier of the contract being invoked)
 ///
 /// # Zero-Cost Abstraction
 ///
 /// This structure has no runtime overhead as it contains no data fields. All field
 /// access is performed through the trait methods, which directly call the underlying
 /// host functions to retrieve data from the current transaction context.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 #[repr(C)]
 pub struct ContractCall;
 
