@@ -1,0 +1,16 @@
+[package]
+name = "xrpl-escrow-stdlib"
+version = "0.1.0"
+edition = "2024"
+description = "Smart Escrow entry-point context and host-function wrappers for XRPL WebAssembly contracts"
+license.workspace = true
+repository.workspace = true
+keywords = ["xrpl", "wasm", "smart-escrow", "no-std"]
+categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
+
+[dependencies]
+xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+
+[dev-dependencies]
+xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+trybuild = "1"

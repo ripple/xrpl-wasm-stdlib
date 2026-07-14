@@ -4,6 +4,7 @@ use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, transpose_option};
+use crate::sfield::SField;
 
 /// Struct to represent an Issue of type XRP. Exists so that other structs can restrict type
 /// information to XRP in their declarations (this is not possible with just the `Issue` enum below).
@@ -154,32 +155,40 @@ impl Issue {
 /// from the host function.
 impl LedgerObjectFieldGetter for Issue {
     #[inline]
-    fn get_from_current_ledger_obj(field_code: i32) -> Result<Self> {
-        get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
+        get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
 
     #[inline]
-    fn get_from_current_ledger_obj_optional(field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_current_ledger_obj_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
             get_current_ledger_obj_field(fc, buf, size)
         })
         .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
 
     #[inline]
-    fn get_from_ledger_obj(register_num: i32, field_code: i32) -> Result<Self> {
-        get_variable_size_field::<40, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Self> {
+        get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
 
     #[inline]
-    fn get_from_ledger_obj_optional(register_num: i32, field_code: i32) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<40, _>(field_code, |fc, buf, size| unsafe {
+    fn get_from_ledger_obj_optional<const CODE: i32>(
+        register_num: i32,
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
+        get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
         .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
@@ -284,6 +293,21 @@ mod tests {
             }
             _ => panic!("Expected IOU issue"),
         }
+    }
+
+    #[test]
+    fn test_issue_as_bytes() {
+        let xrp = Issue::XRP(XrpIssue {});
+        assert_eq!(xrp.as_bytes(), &[0u8; 20]);
+
+        let issuer = AccountID::from([0xAA; 20]);
+        let currency = Currency::from([0xBB; 20]);
+        let iou = Issue::IOU(IouIssue::new(issuer, currency));
+        assert_eq!(iou.as_bytes().len(), 40);
+
+        let mpt_id = MptId::new(1, AccountID::from([0xCC; 20]));
+        let mpt = Issue::MPT(MptIssue::new(mpt_id));
+        assert_eq!(mpt.as_bytes(), mpt_id.as_bytes());
     }
 
     #[test]
