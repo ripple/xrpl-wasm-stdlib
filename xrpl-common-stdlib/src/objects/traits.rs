@@ -211,6 +211,44 @@ pub trait AccountFields: LedgerObjectCommonFields {
     }
 }
 
+pub trait TrustLineFields: LedgerObjectCommonFields {
+    fn balance(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Balance)
+    }
+
+    fn low_limit(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::LowLimit)
+    }
+
+    fn high_limit(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::HighLimit)
+    }
+
+    fn low_node(&self) -> Result<u64> {
+        ledger_object::get_field(self.get_slot_num(), sfield::LowNode)
+    }
+
+    fn high_node(&self) -> Result<u64> {
+        ledger_object::get_field(self.get_slot_num(), sfield::HighNode)
+    }
+
+    fn low_quality_in(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowQualityIn)
+    }
+
+    fn low_quality_out(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowQualityOut)
+    }
+
+    fn high_quality_in(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityIn)
+    }
+
+    fn high_quality_out(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityOut)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -593,6 +631,129 @@ mod tests {
 
             let account = AccountRoot { slot_num: 1 };
             let result = account.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+    }
+
+    mod trust_line_fields {
+        use super::*;
+        use crate::host::setup_mock;
+        use crate::objects::trust_line::TrustLine;
+        use crate::types::amount::AMOUNT_SIZE;
+
+        #[test]
+        fn test_mandatory_fields_return_ok() {
+            let mut mock = MockHostBindings::new();
+
+            // balance
+            expect_ledger_field(&mut mock, 1, sfield::Balance, AMOUNT_SIZE, 1);
+            // low_limit
+            expect_ledger_field(&mut mock, 1, sfield::LowLimit, AMOUNT_SIZE, 1);
+            // high_limit
+            expect_ledger_field(&mut mock, 1, sfield::HighLimit, AMOUNT_SIZE, 1);
+            // low_node
+            expect_ledger_field(&mut mock, 1, sfield::LowNode, 8, 1);
+            // high_node
+            expect_ledger_field(&mut mock, 1, sfield::HighNode, 8, 1);
+
+            let _guard = setup_mock(mock);
+
+            let line = TrustLine { slot_num: 1 };
+
+            assert!(line.balance().is_ok());
+            assert!(line.low_limit().is_ok());
+            assert!(line.high_limit().is_ok());
+            assert!(line.low_node().is_ok());
+            assert!(line.high_node().is_ok());
+        }
+
+        #[test]
+        fn test_optional_fields_return_some() {
+            let mut mock = MockHostBindings::new();
+
+            // low_quality_in
+            expect_ledger_field(&mut mock, 1, sfield::LowQualityIn, 4, 1);
+            // low_quality_out
+            expect_ledger_field(&mut mock, 1, sfield::LowQualityOut, 4, 1);
+            // high_quality_in
+            expect_ledger_field(&mut mock, 1, sfield::HighQualityIn, 4, 1);
+            // high_quality_out
+            expect_ledger_field(&mut mock, 1, sfield::HighQualityOut, 4, 1);
+
+            let _guard = setup_mock(mock);
+
+            let line = TrustLine { slot_num: 1 };
+
+            assert!(line.low_quality_in().unwrap().is_some());
+            assert!(line.low_quality_out().unwrap().is_some());
+            assert!(line.high_quality_in().unwrap().is_some());
+            assert!(line.high_quality_out().unwrap().is_some());
+        }
+
+        #[test]
+        fn test_optional_fields_return_none_when_field_not_found() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::LowQualityIn), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::LowQualityOut), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::HighQualityIn), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::HighQualityOut), always(), eq(4))
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+
+            let _guard = setup_mock(mock);
+
+            let line = TrustLine { slot_num: 1 };
+
+            assert!(line.low_quality_in().unwrap().is_none());
+            assert!(line.low_quality_out().unwrap().is_none());
+            assert!(line.high_quality_in().unwrap().is_none());
+            assert!(line.high_quality_out().unwrap().is_none());
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Balance), always(), eq(AMOUNT_SIZE))
+                .times(1)
+                .returning(|_, _, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let line = TrustLine { slot_num: 1 };
+            let result = line.balance();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_fields_return_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Balance), always(), eq(AMOUNT_SIZE))
+                .times(1)
+                .returning(|_, _, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let line = TrustLine { slot_num: 1 };
+            let result = line.balance();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);

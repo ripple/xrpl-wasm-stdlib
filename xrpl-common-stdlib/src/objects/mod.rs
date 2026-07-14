@@ -1,6 +1,7 @@
 pub mod account_root;
 pub mod array_object;
 pub mod traits;
+pub mod trust_line;
 
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
