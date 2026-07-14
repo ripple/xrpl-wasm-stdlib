@@ -6,6 +6,7 @@ extern crate std;
 use xrpl_contract_stdlib::core::types::account_id::AccountID;
 use xrpl_contract_stdlib::core::types::amount::Amount;
 use xrpl_contract_stdlib::host::trace::{trace, trace_num};
+use xrpl_contract_stdlib::submit::amount::AmountSubmit;
 use xrpl_contract_stdlib::wasm_export;
 
 const SUCCESS: i32 = 0;

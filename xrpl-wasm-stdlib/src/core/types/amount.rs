@@ -4,14 +4,11 @@ use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::core::types::opaque_float::OpaqueFloat;
-use crate::core::types::transaction_type::TransactionType;
 use crate::host;
 use crate::host::Error::InternalError;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
-use crate::host::{add_txn_field, build_txn, emit_built_txn, float_from_int};
-use crate::sfield;
 use crate::sfield::SField;
 
 pub const AMOUNT_SIZE: usize = 48;
@@ -193,8 +190,7 @@ impl Amount {
     pub fn from_bytes(bytes: &[u8]) -> host::Result<Self> {
         // TODO: Move to trait!
 
-        // XRP = 8 bytes, MPT = 33 bytes, IOU = 48 bytes
-        if bytes.len() != 8 && bytes.len() != 33 && bytes.len() != 48 {
+        if bytes.len() != 48 {
             return Err(InternalError);
         }
 
@@ -209,7 +205,7 @@ impl Amount {
 
         if is_xrp_or_mpt {
             if is_xrp {
-                // If we get here, we'll have 8 bytes.
+                // Only the first 8 bytes are meaningful; the rest is padding.
 
                 let mut amount_bytes = [0u8; 8];
                 amount_bytes.copy_from_slice(&bytes[0..8]);
@@ -229,7 +225,7 @@ impl Amount {
             }
             // is_mpt
             else {
-                // If we get here, we'll have 33 bytes.
+                // Only the first 33 bytes are meaningful; the rest is padding.
 
                 // MPT amount: [0/type][1/sign][1/is-mpt][5/reserved][64/value]
                 let mut num_units_bytes = [0u8; 8];
@@ -253,11 +249,6 @@ impl Amount {
         }
         // is_iou
         else {
-            // IOU requires exactly 48 bytes
-            if bytes.len() != 48 {
-                return Err(InternalError);
-            }
-
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
             let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();
@@ -279,120 +270,6 @@ impl Amount {
             };
 
             Ok(amount)
-        }
-    }
-
-    pub fn transfer(&self, recipient: &AccountID) -> i32 {
-        unsafe {
-            // Build Payment transaction
-            let txn_index = build_txn(TransactionType::Payment as i32);
-            if txn_index < 0 {
-                return -100; // Build error
-            }
-
-            // Get the encoded amount from Amount
-            let (amount_bytes, _) = self.to_stamount_bytes();
-
-            // Add Amount field
-            if add_txn_field(
-                txn_index,
-                sfield::Amount.into(),
-                amount_bytes.as_ptr(),
-                amount_bytes.len(),
-            ) < 0
-            {
-                return -101; // Field error
-            }
-
-            // Add Destination field (21 bytes: 1 byte prefix + 20 byte account)
-            let mut dest_buffer = [0u8; 21];
-            dest_buffer[0] = 0x14; // Account ID type prefix
-            dest_buffer[1..21].copy_from_slice(&recipient.0);
-
-            if add_txn_field(
-                txn_index,
-                sfield::Destination.into(),
-                dest_buffer.as_ptr(),
-                dest_buffer.len(),
-            ) < 0
-            {
-                return -102; // Field error
-            }
-
-            // Emit the transaction
-            emit_built_txn(txn_index)
-        }
-    }
-
-    pub fn approve(&self, limit_value: Option<(i64, i32)>) -> i32 {
-        match self {
-            Amount::IOU {
-                issuer, currency, ..
-            } => {
-                unsafe {
-                    // Build TrustSet transaction
-                    let txn_index = build_txn(TransactionType::TrustSet as i32);
-                    if txn_index < 0 {
-                        return -100; // Build error
-                    }
-
-                    // Create the limit amount using host function
-                    let mut float_bytes = [0u8; 8];
-
-                    let limit_opaque = match limit_value {
-                        Some((value, decimals)) => {
-                            // Use host function to create OpaqueFloat
-                            let result =
-                                float_from_int(value, float_bytes.as_mut_ptr(), 8, decimals);
-
-                            if result < 0 {
-                                return -104; // Float conversion error
-                            }
-
-                            OpaqueFloat(float_bytes)
-                        }
-                        None => {
-                            // Set to zero to remove trust line
-                            // Use host function with 0 value
-                            let result = float_from_int(0, float_bytes.as_mut_ptr(), 8, 0);
-
-                            if result < 0 {
-                                return -104; // Float conversion error
-                            }
-
-                            OpaqueFloat(float_bytes)
-                        }
-                    };
-
-                    // Create the IOU amount with the limit
-                    let limit_iou = Amount::IOU {
-                        amount: limit_opaque,
-                        issuer: *issuer,
-                        currency: *currency,
-                    };
-
-                    // Get the encoded amount
-                    let (amount_bytes, _) = limit_iou.to_stamount_bytes();
-
-                    // Add LimitAmount field
-                    if add_txn_field(
-                        txn_index,
-                        sfield::LimitAmount.into(),
-                        amount_bytes.as_ptr(),
-                        amount_bytes.len(),
-                    ) < 0
-                    {
-                        return -101; // Field error
-                    }
-
-                    // Emit the transaction
-                    emit_built_txn(txn_index)
-                }
-            }
-            _ => {
-                // TrustSet only works with IOUs
-                -103 // Invalid amount type error
-            }
         }
     }
 }
