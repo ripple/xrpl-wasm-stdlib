@@ -96,7 +96,7 @@ pub extern "C" fn object_simple_create() -> i32 {
 
     // Test reading non-existent key
     let _ = trace("Testing non-existent key...");
-    if let Some(_) = get_data::<u32>(&account, "nonexistent") {
+    if get_data::<u32>(&account, "nonexistent").is_some() {
         let _ = trace("ERROR: Should not have found nonexistent key");
         return -1;
     } else {

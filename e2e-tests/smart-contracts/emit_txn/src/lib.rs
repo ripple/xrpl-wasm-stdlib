@@ -21,6 +21,7 @@ const CUSTOM_ERROR_CODE: i32 = -18;
 /// XRPL encoding markers
 mod markers {
     pub const ARRAY_END: u8 = 0xF1;
+    #[allow(dead_code)]
     pub const OBJECT_END: u8 = 0xE1;
 }
 
@@ -43,6 +44,7 @@ mod buffer_sizes {
 ///
 /// # Returns
 /// Total length of the memos array including the end marker
+#[allow(dead_code)]
 fn build_memos_array(
     buffer: &mut [u8; buffer_sizes::MEMOS_ARRAY],
     memo_buffers: &[(&[u8], usize)],

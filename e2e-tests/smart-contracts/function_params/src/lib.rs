@@ -187,7 +187,7 @@ pub extern "C" fn function_params_uint() -> i32 {
         return -1;
     }
 
-    return 0; // Return success code
+    0 // Return success code
 }
 
 #[unsafe(no_mangle)]
@@ -211,11 +211,11 @@ pub extern "C" fn function_params_other() -> i32 {
     let _ = trace_data("ACCOUNT Value:", &account_id.0, DataRepr::AsHex);
 
     // TODO: replace with require
-    let expectedAccount: [u8; 20] = [
+    let expected_account: [u8; 20] = [
         0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91, 0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F,
         0x89, 0x4F, 0x83, 0x2B, 0x3D,
     ];
-    if account_id.0 != expectedAccount {
+    if account_id.0 != expected_account {
         let _ = trace("ACCOUNT Parameter Error: Invalid Value");
         return -1;
     }
@@ -261,7 +261,7 @@ pub extern "C" fn function_params_other() -> i32 {
             return -1;
         }
     };
-    let (iou_amount, iou_issuer, iou_currency) = match &iou_token {
+    let (iou_amount, _iou_issuer, _iou_currency) = match &iou_token {
         Amount::IOU {
             amount,
             issuer,
@@ -297,7 +297,7 @@ pub extern "C" fn function_params_other() -> i32 {
                 let _ = trace_float("AMOUNT Value (IOU) - After adding 1:", &new_amount);
 
                 // Create a new Amount with the updated amount
-                let updated_token = Amount::IOU {
+                let _updated_token = Amount::IOU {
                     amount: new_amount.into(),
                     issuer: *issuer,
                     currency: *currency,
@@ -349,10 +349,10 @@ pub extern "C" fn function_params_other() -> i32 {
     let _ = trace_data("NUMBER Value:", &buf, DataRepr::AsHex);
 
     // TODO: replace with require
-    let expectedNumber: [u8; 12] = [
+    let expected_number: [u8; 12] = [
         0x10, 0xA7, 0x41, 0xA4, 0x62, 0x78, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE,
     ];
-    if buf != expectedNumber {
+    if buf != expected_number {
         let _ = trace("NUMBER Parameter Error: Invalid Value");
         return -1;
     }
@@ -363,7 +363,7 @@ pub extern "C" fn function_params_other() -> i32 {
     let _ = trace_num("NUMBER Exponent:", number.exponent as i64);
 
     let mut opaque_float_buf = [0x00; 8];
-    let result = unsafe {
+    let _result = unsafe {
         float_from_mant_exp(
             number.mantissa,
             number.exponent,
@@ -387,5 +387,5 @@ pub extern "C" fn function_params_other() -> i32 {
     // ISSUE (MPT)
     // CURRENCY
 
-    return 0; // Return success code
+    0 // Return success code
 }

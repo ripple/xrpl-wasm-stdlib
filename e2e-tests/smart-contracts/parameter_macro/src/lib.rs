@@ -10,7 +10,9 @@ use xrpl_contract_stdlib::submit::amount::AmountSubmit;
 use xrpl_contract_stdlib::wasm_export;
 
 const SUCCESS: i32 = 0;
+#[allow(dead_code)]
 const BAD_PARAM: i32 = -1;
+#[allow(dead_code)]
 const MAX_LIMIT: i32 = -2;
 
 fn exit(message: &str, error_code: i32) -> i32 {
@@ -21,7 +23,7 @@ fn exit(message: &str, error_code: i32) -> i32 {
 
 #[wasm_export(
     exit = exit,
-    instance(initialBalance: Amount)
+    instance(_initial_balance: Amount)
 )]
 fn my_function(account: AccountID, amount: Amount) -> i32 {
     let tx_id = amount.transfer(&account);

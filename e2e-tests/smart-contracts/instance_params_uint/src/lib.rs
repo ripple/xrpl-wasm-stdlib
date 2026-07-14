@@ -181,5 +181,5 @@ pub extern "C" fn instance_params_uint() -> i32 {
         return -1;
     }
 
-    return 0; // Return success code
+    0 // Return success code
 }
