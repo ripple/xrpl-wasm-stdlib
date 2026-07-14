@@ -67,7 +67,7 @@ pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
     }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(target_arch = "wasm32", unsafe(no_mangle))]
 pub extern "C" fn finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
 
