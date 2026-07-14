@@ -50,7 +50,7 @@ cargo llvm-cov \
 # Change to e2e-tests directory, run coverage on e2e tests
 cd e2e-tests
 cargo llvm-cov clean --workspace # Clean previous coverage data
-cargo llvm-cov \
+cargo llvm-cov -vv \
     --features xrpl-wasm-stdlib/test-host-bindings \
     --workspace \
     --tests \
