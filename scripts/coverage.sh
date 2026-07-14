@@ -50,12 +50,32 @@ cargo llvm-cov \
 # Change to e2e-tests directory, run coverage on e2e tests
 cd e2e-tests
 cargo llvm-cov clean --workspace # Clean previous coverage data
-cargo llvm-cov -vv \
+cargo llvm-cov \
+    --no-report \
     --features xrpl-wasm-stdlib/test-host-bindings \
     --workspace \
     --tests \
-    --ignore-filename-regex "e2e-tests/.*" \
     -- --nocapture
+
+echo "=== DEBUG: inspecting instrumented binaries and profile data ==="
+SYSROOT_BIN="$(dirname "$(rustc --print target-libdir)")/bin"
+echo "SYSROOT_BIN=$SYSROOT_BIN"
+ls -la target/llvm-cov-target/ | head -20
+echo "--- profraw files ---"
+ls -la target/llvm-cov-target/*.profraw 2>&1 | head -20
+echo "--- keylet_exists binary section headers (looking for __llvm_covmap/__llvm_covfun) ---"
+KEYLET_BIN=$(ls target/llvm-cov-target/debug/deps/keylet_exists-* 2>/dev/null | grep -v '\.' | head -1)
+echo "KEYLET_BIN=$KEYLET_BIN"
+objdump -h "$KEYLET_BIN" 2>&1 | grep -i "cov\|Idx Name" || echo "objdump not available or no cov sections found"
+echo "--- llvm-profdata merge (manual) ---"
+"$SYSROOT_BIN/llvm-profdata" merge -sparse target/llvm-cov-target/*.profraw -o /tmp/manual.profdata
+"$SYSROOT_BIN/llvm-profdata" show --all-functions --counts /tmp/manual.profdata 2>&1 | head -5
+echo "--- llvm-cov report on keylet_exists alone ---"
+"$SYSROOT_BIN/llvm-cov" report -instr-profile=/tmp/manual.profdata -object "$KEYLET_BIN" 2>&1 | tail -10
+echo "=== END DEBUG ==="
+
+cargo llvm-cov report \
+    --ignore-filename-regex "e2e-tests/.*"
 
 echo ""
 echo "=== Coverage Summary ==="
