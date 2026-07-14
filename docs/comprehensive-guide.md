@@ -323,7 +323,7 @@ use xrpl_wasm_stdlib::core::keylets::{
     oracle_id,
 };
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::asset::Asset;
+use xrpl_wasm_stdlib::core::types::currency::Currency;
 
 let account = AccountID::from([0u8; 20]);
 let sequence = 12345i32;
@@ -331,10 +331,10 @@ let sequence = 12345i32;
 // Account keylet
 let keylet = accountroot_id(&account);
 
-// Trust line keylet (requires Asset types)
-let asset1 = Asset::XRP(XrpAsset {});
-let asset2 = Asset::IOU(IouAsset::new(issuer, currency));
-let keylet = trustline_id(&account, &asset1, &asset2);
+// Trust line keylet (requires the two accounts and the shared currency)
+let account2 = AccountID::from([1u8; 20]);
+let currency = Currency::from([0u8; 20]);
+let keylet = trustline_id(&account, &account2, &currency);
 
 // Escrow keylet
 let keylet = escrow_id(&account, sequence);

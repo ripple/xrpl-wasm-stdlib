@@ -204,8 +204,8 @@ fn test_transaction_data_functions() -> i32 {
     }
     let _ = trace_data("Transaction Sequence:", &seq_buffer, DataRepr::AsHex);
 
-    // NOTE: get_tx_field2() through get_tx_field6() have been deprecated.
-    // Use tx_field() with appropriate parameters for all transaction field access.
+    // NOTE: tx_field() is the single host function for transaction field access;
+    // there are no per-field-count variants to call here.
 
     // Test 2.2: tx_inner() - Nested field access with locator
     let locator = [0x01, 0x00]; // Simple locator for first element
