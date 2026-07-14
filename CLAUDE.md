@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Keep this file current.** After completing a task, consider whether it changed something this file documents (workspace members, crate boundaries, scripts, architecture) and update the relevant section if so.
+
 ## What this repo is
 
 A Rust `no_std` standard library that lets developers write XRPL smart contracts (currently "Smart Escrows") compiled to WebAssembly. The library wraps a low-level host ABI exposed by `rippled` and offers type-safe accessors for transaction fields, ledger objects, keylets, and serialized fields.
@@ -10,11 +12,11 @@ Smart escrow WASM modules export `extern "C" fn finish() -> i32`. Returning a po
 
 ## Three Cargo workspaces (intentional, do not merge)
 
-| Workspace | Path                   | Members                                            |
-| --------- | ---------------------- | -------------------------------------------------- |
-| Library   | `/Cargo.toml` (root)   | `xrpl-wasm-stdlib`, `xrpl-wasm-stdlib/xrpl-macros` |
-| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs             |
-| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates |
+| Workspace | Path                   | Members                                                 |
+| --------- | ---------------------- | ------------------------------------------------------- |
+| Library   | `/Cargo.toml` (root)   | `xrpl-wasm-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib` |
+| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                  |
+| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates      |
 
 The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they target `wasm32v1-none` with `crate-type = ["cdylib"]`. Build/clippy scripts `cd` into each workspace separately — if you add a new top-level workspace, mirror that in `scripts/build.sh` and `scripts/clippy.sh`.
 
@@ -37,6 +39,7 @@ cargo test --workspace              # just the unit tests (root workspace)
 # Single unit test
 cargo test --workspace <test_name>
 cargo test -p xrpl-wasm-stdlib <test_name>
+cargo test -p xrpl-escrow-stdlib <test_name>
 
 # Clippy / fmt across all three workspaces
 ./scripts/clippy.sh
@@ -60,9 +63,23 @@ Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo cl
 
 `rust-toolchain.toml` pins **Rust 1.89.0** with `rustfmt`, `clippy`, and the `wasm32v1-none` target. The library uses **edition 2024**. Do not bump these casually — the WASM target and edition affect both the library and every example.
 
+## Architecture: crate ownership (`xrpl-wasm-stdlib` vs `xrpl-escrow-stdlib` vs `xrpl-macros`)
+
+The library workspace is split into three crates with a strict dependency direction: `xrpl-escrow-stdlib` → `xrpl-wasm-stdlib` → `xrpl-macros`. Never invert this — `xrpl-wasm-stdlib` must not depend on domain (feature-specific) code.
+
+- **`xrpl-macros`** — proc-macro crate, no runtime dependencies on the other two. Exports:
+  - Typed-constant macros: `r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!` — validate at compile time and emit a typed XRPL value.
+  - Entry-point macros: `#[smart_escrow]`, `#[smart_contract]` — wrap a user function in the `extern "C"` symbol the XRPL host calls. Both share a `parse → validate → codegen` pipeline in `entry_point/`; adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
+- **`xrpl-wasm-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
+- **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Re-exports `xrpl_wasm_stdlib::*`, so contract code typically only needs to depend on `xrpl-escrow-stdlib`.
+
+**Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
+
+Note: the current example contracts under `examples/smart-escrows/` still depend on `xrpl-wasm-stdlib` directly rather than `xrpl-escrow-stdlib`; the `xrpl-escrow-stdlib` crate and `#[smart_escrow]` macro are the newer, in-progress path for writing contracts.
+
 ## Architecture: the three-implementation host-binding swap
 
-This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait via `cfg`:
+This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait (defined in `host_bindings_trait.rs`) via `cfg`-gated `include!`:
 
 | Config                                                       | Included file            | Purpose                                                                                        |
 | ------------------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -72,30 +89,32 @@ This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/hos
 
 Consequences:
 
-- `lib.rs` uses `#![cfg_attr(target_arch = "wasm32", no_std)]` — code is `no_std` only when targeting WASM; native builds get `std` so `cargo test` works.
-- To exercise stdlib code from another crate's tests (e.g. `e2e-tests/`), enable the `test-host-bindings` feature on `xrpl-wasm-stdlib` — `dev-dependencies` aren't enough because mockall must be available when the lib is consumed as a regular dep.
+- `lib.rs` uses `#![cfg_attr(target_arch = "wasm32", no_std)]` — code is `no_std` only when targeting WASM; native builds get `std` so `cargo test` works. This applies to both `xrpl-wasm-stdlib` and `xrpl-escrow-stdlib`.
+- To exercise stdlib code from another crate's tests (e.g. `e2e-tests/`, `xrpl-escrow-stdlib`), enable the `test-host-bindings` feature on `xrpl-wasm-stdlib` — `dev-dependencies` aren't enough because mockall must be available when the lib is consumed as a regular dep.
 - Anything new added to `HostBindings` must be implemented in all three files. CI's `host-function-audit.sh` compares the trait against rippled's exports — keep them in sync.
 
 ## Architecture: layering inside `xrpl-wasm-stdlib`
 
 ```
 src/
-├── lib.rs            # no_std toggle, panic_handler (wasm only), hex decode helpers, re-exports r_address!
-├── host/             # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
-├── core/             # High-level safe API — what contract authors should call
-│   ├── current_tx/   # EscrowFinish marker + traits → typed access to the current TX's fields
+├── lib.rs            # no_std toggle, panic_handler (wasm only), hex decode helpers, re-exports the xrpl-macros constant macros
+├── ctx/               # SmartFeatureContext trait — narrow contract shared by all feature-specific entry-point contexts
+├── fields/            # Field decoding traits/helpers shared across XRPL field types
+├── host/              # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
+├── core/              # High-level safe API — what contract authors should call
+│   ├── current_tx/    # EscrowFinish marker + traits → typed access to the current TX's fields
 │   ├── ledger_objects/  # Cached ledger entry access (Escrow, AccountRoot, etc.) + CurrentEscrow helper
-│   ├── keylets.rs    # Compute keylets (escrow_keylet, oracle_keylet, credential_keylet, ...)
-│   ├── locator.rs    # Builds nested-field locator paths for `get_*_nested_field`
-│   ├── types/        # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, etc.
+│   ├── keylets.rs     # Compute keylets (escrow_keylet, oracle_keylet, credential_keylet, ...)
+│   ├── locator.rs     # Builds nested-field locator paths for `get_*_nested_field`
+│   ├── types/         # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, etc.
 │   └── constants.rs
-├── sfield.rs         # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
-└── types.rs          # Top-level type re-exports
+├── sfield.rs          # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
+└── types.rs           # Top-level type re-exports
 ```
 
 `SField<T, CODE>` encodes the field's Rust type as a const-generic phantom, so `current_tx::get_field(sfield::Account)` infers `AccountID`, `ledger_object::get_field(slot, sfield::Balance)` infers `Amount`, etc. Adding a new field means regenerating `sfield.rs` (see `tools/generateSFields.js` for custom type overrides like `TransactionType`, `ConditionBlob`, `FulfillmentBlob`).
 
-`xrpl-wasm-stdlib/xrpl-macros/` is a proc-macro crate that exports `r_address!("r...")` — converts an XRPL base58 r-address literal to a `[u8; 20]` AccountID at compile time.
+`xrpl-escrow-stdlib/src/ctx/escrow_finish.rs` shows the pattern for a feature context: a struct holding a `current_tx` marker type (`EscrowFinish`) plus a ledger-object helper (`CurrentEscrow`), implementing `SmartFeatureContext`, with feature-unique host calls as inherent methods (all `unsafe` FFI stays inside the context type — user contract code stays fully safe).
 
 ## WASM build profile (matters for size and panic behavior)
 
