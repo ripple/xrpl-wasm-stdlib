@@ -208,6 +208,7 @@ name = "xrpl-macros"
 version = "0.1.0"
 dependencies = [
  "bs58",
+ "proc-macro2",
  "quote",
  "sha2",
  "syn",
