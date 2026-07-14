@@ -9,15 +9,66 @@ use xrpl_wasm_stdlib::host::{Result, get_tx_field};
 use xrpl_wasm_stdlib::sfield;
 
 /// Trait providing access to fields specific to EscrowFinish transactions.
+///
+/// This trait extends `TransactionCommonFields` with methods for retrieving fields that are
+/// unique to EscrowFinish transactions. EscrowFinish transactions are used to complete
+/// time-based or condition-based escrows that were previously created with EscrowCreate
+/// transactions.
+///
+/// ## Implementation Requirements
+///
+/// Types implementing this trait should:
+/// - Also implement `TransactionCommonFields` for access to common transaction fields
+/// - Only be used in the context of processing EscrowFinish transactions
+/// - Ensure proper error handling when accessing conditional fields
 pub trait EscrowFinishFields: TransactionCommonFields {
+    /// Retrieves the owner account from the current EscrowFinish transaction.
+    ///
+    /// This mandatory field identifies the XRPL account that originally created the escrow
+    /// with an EscrowCreate transaction. The owner is the account that deposited the XRP
+    /// into the escrow and specified the conditions for its release.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<AccountID>` where:
+    /// * `Ok(AccountID)` - The 20-byte account identifier of the escrow owner
+    /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
     fn get_owner(&self) -> Result<AccountID> {
         get_field(sfield::Owner)
     }
 
+    /// Retrieves the offer sequence from the current EscrowFinish transaction.
+    ///
+    /// This mandatory field specifies the sequence number of the original EscrowCreate
+    /// transaction that created the escrow being finished. This creates a unique reference
+    /// to the specific escrow object, as escrows are identified by the combination of
+    /// the owner account and the sequence number of the creating transaction.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<u32>` where:
+    /// * `Ok(u32)` - The sequence number of the EscrowCreate transaction
+    /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
     fn get_offer_sequence(&self) -> Result<u32> {
         get_field(sfield::OfferSequence)
     }
 
+    /// Retrieves the cryptographic condition from the current EscrowFinish transaction.
+    ///
+    /// This optional field contains the cryptographic condition in full crypto-condition format.
+    /// For PREIMAGE-SHA-256 conditions, this is 39 bytes:
+    /// - 2 bytes: type tag (A025)
+    /// - 2 bytes: fingerprint length tag (8020)
+    /// - 32 bytes: SHA-256 hash (fingerprint)
+    /// - 2 bytes: cost length tag (8101)
+    /// - 1 byte: cost value (00)
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<Option<Condition>>` where:
+    /// * `Ok(Some(Condition))` - The full crypto-condition if the escrow is conditional
+    /// * `Ok(None)` - If the escrow has no cryptographic condition (time-based only)
+    /// * `Err(Error)` - If an error occurred during field retrieval
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
         let mut buffer = ConditionBlob::new();
         let result_code = unsafe {
@@ -33,6 +84,32 @@ pub trait EscrowFinishFields: TransactionCommonFields {
         })
     }
 
+    /// Retrieves the cryptographic fulfillment from the current EscrowFinish transaction.
+    ///
+    /// This optional field contains the cryptographic fulfillment that satisfies the condition
+    /// specified in the original EscrowCreate transaction. The fulfillment must cryptographically
+    /// prove that the condition's requirements have been met. This field is only required
+    /// when the escrow has an associated condition.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<Option<Fulfillment>>` where:
+    /// * `Ok(Some(Fulfillment))` - The fulfillment data if provided
+    /// * `Ok(None)` - If no fulfillment is provided (valid for unconditional escrows)
+    /// * `Err(Error)` - If an error occurred during field retrieval
+    ///
+    /// # Fulfillment Validation
+    ///
+    /// The XRPL network automatically validates that:
+    /// - The fulfillment satisfies the escrow's condition
+    /// - The fulfillment is properly formatted according to RFC 3814
+    /// - The cryptographic proof is mathematically valid
+    ///
+    /// # Size Limits
+    ///
+    /// Fulfillments are limited to 256 bytes in the current XRPL implementation.
+    /// This limit ensures network performance while supporting the most practical
+    /// cryptographic proof scenarios.
     fn get_fulfillment(&self) -> Result<Option<FulfillmentBlob>> {
         let mut buffer = FulfillmentBlob::new();
         let result_code = unsafe {
