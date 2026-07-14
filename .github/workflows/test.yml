@@ -199,5 +199,7 @@ jobs:
         run: rustup update stable
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
       - name: Generate code coverage
         run: ./scripts/coverage.sh
