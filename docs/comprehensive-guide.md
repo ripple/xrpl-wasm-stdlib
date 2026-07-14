@@ -254,6 +254,32 @@ let balance = get_account_balance(&account);
 // (Note: Specific helper functions may vary based on current API)
 ```
 
+#### Trust Line Information
+
+```rust
+use xrpl_common_stdlib::objects::trust_line::TrustLine;
+use xrpl_common_stdlib::objects::traits::TrustLineFields;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::currency::Currency;
+use xrpl_common_stdlib::host::Result::{Ok, Err};
+
+let account1 = AccountID::from([0u8; 20]); // Replace with real account
+let account2 = AccountID::from([1u8; 20]); // Replace with real account
+let currency = Currency::from(*b"USD");
+
+// Load the trust line between the two accounts for USD - returns Result<TrustLine>
+match TrustLine::load(&account1, &account2, &currency) {
+    Ok(line) => {
+        let balance = line.balance();       // Result<Amount>
+        let low_limit = line.low_limit();   // Result<Amount>
+        let high_limit = line.high_limit(); // Result<Amount>
+    }
+    Err(_e) => {
+        // No trust line exists between these accounts for this currency
+    }
+}
+```
+
 #### NFT Objects
 
 ```rust ignore
@@ -315,7 +341,7 @@ let nft: NFT = [0u8; 32];
 
 Keylets are used to locate objects in the ledger:
 
-```rust ignore
+```rust
 use xrpl_common_stdlib::keylets::{
     account_keylet,
     line_keylet,
@@ -323,24 +349,24 @@ use xrpl_common_stdlib::keylets::{
     oracle_keylet,
 };
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::types::amount::asset::Asset;
+use xrpl_common_stdlib::types::currency::Currency;
 
 let account = AccountID::from([0u8; 20]);
-let sequence = 12345i32;
+let other_account = AccountID::from([1u8; 20]);
+let currency = Currency::from(*b"USD");
+let sequence = 12345u32;
 
 // Account keylet
 let keylet = account_keylet(&account);
 
-// Trust line keylet (requires Asset types)
-let asset1 = Asset::XRP(XrpAsset {});
-let asset2 = Asset::IOU(IouAsset::new(issuer, currency));
-let keylet = line_keylet(&account, &asset1, &asset2);
+// Trust line keylet (between two accounts, for a given currency)
+let keylet = line_keylet(&account, &other_account, &currency);
 
 // Escrow keylet
 let keylet = escrow_keylet(&account, sequence);
 
 // Oracle keylet
-let document_id = 1i32;
+let document_id = 1u32;
 let keylet = oracle_keylet(&account, document_id);
 ```
 
