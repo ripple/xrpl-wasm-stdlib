@@ -298,8 +298,8 @@ use xrpl_wasm_stdlib::core::types::{
 };
 use xrpl_wasm_stdlib::types::NFT;      // [u8; 32] NFT identifier
 
-// Create AccountID from r-address (if r_address macro exists)
-// let account = xrpl_wasm_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+// Create AccountID from r-address at compile time
+// const ACCOUNT: AccountID = xrpl_wasm_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
 
 // Create from raw bytes
 let account = AccountID::from([0u8; 20]);

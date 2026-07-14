@@ -12,7 +12,7 @@ use xrpl_wasm_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::r_address;
 use xrpl_wasm_stdlib::{host, sfield};
 
-const ORACLE_OWNER: AccountID = AccountID(r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 const ORACLE_DOCUMENT_ID: u32 = 1;
 
 pub fn get_price_from_oracle(slot: i32) -> Result<u64> {

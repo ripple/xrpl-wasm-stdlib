@@ -12,7 +12,7 @@ categories = ["cryptography", "no-std", "encoding"]
 
 [dependencies]
 bs58 = "0.5"
-sha2 = "0.10"
+sha2 = "0.11"
 
 [lib]
 proc-macro = true
@@ -21,5 +21,14 @@ proc-macro = true
 version = "2.0"
 features = ["full"]
 
+# proc-macro2 provides the TokenStream type used in codegen.rs to build quote!
+# output before converting to the proc_macro boundary. quote and syn both
+# re-export it, but listing it explicitly avoids relying on transitive availability.
+[dependencies.proc-macro2]
+version = "1.0"
+
 [dependencies.quote]
 version = "1.0"
+
+[dev-dependencies]
+trybuild = "1.0"

@@ -16,10 +16,6 @@ use xrpl_wasm_stdlib::host::{
     le_field, le_inner, trace_xfloat,
 };
 use xrpl_wasm_stdlib::sfield;
-use xrpl_wasm_stdlib::sfield::{
-    Account, AccountTxnID, Balance, Domain, EmailHash, Flags, LedgerEntryType, MessageKey,
-    OwnerCount, PreviousTxnID, PreviousTxnLgrSeq, RegularKey, Sequence, TicketCount, TransferRate,
-};
 
 fn test_float_from_host() {
     let _ = trace("\n$$$ test_float_from_host $$$");

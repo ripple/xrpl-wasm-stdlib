@@ -65,6 +65,7 @@ use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
 use crate::host::{Result, tx_field};
+use crate::sfield::SField;
 
 /// Trait for types that can be retrieved from current transaction fields.
 ///
@@ -88,7 +89,6 @@ use crate::host::{Result, tx_field};
 /// use xrpl_wasm_stdlib::core::current_tx::{get_field, get_field_optional};
 /// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 /// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::core::types::blob::{MemoBlob, MEMO_BLOB_SIZE};
 /// use xrpl_wasm_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
@@ -98,7 +98,6 @@ use crate::host::{Result, tx_field};
 ///
 ///   // Get optional fields from the current transaction
 ///   let flags: Option<u32> = get_field_optional(sfield::Flags).unwrap();
-///   let memo: Option<MemoBlob> = get_field_optional(sfield::Memo).unwrap();
 /// # }
 /// ```
 ///
@@ -128,7 +127,7 @@ pub trait CurrentTxFieldGetter: Sized {
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - The SField identifying which field to retrieve
     ///
     /// # Returns
     ///
@@ -136,7 +135,7 @@ pub trait CurrentTxFieldGetter: Sized {
     /// * `Ok(Self)` - The field value for the specified field
     /// * `Err(Error::FieldNotFound)` - If the field is not present in the transaction
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
-    fn get_from_current_tx(field_code: i32) -> Result<Self>;
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self>;
 
     /// Get an optional field from the current transaction.
     ///
@@ -145,15 +144,17 @@ pub trait CurrentTxFieldGetter: Sized {
     ///
     /// # Arguments
     ///
-    /// * `field_code` - The field code identifying which field to retrieve
+    /// * `field` - The SField identifying which field to retrieve
     ///
     /// # Returns
     ///
     /// Returns a `Result<Option<Self>>` where:
     /// * `Ok(Some(Self))` - The field value for the specified field
-    /// * `Ok(None)` - If the field is not present in the transaction
+    /// * `Ok(None)` - If the field is not present in the transaction (i.e., result_code == FIELD_NOT_FOUND)
     /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>>;
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>>;
 }
 
 /// Trait for types that can be retrieved as fixed-size fields from transactions.
@@ -204,55 +205,302 @@ impl FixedSizeFieldType for u64 {
 /// The buffer size is determined at compile-time via the `SIZE` constant.
 impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     #[inline]
-    fn get_from_current_tx(field_code: i32) -> Result<Self> {
+    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes(result_code, T::SIZE, || unsafe {
             value.assume_init()
         })
     }
 
     #[inline]
-    fn get_from_current_tx_optional(field_code: i32) -> Result<Option<Self>> {
+    fn get_from_current_tx_optional<const CODE: i32>(
+        field: SField<Self, CODE>,
+    ) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe { tx_field(field_code, value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, T::SIZE, || {
             Some(unsafe { value.assume_init() })
         })
     }
 }
 
-/// Retrieves a field from the current transaction.
+/// Retrieves a field from the current transaction using an SField constant.
 ///
 /// # Arguments
 ///
-/// * `field_code` - The field code identifying which field to retrieve (can be an i32 or SField)
+/// * `field` - An SField constant that encodes both the field code and expected type
 ///
 /// # Returns
 ///
 /// Returns a `Result<T>` where:
 /// * `Ok(T)` - The field value for the specified field
 /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use xrpl_wasm_stdlib::core::current_tx::get_field;
+/// use xrpl_wasm_stdlib::sfield;
+///
+/// // Type is automatically inferred from the SField constant
+/// let sequence = get_field(sfield::Sequence).unwrap();  // u32
+/// let account = get_field(sfield::Account).unwrap();  // AccountID
+/// ```
 #[inline]
-pub fn get_field<T: CurrentTxFieldGetter, F: Into<i32>>(field_code: F) -> Result<T> {
-    T::get_from_current_tx(field_code.into())
+pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE>) -> Result<T> {
+    T::get_from_current_tx(field)
 }
 
-/// Retrieves an optionally present field from the current transaction.
+/// Retrieves an optionally present field from the current transaction using an SField constant.
 ///
 /// # Arguments
 ///
-/// * `field_code` - The field code identifying which field to retrieve (can be an i32 or SField)
+/// * `field` - An SField constant that encodes both the field code and expected type
 ///
 /// # Returns
 ///
 /// Returns a `Result<Option<T>>` where:
 /// * `Ok(Some(T))` - The field value for the specified field
-/// * `Ok(None)` - If the field is not present
+/// * `Ok(None)` - If the field is not present (i.e., result_code == FIELD_NOT_FOUND)
 /// * `Err(Error)` - If the field cannot be retrieved or has unexpected size
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use xrpl_wasm_stdlib::core::current_tx::get_field_optional;
+/// use xrpl_wasm_stdlib::sfield;
+///
+/// // Type is automatically inferred from the SField constant
+/// let flags = get_field_optional(sfield::Flags).unwrap();  // Option<u32>
+/// let source_tag = get_field_optional(sfield::SourceTag).unwrap();  // Option<u32>
+/// ```
 #[inline]
-pub fn get_field_optional<T: CurrentTxFieldGetter, F: Into<i32>>(
-    field_code: F,
+pub fn get_field_optional<T: CurrentTxFieldGetter, const CODE: i32>(
+    field: SField<T, CODE>,
 ) -> Result<Option<T>> {
-    T::get_from_current_tx_optional(field_code.into())
+    T::get_from_current_tx_optional(field)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CurrentTxFieldGetter, get_field, get_field_optional};
+    use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::core::types::amount::{AMOUNT_SIZE, Amount};
+    use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+    use crate::core::types::transaction_type::TransactionType;
+    use crate::core::types::uint::{HASH256_SIZE, Hash256};
+    use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR};
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use crate::sfield;
+    use mockall::predicate::{always, eq};
+
+    fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
+        mock.expect_tx_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(times)
+            .returning(move |_, _, _| size as i32);
+    }
+
+    fn expect_tx_field_not_found(mock: &mut MockHostBindings, field_code: i32, size: usize) {
+        mock.expect_tx_field()
+            .with(eq(field_code), always(), eq(size))
+            .times(1)
+            .returning(|_, _, _| FIELD_NOT_FOUND);
+    }
+
+    // One fixed-size (u32) and one variable-size (AccountID) type are sufficient here;
+    // success-path coverage for all supported types lives in the per-type getter tests above.
+    #[test]
+    fn test_optional_field_getter_returns_some_when_field_present() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::SourceTag.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Destination.into(), ACCOUNT_ID_SIZE, 1);
+
+        let _guard = setup_mock(mock);
+
+        let result = u32::get_from_current_tx_optional(sfield::SourceTag);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+
+        let result = AccountID::get_from_current_tx_optional(sfield::Destination);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_optional_field_getter_returns_none_when_field_not_found() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field_not_found(&mut mock, sfield::SourceTag.into(), 4);
+        expect_tx_field_not_found(&mut mock, sfield::Destination.into(), ACCOUNT_ID_SIZE);
+
+        let _guard = setup_mock(mock);
+
+        let result = u32::get_from_current_tx_optional(sfield::SourceTag);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+
+        let result = AccountID::get_from_current_tx_optional(sfield::Destination);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_required_field_getter_returns_err_when_field_not_found() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field_not_found(&mut mock, sfield::Sequence.into(), 4);
+
+        let _guard = setup_mock(mock);
+
+        assert!(u32::get_from_current_tx(sfield::Sequence).is_err());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_field_getter_panics_on_size_mismatch() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_field()
+            .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
+            .times(1)
+            .returning(|_, _, _| 2); // host returns fewer bytes than expected
+
+        let _guard = setup_mock(mock);
+
+        let _ = u32::get_from_current_tx(sfield::Sequence);
+    }
+
+    // get_field / get_field_optional are thin wrappers over get_from_current_tx / get_from_current_tx_optional,
+    // so exercising u32 and AccountID here is sufficient; per-type coverage lives in the getter tests above.
+    #[test]
+    fn test_get_field_and_get_field_optional_convenience_fns() {
+        let mut mock = MockHostBindings::new();
+
+        expect_tx_field(&mut mock, sfield::Sequence.into(), 4, 1);
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        expect_tx_field(&mut mock, sfield::SourceTag.into(), 4, 1);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Sequence).is_ok());
+        assert!(get_field::<AccountID, _>(sfield::Account).is_ok());
+
+        let result = get_field_optional::<u32, _>(sfield::SourceTag);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_get_field_returns_err_on_internal_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_field()
+            .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
+            .times(1)
+            .returning(|_, _, _| INTERNAL_ERROR);
+
+        let _guard = setup_mock(mock);
+
+        assert!(get_field::<u32, _>(sfield::Flags).is_err());
+    }
+
+    #[test]
+    fn test_u8_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::Generic.into(), 1, 1);
+        let _guard = setup_mock(mock);
+        assert!(u8::get_from_current_tx(sfield::Generic).is_ok());
+    }
+
+    #[test]
+    fn test_u16_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::SignerWeight.into(), 2, 1);
+        let _guard = setup_mock(mock);
+        assert!(u16::get_from_current_tx(sfield::SignerWeight).is_ok());
+    }
+
+    #[test]
+    fn test_u64_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::IndexNext.into(), 8, 1);
+        let _guard = setup_mock(mock);
+        assert!(u64::get_from_current_tx(sfield::IndexNext).is_ok());
+    }
+
+    #[test]
+    fn test_account_id_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::Account.into(), ACCOUNT_ID_SIZE, 1);
+        let _guard = setup_mock(mock);
+        assert!(AccountID::get_from_current_tx(sfield::Account).is_ok());
+    }
+
+    #[test]
+    fn test_hash256_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::PreviousTxnID.into(), HASH256_SIZE, 1);
+        let _guard = setup_mock(mock);
+        assert!(Hash256::get_from_current_tx(sfield::PreviousTxnID).is_ok());
+    }
+
+    #[test]
+    fn test_amount_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::Fee.into(), AMOUNT_SIZE, 1);
+        let _guard = setup_mock(mock);
+        assert!(Amount::get_from_current_tx(sfield::Fee).is_ok());
+    }
+
+    #[test]
+    fn test_public_key_blob_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(
+            &mut mock,
+            sfield::SigningPubKey.into(),
+            PUBLIC_KEY_BLOB_SIZE,
+            1,
+        );
+        let _guard = setup_mock(mock);
+        assert!(PublicKeyBlob::get_from_current_tx(sfield::SigningPubKey).is_ok());
+    }
+
+    #[test]
+    fn test_transaction_type_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::TransactionType.into(), 2, 1);
+        let _guard = setup_mock(mock);
+        assert!(TransactionType::get_from_current_tx(sfield::TransactionType).is_ok());
+    }
+
+    #[test]
+    fn test_blob_field_getter() {
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::MemoData.into(), DEFAULT_BLOB_SIZE, 1);
+        let _guard = setup_mock(mock);
+        assert!(Blob::<DEFAULT_BLOB_SIZE>::get_from_current_tx(sfield::MemoData).is_ok());
+    }
+
+    #[test]
+    fn test_tx_field_pipeline_routes_bytes_to_amount() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_field()
+            .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
+            .times(1)
+            .returning(|_, buf, size| {
+                let slice = unsafe { core::slice::from_raw_parts_mut(buf, size) };
+                slice.fill(0);
+                let mut be = 1000u64.to_be_bytes();
+                be[0] |= 0x40;
+                slice[0..8].copy_from_slice(&be);
+                8
+            });
+
+        let _guard = setup_mock(mock);
+
+        let amount = Amount::get_from_current_tx(sfield::Amount).unwrap();
+        assert!(matches!(amount, Amount::XRP { num_drops: 1000 }));
+    }
 }

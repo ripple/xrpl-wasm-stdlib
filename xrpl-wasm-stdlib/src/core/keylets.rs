@@ -1332,7 +1332,8 @@ mod tests {
     });
 
     #[test]
-    fn test_wrong_size_returns_internal_error() {
+    #[should_panic]
+    fn test_wrong_size_panics() {
         let mut mock = MockHostBindings::new();
 
         // Return 16 instead of 32 — positive but wrong size
@@ -1343,8 +1344,6 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let account_id = AccountID::from([0xBB; 20]);
-        let result = accountroot_id(&account_id);
-        assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        let _ = accountroot_id(&account_id);
     }
 }

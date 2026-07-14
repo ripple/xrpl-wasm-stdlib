@@ -17,7 +17,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Cache dependencies
         uses: actions/cache/restore@v4
         with:
@@ -39,7 +39,7 @@ jobs:
   clippy_linting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Cache dependencies
         uses: actions/cache/restore@v4
         with:
@@ -57,7 +57,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Run formatting check
         run: ./scripts/fmt.sh
@@ -65,7 +65,7 @@ jobs:
   check_wasm_exports:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Check WASM contract exports
         run: ./scripts/check-wasm-exports.sh
@@ -73,7 +73,7 @@ jobs:
   host_function_audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Run host function audit
         run: ./scripts/host-function-audit.sh
@@ -81,7 +81,7 @@ jobs:
   validate_ui:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Validate UI
         run: ./scripts/validate-ui.sh
@@ -89,7 +89,7 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -108,7 +108,7 @@ jobs:
   run-markdown:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Run code in Markdown files
         run: ./scripts/run-markdown.sh
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_test
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Use Node.js v24
         uses: actions/setup-node@v4
@@ -184,7 +184,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Cache dependencies
         uses: actions/cache/restore@v4
         with:

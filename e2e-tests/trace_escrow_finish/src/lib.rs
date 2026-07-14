@@ -109,16 +109,21 @@ pub extern "C" fn finish() -> i32 {
         let source_tag = opt_source_tag.expect("SourceTag should be set for testing");
         let _ = trace_num("  SourceTag:", source_tag as i64);
 
-        // Trace Field: SigningPubKey (required)
-        // For multi-signed transactions, SigningPubKey must be empty (0 bytes)
+        // Trace Field: SigningPubKey
+        // For multi-signed transactions, SigningPubKey is empty (0 bytes) and returns None
+        // For single-signed transactions, SigningPubKey is 33 bytes and returns Some(PublicKey)
         let signing_pub_key_result = escrow_finish.get_signing_pub_key();
         match signing_pub_key_result {
-            host::Result::Ok(signing_pub_key) => {
-                let _ = trace_num("  SigningPubKey length:", signing_pub_key.0.len() as i64);
-                // For multi-signed transactions, SigningPubKey should be empty
-                // But let's not assert for now, just trace it
-                let _ = trace_data("  SigningPubKey:", &signing_pub_key.0, DataRepr::AsHex);
-            }
+            host::Result::Ok(signing_pub_key_opt) => match signing_pub_key_opt {
+                Some(signing_pub_key) => {
+                    let _ = trace("  SigningPubKey (single-signed):");
+                    let _ = trace_num("    Length:", signing_pub_key.0.len() as i64);
+                    let _ = trace_data("    Data:", &signing_pub_key.0, DataRepr::AsHex);
+                }
+                None => {
+                    let _ = trace("  SigningPubKey: None (multi-signed transaction)");
+                }
+            },
             host::Result::Err(e) => {
                 let _ = trace_num("  Error getting SigningPubKey, error_code = ", e as i64);
             }

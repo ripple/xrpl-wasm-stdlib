@@ -34,7 +34,9 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
         result_code if result_code > 0 => {
             Ok(Some(data)) // <-- Move the buffer into an AccountID
         }
-        0 => Err(InternalError),
+        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
+        // same as an absent field and let the caller decide.
+        0 => Ok(None),
         result_code => Err(Error::from_code(result_code)),
     }
 }

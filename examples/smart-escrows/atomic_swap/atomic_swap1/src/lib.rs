@@ -10,7 +10,6 @@ use xrpl_wasm_stdlib::core::ledger_objects::traits::{CurrentEscrowFields, Escrow
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_wasm_stdlib::host;
-use xrpl_wasm_stdlib::host::Error::InternalError;
 use xrpl_wasm_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::tx_inner;
@@ -72,7 +71,9 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
 
     match result_code {
         result_code if result_code > 0 => Ok(Some((data, result_code as usize))),
-        0 => Err(InternalError),
+        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
+        // same as an absent field and let the caller decide.
+        0 => Ok(None),
         result_code => Err(Error::from_code(result_code)),
     }
 }
