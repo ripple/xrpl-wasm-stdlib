@@ -7,7 +7,6 @@ use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
 use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
-use xrpl_wasm_stdlib::host::Error::InternalError;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::tx_inner;
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
