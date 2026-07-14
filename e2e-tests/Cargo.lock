@@ -192,6 +192,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "trace_escrow_trust_line"
+version = "0.8.0"
+dependencies = [
+ "test_utils",
+ "xrpl-common-stdlib",
+ "xrpl-escrow-stdlib",
+]
+
+[[package]]
 name = "typenum"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

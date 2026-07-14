@@ -1,0 +1,14 @@
+[package]
+name = "trace_escrow_trust_line"
+version = "0.8.0"
+edition = "2024"
+description = "End-to-end test that validates RippleState (trust line) field access and IOU Amount decoding"
+license = "ISC"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-common-stdlib = { workspace = true }
+xrpl-escrow-stdlib = { workspace = true }
+test_utils = { workspace = true }

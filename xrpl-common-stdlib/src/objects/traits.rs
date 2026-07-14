@@ -247,6 +247,16 @@ pub trait TrustLineFields: LedgerObjectCommonFields {
     fn high_quality_out(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityOut)
     }
+
+    /// The identifying hash of the transaction that most recently modified this object.
+    fn previous_txn_id(&self) -> Result<Hash256> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
+    }
+
+    /// The index of the ledger that contains the transaction that most recently modified this object.
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
+    }
 }
 
 #[cfg(test)]
@@ -657,6 +667,10 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::LowNode, 8, 1);
             // high_node
             expect_ledger_field(&mut mock, 1, sfield::HighNode, 8, 1);
+            // previous_txn_id
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
+            // previous_txn_lgr_seq
+            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
 
             let _guard = setup_mock(mock);
 
@@ -667,6 +681,8 @@ mod tests {
             assert!(line.high_limit().is_ok());
             assert!(line.low_node().is_ok());
             assert!(line.high_node().is_ok());
+            assert!(line.previous_txn_id().is_ok());
+            assert!(line.previous_txn_lgr_seq().is_ok());
         }
 
         #[test]

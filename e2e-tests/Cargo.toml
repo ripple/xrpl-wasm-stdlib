@@ -9,6 +9,7 @@ members = [
     "trace_escrow_account",
     "trace_escrow_finish",
     "trace_escrow_ledger_object",
+    "trace_escrow_trust_line",
 ]
 
 [workspace.dependencies]
