@@ -21,54 +21,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
 ////////////////////////////////////////////////////////////////////////
 const path = require("path")
 const fs = require("fs/promises")
-
-async function readFileFromGitHub(repo, filename) {
-  if (!repo.includes("tree")) {
-    repo += "/tree/HEAD"
-  }
-  let url = repo.replace("github.com", "raw.githubusercontent.com")
-  url = url.replace("tree/", "")
-  url += "/" + filename
-
-  if (!url.startsWith("http")) {
-    url = "https://" + url
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`)
-    }
-    return await response.text()
-  } catch (e) {
-    console.error(`Error reading ${url}: ${e.message}`)
-    process.exit(1)
-  }
-}
-
-async function readFile(folder, filename) {
-  const filePath = path.join(folder, filename)
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch (e) {
-    throw new Error(`File not found: ${filePath}, ${e.message}`)
-  }
-}
-
-// Unlike the old single-source version, source-ness is resolved per call
-// (rather than once globally) since escrow and contract sources are
-// independent and may each be a GitHub URL or a local checkout.
-async function read(source, filename) {
-  try {
-    const url = new URL(source)
-    if (url.hostname === "github.com") {
-      return readFileFromGitHub(source, filename)
-    }
-  } catch {
-    // Not a URL -- fall through to local file read.
-  }
-  return readFile(source, filename)
-}
+const { readSourceFile: read } = require("./rippledSource")
 
 function parseStypes(sfieldHeaderFile) {
   let stypeHits = [
