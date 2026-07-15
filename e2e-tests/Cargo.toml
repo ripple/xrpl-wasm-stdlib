@@ -10,6 +10,7 @@ members = [
     "trace_escrow_finish",
     "trace_escrow_ledger_object",
     "smart-contracts/amount_tests",
+    "smart-contracts/contract_data",
     "smart-contracts/emit_txn",
     "smart-contracts/events",
     "smart-contracts/function_params",

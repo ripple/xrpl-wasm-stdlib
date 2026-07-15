@@ -6,6 +6,7 @@
 extern crate std;
 
 pub mod current_tx;
+pub mod data;
 pub mod event;
 pub mod params;
 pub mod sfield;
