@@ -11,6 +11,7 @@ members = [
     "trace_escrow_ledger_object",
     "smart-contracts/amount_tests",
     "smart-contracts/emit_txn",
+    "smart-contracts/events",
     "smart-contracts/function_params",
     "smart-contracts/instance_params_uint",
     "smart-contracts/instance_params_other",
