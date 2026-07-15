@@ -1643,4 +1643,465 @@ pub trait HostBindings {
         amount_ptr: *const u8,
         amount_len: usize,
     ) -> i32;
+
+    // #####################################
+    // Host Function Category: SMART CONTRACT
+    // #####################################
+
+    /// Retrieves a parameter passed to the smart contract instance at initialization.
+    ///
+    /// This function allows the smart contract to access parameters that were provided when
+    /// the contract instance was created or deployed.
+    ///
+    /// # Parameters
+    ///
+    /// - `index`: The zero-based index of the parameter to retrieve.
+    /// - `st_type_id`: The serialization type ID expected for this parameter, used for validation.
+    /// - `out_buff_ptr`: A mutable pointer to the buffer where the parameter data will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn instance_param(
+        &self,
+        index: i32,
+        st_type_id: i32,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Retrieves a parameter passed to the currently executing smart contract function.
+    ///
+    /// This function allows the smart contract to access parameters that were provided
+    /// in the current function invocation.
+    ///
+    /// # Parameters
+    ///
+    /// - `index`: The zero-based index of the function parameter to retrieve.
+    /// - `st_type_id`: The serialization type ID expected for this parameter, used for validation.
+    /// - `out_buff_ptr`: A mutable pointer to the buffer where the parameter data will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn function_param(
+        &self,
+        index: i32,
+        st_type_id: i32,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    // #####################################
+    // Host Function Category: DATA STORAGE
+    // #####################################
+
+    /// Retrieves a field value from a data object stored under a specific account and key.
+    ///
+    /// This function accesses the smart contract's persistent storage to read a field
+    /// from a data object.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `out_buff_ptr`: A pointer to the buffer where the field value will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn get_data_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Retrieves a nested field value from a data object stored under a specific account and key.
+    ///
+    /// This function accesses nested fields within a data object using a path or nested locator.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `nst_ptr`: A pointer to the nested path or locator that identifies the nested field.
+    /// - `nst_len`: The length of the nested path in bytes.
+    /// - `out_buff_ptr`: A pointer to the buffer where the nested field value will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn get_data_nested_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Retrieves an element from an array field in a data object.
+    ///
+    /// This function accesses a specific element by index from an array stored in a data object.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `index`: The zero-based index of the array element to retrieve.
+    /// - `out_buff_ptr`: A pointer to the buffer where the array element value will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn get_data_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Retrieves an element from a nested array field in a data object.
+    ///
+    /// This function accesses a specific element by index from a nested array within a data object.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `index`: The zero-based index of the array element to retrieve.
+    /// - `nst_ptr`: A pointer to the nested path or locator that identifies the nested array.
+    /// - `nst_len`: The length of the nested path in bytes.
+    /// - `out_buff_ptr`: A pointer to the buffer where the array element value will be written.
+    /// - `out_buff_len`: The size of the output buffer in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes written to the output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn get_data_nested_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Sets or updates a field value in a data object.
+    ///
+    /// This function writes data to the smart contract's persistent storage.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `data_ptr`: A pointer to the data to be written to the field.
+    /// - `data_len`: The length of the data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn set_data_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32;
+
+    /// Sets or updates a nested field value in a data object.
+    ///
+    /// This function writes data to a nested field within a data object in persistent storage.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `nst_ptr`: A pointer to the nested path or locator that identifies the nested field.
+    /// - `nst_len`: The length of the nested path in bytes.
+    /// - `data_ptr`: A pointer to the data to be written to the nested field.
+    /// - `data_len`: The length of the data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn set_data_nested_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32;
+
+    /// Sets or updates an element in an array field of a data object.
+    ///
+    /// This function writes data to a specific array element by index in persistent storage.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `index`: The zero-based index of the array element to set.
+    /// - `data_ptr`: A pointer to the data to be written to the array element.
+    /// - `data_len`: The length of the data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn set_data_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32;
+
+    /// Sets or updates an element in a nested array field of a data object.
+    ///
+    /// This function writes data to a specific element in a nested array in persistent storage.
+    ///
+    /// # Parameters
+    ///
+    /// - `account_ptr`: A pointer to the account identifier that owns the data object.
+    /// - `account_len`: The length of the account identifier in bytes.
+    /// - `key_ptr`: A pointer to the key that identifies the data object.
+    /// - `key_len`: The length of the key in bytes.
+    /// - `index`: The zero-based index of the array element to set.
+    /// - `nst_ptr`: A pointer to the nested path or locator that identifies the nested array.
+    /// - `nst_len`: The length of the nested path in bytes.
+    /// - `data_ptr`: A pointer to the data to be written to the array element.
+    /// - `data_len`: The length of the data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn set_data_nested_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32;
+
+    // #############################################
+    // Host Function Category: TRANSACTION BUILDING
+    // #############################################
+
+    /// Begins building a new transaction of the specified type.
+    ///
+    /// This function initializes a transaction builder and returns an index that can be used
+    /// to add fields to the transaction before emitting it.
+    ///
+    /// # Parameters
+    ///
+    /// - `txn_type`: The transaction type identifier (e.g., Payment, TrustSet, etc.).
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive transaction builder index on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn build_txn(&self, txn_type: i32) -> i32;
+
+    /// Adds a field to a transaction being built.
+    ///
+    /// This function adds a specific field with its value to a transaction that was
+    /// previously initialized with `build_txn`.
+    ///
+    /// # Parameters
+    ///
+    /// - `index`: The transaction builder index returned by `build_txn`.
+    /// - `field`: The field identifier to add to the transaction.
+    /// - `write_ptr`: A pointer to the data for this field.
+    /// - `write_len`: The length of the field data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn add_txn_field(
+        &self,
+        index: i32,
+        field: i32,
+        write_ptr: *const u8,
+        write_len: usize,
+    ) -> i32;
+
+    /// Emits a transaction that was built using the transaction builder.
+    ///
+    /// This function finalizes and submits a transaction that was constructed with
+    /// `build_txn` and `add_txn_field`.
+    ///
+    /// # Parameters
+    ///
+    /// - `index`: The transaction builder index returned by `build_txn`.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// This function is safe to call from WASM context
+    unsafe fn emit_built_txn(&self, index: i32) -> i32;
+
+    /// Emits a pre-serialized transaction directly.
+    ///
+    /// This function submits a complete, serialized transaction without using the
+    /// transaction builder.
+    ///
+    /// # Parameters
+    ///
+    /// - `txn_read_ptr`: A pointer to the serialized transaction data.
+    /// - `txn_read_len`: The length of the serialized transaction in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn emit_txn(&self, txn_read_ptr: *const u8, txn_read_len: usize) -> i32;
+
+    /// Emits a custom event from the smart contract.
+    ///
+    /// This function allows the smart contract to emit named events with associated data,
+    /// which can be observed by external systems monitoring the blockchain.
+    ///
+    /// # Parameters
+    ///
+    /// - `name_ptr`: A pointer to the event name string.
+    /// - `name_len`: The length of the event name in bytes.
+    /// - `data_ptr`: A pointer to the event data payload.
+    /// - `data_len`: The length of the event data in bytes.
+    ///
+    /// # Returns
+    ///
+    /// - Returns 0 on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   `../core/error_codes.rs`
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn emit_event(
+        &self,
+        name_ptr: *const u8,
+        name_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32;
 }
