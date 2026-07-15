@@ -1,6 +1,4 @@
-use xrpl_wasm_stdlib::core::ledger_objects::traits::LedgerObjectCommonFields;
-
-use crate::ledger_objects::traits::EscrowFields;
+use xrpl_wasm_stdlib::core::ledger_objects::traits::{EscrowFields, LedgerObjectCommonFields};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Escrow {
