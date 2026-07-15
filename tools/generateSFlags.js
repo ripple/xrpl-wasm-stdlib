@@ -21,54 +21,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
 ////////////////////////////////////////////////////////////////////////
 const path = require("path")
 const fs = require("fs/promises")
-
-async function readFileFromGitHub(repo, filename) {
-  if (!repo.includes("tree")) {
-    repo += "/tree/HEAD"
-  }
-  let url = repo.replace("github.com", "raw.githubusercontent.com")
-  url = url.replace("tree/", "")
-  url += "/" + filename
-
-  if (!url.startsWith("http")) {
-    url = "https://" + url
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`)
-    }
-    return await response.text()
-  } catch (e) {
-    console.error(`Error reading ${url}: ${e.message}`)
-    process.exit(1)
-  }
-}
-
-async function readFile(folder, filename) {
-  const filePath = path.join(folder, filename)
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch (e) {
-    throw new Error(`File not found: ${filePath}, ${e.message}`)
-  }
-}
-
-// Unlike the old single-source version, source-ness is resolved per call
-// (rather than once globally) since escrow and contract sources are
-// independent and may each be a GitHub URL or a local checkout.
-async function read(source, filename) {
-  try {
-    const url = new URL(source)
-    if (url.hostname === "github.com") {
-      return readFileFromGitHub(source, filename)
-    }
-  } catch {
-    // Not a URL -- fall through to local file read.
-  }
-  return readFile(source, filename)
-}
+const { readSourceFile: read } = require("./rippledSource")
 
 // Strip C-style block comments so commented-out/deprecated/reserved entries
 // (e.g. `/* ASF_FLAG(asfTshCollect, 11) */`) are never mistaken for real ones.
@@ -200,15 +153,18 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
   ////////////////////////////////////////////////////////////////////////
   //  Trailer: additional standalone flags/masks/combos declared directly as
   //  `inline constexpr FlagValue NAME = EXPR;` or `constexpr std::uint32_t
-  //  NAME = EXPR;` outside the XMACRO table (MPToken mutable flags, NFToken
-  //  legacy masks, AMM sub-tx combos, Contract parameter flags, etc).
+  //  NAME = EXPR;` outside the XMACRO table (Universal transaction flags,
+  //  MPToken mutable flags, NFToken legacy masks, AMM sub-tx combos,
+  //  Contract parameter flags, etc).
   ////////////////////////////////////////////////////////////////////////
   // Drop preprocessor directive lines (#define/#pragma/#undef) -- several of
   // them (e.g. `#define TO_VALUE(name, value) inline constexpr FlagValue name
   // = value;`) are macro *definitions* whose parameter placeholders would
   // otherwise be mistaken for real flag declarations by the regex below.
   const trailerText = (
-    xmacroExtra + stripComments(txFlagsFileRaw.substring(xmacroEnd))
+    stripComments(txFlagsFileRaw.substring(0, xmacroStart)) +
+    xmacroExtra +
+    stripComments(txFlagsFileRaw.substring(xmacroEnd))
   )
     .split("\n")
     .filter((line) => !/^\s*#/.test(line))
@@ -379,14 +335,45 @@ async function main() {
   addLine("#![allow(non_upper_case_globals)]")
   addLine("")
 
-  addLine("// Universal Transaction flags:")
-  addLine("pub const tfFullyCanonicalSig: u32 = 0x80000000;")
-  addLine("pub const tfInnerBatchTxn: u32 = 0x40000000;")
-  addLine("pub const tfUniversal: u32 = tfFullyCanonicalSig | tfInnerBatchTxn;")
-  addLine("pub const tfUniversalMask: u32 = !tfUniversal;")
-  addLine("")
+  // Emits one trailer-sourced constant (a standalone `inline constexpr
+  // FlagValue NAME = EXPR;` from TxFlags.h, resolved against lsfMap/already
+  // -emitted names where the expression isn't a bare numeric literal).
+  function emitTrailerEntry(name, rawExpr) {
+    if (isNumericLiteral(rawExpr)) {
+      addLine(`pub const ${name}: u32 = ${rawExpr};`)
+    } else if (
+      !rawExpr.includes("|") &&
+      !rawExpr.includes("~") &&
+      lsfMap.has(rawExpr)
+    ) {
+      // Bare alias of an lsf*/lsmf* ledger-object flag, e.g. `= lsmfMPTCanMutateCanLock;`
+      addLine(`pub const ${name}: u32 = ${lsfMap.get(rawExpr)};`)
+    } else {
+      addLine(`pub const ${name}: u32 = ${translateExpr(rawExpr)};`)
+    }
+  }
 
   const emittedFlagNames = new Set()
+
+  addLine("// Universal Transaction flags:")
+  for (const name of [
+    "tfFullyCanonicalSig",
+    "tfInnerBatchTxn",
+    "tfUniversal",
+    "tfUniversalMask",
+  ]) {
+    if (!trailerEntries.has(name)) {
+      console.error(
+        `Error: expected universal flag '${name}' not found in TxFlags.h -- ` +
+          "rippled's preamble format may have changed; update parseTxFlagsSource.",
+      )
+      process.exit(1)
+    }
+    emitTrailerEntry(name, trailerEntries.get(name))
+    emittedFlagNames.add(name)
+  }
+  addLine("")
+
   // Escrow's transactions first (in their original document order), then
   // contract-only transactions in their own document order.
   const orderedTxNames = [...txBlocks.entries()]
@@ -418,19 +405,7 @@ async function main() {
   for (const [name, rawExpr] of trailerEntries) {
     if (emittedFlagNames.has(name)) continue // already covered above
     emittedFlagNames.add(name)
-
-    if (isNumericLiteral(rawExpr)) {
-      addLine(`pub const ${name}: u32 = ${rawExpr};`)
-    } else if (
-      !rawExpr.includes("|") &&
-      !rawExpr.includes("~") &&
-      lsfMap.has(rawExpr)
-    ) {
-      // Bare alias of an lsf*/lsmf* ledger-object flag, e.g. `= lsmfMPTCanMutateCanLock;`
-      addLine(`pub const ${name}: u32 = ${lsfMap.get(rawExpr)};`)
-    } else {
-      addLine(`pub const ${name}: u32 = ${translateExpr(rawExpr)};`)
-    }
+    emitTrailerEntry(name, rawExpr)
   }
 
   addLine("")
@@ -449,7 +424,7 @@ async function main() {
   const outputFile =
     process.argv.length == 5
       ? process.argv[4]
-      : path.join(__dirname, "../xrpl-wasm-stdlib/src/sflags.rs")
+      : path.join(__dirname, "../xrpl-wasm-stdlib/src/tx_flags.rs")
   try {
     await fs.writeFile(outputFile, output, "utf8")
     console.log("File written successfully to", outputFile)
