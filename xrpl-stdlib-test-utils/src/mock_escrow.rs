@@ -133,6 +133,13 @@ mod tests {
     }
 
     #[test]
+    fn write_bytes_returns_buffer_too_small_when_the_caller_buffer_is_undersized() {
+        let mut undersized = [0u8; 4];
+        let result = write_bytes(&[1, 2, 3, 4, 5], undersized.as_mut_ptr(), undersized.len());
+        assert_eq!(result, BUFFER_TOO_SMALL);
+    }
+
+    #[test]
     fn with_account_is_readable_back_through_the_real_getter() {
         let _guard = EscrowScenario::builder()
             .with_account(test_account())

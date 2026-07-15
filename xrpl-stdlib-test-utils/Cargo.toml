@@ -8,4 +8,4 @@ repository.workspace = true
 
 [dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
-mockall = "0.15.0"
+mockall.workspace = true
