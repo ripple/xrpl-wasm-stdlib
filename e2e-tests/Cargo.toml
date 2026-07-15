@@ -9,10 +9,12 @@ members = [
     "trace_escrow_account",
     "trace_escrow_finish",
     "trace_escrow_ledger_object",
+    "smart-contracts/emit_txn",
 ]
 
 [workspace.dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-contract-stdlib = { path = "../xrpl-contract-stdlib" }
 test_utils = { path = "test_utils" }
 
 [profile.release]
