@@ -20,7 +20,7 @@ ESCROW_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
 CONTRACT_SOURCE="${2:-https://github.com/XRPLF/rippled/tree/xrplf/smart-contracts}"
 
 # Output file (can be overridden with the third argument)
-OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/sflags.rs}"
+OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/tx_flags.rs}"
 
 echo "🔧 Generating transaction/ledger flag constants..."
 echo "📦 Escrow source:   $ESCROW_SOURCE"
