@@ -53,8 +53,8 @@ impl EscrowFinishContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_wasm_stdlib::host::setup_mock;
+    use xrpl_stdlib_test_utils::EscrowScenario;
+    use xrpl_wasm_stdlib::host::Error;
 
     #[test]
     fn default_constructs() {
@@ -70,9 +70,9 @@ mod tests {
 
     #[test]
     fn update_data_returns_ok_on_success() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_update_data().times(1).returning(|_, _| 0);
-        let _guard = setup_mock(mock);
+        let _guard = EscrowScenario::builder()
+            .with_update_data_returns(Ok(()))
+            .install();
 
         let ctx = EscrowFinishContext::default();
         assert!(ctx.update_data(b"payload").is_ok());
@@ -80,9 +80,9 @@ mod tests {
 
     #[test]
     fn update_data_returns_err_on_negative_code() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_update_data().times(1).returning(|_, _| -7);
-        let _guard = setup_mock(mock);
+        let _guard = EscrowScenario::builder()
+            .with_update_data_returns(Err(Error::InternalError))
+            .install();
 
         let ctx = EscrowFinishContext::default();
         assert!(ctx.update_data(b"payload").is_err());
