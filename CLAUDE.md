@@ -55,6 +55,9 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 
 # Regenerate src/sfield.rs from rippled (requires Node.js)
 ./scripts/generate-sfields.sh
+
+# Regenerate src/tx_flags.rs (tf*/asf*/mask constants) from rippled (requires Node.js)
+./scripts/generate-tx-flags.sh
 ```
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -Dclippy::all` on staged Rust files, plus prettier with `--no-semi --tab-width 2` for JS/MD/YAML.
@@ -109,10 +112,13 @@ src/
 │   ├── types/         # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, etc.
 │   └── constants.rs
 ├── sfield.rs          # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
+├── tx_flags.rs        # GENERATED — tf*/asf* flag + mask constants. Do not hand-edit; rerun generate-tx-flags.sh
 └── types.rs           # Top-level type re-exports
 ```
 
 `SField<T, CODE>` encodes the field's Rust type as a const-generic phantom, so `current_tx::get_field(sfield::Account)` infers `AccountID`, `ledger_object::get_field(slot, sfield::Balance)` infers `Amount`, etc. Adding a new field means regenerating `sfield.rs` (see `tools/generateSFields.js` for custom type overrides like `TransactionType`, `ConditionBlob`, `FulfillmentBlob`).
+
+`tx_flags.rs` is merged from two rippled branches (see `tools/generateTxFlags.js`): a **base branch** (authoritative) plus a **contract branch** that only contributes flags/masks the base branch lacks. The generator aborts if the two disagree on any shared flag's value.
 
 `xrpl-escrow-stdlib/src/ctx/escrow_finish.rs` shows the pattern for a feature context: a struct holding a `current_tx` marker type (`EscrowFinish`) plus a ledger-object helper (`CurrentEscrow`), implementing `SmartFeatureContext`, with feature-unique host calls as inherent methods (all `unsafe` FFI stays inside the context type — user contract code stays fully safe).
 

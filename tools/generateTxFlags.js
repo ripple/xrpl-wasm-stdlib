@@ -4,14 +4,14 @@ if (process.argv.length != 4 && process.argv.length != 5) {
       process.argv[0] +
       " " +
       process.argv[1] +
-      " path/to/escrow/rippled path/to/contract/rippled [path/to/pipe/to]",
+      " path/to/base/rippled path/to/contract/rippled [path/to/pipe/to]",
   )
   console.error(
     "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/smart-escrow",
   )
   console.error(
-    "Escrow-side flags are sourced from (and always trust) the escrow branch, so a rename there is picked up automatically. " +
-      "The contract branch is only used for flags/masks that don't exist on the escrow branch at all.",
+    "Base-branch flags are authoritative (and always trusted), so a rename there is picked up automatically. " +
+      "The contract branch is only used for flags/masks that don't exist on the base branch at all.",
   )
   process.exit(1)
 }
@@ -56,9 +56,10 @@ function parseLsfMap(ledgerFormatsFileStripped) {
   return map
 }
 
-// Merges two Map<name, value> maps: `base` (e.g. escrow) is authoritative;
-// entries in `extra` (e.g. contract) not already in `base` are added. Entries
-// present in both with a different value are reported as conflicts.
+// Merges two Map<name, value> maps: `base` (the base rippled branch) is
+// authoritative; entries in `extra` (contract) not already in `base` are
+// added. Entries present in both with a different value are reported as
+// conflicts.
 function mergeMaps(base, extra, describeConflict) {
   const merged = new Map(base)
   const added = []
@@ -192,17 +193,17 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
 }
 
 async function main() {
-  const escrowSource = process.argv[2]
+  const baseSource = process.argv[2]
   const contractSource = process.argv[3]
 
   const [
-    escrowTxFlagsRaw,
-    escrowLedgerFormats,
+    baseTxFlagsRaw,
+    baseLedgerFormats,
     contractTxFlagsRaw,
     contractLedgerFormats,
   ] = await Promise.all([
-    read(escrowSource, "include/xrpl/protocol/TxFlags.h"),
-    read(escrowSource, "include/xrpl/protocol/LedgerFormats.h").then(
+    read(baseSource, "include/xrpl/protocol/TxFlags.h"),
+    read(baseSource, "include/xrpl/protocol/LedgerFormats.h").then(
       stripComments,
     ),
     read(contractSource, "include/xrpl/protocol/TxFlags.h"),
@@ -215,34 +216,34 @@ async function main() {
   // of giving their own literal, e.g. TF_FLAG(tfMPTCanLock, lsfMPTCanLock).
   // Merged upfront since either source's TF_FLAG table may reference either
   // side's lsf names, and the values are stable ledger-level constants.
-  const escrowLsfMap = parseLsfMap(escrowLedgerFormats)
+  const baseLsfMap = parseLsfMap(baseLedgerFormats)
   const contractLsfMap = parseLsfMap(contractLedgerFormats)
   const {
     merged: lsfMap,
     added: lsfAdded,
     conflict: lsfConflict,
   } = mergeMaps(
-    escrowLsfMap,
+    baseLsfMap,
     contractLsfMap,
-    (name, escrowVal, contractVal) =>
-      `Conflict for ledger flag ${name}: escrow branch=${escrowVal} contract branch=${contractVal}`,
+    (name, baseVal, contractVal) =>
+      `Conflict for ledger flag ${name}: base branch=${baseVal} contract branch=${contractVal}`,
   )
   console.log(
-    `📝 Ledger flags (lsf*): ${escrowLsfMap.size} from escrow branch, +${lsfAdded.length} contract-only additions, ${lsfMap.size} total`,
+    `📝 Ledger flags (lsf*): ${baseLsfMap.size} from base branch, +${lsfAdded.length} contract-only additions, ${lsfMap.size} total`,
   )
 
-  const escrowParsed = parseTxFlagsSource(escrowTxFlagsRaw, lsfMap)
+  const baseParsed = parseTxFlagsSource(baseTxFlagsRaw, lsfMap)
   const contractParsed = parseTxFlagsSource(contractTxFlagsRaw, lsfMap)
 
   let anyConflict = lsfConflict
 
   ////////////////////////////////////////////////////////////////////////
-  //  Merge per-transaction TF_FLAG/mask blocks: escrow's blocks are
+  //  Merge per-transaction TF_FLAG/mask blocks: the base branch's blocks are
   //  authoritative; transaction types that only exist on the contract
   //  branch (e.g. "Contract") are appended after, in the contract branch's
   //  own order.
   ////////////////////////////////////////////////////////////////////////
-  const txBlocks = new Map(escrowParsed.txBlocks)
+  const txBlocks = new Map(baseParsed.txBlocks)
   const addedTxNames = []
   for (const [name, block] of contractParsed.txBlocks) {
     if (!txBlocks.has(name)) {
@@ -250,24 +251,24 @@ async function main() {
       addedTxNames.push(name)
       continue
     }
-    const escrowFlagNames = new Set(txBlocks.get(name).maskFlagNames)
+    const baseFlagNames = new Set(txBlocks.get(name).maskFlagNames)
     const contractFlagNames = new Set(block.maskFlagNames)
     const onlyInContract = [...contractFlagNames].filter(
-      (n) => !escrowFlagNames.has(n),
+      (n) => !baseFlagNames.has(n),
     )
-    const onlyInEscrow = [...escrowFlagNames].filter(
+    const onlyInBase = [...baseFlagNames].filter(
       (n) => !contractFlagNames.has(n),
     )
-    if (onlyInContract.length > 0 || onlyInEscrow.length > 0) {
+    if (onlyInContract.length > 0 || onlyInBase.length > 0) {
       console.error(
-        `Conflict for transaction ${name}: escrow and contract branches declare different flag sets ` +
-          `(escrow-only: ${onlyInEscrow.join(", ") || "none"}; contract-only: ${onlyInContract.join(", ") || "none"}). Resolve manually.`,
+        `Conflict for transaction ${name}: base and contract branches declare different flag sets ` +
+          `(base-only: ${onlyInBase.join(", ") || "none"}; contract-only: ${onlyInContract.join(", ") || "none"}). Resolve manually.`,
       )
       anyConflict = true
     }
   }
   console.log(
-    `📝 Transactions: ${escrowParsed.txBlocks.size} from escrow branch, +${addedTxNames.length} contract-only additions${
+    `📝 Transactions: ${baseParsed.txBlocks.size} from base branch, +${addedTxNames.length} contract-only additions${
       addedTxNames.length > 0 ? ` (${addedTxNames.join(", ")})` : ""
     }, ${txBlocks.size} total`,
   )
@@ -280,14 +281,14 @@ async function main() {
     added: trailerAdded,
     conflict: trailerConflict,
   } = mergeMaps(
-    escrowParsed.trailerEntries,
+    baseParsed.trailerEntries,
     contractParsed.trailerEntries,
-    (name, escrowVal, contractVal) =>
-      `Conflict for flag ${name}: escrow branch="${escrowVal}" contract branch="${contractVal}"`,
+    (name, baseVal, contractVal) =>
+      `Conflict for flag ${name}: base branch="${baseVal}" contract branch="${contractVal}"`,
   )
   anyConflict = anyConflict || trailerConflict
   console.log(
-    `📝 Trailer flags: ${escrowParsed.trailerEntries.size} from escrow branch, +${trailerAdded.length} contract-only additions${
+    `📝 Trailer flags: ${baseParsed.trailerEntries.size} from base branch, +${trailerAdded.length} contract-only additions${
       trailerAdded.length > 0 ? ` (${trailerAdded.join(", ")})` : ""
     }, ${trailerEntries.size} total`,
   )
@@ -297,25 +298,25 @@ async function main() {
     added: asfAdded,
     conflict: asfConflict,
   } = mergeMaps(
-    escrowParsed.asfEntries,
+    baseParsed.asfEntries,
     contractParsed.asfEntries,
-    (name, escrowVal, contractVal) =>
-      `Conflict for AccountSet flag ${name}: escrow branch=${escrowVal} contract branch=${contractVal}`,
+    (name, baseVal, contractVal) =>
+      `Conflict for AccountSet flag ${name}: base branch=${baseVal} contract branch=${contractVal}`,
   )
   anyConflict = anyConflict || asfConflict
   console.log(
-    `📝 AccountSet flags (asf*): ${escrowParsed.asfEntries.size} from escrow branch, +${asfAdded.length} contract-only additions, ${asfEntries.size} total`,
+    `📝 AccountSet flags (asf*): ${baseParsed.asfEntries.size} from base branch, +${asfAdded.length} contract-only additions, ${asfEntries.size} total`,
   )
 
   if (anyConflict) {
     console.error(
-      "\n❌ One or more flags differ between the escrow and contract branches -- see above. Aborting without writing output.",
+      "\n❌ One or more flags differ between the base and contract branches -- see above. Aborting without writing output.",
     )
     process.exit(1)
   }
 
   const unresolved = new Set([
-    ...escrowParsed.unresolved,
+    ...baseParsed.unresolved,
     ...contractParsed.unresolved,
   ])
 
@@ -328,9 +329,9 @@ async function main() {
   }
 
   addLine(
-    "// Auto-generated by tools/generateSFlags.js from rippled's include/xrpl/protocol/TxFlags.h",
+    "// Auto-generated by tools/generateTxFlags.js from rippled's include/xrpl/protocol/TxFlags.h",
   )
-  addLine("// Do not hand-edit; re-run scripts/generate-sflags.sh instead.")
+  addLine("// Do not hand-edit; re-run scripts/generate-tx-flags.sh instead.")
   addLine("")
   addLine("#![allow(non_upper_case_globals)]")
   addLine("")
@@ -374,17 +375,17 @@ async function main() {
   }
   addLine("")
 
-  // Escrow's transactions first (in their original document order), then
+  // Base-branch transactions first (in their original document order), then
   // contract-only transactions in their own document order.
   const orderedTxNames = [...txBlocks.entries()]
     .sort((a, b) => a[1].order - b[1].order)
     .map(([name]) => name)
-  const escrowTxNames = orderedTxNames.filter((n) => !addedTxNames.includes(n))
+  const baseTxNames = orderedTxNames.filter((n) => !addedTxNames.includes(n))
   const contractOnlyTxNames = orderedTxNames.filter((n) =>
     addedTxNames.includes(n),
   )
 
-  for (const name of [...escrowTxNames, ...contractOnlyTxNames]) {
+  for (const name of [...baseTxNames, ...contractOnlyTxNames]) {
     const block = txBlocks.get(name)
     for (const [flagName, resolvedValue] of block.flagDecls) {
       if (!emittedFlagNames.has(flagName)) {
