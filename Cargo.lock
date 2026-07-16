@@ -415,6 +415,7 @@ version = "0.1.0"
 dependencies = [
  "mockall",
  "trybuild",
+ "xrpl-stdlib-test-utils",
  "xrpl-wasm-stdlib",
 ]
 
@@ -428,6 +429,14 @@ dependencies = [
  "sha2",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "xrpl-stdlib-test-utils"
+version = "0.1.0"
+dependencies = [
+ "mockall",
+ "xrpl-wasm-stdlib",
 ]
 
 [[package]]
