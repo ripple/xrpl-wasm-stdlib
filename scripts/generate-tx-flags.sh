@@ -1,12 +1,11 @@
 #!/bin/bash
-# Generate transaction/ledger flag constants (tf*/asf*/tmf*) from rippled source
-# This script generates type-safe flag constants for the XRPL WASM Standard Library.
+# Generate type-safe transaction flag constants (tf*/asf*/tmf*) for the XRPL WASM Standard Library from rippled source.
 #
-# Flags are sourced from two rippled branches: the base branch is authoritative
-# (a rename there is picked up automatically next time this runs), and the
-# contract branch only contributes flags/masks that don't exist on the base
-# branch at all (e.g. tfImmutable, tfContractParameterMask). See
-# tools/generateTxFlags.js for the merge logic.
+# Flags are sourced from two rippled branches, both read live so upstream
+# renames are picked up automatically next time this runs: the base branch is
+# authoritative, and the contract branch only contributes flags/masks that
+# don't exist on the base branch at all (e.g. tfImmutable,
+# tfContractParameterMask). See tools/generateTxFlags.js for the merge logic.
 
 set -euo pipefail
 
@@ -22,13 +21,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Default rippled sources (can be overridden with the first two arguments)
-BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
+BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/se/supported}"
 CONTRACT_SOURCE="${2:-https://github.com/XRPLF/rippled/tree/xrplf/smart-contracts}"
 
 # Output file (can be overridden with the third argument)
 OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/tx_flags.rs}"
 
-echo "🔧 Generating transaction/ledger flag constants..."
+echo "🔧 Generating transaction flag constants..."
 echo "📦 Base source:     $BASE_SOURCE"
 echo "📦 Contract source: $CONTRACT_SOURCE"
 echo "📝 Output: $OUTPUT_FILE"

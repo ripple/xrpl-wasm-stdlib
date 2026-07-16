@@ -1,14 +1,18 @@
 // Shared file-reading helpers for the rippled-source code generators. A
-// "source" is either a local directory or a GitHub URL (a bare repo, which
-// defaults to HEAD, or a `.../tree/<ref>` URL).
+// "source" is either a local directory (e.g. /path/to/rippled/) or a GitHub
+// URL — either a bare repo like https://github.com/XRPLF/rippled (which
+// defaults to the HEAD ref) or a https://github.com/XRPLF/rippled/tree/<ref>
+// URL pinning a branch/tag/commit.
 const path = require("path")
 const fs = require("fs/promises")
 
 /**
  * Fetches `filename` from a rippled GitHub repo over HTTPS.
  *
- * @param {string} repo - A GitHub URL, either a bare repo (in which case the
- *   `HEAD` ref is used) or a `.../tree/<ref>` URL pinning a branch/tag/commit.
+ * @param {string} repo - A GitHub URL, either a bare repo like
+ *   https://github.com/XRPLF/rippled (in which case the `HEAD` ref is used) or
+ *   a https://github.com/XRPLF/rippled/tree/<ref> URL pinning a
+ *   branch/tag/commit.
  * @param {string} filename - Path to the file relative to the repo root.
  * @returns {Promise<string>} The file's contents as UTF-8 text.
  *   Prints an error and exits the process on any fetch/HTTP failure.
@@ -60,7 +64,8 @@ async function readFile(folder, filename) {
  * call (rather than once globally) so callers can mix independent sources
  * (e.g. a base branch and a contract branch) in the same run.
  *
- * @param {string} source - A local directory path or a GitHub URL.
+ * @param {string} source - A local directory (e.g. /path/to/rippled/) or a
+ *   GitHub URL.
  * @param {string} filename - Path to the file relative to `source`.
  * @returns {Promise<string>} The file's contents as UTF-8 text.
  */

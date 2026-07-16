@@ -7,11 +7,11 @@ if (process.argv.length != 4 && process.argv.length != 5) {
       " path/to/base/rippled path/to/contract/rippled [path/to/pipe/to]",
   )
   console.error(
-    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/smart-escrow",
+    "Both rippled paths may be local dirs (e.g. /path/to/rippled) or GitHub URLs (e.g. https://github.com/XRPLF/rippled/tree/ripple/se/supported).",
   )
   console.error(
-    "Base-branch flags are authoritative (and always trusted), so a rename there is picked up automatically. " +
-      "The contract branch is only used for flags/masks that don't exist on the base branch at all.",
+    "Both branches are read live, so upstream renames are picked up automatically. " +
+      "The base branch is authoritative; the contract branch only contributes flags/masks that don't exist on the base branch at all.",
   )
   process.exit(1)
 }
@@ -23,8 +23,9 @@ const path = require("path")
 const fs = require("fs/promises")
 const { readSourceFile: read } = require("./rippledSource")
 
-// Strip C-style block comments so commented-out/deprecated/reserved entries
-// (e.g. `/* ASF_FLAG(asfTshCollect, 11) */`) are never mistaken for real ones.
+// Strip C-style comments (both `/* */` blocks and `//` lines) so commented-out
+// /deprecated/reserved entries (e.g. `/* ASF_FLAG(asfTshCollect, 11) */`) are
+// never mistaken for real ones.
 function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\r\n]*/g, "")
 }
@@ -39,9 +40,9 @@ function isNumericLiteral(token) {
   return /^0x[0-9a-fA-F]+$/.test(token) || /^\d+$/.test(token)
 }
 
-// Translate a verbatim C++ boolean/bitwise expression referencing already
-// -emitted names into the Rust equivalent. `~` (bitwise NOT) is the only
-// operator that differs; `|`/`&` and identifiers/hex literals carry over as-is.
+// Translate a verbatim C++ bitwise expression referencing already-emitted
+// names into the Rust equivalent. `~` (bitwise NOT) is the only operator that
+// differs; `|`/`&` and identifiers/hex literals carry over as-is.
 function translateExpr(expr) {
   return expr.trim().replace(/~/g, "!")
 }
@@ -229,7 +230,7 @@ async function main() {
       `Conflict for ledger flag ${name}: base branch=${baseVal} contract branch=${contractVal}`,
   )
   console.log(
-    `📝 Ledger flags (lsf*): ${baseLsfMap.size} from base branch, +${lsfAdded.length} contract-only additions, ${lsfMap.size} total`,
+    `📝 Ledger flags (lsf*, read only to resolve tx-flag aliases): ${baseLsfMap.size} from base branch, +${lsfAdded.length} contract-only additions, ${lsfMap.size} total`,
   )
 
   const baseParsed = parseTxFlagsSource(baseTxFlagsRaw, lsfMap)
