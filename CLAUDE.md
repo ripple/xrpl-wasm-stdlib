@@ -75,8 +75,6 @@ The library workspace is split into three crates with a strict dependency direct
 
 **Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
 
-Note: the current example contracts under `examples/smart-escrows/` still depend on `xrpl-wasm-stdlib` directly rather than `xrpl-escrow-stdlib`; the `xrpl-escrow-stdlib` crate and `#[smart_escrow]` macro are the newer, in-progress path for writing contracts.
-
 ## Architecture: the three-implementation host-binding swap
 
 This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait (defined in `host_bindings_trait.rs`) via `cfg`-gated `include!`:
@@ -138,12 +136,13 @@ Minimal template (see `examples/smart-escrows/hello_world/src/lib.rs`):
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult, smart_escrow};
 use xrpl_wasm_stdlib::host::trace::trace;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let _ = trace("Hello World!");
-    1
+#[smart_escrow]
+fn run(_ctx: EscrowFinishContext) -> FinishResult {
+    let _ = trace("Hello World");
+    FinishResult::succeed()
 }
 ```
 
