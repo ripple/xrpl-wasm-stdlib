@@ -16,7 +16,7 @@ pub mod ctx;
 pub mod fields;
 pub mod host;
 pub mod sfield;
-pub mod tx_flags;
+pub(crate) mod tx_flags;
 pub mod types;
 
 /// Complete Developer Guide

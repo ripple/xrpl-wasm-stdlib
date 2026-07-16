@@ -290,7 +290,7 @@ async function main() {
   )
   addLine("// Do not hand-edit; re-run scripts/generate-tx-flags.sh instead.")
   addLine("")
-  addLine("#![allow(non_upper_case_globals)]")
+  addLine("#![allow(non_upper_case_globals, dead_code)]")
   addLine("")
 
   // Emits one trailer-sourced constant (a standalone `inline constexpr
@@ -298,16 +298,16 @@ async function main() {
   // -emitted names where the expression isn't a bare numeric literal).
   function emitTrailerEntry(name, rawExpr) {
     if (isNumericLiteral(rawExpr)) {
-      addLine(`pub const ${name}: u32 = ${rawExpr};`)
+      addLine(`pub(crate) const ${name}: u32 = ${rawExpr};`)
     } else if (
       !rawExpr.includes("|") &&
       !rawExpr.includes("~") &&
       lsfMap.has(rawExpr)
     ) {
       // Bare alias of an lsf*/lsmf* ledger-object flag, e.g. `= lsmfMPTCanMutateCanLock;`
-      addLine(`pub const ${name}: u32 = ${lsfMap.get(rawExpr)};`)
+      addLine(`pub(crate) const ${name}: u32 = ${lsfMap.get(rawExpr)};`)
     } else {
-      addLine(`pub const ${name}: u32 = ${translateExpr(rawExpr)};`)
+      addLine(`pub(crate) const ${name}: u32 = ${translateExpr(rawExpr)};`)
     }
   }
 
@@ -347,7 +347,7 @@ async function main() {
     for (const [flagName, resolvedValue] of block.flagDecls) {
       if (!emittedFlagNames.has(flagName)) {
         emittedFlagNames.add(flagName)
-        addLine(`pub const ${flagName}: u32 = ${resolvedValue};`)
+        addLine(`pub(crate) const ${flagName}: u32 = ${resolvedValue};`)
         emittedAny = true
       }
     }
@@ -363,7 +363,7 @@ async function main() {
   addLine("")
   addLine("// AccountSet SetFlag/ClearFlag values")
   for (const [name, value] of asfEntries) {
-    addLine(`pub const ${name}: u32 = ${value};`)
+    addLine(`pub(crate) const ${name}: u32 = ${value};`)
   }
 
   if (unresolved.size > 0) {

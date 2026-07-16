@@ -3,9 +3,10 @@
 #
 # Flags are sourced from two rippled branches, both read live so upstream
 # renames are picked up automatically next time this runs: the base branch is
-# authoritative, and the contract branch only contributes flags/masks that
-# don't exist on the base branch at all (e.g. tfImmutable,
-# tfContractParameterMask). See tools/generateTxFlags.js for the merge logic.
+# authoritative, and the contract branch only contributes flags that don't
+# exist on the base branch at all (e.g. tfImmutable, tfSendAmount). Only
+# individual flags are emitted; rippled's validity masks are omitted. See
+# tools/generateTxFlags.js for the merge logic.
 
 set -euo pipefail
 
@@ -30,7 +31,7 @@ OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/tx_flags.rs}"
 echo "🔧 Generating transaction flag constants..."
 echo "📦 Base source:     $BASE_SOURCE"
 echo "📦 Contract source: $CONTRACT_SOURCE"
-echo "📝 Output: $OUTPUT_FILE"
+echo "📝 Output:          $OUTPUT_FILE"
 echo ""
 
 # Run the generator
