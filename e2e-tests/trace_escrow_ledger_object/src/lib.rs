@@ -27,7 +27,7 @@ use xrpl_wasm_stdlib::core::ledger_objects::traits::{
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 
-#[unsafe(no_mangle)]
+#[cfg_attr(target_arch = "wasm32", unsafe(no_mangle))]
 pub extern "C" fn finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");

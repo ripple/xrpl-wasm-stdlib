@@ -38,7 +38,7 @@ use xrpl_wasm_stdlib::host::trace::{
 };
 use xrpl_wasm_stdlib::sfield;
 
-#[unsafe(no_mangle)]
+#[cfg_attr(target_arch = "wasm32", unsafe(no_mangle))]
 pub extern "C" fn finish() -> i32 {
     let _ = trace("=== HOST FUNCTIONS TEST ===");
     let _ = trace("Testing 27 host functions");

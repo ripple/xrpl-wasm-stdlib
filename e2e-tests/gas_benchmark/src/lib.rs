@@ -31,7 +31,7 @@ const ITERATIONS: usize = 100;
 /// - Result type operations (is_ok, is_err, ok, err)
 /// - Error code matching (match_result_code, match_result_code_optional, etc.)
 /// - Hex decoding (decode_hex_32, decode_hex_20)
-#[unsafe(no_mangle)]
+#[cfg_attr(target_arch = "wasm32", unsafe(no_mangle))]
 pub extern "C" fn finish() -> i32 {
     let _ = trace("$$$$$ GAS BENCHMARK START $$$$$");
 
