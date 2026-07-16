@@ -12,5 +12,5 @@ categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
 
 [dev-dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+xrpl-stdlib-test-utils = { path = "../xrpl-stdlib-test-utils" }
 trybuild = "1"
