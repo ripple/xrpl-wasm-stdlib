@@ -11,7 +11,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
   )
   console.error(
     "Both branches are read live, so upstream renames are picked up automatically. " +
-      "The base branch is authoritative; the contract branch only contributes flags/masks that don't exist on the base branch at all.",
+      "The base branch is authoritative; the contract branch only contributes flags that don't exist on the base branch at all.",
   )
   process.exit(1)
 }
@@ -36,8 +36,18 @@ function joinContinuations(text) {
   return text.replace(/\\\r?\n/g, " ")
 }
 
+// True if `token` is a hex (0x...) or decimal integer literal, as opposed to a
+// symbolic name (e.g. an lsf* alias) that still needs resolving.
 function isNumericLiteral(token) {
   return /^0x[0-9a-fA-F]+$/.test(token) || /^\d+$/.test(token)
+}
+
+// True if `name` is a validity mask (any constant whose name contains "Mask",
+// e.g. tfPaymentMask, tfNFTokenMintMaskWithoutMutable). Masks encode which flag
+// combinations rippled accepts for a transaction; contract code only checks
+// individual flags, so masks are dropped rather than emitted.
+function isMask(name) {
+  return name.includes("Mask")
 }
 
 // Translate a verbatim C++ bitwise expression referencing already-emitted
@@ -47,6 +57,9 @@ function translateExpr(expr) {
   return expr.trim().replace(/~/g, "!")
 }
 
+// Parses LedgerFormats.h into a Map<lsfName, hexValue>. These ledger-object
+// flags are looked up when a TF_FLAG aliases one instead of giving its own
+// literal (e.g. TF_FLAG(tfMPTCanLock, lsfMPTCanLock)).
 function parseLsfMap(ledgerFormatsFileStripped) {
   const map = new Map()
   for (const [, name, value] of ledgerFormatsFileStripped.matchAll(
@@ -58,29 +71,27 @@ function parseLsfMap(ledgerFormatsFileStripped) {
 }
 
 // Merges two Map<name, value> maps: `base` (the base rippled branch) is
-// authoritative; entries in `extra` (contract) not already in `base` are
-// added. Entries present in both with a different value are reported as
-// conflicts.
-function mergeMaps(base, extra, describeConflict) {
+// authoritative and `extra` (contract) only adds entries not already in
+// `base`. The contract branch only introduces new flags for new transaction
+// types, so it never redefines a base entry -- there is no conflict to detect.
+function mergeMaps(base, extra) {
   const merged = new Map(base)
   const added = []
-  let conflict = false
   for (const [name, value] of extra) {
     if (!merged.has(name)) {
       merged.set(name, value)
       added.push(name)
-    } else if (merged.get(name) !== value) {
-      console.error(describeConflict(name, merged.get(name), value))
-      conflict = true
     }
   }
-  return { merged, added, conflict }
+  return { merged, added }
 }
 
-// Parses the `XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2, MASK_ADJ)` table plus
-// the trailing standalone flags/masks/asf values out of one source's raw
-// TxFlags.h text. Returns everything keyed so the caller can merge two
-// sources' results before emitting any Rust.
+// Parses one source's raw TxFlags.h text into the pieces we emit: the
+// individual transaction flags from the XMACRO(TRANSACTION, TF_FLAG, ...)
+// table, the standalone trailer constants, and the ASF_FLAG (asf*) values.
+// The XMACRO's TF_FLAG2/MASK_ADJ columns exist only to build per-transaction
+// validity masks, which we don't emit, so they are ignored. Everything is
+// keyed so the caller can merge two sources' results before emitting any Rust.
 function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
   const unresolved = new Set()
   function resolveValue(token) {
@@ -104,7 +115,7 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
     ...xmacroBody.matchAll(/TRANSACTION\(\s*([A-Za-z0-9]+)\s*,/g),
   ]
 
-  // Map<txName, {order, flagDecls: [[name, resolvedValue]], maskFlagNames: [], maskAdj}>
+  // Map<txName, {order, flagDecls: [[name, resolvedValue]]}>
   const txBlocks = new Map()
 
   for (let i = 0; i < txStarts.length; ++i) {
@@ -115,34 +126,20 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
     const block = xmacroBody.substring(blockStart, blockEnd)
 
     const flagDecls = []
-    const maskFlagNames = []
-
     for (const [, flagName, rawValue] of block.matchAll(
       /TF_FLAG\(\s*([A-Za-z0-9]+)\s*,\s*([^,()]+?)\s*\)/g,
     )) {
       flagDecls.push([flagName, resolveValue(rawValue)])
-      maskFlagNames.push(flagName)
-    }
-    for (const [, flagName] of block.matchAll(
-      /TF_FLAG2\(\s*([A-Za-z0-9]+)\s*,\s*[^,()]+?\s*\)/g,
-    )) {
-      // TF_FLAG2 references a flag already defined elsewhere in this same
-      // table (e.g. AMMWithdraw reusing AMMDeposit's tfLPToken) -- contributes
-      // to this transaction's mask but is not redeclared.
-      maskFlagNames.push(flagName)
     }
 
-    const maskAdjMatch = block.match(/MASK_ADJ\(\s*([^)]*)\)/)
-    const maskAdj = maskAdjMatch ? maskAdjMatch[1].trim() : "0"
-
-    txBlocks.set(name, { order: i, flagDecls, maskFlagNames, maskAdj })
+    txBlocks.set(name, { order: i, flagDecls })
   }
 
-  // A few standalone constants (e.g. tfSendAmount/tfContractParameterMask)
-  // are declared between the XMACRO's closing paren and the "// clang-format
-  // on" marker -- textually inside the last TRANSACTION() block's substring,
-  // but not matched by TF_FLAG/MASK_ADJ. Recover them by scanning everything
-  // after the last real `MASK_ADJ(...)` call in the macro body.
+  // A few standalone constants (e.g. tfSendAmount) are declared between the
+  // XMACRO's closing paren and the "// clang-format on" marker -- textually
+  // inside the last TRANSACTION() block's substring, but not matched by
+  // TF_FLAG. Recover them by scanning everything after the last real
+  // `MASK_ADJ(...)` call in the macro body.
   const maskAdjOccurrences = [...xmacroBody.matchAll(/MASK_ADJ\([^)]*\)\)/g)]
   const xmacroExtra =
     maskAdjOccurrences.length > 0
@@ -153,11 +150,12 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
       : ""
 
   ////////////////////////////////////////////////////////////////////////
-  //  Trailer: additional standalone flags/masks/combos declared directly as
+  //  Trailer: additional standalone constants declared directly as
   //  `inline constexpr FlagValue NAME = EXPR;` or `constexpr std::uint32_t
   //  NAME = EXPR;` outside the XMACRO table (Universal transaction flags,
-  //  MPToken mutable flags, NFToken legacy masks, AMM sub-tx combos,
-  //  Contract parameter flags, etc).
+  //  MPToken mutable flags, AMM sub-tx combos, Contract parameter flags,
+  //  etc). Validity masks in this region (e.g. the NFToken legacy masks) are
+  //  skipped here so downstream only ever sees emittable flags.
   ////////////////////////////////////////////////////////////////////////
   // Drop preprocessor directive lines (#define/#pragma/#undef) -- several of
   // them (e.g. `#define TO_VALUE(name, value) inline constexpr FlagValue name
@@ -177,6 +175,7 @@ function parseTxFlagsSource(txFlagsFileRaw, lsfMap) {
   for (const [, name, rawExpr] of trailerText.matchAll(
     /(?:inline constexpr FlagValue|constexpr std::uint32_t)\s+([A-Za-z0-9]+)\s*=\s*([^;]+);/g,
   )) {
+    if (isMask(name)) continue
     trailerEntries.set(name, rawExpr.trim())
   }
 
@@ -219,15 +218,9 @@ async function main() {
   // side's lsf names, and the values are stable ledger-level constants.
   const baseLsfMap = parseLsfMap(baseLedgerFormats)
   const contractLsfMap = parseLsfMap(contractLedgerFormats)
-  const {
-    merged: lsfMap,
-    added: lsfAdded,
-    conflict: lsfConflict,
-  } = mergeMaps(
+  const { merged: lsfMap, added: lsfAdded } = mergeMaps(
     baseLsfMap,
     contractLsfMap,
-    (name, baseVal, contractVal) =>
-      `Conflict for ledger flag ${name}: base branch=${baseVal} contract branch=${contractVal}`,
   )
   console.log(
     `📝 Ledger flags (lsf*, read only to resolve tx-flag aliases): ${baseLsfMap.size} from base branch, +${lsfAdded.length} contract-only additions, ${lsfMap.size} total`,
@@ -236,13 +229,12 @@ async function main() {
   const baseParsed = parseTxFlagsSource(baseTxFlagsRaw, lsfMap)
   const contractParsed = parseTxFlagsSource(contractTxFlagsRaw, lsfMap)
 
-  let anyConflict = lsfConflict
-
   ////////////////////////////////////////////////////////////////////////
-  //  Merge per-transaction TF_FLAG/mask blocks: the base branch's blocks are
-  //  authoritative; transaction types that only exist on the contract
-  //  branch (e.g. "Contract") are appended after, in the contract branch's
-  //  own order.
+  //  Merge per-transaction TF_FLAG blocks: the base branch's blocks are
+  //  authoritative; transaction types that only exist on the contract branch
+  //  (e.g. "Contract") are appended after, in the contract branch's own order.
+  //  The contract branch only adds new transaction types, so a shared type is
+  //  never redefined -- base wins by simply keeping its block.
   ////////////////////////////////////////////////////////////////////////
   const txBlocks = new Map(baseParsed.txBlocks)
   const addedTxNames = []
@@ -250,22 +242,6 @@ async function main() {
     if (!txBlocks.has(name)) {
       txBlocks.set(name, block)
       addedTxNames.push(name)
-      continue
-    }
-    const baseFlagNames = new Set(txBlocks.get(name).maskFlagNames)
-    const contractFlagNames = new Set(block.maskFlagNames)
-    const onlyInContract = [...contractFlagNames].filter(
-      (n) => !baseFlagNames.has(n),
-    )
-    const onlyInBase = [...baseFlagNames].filter(
-      (n) => !contractFlagNames.has(n),
-    )
-    if (onlyInContract.length > 0 || onlyInBase.length > 0) {
-      console.error(
-        `Conflict for transaction ${name}: base and contract branches declare different flag sets ` +
-          `(base-only: ${onlyInBase.join(", ") || "none"}; contract-only: ${onlyInContract.join(", ") || "none"}). Resolve manually.`,
-      )
-      anyConflict = true
     }
   }
   console.log(
@@ -277,44 +253,23 @@ async function main() {
   ////////////////////////////////////////////////////////////////////////
   //  Merge trailer entries and asf entries the same way.
   ////////////////////////////////////////////////////////////////////////
-  const {
-    merged: trailerEntries,
-    added: trailerAdded,
-    conflict: trailerConflict,
-  } = mergeMaps(
+  const { merged: trailerEntries, added: trailerAdded } = mergeMaps(
     baseParsed.trailerEntries,
     contractParsed.trailerEntries,
-    (name, baseVal, contractVal) =>
-      `Conflict for flag ${name}: base branch="${baseVal}" contract branch="${contractVal}"`,
   )
-  anyConflict = anyConflict || trailerConflict
   console.log(
     `📝 Trailer flags: ${baseParsed.trailerEntries.size} from base branch, +${trailerAdded.length} contract-only additions${
       trailerAdded.length > 0 ? ` (${trailerAdded.join(", ")})` : ""
     }, ${trailerEntries.size} total`,
   )
 
-  const {
-    merged: asfEntries,
-    added: asfAdded,
-    conflict: asfConflict,
-  } = mergeMaps(
+  const { merged: asfEntries, added: asfAdded } = mergeMaps(
     baseParsed.asfEntries,
     contractParsed.asfEntries,
-    (name, baseVal, contractVal) =>
-      `Conflict for AccountSet flag ${name}: base branch=${baseVal} contract branch=${contractVal}`,
   )
-  anyConflict = anyConflict || asfConflict
   console.log(
     `📝 AccountSet flags (asf*): ${baseParsed.asfEntries.size} from base branch, +${asfAdded.length} contract-only additions, ${asfEntries.size} total`,
   )
-
-  if (anyConflict) {
-    console.error(
-      "\n❌ One or more flags differ between the base and contract branches -- see above. Aborting without writing output.",
-    )
-    process.exit(1)
-  }
 
   const unresolved = new Set([
     ...baseParsed.unresolved,
@@ -322,7 +277,8 @@ async function main() {
   ])
 
   ////////////////////////////////////////////////////////////////////////
-  //  Emit
+  //  Emit. Validity masks were already dropped during parsing, so only
+  //  individual flags reach this point.
   ////////////////////////////////////////////////////////////////////////
   let output = ""
   function addLine(line) {
@@ -362,7 +318,6 @@ async function main() {
     "tfFullyCanonicalSig",
     "tfInnerBatchTxn",
     "tfUniversal",
-    "tfUniversalMask",
   ]) {
     if (!trailerEntries.has(name)) {
       console.error(
@@ -388,20 +343,15 @@ async function main() {
 
   for (const name of [...baseTxNames, ...contractOnlyTxNames]) {
     const block = txBlocks.get(name)
+    let emittedAny = false
     for (const [flagName, resolvedValue] of block.flagDecls) {
       if (!emittedFlagNames.has(flagName)) {
         emittedFlagNames.add(flagName)
         addLine(`pub const ${flagName}: u32 = ${resolvedValue};`)
+        emittedAny = true
       }
     }
-    if (block.maskFlagNames.length > 0) {
-      let expr = `!(tfUniversal | ${block.maskFlagNames.join(" | ")})`
-      if (block.maskAdj !== "0") {
-        expr += ` | ${block.maskAdj}`
-      }
-      addLine(`pub const tf${name}Mask: u32 = ${expr};`)
-    }
-    addLine("")
+    if (emittedAny) addLine("")
   }
 
   for (const [name, rawExpr] of trailerEntries) {
