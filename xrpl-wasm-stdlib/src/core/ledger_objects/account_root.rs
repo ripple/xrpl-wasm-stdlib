@@ -1,4 +1,4 @@
-use crate::core::keylets::account_keylet;
+use crate::core::keylets::accountroot_id;
 use crate::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
@@ -21,13 +21,13 @@ impl AccountFields for AccountRoot {}
 
 pub fn get_account_balance(account_id: &AccountID) -> host::Result<Option<Amount>> {
     // Construct the account keylet. This calls a host function, so propagate the error via `?`
-    let account_keylet = match account_keylet(account_id) {
+    let accountroot_id = match accountroot_id(account_id) {
         host::Result::Ok(keylet) => keylet,
         host::Result::Err(e) => return host::Result::Err(e),
     };
 
     // Try to cache the ledger object inside rippled
-    let slot = unsafe { host::cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { host::cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return host::Result::Err(Error::from_code(slot));
     }
@@ -54,7 +54,7 @@ mod tests {
     /// never reads the buffer; what matters is that the keylet's `MaybeUninit`
     /// storage is initialized before downstream code calls `assume_init`.
     fn mock_account_keylet_success(mock: &mut MockHostBindings) {
-        mock.expect_account_keylet()
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, out_buff_ptr, out_buff_len| {
                 assert_eq!(out_buff_len, XRPL_KEYLET_SIZE);
@@ -76,15 +76,15 @@ mod tests {
         mock_account_keylet_success(&mut mock);
 
         // Mock cache_ledger_obj to return a valid slot
-        mock.expect_cache_ledger_obj()
+        mock.expect_cache_le()
             .times(1)
             .returning(move |_, _, _| slot);
 
-        // Mock get_ledger_obj_field for Balance. Zero-fill the buffer: the
+        // Mock le_field for Balance. Zero-fill the buffer: the
         // Amount getter allocates via `MaybeUninit` and calls `assume_init`,
         // so leaving it uninitialized would be UB. Zero bytes route through
         // the XRP variant of `Amount::from_bytes`.
-        mock.expect_get_ledger_obj_field()
+        mock.expect_le_field()
             .with(eq(slot), eq(balance_field_code), always(), eq(AMOUNT_SIZE))
             .times(1)
             .returning(move |_, _, buf, buf_size| {
@@ -105,7 +105,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
 
         // Mock account_keylet to fail
-        mock.expect_account_keylet()
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, _, _| INTERNAL_ERROR);
 
@@ -124,7 +124,7 @@ mod tests {
         mock_account_keylet_success(&mut mock);
 
         // Mock cache_ledger_obj to return error
-        mock.expect_cache_ledger_obj()
+        mock.expect_cache_le()
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
 

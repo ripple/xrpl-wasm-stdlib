@@ -10,9 +10,9 @@ use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::contract_data::ContractData;
-use xrpl_wasm_stdlib::host::get_parent_ledger_time;
-use xrpl_wasm_stdlib::host::get_tx_nested_field;
+use xrpl_wasm_stdlib::host::parent_ldgr_time;
 use xrpl_wasm_stdlib::host::trace::trace_num;
+use xrpl_wasm_stdlib::host::tx_inner;
 use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_wasm_stdlib::sfield;
 
@@ -185,7 +185,7 @@ fn read_intent() -> Result<Intent> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             buf.as_mut_ptr(),
@@ -238,7 +238,7 @@ fn deadline_release(state: &State) -> Result<bool> {
         return Ok(false);
     }
     let mut buf = [0u8; 4];
-    let code = unsafe { get_parent_ledger_time(buf.as_mut_ptr(), buf.len()) };
+    let code = unsafe { parent_ldgr_time(buf.as_mut_ptr(), buf.len()) };
     if code < 0 {
         return Err(Error::from_code(code));
     }

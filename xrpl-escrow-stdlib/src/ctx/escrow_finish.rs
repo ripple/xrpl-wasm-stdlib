@@ -42,7 +42,7 @@ impl EscrowFinishContext {
 
     /// **[host fn]** Write new data to the Smart Escrow object.
     pub fn update_data(&self, data: &[u8]) -> host::Result<()> {
-        let n = unsafe { host::update_data(data.as_ptr(), data.len()) };
+        let n = unsafe { host::set_data(data.as_ptr(), data.len()) };
         if n < 0 {
             return host::Result::Err(host::Error::from_code(n));
         }
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn update_data_returns_ok_on_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_update_data().times(1).returning(|_, _| 0);
+        mock.expect_set_data().times(1).returning(|_, _| 0);
         let _guard = setup_mock(mock);
 
         let ctx = EscrowFinishContext::default();
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn update_data_returns_err_on_negative_code() {
         let mut mock = MockHostBindings::new();
-        mock.expect_update_data().times(1).returning(|_, _| -7);
+        mock.expect_set_data().times(1).returning(|_, _| -7);
         let _guard = setup_mock(mock);
 
         let ctx = EscrowFinishContext::default();

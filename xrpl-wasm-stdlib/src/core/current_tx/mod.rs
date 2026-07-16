@@ -64,7 +64,7 @@ pub mod traits;
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_tx_field};
+use crate::host::{Result, tx_field};
 use crate::sfield::SField;
 
 /// Trait for types that can be retrieved from current transaction fields.
@@ -207,8 +207,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
     #[inline]
     fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code =
-            unsafe { get_tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes(result_code, T::SIZE, || unsafe {
             value.assume_init()
         })
@@ -219,8 +218,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code =
-            unsafe { get_tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
+        let result_code = unsafe { tx_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, T::SIZE, || {
             Some(unsafe { value.assume_init() })
         })
@@ -299,14 +297,14 @@ mod tests {
     use mockall::predicate::{always, eq};
 
     fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq(field_code), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
     }
 
     fn expect_tx_field_not_found(mock: &mut MockHostBindings, field_code: i32, size: usize) {
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq(field_code), always(), eq(size))
             .times(1)
             .returning(|_, _, _| FIELD_NOT_FOUND);
@@ -365,7 +363,7 @@ mod tests {
     #[should_panic]
     fn test_field_getter_panics_on_size_mismatch() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| 2); // host returns fewer bytes than expected
@@ -398,7 +396,7 @@ mod tests {
     #[test]
     fn test_get_field_returns_err_on_internal_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
@@ -486,9 +484,9 @@ mod tests {
     }
 
     #[test]
-    fn test_get_tx_field_pipeline_routes_bytes_to_amount() {
+    fn test_tx_field_pipeline_routes_bytes_to_amount() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Amount.into()), always(), eq(AMOUNT_SIZE))
             .times(1)
             .returning(|_, buf, size| {

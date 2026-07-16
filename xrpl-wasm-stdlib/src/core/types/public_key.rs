@@ -2,7 +2,7 @@ use crate::core::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_tx_field};
+use crate::host::{Result, tx_field};
 use crate::sfield::SField;
 
 pub const PUBLIC_KEY_BUFFER_SIZE: usize = 33;
@@ -62,7 +62,7 @@ impl CurrentTxFieldGetter for PublicKey {
     fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<33, _>(
             i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+            |fc, buf, size| unsafe { tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.into())
     }
@@ -73,7 +73,7 @@ impl CurrentTxFieldGetter for PublicKey {
     ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<33, _>(
             i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+            |fc, buf, size| unsafe { tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }

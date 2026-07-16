@@ -33,7 +33,7 @@ use crate::host::error_codes::{
 /// ```ignore
 /// let buffer = get_fixed_size_field_with_expected_bytes::<20>(
 ///     field_code,
-///     |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+///     |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
 /// )?;
 /// ```
 #[inline]
@@ -76,7 +76,7 @@ where
 /// ```ignore
 /// let buffer = get_fixed_size_field_with_expected_bytes_optional::<20>(
 ///     field_code,
-///     |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+///     |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
 /// )?;
 /// ```
 #[inline]
@@ -127,7 +127,7 @@ where
 /// ```ignore
 /// let (buffer, len) = get_variable_size_field::<48>(
 ///     field_code,
-///     |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+///     |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
 /// )?;
 /// ```
 #[inline]
@@ -174,7 +174,7 @@ where
 /// ```ignore
 /// let result = get_variable_size_field_optional::<48>(
 ///     field_code,
-///     |fc, buf, size| unsafe { get_current_ledger_obj_field(fc, buf, size) },
+///     |fc, buf, size| unsafe { home_le_field(fc, buf, size) },
 /// )?;
 /// ```
 #[inline]

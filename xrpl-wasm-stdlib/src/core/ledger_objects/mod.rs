@@ -8,7 +8,7 @@ use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
+use crate::host::{Result, home_le_field, le_field};
 use crate::sfield::SField;
 
 /// Trait for types that can be retrieved from ledger object fields.
@@ -175,9 +175,8 @@ impl<T: FixedSizeFieldType> LedgerObjectFieldGetter for T {
     #[inline]
     fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes(result_code, T::SIZE, || unsafe {
             value.assume_init()
         })
@@ -188,9 +187,8 @@ impl<T: FixedSizeFieldType> LedgerObjectFieldGetter for T {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), value.as_mut_ptr().cast(), T::SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, T::SIZE, || {
             Some(unsafe { value.assume_init() })
         })
@@ -203,7 +201,7 @@ impl<T: FixedSizeFieldType> LedgerObjectFieldGetter for T {
     ) -> Result<Self> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 value.as_mut_ptr().cast(),
@@ -222,7 +220,7 @@ impl<T: FixedSizeFieldType> LedgerObjectFieldGetter for T {
     ) -> Result<Option<Self>> {
         let mut value = core::mem::MaybeUninit::<T>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 value.as_mut_ptr().cast(),
@@ -248,9 +246,8 @@ impl LedgerObjectFieldGetter for Hash160 {
     #[inline]
     fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH160_SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH160_SIZE) };
         match_result_code_with_expected_bytes(result_code, HASH160_SIZE, || {
             Hash160::from(unsafe { buffer.assume_init() })
         })
@@ -261,9 +258,8 @@ impl LedgerObjectFieldGetter for Hash160 {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH160_SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH160_SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, HASH160_SIZE, || {
             Some(Hash160::from(unsafe { buffer.assume_init() }))
         })
@@ -276,7 +272,7 @@ impl LedgerObjectFieldGetter for Hash160 {
     ) -> Result<Self> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 buffer.as_mut_ptr().cast(),
@@ -295,7 +291,7 @@ impl LedgerObjectFieldGetter for Hash160 {
     ) -> Result<Option<Self>> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH160_SIZE]>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 buffer.as_mut_ptr().cast(),
@@ -321,9 +317,8 @@ impl LedgerObjectFieldGetter for Hash192 {
     #[inline]
     fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH192_SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH192_SIZE) };
         match_result_code_with_expected_bytes(result_code, HASH192_SIZE, || {
             Hash192::from(unsafe { buffer.assume_init() })
         })
@@ -334,9 +329,8 @@ impl LedgerObjectFieldGetter for Hash192 {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH192_SIZE)
-        };
+        let result_code =
+            unsafe { home_le_field(i32::from(field), buffer.as_mut_ptr().cast(), HASH192_SIZE) };
         match_result_code_with_expected_bytes_optional(result_code, HASH192_SIZE, || {
             Some(Hash192::from(unsafe { buffer.assume_init() }))
         })
@@ -349,7 +343,7 @@ impl LedgerObjectFieldGetter for Hash192 {
     ) -> Result<Self> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 buffer.as_mut_ptr().cast(),
@@ -368,7 +362,7 @@ impl LedgerObjectFieldGetter for Hash192 {
     ) -> Result<Option<Self>> {
         let mut buffer = core::mem::MaybeUninit::<[u8; HASH192_SIZE]>::uninit();
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 register_num,
                 i32::from(field),
                 buffer.as_mut_ptr().cast(),
@@ -456,7 +450,7 @@ pub mod current_ledger_object {
         // Test helper functions
         // ========================================
 
-        /// Helper to set up a mock expectation for get_current_ledger_obj_field.
+        /// Helper to set up a mock expectation for home_le_field.
         ///
         /// Zero-fills the output buffer before returning. This is required because
         /// `get_variable_size_field` and the fixed-size getters allocate the buffer
@@ -471,7 +465,7 @@ pub mod current_ledger_object {
             size: usize,
             times: usize,
         ) {
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(field), always(), eq(size))
                 .times(times)
                 .returning(move |_, buf, buf_size| {
@@ -492,7 +486,7 @@ pub mod current_ledger_object {
             buf_size: usize,
             returned: i32,
         ) {
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(field), always(), eq(buf_size))
                 .times(1)
                 .returning(move |_, buf, buf_size| {
@@ -666,7 +660,7 @@ pub mod current_ledger_object {
         #[test]
         fn test_issue_decodes_mpt_variant() {
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Asset), always(), eq(40))
                 .times(1)
                 .returning(|_, buf, _| {
@@ -692,7 +686,7 @@ pub mod current_ledger_object {
         #[test]
         fn test_issue_decodes_iou_variant() {
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Asset), always(), eq(40))
                 .times(1)
                 .returning(|_, buf, _| {
@@ -722,7 +716,7 @@ pub mod current_ledger_object {
         #[test]
         fn test_amount_decodes_xrp_variant() {
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
@@ -745,7 +739,7 @@ pub mod current_ledger_object {
         #[test]
         fn test_amount_decodes_mpt_variant() {
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
@@ -782,7 +776,7 @@ pub mod current_ledger_object {
         #[test]
         fn test_amount_decodes_iou_variant() {
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Amount), always(), eq(48))
                 .times(1)
                 .returning(|_, buf, size| {
@@ -887,7 +881,7 @@ pub mod ledger_object {
         use crate::sfield::{self, SField};
         use mockall::predicate::{always, eq};
 
-        /// Helper to set up a mock expectation for get_ledger_obj_field.
+        /// Helper to set up a mock expectation for le_field.
         ///
         /// Zero-fills the output buffer before returning. This is required because
         /// the fixed-size getters allocate the buffer via `MaybeUninit` and call
@@ -903,7 +897,7 @@ pub mod ledger_object {
             size: usize,
             times: usize,
         ) {
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(slot), eq(field), always(), eq(size))
                 .times(times)
                 .returning(move |_, _, buf, buf_size| {
@@ -924,7 +918,7 @@ pub mod ledger_object {
             buf_size: usize,
             returned: i32,
         ) {
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(slot), eq(field), always(), eq(buf_size))
                 .times(1)
                 .returning(move |_, _, buf, buf_size| {

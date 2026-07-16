@@ -24,7 +24,7 @@ use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{CurrentEscrow, get_
 use xrpl_wasm_stdlib::core::ledger_objects::traits::{
     CurrentEscrowFields, CurrentLedgerObjectCommonFields,
 };
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
+use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 
 #[unsafe(no_mangle)]
@@ -49,7 +49,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
-        let _ = trace_amount("  Amount:", &amount);
+        let _ = trace_amt("  Amount:", &amount);
 
         // Trace Field: LedgerEntryType
         let ledger_entry_type = current_escrow.get_ledger_entry_type().unwrap();

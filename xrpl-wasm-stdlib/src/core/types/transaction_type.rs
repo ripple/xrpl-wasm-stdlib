@@ -2,7 +2,7 @@ use crate::core::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_tx_field};
+use crate::host::{Result, tx_field};
 use crate::sfield::SField;
 
 /// The type of any given XRPL transaction.
@@ -170,7 +170,7 @@ impl CurrentTxFieldGetter for TransactionType {
     #[inline]
     fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_fixed_size_field_with_expected_bytes::<2, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
+            tx_field(fc, buf, size)
         })
         .map(|buffer| i16::from_le_bytes(buffer).into())
     }
@@ -181,7 +181,7 @@ impl CurrentTxFieldGetter for TransactionType {
     ) -> Result<Option<Self>> {
         get_fixed_size_field_with_expected_bytes_optional::<2, _>(
             i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
+            |fc, buf, size| unsafe { tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| i16::from_le_bytes(b).into()))
     }

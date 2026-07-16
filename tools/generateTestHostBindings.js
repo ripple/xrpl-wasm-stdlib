@@ -197,28 +197,29 @@ function generateExportMacroContent(methods, withUnderscorePrefix = false) {
     {
       name: "Host Function Category: ledger and transaction info",
       filter: (m) =>
-        m.name.startsWith("get_ledger") ||
-        m.name.startsWith("get_parent") ||
-        m.name.startsWith("get_base") ||
-        m.name.startsWith("get_tx") ||
-        m.name.startsWith("get_current") ||
+        m.name.startsWith("ldgr") ||
+        m.name.startsWith("parent") ||
+        m.name.startsWith("base") ||
+        m.name.startsWith("tx_") ||
+        m.name.startsWith("home_le") ||
+        m.name.startsWith("le_") ||
         m.name.startsWith("amendment") ||
         m.name.startsWith("cache"),
     },
     {
       name: "Host Function Category: update current ledger entry",
-      filter: (m) => m.name === "update_data",
+      filter: (m) => m.name === "set_data",
     },
     {
       name: "Host Function Category: hash and keylet computation",
       filter: (m) =>
-        m.name.includes("keylet") ||
-        m.name === "compute_sha512_half" ||
+        m.name.endsWith("_id") ||
+        m.name === "sha512_half" ||
         m.name === "check_sig",
     },
     {
       name: "Host Function Category: NFT",
-      filter: (m) => m.name.startsWith("get_nft"),
+      filter: (m) => m.name.startsWith("nft_"),
     },
     {
       name: "Host Function Category: FLOAT",

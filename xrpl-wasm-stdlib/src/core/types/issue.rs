@@ -3,7 +3,7 @@ use crate::core::types::account_id::AccountID;
 use crate::core::types::currency::Currency;
 use crate::core::types::mpt_id::MptId;
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, transpose_option};
+use crate::host::{Result, home_le_field, le_field, transpose_option};
 use crate::sfield::SField;
 
 /// Struct to represent an Issue of type XRP. Exists so that other structs can restrict type
@@ -157,7 +157,7 @@ impl LedgerObjectFieldGetter for Issue {
     #[inline]
     fn get_from_current_ledger_obj<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
         get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
@@ -167,7 +167,7 @@ impl LedgerObjectFieldGetter for Issue {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
-            get_current_ledger_obj_field(fc, buf, size)
+            home_le_field(fc, buf, size)
         })
         .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
@@ -178,7 +178,7 @@ impl LedgerObjectFieldGetter for Issue {
         field: SField<Self, CODE>,
     ) -> Result<Self> {
         get_variable_size_field::<40, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .and_then(|(buffer, len)| Issue::from_buffer(buffer, len))
     }
@@ -189,7 +189,7 @@ impl LedgerObjectFieldGetter for Issue {
         field: SField<Self, CODE>,
     ) -> Result<Option<Self>> {
         get_variable_size_field_optional::<40, _>(field, |fc, buf, size| unsafe {
-            get_ledger_obj_field(register_num, fc, buf, size)
+            le_field(register_num, fc, buf, size)
         })
         .and_then(|opt| transpose_option(opt.map(|(buffer, len)| Issue::from_buffer(buffer, len))))
     }
