@@ -173,6 +173,29 @@ mod tests {
     }
 
     #[test]
+    fn with_update_data_returns_ok_reports_the_payload_length_through_the_real_host_call() {
+        let _guard = EscrowScenario::builder()
+            .with_update_data_returns(Ok(()))
+            .install();
+
+        let payload = b"payload";
+        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        assert_eq!(code, payload.len() as i32);
+    }
+
+    #[test]
+    fn with_update_data_returns_err_reports_the_error_code_through_the_real_host_call() {
+        let _guard = EscrowScenario::builder()
+            .with_update_data_returns(Err(Error::InternalError))
+            .install();
+
+        let payload = b"payload";
+        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        assert_eq!(code, Error::InternalError.code());
+        assert!(code < 0);
+    }
+
+    #[test]
     fn build_onto_lets_the_caller_override_the_scenario() {
         let overridden_account = AccountID::from([0u8; 20]);
         let mut mock = MockHostBindings::new();
