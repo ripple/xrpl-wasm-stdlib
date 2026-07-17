@@ -100,8 +100,9 @@ npm install
 
 Let's create a simple escrow that releases funds when an account balance exceeds 10 XRP:
 
-```rust,ignore
+```rust ignore
 
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
@@ -213,7 +214,7 @@ The XRPL WASM Standard Library provides type-safe access to transaction data thr
 #### EscrowFinish Transaction
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 
 let tx = EscrowFinish;
 
@@ -229,8 +230,8 @@ let escrow_sequence = tx.get_escrow_sequence().unwrap();
 
 #### Field Access
 
-```rust
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
+```rust ignore
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::sfield;
 
@@ -388,10 +389,11 @@ fn main() {
 
 #### Transaction Fields
 
-```rust
+```rust ignore
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::{TransactionCommonFields, EscrowFinishFields};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 fn main() {
     let tx = EscrowFinish;
@@ -412,8 +414,8 @@ fn main() {
 
 The library uses custom `Result` types for comprehensive error handling:
 
-```rust
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
+```rust ignore
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::{get_account_balance, AccountRoot};
 use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
@@ -750,8 +752,9 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 
 **Add trace statements:**
 
-```rust,ignore
+```rust ignore
 use xrpl_wasm_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};

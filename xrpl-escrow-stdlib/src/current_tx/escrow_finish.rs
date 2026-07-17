@@ -3,7 +3,9 @@
 //! This module provides functionality for handling EscrowFinish transactions within the
 //! XRPL Programmability environment.
 
-use crate::core::current_tx::traits::{EscrowFinishFields, TransactionCommonFields};
+use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+
+use crate::current_tx::traits::EscrowFinishFields;
 
 /// Represents an EscrowFinish transaction in the XRPL Programmability environment.
 ///
@@ -35,7 +37,6 @@ use crate::core::current_tx::traits::{EscrowFinishFields, TransactionCommonField
 /// access is performed through the trait methods, which directly call the underlying
 /// host functions to retrieve data from the current transaction context.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct EscrowFinish;
 
 /// Implementation of common transaction fields for EscrowFinish transactions.
@@ -79,8 +80,9 @@ impl EscrowFinishFields for EscrowFinish {}
 /// # Example
 ///
 /// ```no_run
-/// use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-/// use xrpl_wasm_stdlib::core::current_tx::traits::{TransactionCommonFields, EscrowFinishFields};
+/// use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+/// use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
+/// use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 /// let tx = EscrowFinish;
 /// let owner = tx.get_owner().unwrap_or_panic();
 /// let offer_seq = tx.get_offer_sequence().unwrap_or_panic();

@@ -1,7 +1,8 @@
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host;
+
+use crate::current_tx::escrow_finish::EscrowFinish;
+use crate::ledger_objects::current_escrow::CurrentEscrow;
 
 /// Entry-point context for a Smart Escrow finish operation.
 ///

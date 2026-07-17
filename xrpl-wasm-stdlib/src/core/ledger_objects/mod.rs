@@ -1,7 +1,5 @@
 pub mod account_root;
 pub mod array_object;
-pub mod current_escrow;
-pub mod escrow;
 pub mod traits;
 
 use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
