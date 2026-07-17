@@ -15,7 +15,6 @@ crate-type = ["lib"]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
 
 [dev-dependencies]
-xrpl-macros = { path = "../xrpl-macros" }
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
 mockall = "0.15.0"
 xrpl-stdlib-test-utils = { path = "../xrpl-stdlib-test-utils" }
