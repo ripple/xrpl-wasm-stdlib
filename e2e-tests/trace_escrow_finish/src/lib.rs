@@ -15,8 +15,9 @@ const EXPECTED_CONDITION: [u8; 39] = [
 /// This is a PREIMAGE-SHA-256 fulfillment (7 bytes) for preimage "shh"
 const EXPECTED_FULFILLMENT: [u8; 7] = [0xA0, 0x05, 0x80, 0x03, 0x73, 0x68, 0x68];
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
-use xrpl_wasm_stdlib::core::current_tx::traits::{EscrowFinishFields, TransactionCommonFields};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
+use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::locator::Locator;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;

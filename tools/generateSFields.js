@@ -84,6 +84,7 @@ async function main() {
     MessageKey: "PublicKeyBlob",
     SigningPubKey: "PublicKeyBlob",
     TxnSignature: "SignatureBlob",
+    Signature: "SignatureBlob",
     URI: "UriBlob",
   }
 

@@ -10,6 +10,8 @@ pub use xrpl_macros::currency;
 pub use xrpl_macros::hash256;
 pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
+pub use xrpl_macros::smart_contract;
+pub use xrpl_macros::smart_escrow;
 
 pub mod core;
 pub mod ctx;

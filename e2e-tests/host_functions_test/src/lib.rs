@@ -25,7 +25,7 @@ extern crate std;
 // -700 to -799: Data Update Functions (1 function)
 //
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;

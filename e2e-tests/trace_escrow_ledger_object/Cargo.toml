@@ -10,4 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 xrpl-wasm-stdlib = { workspace = true }
+xrpl-escrow-stdlib = { workspace = true }
 test_utils = { workspace = true }
