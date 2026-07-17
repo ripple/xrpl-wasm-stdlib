@@ -106,25 +106,30 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
+use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+use xrpl_wasm_stdlib::smart_escrow;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let tx = EscrowFinish;
-
+#[smart_escrow]
+fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
     // Get the account trying to finish the escrow
-    let account = match tx.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => acc,
-        Err(_) => return 0, // Invalid transaction
+        Err(_) => return FinishResult::reject(), // Invalid transaction
     };
 
     // Check account balance
     match get_account_balance(&account) {
-        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1, // Release (>10 XRP)
-        _ => 0, // Keep locked
+        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
+        _ => FinishResult::reject(), // Keep locked
     }
 }
 ```
+
+The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
+
+_(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-escrow-stdlib`, a separate crate this guide's own doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
 
 **Build and test:**
 
@@ -139,6 +144,7 @@ edition = "2021"
 
 [dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
 
 [lib]
 crate-type = ["cdylib"]
@@ -170,8 +176,11 @@ Smart escrows are **conditional payment contracts** that:
 
 Every smart escrow must:
 
-1. **Export a `finish()` function** with signature `extern "C" fn finish() -> i32`
-2. **Return 1 to release** funds or **0 to keep locked**
+1. **Export a `finish()` function** with signature `extern "C" fn finish() -> i32`. The `#[smart_escrow]` macro
+   generates this for you from a function you annotate — see [Your First Contract](#your-first-contract) — so you
+   normally never write the raw `extern "C"` export yourself.
+2. **Return a positive value to release** funds, or **zero/negative to keep locked** (`FinishResult::succeed()` /
+   `FinishResult::reject()` under the macro)
 3. **Be deterministic** - same inputs always produce same outputs
 4. **Use `#![no_std]`** - no standard library available (use ours instead 😉)
 
@@ -197,6 +206,10 @@ Smart escrows run in a constrained WebAssembly environment:
 ### Transaction Access
 
 The XRPL WASM Standard Library provides type-safe access to transaction data through the `current_tx` module.
+
+> **Under `#[smart_escrow]`:** your entry function receives an `EscrowFinishContext`, not a bare `EscrowFinish`.
+> Access the current transaction via `ctx.tx()` and the current escrow ledger object via `ctx.escrow()` (both
+> implement the same field traits shown below) rather than constructing `EscrowFinish` directly.
 
 #### EscrowFinish Transaction
 
@@ -487,7 +500,7 @@ The simplest possible smart escrow that demonstrates basic concepts.
 **Key learning points:**
 
 - Basic contract structure with `#![no_std]` and `#![no_main]`
-- Using `#[unsafe(no_mangle)]` for the entry point function
+- Using `#[smart_escrow]` to declare the entry point function, instead of hand-writing the `extern "C"` export
 - Simple error handling with pattern matching
 - Trace logging for debugging
 
@@ -717,23 +730,23 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 
 #### Common Build Issues
 
-| Issue                            | Solution                                             |
-| -------------------------------- | ---------------------------------------------------- |
-| `wasm32v1-none` target not found | `rustup target add wasm32v1-none`                    |
-| Link errors                      | Check `crate-type = ["cdylib"]` in Cargo.toml        |
-| Binary too large                 | Use release profile optimizations                    |
-| Missing exports                  | Ensure `#[unsafe(no_mangle)]` on `finish()` function |
-| Compilation errors               | Check `#![no_std]` and avoid std library usage       |
+| Issue                            | Solution                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `wasm32v1-none` target not found | `rustup target add wasm32v1-none`                                                                                 |
+| Link errors                      | Check `crate-type = ["cdylib"]` in Cargo.toml                                                                     |
+| Binary too large                 | Use release profile optimizations                                                                                 |
+| Missing exports                  | Ensure `#[smart_escrow]` is applied to your entry function (or `#[unsafe(no_mangle)]` if hand-writing the export) |
+| Compilation errors               | Check `#![no_std]` and avoid std library usage                                                                    |
 
 #### Common Runtime Issues
 
-| Issue                    | Cause                   | Solution                                    |
-| ------------------------ | ----------------------- | ------------------------------------------- |
-| Function not found       | WASM export missing     | Check `#[unsafe(no_mangle)]` on entry point |
-| Memory access violation  | Buffer overflow         | Verify buffer sizes and bounds              |
-| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_ledger_obj` calls           |
-| Field not found          | Missing ledger field    | Handle `FieldNotFound` errors               |
-| Invalid field data       | Malformed field         | Validate input data                         |
+| Issue                    | Cause                   | Solution                                                                                              |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Function not found       | WASM export missing     | Check `#[smart_escrow]` on your entry function (or `#[unsafe(no_mangle)]` if hand-writing the export) |
+| Memory access violation  | Buffer overflow         | Verify buffer sizes and bounds                                                                        |
+| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_ledger_obj` calls                                                                     |
+| Field not found          | Missing ledger field    | Handle `FieldNotFound` errors                                                                         |
+| Invalid field data       | Malformed field         | Validate input data                                                                                   |
 
 #### Debugging Techniques
 
@@ -743,28 +756,32 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 use xrpl_wasm_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
 use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+use xrpl_wasm_stdlib::smart_escrow;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
     trace("Contract starting").ok();
 
-    let tx = EscrowFinish;
-    let account = match tx.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => {
             trace_data("Account", &acc.0, DataRepr::AsHex).ok();
             acc
         },
         Err(e) => {
-            trace_num("Error getting account: {:?}", e as i64).ok();
-            return 0;
+            let _ = trace_num("Error getting account, code:", e.code() as i64);
+            return e.code().into();
         }
     };
 
     // More logic with tracing...
-    1 // Return 1 to complete the function
+    FinishResult::succeed() // Release the escrow
 }
 ```
+
+The annotated function can be named anything except `finish` (the macro generates its own `finish` export, which would collide with a same-named user function).
 
 **Inspect WASM binary:**
 
