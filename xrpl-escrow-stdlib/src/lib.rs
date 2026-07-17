@@ -10,9 +10,8 @@ const VERSION_STR: &str = env!("CARGO_PKG_VERSION");
 #[cfg(target_arch = "wasm32")]
 #[used]
 #[unsafe(link_section = "xrpl-escrow-stdlib-version")]
-static VERSION_METADATA: [u8; VERSION_STR.len()] = *unsafe {
-    &*VERSION_STR.as_ptr().cast::<[u8; VERSION_STR.len()]>()
-};
+static VERSION_METADATA: [u8; VERSION_STR.len()] =
+    *unsafe { &*VERSION_STR.as_ptr().cast::<[u8; VERSION_STR.len()]>() };
 
 pub mod ctx;
 pub mod current_tx;
