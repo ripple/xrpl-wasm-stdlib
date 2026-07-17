@@ -90,6 +90,7 @@ name = "hello_world"
 version = "1.0.0"
 dependencies = [
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
  "xrpl-wasm-stdlib",
 ]
 
