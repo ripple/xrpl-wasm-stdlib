@@ -15,8 +15,10 @@ pub use xrpl_macros::smart_escrow;
 
 pub mod core;
 pub mod ctx;
+pub mod fields;
 pub mod host;
 pub mod sfield;
+pub(crate) mod tx_flags;
 pub mod types;
 
 /// Complete Developer Guide

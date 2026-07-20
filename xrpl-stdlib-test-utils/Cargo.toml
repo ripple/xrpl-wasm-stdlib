@@ -1,0 +1,11 @@
+[package]
+name = "xrpl-stdlib-test-utils"
+version = "0.1.0"
+edition = "2024"
+description = "Test harness for XRPL WebAssembly smart contracts: MockHostBindings plus escrow scenario builders"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+mockall.workspace = true

@@ -6,7 +6,6 @@ use crate::host;
 use host::Error;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct AccountRoot {
     pub slot_num: i32,
 }
