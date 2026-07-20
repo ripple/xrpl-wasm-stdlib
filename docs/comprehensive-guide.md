@@ -102,11 +102,13 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 
 ```rust ignore
 
-use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::core::ledger_objects::account_root::get_account_balance;
 use xrpl_common_stdlib::core::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
@@ -141,6 +143,8 @@ edition = "2021"
 
 [dependencies]
 xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
+xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
+xrpl-macros = { path = "../xrpl-macros" }
 
 [lib]
 crate-type = ["cdylib"]

@@ -54,7 +54,7 @@ impl EscrowFinishContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xrpl_common_stdlib::host::{Error, setup_mock};
+    use xrpl_common_stdlib::host::Error;
     use xrpl_stdlib_test_utils::EscrowScenario;
 
     #[test]
