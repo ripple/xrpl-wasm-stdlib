@@ -754,9 +754,10 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 
 ```rust ignore
 use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
-use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {

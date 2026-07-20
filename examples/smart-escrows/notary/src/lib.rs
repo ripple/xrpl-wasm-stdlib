@@ -9,8 +9,6 @@ use xrpl_common_stdlib::core::types::account_id::AccountID;
 use xrpl_common_stdlib::host::trace::trace_num;
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::r_address;
-
-// Escrow-specific items.
 use xrpl_escrow_stdlib::current_tx::escrow_finish::get_current_escrow_finish;
 
 // The notary account that is authorized to complete escrows
