@@ -167,7 +167,7 @@ async function main() {
   } = mergeSfields(escrowFields, contractFields)
 
   console.log(
-    `📝 SFields: ${escrowFields.size} from escrow branch, +${addedFromContract.length} contract-only additions${
+    `SFields: ${escrowFields.size} from escrow branch, +${addedFromContract.length} contract-only additions${
       addedFromContract.length > 0
         ? ` (${addedFromContract.map((n) => "sf" + n).join(", ")})`
         : ""
@@ -176,7 +176,7 @@ async function main() {
 
   if (conflict) {
     console.error(
-      "\n❌ One or more fields differ between the escrow and contract branches -- see above. Aborting without writing output.",
+      "\nOne or more fields differ between the escrow and contract branches -- see above. Aborting without writing output.",
     )
     process.exit(1)
   }
@@ -209,7 +209,7 @@ async function main() {
       // Show custom type mappings
       if (customFieldTypes[fieldName]) {
         console.log(
-          `  ✓ ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
+          ` ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
         )
       }
     } else {
