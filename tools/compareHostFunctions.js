@@ -8,32 +8,7 @@ if (process.argv.length !== 3) {
 ////////////////////////////////////////////////////////////////////////
 //  Get all necessary files from rippled
 ////////////////////////////////////////////////////////////////////////
-const path = require("path")
-const fs = require("fs/promises")
-
-async function readFileFromGitHub(repo, filename) {
-  if (!repo.includes("tree")) {
-    repo += "/tree/HEAD"
-  }
-  let url = repo.replace("github.com", "raw.githubusercontent.com")
-  url = url.replace("tree/", "")
-  url += "/" + filename
-
-  if (!url.startsWith("http")) {
-    url = "https://" + url
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`)
-    }
-    return await response.text()
-  } catch (e) {
-    console.error(`Error reading ${url}: ${e.message}`)
-    process.exit(1)
-  }
-}
+const { readFile, readSourceFile: read } = require("./rippledSource")
 
 function areListsEqual(a, b) {
   if (a.length !== b.length) return false
@@ -44,19 +19,6 @@ function areListsEqual(a, b) {
   }
   return true
 }
-
-async function readFile(folder, filename) {
-  const filePath = path.join(folder, filename)
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch (e) {
-    throw new Error(`File not found: ${filePath}, ${e.message}`)
-  }
-}
-
-const read = process.argv[2].includes("github.com")
-  ? readFileFromGitHub
-  : readFile
 
 async function main() {
   const wasmImportFile = await read(

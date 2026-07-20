@@ -1,0 +1,5 @@
+error: expected `fn`
+ --> tests/smart_escrow/fail_not_a_fn.rs:4:1
+  |
+4 | struct Foo;
+  | ^^^^^^

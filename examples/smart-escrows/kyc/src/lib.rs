@@ -3,10 +3,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::core::keylets::credential_keylet;
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow;
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::CurrentEscrow;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 

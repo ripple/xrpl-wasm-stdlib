@@ -10,13 +10,15 @@ pub use xrpl_macros::currency;
 pub use xrpl_macros::hash256;
 pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
+pub use xrpl_macros::smart_contract;
+pub use xrpl_macros::smart_escrow;
 
 pub mod core;
 pub mod ctx;
 pub mod fields;
 pub mod host;
 pub mod sfield;
-pub mod tx_flags;
+pub(crate) mod tx_flags;
 pub mod types;
 
 /// Complete Developer Guide

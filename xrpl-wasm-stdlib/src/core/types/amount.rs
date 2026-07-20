@@ -127,15 +127,15 @@ impl Amount {
 
         match self {
             Amount::XRP { num_drops } => {
+                // For tracing, XRP encodes the drop amount with the sign bit
+                // Bit 6 is set to 1 for positive amounts, 0 for negative
+                let abs_drops = num_drops.unsigned_abs();
+                let mut value = abs_drops;
                 if *num_drops >= 0 {
-                    // Set the positive bit (0x40) and clear the currency bit (0x80)
-                    let positive_drops = (*num_drops as u64) | 0x4000000000000000u64; // Set positive bit
-                    bytes[0..8].copy_from_slice(&positive_drops.to_be_bytes());
-                } else {
-                    // Clear the positive bit
-                    let negative_drops = ((-*num_drops) as u64) & 0x3FFFFFFFFFFFFFFFu64; // Clear positive bit
-                    bytes[0..8].copy_from_slice(&negative_drops.to_be_bytes());
+                    value |= 0x4000000000000000u64; // Set bit 6 for positive
                 }
+                bytes[0..8].copy_from_slice(&value.to_be_bytes());
+                // Remaining 40 bytes stay as zeros (padding)
             }
 
             Amount::MPT {
@@ -249,6 +249,8 @@ impl Amount {
         }
         // is_iou
         else {
+            // IOU amounts are 48 bytes
+
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
             let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();

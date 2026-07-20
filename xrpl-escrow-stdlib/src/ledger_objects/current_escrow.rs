@@ -1,7 +1,8 @@
-use crate::core::ledger_objects::traits::{CurrentEscrowFields, CurrentLedgerObjectCommonFields};
+use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
+
+use crate::ledger_objects::traits::CurrentEscrowFields;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct CurrentEscrow;
 
 impl CurrentLedgerObjectCommonFields for CurrentEscrow {}
