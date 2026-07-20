@@ -10,8 +10,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Default rippled source (can be overridden with first argument)
-# Using smart-escrow branch which has the latest smart escrow features
-RIPPLED_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
+# Using the smart-escrow feature branch (ripple/se/supported)
+RIPPLED_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/se/supported}"
 
 # Output file (can be overridden with second argument)
 OUTPUT_FILE="${2:-xrpl-common-stdlib/src/sfield.rs}"

@@ -17,48 +17,7 @@ if (process.argv.length != 3 && process.argv.length != 4) {
 ////////////////////////////////////////////////////////////////////////
 const path = require("path")
 const fs = require("fs/promises")
-
-async function readFileFromGitHub(repo, filename) {
-  if (!repo.includes("tree")) {
-    repo += "/tree/HEAD"
-  }
-  let url = repo.replace("github.com", "raw.githubusercontent.com")
-  url = url.replace("tree/", "")
-  url += "/" + filename
-
-  if (!url.startsWith("http")) {
-    url = "https://" + url
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`)
-    }
-    return await response.text()
-  } catch (e) {
-    console.error(`Error reading ${url}: ${e.message}`)
-    process.exit(1)
-  }
-}
-
-async function readFile(folder, filename) {
-  const filePath = path.join(folder, filename)
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch (e) {
-    throw new Error(`File not found: ${filePath}, ${e.message}`)
-  }
-}
-
-const read = (() => {
-  try {
-    const url = new URL(process.argv[2])
-    return url.hostname === "github.com" ? readFileFromGitHub : readFile
-  } catch {
-    return readFile // Default to readFile if process.argv[2] is not a valid URL
-  }
-})()
+const { readSourceFile: read } = require("./rippledSource")
 
 async function main() {
   const sfieldHeaderFile = await read(
@@ -125,6 +84,7 @@ async function main() {
     MessageKey: "PublicKeyBlob",
     SigningPubKey: "PublicKeyBlob",
     TxnSignature: "SignatureBlob",
+    Signature: "SignatureBlob",
     URI: "UriBlob",
   }
 

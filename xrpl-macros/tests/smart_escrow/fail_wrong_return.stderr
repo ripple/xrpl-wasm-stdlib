@@ -1,0 +1,5 @@
+error: return type must be `FinishResult` or `i32`
+ --> tests/smart_escrow/fail_wrong_return.rs:6:38
+  |
+6 | fn run(_ctx: EscrowFinishContext) -> String {
+  |                                      ^^^^^^

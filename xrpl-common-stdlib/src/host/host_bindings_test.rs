@@ -20,9 +20,22 @@ pub fn setup_mock(mock: MockHostBindings) -> MockGuard {
 
 // Create a default mock with stub return values matching the old host_bindings_for_testing.rs
 #[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
-fn create_default_mock() -> MockHostBindings {
+pub fn create_default_mock() -> MockHostBindings {
     let mut mock = MockHostBindings::new();
+    apply_default_expectations(&mut mock);
+    mock
+}
 
+/// Applies the same default `.returning(...)` wiring as [`create_default_mock`] onto an
+/// existing mock instead of constructing a new one.
+///
+/// Exposed so callers (e.g. scenario builders in `xrpl-stdlib-test-utils`) can register their
+/// own expectations on a fresh mock first, then layer these defaults on top as a fallback:
+/// mockall checks expectations in the order they were registered, so registering
+/// scenario-specific expectations before calling this function lets them take priority over
+/// the unconditional defaults added here.
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     // Ledger info functions - return small positive values
     mock.expect_get_ledger_sqn()
         .returning(|_, out_buff_len| out_buff_len as i32);
@@ -169,8 +182,6 @@ fn create_default_mock() -> MockHostBindings {
         .returning(move |_, msg_len, _, float_len| sum_lengths(msg_len, float_len));
     mock.expect_trace_amount()
         .returning(move |_, msg_len, _, amt_len| sum_lengths(msg_len, amt_len));
-
-    mock
 }
 
 // #[cfg(test)]
