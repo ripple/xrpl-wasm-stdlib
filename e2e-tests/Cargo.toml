@@ -13,6 +13,7 @@ members = [
 
 [workspace.dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
 test_utils = { path = "test_utils" }
 
 [profile.release]

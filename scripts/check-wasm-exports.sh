@@ -17,7 +17,7 @@ check_src_dir_exports() {
     [[ "$dir" == *"test_utils"* ]] && return 0
     echo "🔧 Checking exports in $dir"
     if [[ -f "$src_dir/lib.rs" ]]; then
-        grep -q "finish() -> i32" "$src_dir/lib.rs" || {
+        grep -q "finish() -> i32" "$src_dir/lib.rs" || grep -q "#\[smart_escrow\]" "$src_dir/lib.rs" || {
             echo "❌ Missing required finish() -> i32 export in $dir"
             exit 1
         }

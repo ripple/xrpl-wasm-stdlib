@@ -9,7 +9,7 @@
 //! account data correctly.
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::keylets::account_keylet;
 use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;

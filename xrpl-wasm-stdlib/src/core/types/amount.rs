@@ -249,6 +249,8 @@ impl Amount {
         }
         // is_iou
         else {
+            // IOU amounts are 48 bytes
+
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
             let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();

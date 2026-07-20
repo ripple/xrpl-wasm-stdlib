@@ -1,7 +1,6 @@
-use crate::core::ledger_objects::traits::{EscrowFields, LedgerObjectCommonFields};
+use xrpl_wasm_stdlib::core::ledger_objects::traits::{EscrowFields, LedgerObjectCommonFields};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]
 pub struct Escrow {
     pub(crate) slot_num: i32,
 }

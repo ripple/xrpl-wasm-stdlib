@@ -20,10 +20,9 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
-use xrpl_wasm_stdlib::core::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
-use xrpl_wasm_stdlib::core::ledger_objects::traits::{
-    CurrentEscrowFields, CurrentLedgerObjectCommonFields,
-};
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 

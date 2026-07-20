@@ -6,6 +6,7 @@ version = 4
 name = "atomic_swap1"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -13,6 +14,7 @@ dependencies = [
 name = "atomic_swap2"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -36,9 +38,9 @@ dependencies = [
 
 [[package]]
 name = "cfg-if"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
+checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "const-oid"
@@ -79,6 +81,7 @@ dependencies = [
 name = "freelancer_escrow"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -86,6 +89,8 @@ dependencies = [
 name = "hello_world"
 version = "1.0.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
+ "xrpl-macros",
  "xrpl-wasm-stdlib",
 ]
 
@@ -102,6 +107,7 @@ dependencies = [
 name = "kyc"
 version = "0.0.1"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -114,14 +120,15 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.176"
+version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
+checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "nft_owner"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -129,6 +136,7 @@ dependencies = [
 name = "notary"
 version = "0.1.0"
 dependencies = [
+ "xrpl-escrow-stdlib",
  "xrpl-wasm-stdlib",
 ]
 
@@ -141,18 +149,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.101"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89ae43fd86e4158d6db51ad8e2b80f313af9cc74f5c0e03ccb87de09998732de"
+checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.41"
+version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce25767e7b499d1b604768e7cde645d14cc8584231ea6b295e9c9eb22c02e1d1"
+checksum = "dfbc457d0c7a0759a614551b11a6409e5951f6c7537be1f1b7682b9ae9230368"
 dependencies = [
  "proc-macro2",
 ]
@@ -170,9 +178,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.106"
+version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ede7c438028d4436d71104916910f5bb611972c5cfd7f89b8300a8186e6fada6"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -181,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.10.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa"
+checksum = "bb4ebadaa0af04fab11ae01eb5f9fdb5f9c5b875506e210e71c07873528baa7f"
 dependencies = [
  "tinyvec_macros",
 ]
@@ -202,9 +210,16 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.19"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f63a545481291138910575129486daeaf8ac54aee4387fe7906919f7830c7d9d"
+checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+
+[[package]]
+name = "xrpl-escrow-stdlib"
+version = "0.1.0"
+dependencies = [
+ "xrpl-wasm-stdlib",
+]
 
 [[package]]
 name = "xrpl-macros"
