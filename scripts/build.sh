@@ -25,9 +25,10 @@ rustup target add wasm32v1-none
 echo "🏗️  Building Native Workspace..."
 cargo build --workspace $RELEASE_MODE
 
-echo "🏗️  Building xrpl-common-stdlib for WASM..."
+echo "🏗️  Building xrpl-wasm-stdlib for WASM..."
 cargo build -p xrpl-common-stdlib --target wasm32v1-none $RELEASE_MODE
 cargo rustc -p xrpl-common-stdlib --target wasm32v1-none $RELEASE_MODE -- -D warnings
+cargo rustc -p xrpl-escrow-stdlib --target wasm32v1-none $RELEASE_MODE -- -D warnings
 
 echo "🏗️  Building WASM Examples Workspace..."
 cd examples
