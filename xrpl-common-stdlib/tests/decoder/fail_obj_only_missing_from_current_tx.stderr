@@ -1,0 +1,11 @@
+error[E0277]: the trait bound `ObjOnly: FromCurrentTx` is not satisfied
+  --> tests/decoder/fail_obj_only_missing_from_current_tx.rs:22:32
+   |
+22 |     requires_from_current_tx::<ObjOnly>();
+   |                                ^^^^^^^ the trait `FromCurrentTx` is not implemented for `ObjOnly`
+   |
+note: required by a bound in `requires_from_current_tx`
+  --> tests/decoder/fail_obj_only_missing_from_current_tx.rs:19:32
+   |
+19 | fn requires_from_current_tx<T: FromCurrentTx>() {}
+   |                                ^^^^^^^^^^^^^ required by this bound in `requires_from_current_tx`

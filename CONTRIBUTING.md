@@ -126,24 +126,26 @@ These debugging statements will show up in the `debug.log` for rippled.
 ```rust
 use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
     trace("Contract starting").ok();
 
-    let account = match EscrowFinish.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.as_bytes(), DataRepr::AsHex).ok();
+            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
             acc
         },
         Err(e) => {
-            trace(&format!("Error: {:?}", e)).ok();
-            return 0;
+            return e.code().into();
         }
     };
 
     // Rest of logic...
+    FinishResult::succeed()
 }
 ```
+
+The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` export; your annotated function can be named anything except `finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 

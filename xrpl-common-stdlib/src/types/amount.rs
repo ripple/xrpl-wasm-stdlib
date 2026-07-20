@@ -205,7 +205,8 @@ impl Amount {
 
         if is_xrp_or_mpt {
             if is_xrp {
-                // If we get here, we'll have 8 bytes.
+                // Only the first 8 bytes are meaningful; the rest is padding.
+
                 let mut amount_bytes = [0u8; 8];
                 amount_bytes.copy_from_slice(&bytes[0..8]);
 
@@ -224,7 +225,8 @@ impl Amount {
             }
             // is_mpt
             else {
-                // If we get here, we'll have 33 bytes.
+                // Only the first 33 bytes are meaningful; the rest is padding.
+
                 // MPT amount: [0/type][1/sign][1/is-mpt][5/reserved][64/value]
                 let mut num_units_bytes = [0u8; 8];
                 // Skip the first MPT byte, which is control bytes. Grab the next 8 for the u64
@@ -247,15 +249,11 @@ impl Amount {
         }
         // is_iou
         else {
-            // If we get here, we'll have 48 bytes.
+            // IOU amounts are 48 bytes
 
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
             let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
             let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();
-
-            // Parse the Amount::IOU from the first 9 bytes
-            // let mut amount_bytes = [0u8; 9];
-            // amount_bytes.copy_from_slice(&bytes[0..9]);
 
             // Parse the Currency from the next 20 bytes
             let mut currency_bytes = [0u8; 20];

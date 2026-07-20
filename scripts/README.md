@@ -110,14 +110,14 @@ This script:
 The `generate-sfields.sh` script generates type-safe SField constants from the rippled source code:
 
 ```shell
-# Generate from default rippled repository (smart-escrow branch)
+# Generate from default rippled repository (se/supported branch)
 ./scripts/generate-sfields.sh
 
 # Generate from a specific rippled repository or branch
 ./scripts/generate-sfields.sh https://github.com/XRPLF/rippled/tree/develop
 
 # Generate to a custom output file
-./scripts/generate-sfields.sh https://github.com/XRPLF/rippled/tree/ripple/smart-escrow custom_output.rs
+./scripts/generate-sfields.sh https://github.com/XRPLF/rippled/tree/ripple/se/supported custom_output.rs
 ```
 
 This script:

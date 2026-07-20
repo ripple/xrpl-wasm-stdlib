@@ -16,5 +16,6 @@ xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]
 xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }
+xrpl-stdlib-test-utils = { path = "../xrpl-stdlib-test-utils" }
 mockall = "0.14.0"
 trybuild = "1"

@@ -23,6 +23,11 @@ use xrpl_common_stdlib::types::account_id::AccountID;
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
 
+This crate also provides the `smart_escrow` and `smart_contract` entry-point attribute macros. Those are
+re-exported from `xrpl-wasm-stdlib` too, but you should import `smart_escrow` from `xrpl-escrow-stdlib` instead —
+its generated code references types (`EscrowFinishContext`, `FinishResult`) that live there. See
+[`xrpl-escrow-stdlib`'s README](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for usage.
+
 ---
 
 ## About This Crate
