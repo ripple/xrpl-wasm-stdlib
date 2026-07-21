@@ -10,6 +10,7 @@ use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
