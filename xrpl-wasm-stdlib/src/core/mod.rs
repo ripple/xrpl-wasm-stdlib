@@ -8,8 +8,8 @@
 //! - [`types`]: Strongly-typed XRPL primitives (AccountID, Hash256, Amount, etc.)
 //! - [`locator`]: Build locators for nested field access
 //!
-//! Start with [`current_tx::escrow_finish::EscrowFinish`] to access EscrowFinish TX fields,
-//! or [`ledger_objects::current_escrow::get_current_escrow`] to access the active escrow.
+//! Escrow-specific wrappers (`EscrowFinish`, `CurrentEscrow`, `Escrow`) live in the
+//! companion `xrpl-escrow-stdlib` crate.
 
 pub mod chain;
 pub mod constants;
@@ -17,4 +17,5 @@ pub mod current_tx;
 pub mod keylets;
 pub mod ledger_objects;
 pub mod locator;
+pub mod type_codes;
 pub mod types;
