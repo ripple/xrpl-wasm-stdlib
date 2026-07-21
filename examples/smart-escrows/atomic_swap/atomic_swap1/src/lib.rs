@@ -10,13 +10,14 @@ use xrpl_common_stdlib::host::get_tx_nested_field;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
+use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
 
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
-use xrpl_escrow_stdlib::ledger_objects::traits::{CurrentEscrowFields, EscrowFields};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
