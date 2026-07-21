@@ -58,6 +58,37 @@ pub trait LedgerObjectCommonFields {
     }
 }
 
+/// Trait providing access to common fields in the current ledger object.
+///
+/// This trait defines methods to access standard fields that are common across
+/// different types of ledger objects, specifically for the current ledger object
+/// being processed.
+pub trait CurrentLedgerObjectCommonFields {
+    // NOTE: `get_ledger_index()` is not in this trait because `sfLedgerIndex` is not actually a field on a ledger
+    // object (it's a synthetic field that maps to the `index` field, which is the unique ID of an object in the
+    // ledger's state tree). See https://github.com/XRPLF/rippled/issues/3649 for more context.
+
+    /// Retrieves the flags field of the current ledger object.
+    ///
+    /// # Returns
+    ///
+    /// The flags as a u32 value
+    fn get_flags(&self) -> Result<u32> {
+        current_ledger_object::get_field(sfield::Flags)
+    }
+
+    /// Retrieves the ledger entry type of the current ledger object.
+    ///
+    /// The value 0x0075, mapped to the string Escrow, indicates that this is an Escrow entry.
+    ///
+    /// # Returns
+    ///
+    /// The ledger entry type as a u16 value
+    fn get_ledger_entry_type(&self) -> Result<u16> {
+        current_ledger_object::get_field(sfield::LedgerEntryType)
+    }
+}
+
 /// Trait providing access to fields specific to Escrow objects in any ledger.
 ///
 /// This trait extends `LedgerObjectCommonFields` and provides methods to access
@@ -208,37 +239,6 @@ pub trait EscrowFields: LedgerObjectCommonFields {
             }),
             code => Err(Error::from_code(code)),
         }
-    }
-}
-
-/// Trait providing access to common fields in the current ledger object.
-///
-/// This trait defines methods to access standard fields that are common across
-/// different types of ledger objects, specifically for the current ledger object
-/// being processed.
-pub trait CurrentLedgerObjectCommonFields {
-    // NOTE: `get_ledger_index()` is not in this trait because `sfLedgerIndex` is not actually a field on a ledger
-    // object (it's a synthetic field that maps to the `index` field, which is the unique ID of an object in the
-    // ledger's state tree). See https://github.com/XRPLF/rippled/issues/3649 for more context.
-
-    /// Retrieves the flags field of the current ledger object.
-    ///
-    /// # Returns
-    ///
-    /// The flags as a u32 value
-    fn get_flags(&self) -> Result<u32> {
-        current_ledger_object::get_field(sfield::Flags)
-    }
-
-    /// Retrieves the ledger entry type of the current ledger object.
-    ///
-    /// The value 0x0075, mapped to the string Escrow, indicates that this is an Escrow entry.
-    ///
-    /// # Returns
-    ///
-    /// The ledger entry type as a u16 value
-    fn get_ledger_entry_type(&self) -> Result<u16> {
-        current_ledger_object::get_field(sfield::LedgerEntryType)
     }
 }
 
@@ -980,11 +980,11 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let escrow = TestCurrentLedgerObject;
+            let obj = TestCurrentLedgerObject;
 
             // All mandatory fields should return Ok
-            assert!(escrow.get_flags().is_ok());
-            assert!(escrow.get_ledger_entry_type().is_ok());
+            assert!(obj.get_flags().is_ok());
+            assert!(obj.get_ledger_entry_type().is_ok());
         }
 
         #[test]
@@ -999,8 +999,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let escrow = TestCurrentLedgerObject;
-            let result = escrow.get_flags();
+            let obj = TestCurrentLedgerObject;
+            let result = obj.get_flags();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
@@ -1017,8 +1017,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let escrow = TestCurrentLedgerObject;
-            let result = escrow.get_ledger_entry_type();
+            let obj = TestCurrentLedgerObject;
+            let result = obj.get_ledger_entry_type();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
@@ -1036,8 +1036,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let escrow = TestCurrentLedgerObject;
-            let result = escrow.get_flags();
+            let obj = TestCurrentLedgerObject;
+            let result = obj.get_flags();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
