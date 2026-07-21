@@ -145,20 +145,6 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "mockall"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f58d964098a5f9c6b63d0798e5372fd04708193510a7af313c22e9f29b7b620b"
-dependencies = [
- "cfg-if",
- "downcast",
- "fragile",
- "mockall_derive 0.14.0",
- "predicates",
- "predicates-tree",
-]
-
-[[package]]
-name = "mockall"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a6ceddfe3ce334925e96bf420fdb2dcee5bed6c632a168ece622676dadeaf8a"
@@ -166,21 +152,9 @@ dependencies = [
  "cfg-if",
  "downcast",
  "fragile",
- "mockall_derive 0.15.0",
+ "mockall_derive",
  "predicates",
  "predicates-tree",
-]
-
-[[package]]
-name = "mockall_derive"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca41ce716dda6a9be188b385aa78ee5260fc25cd3802cb2a8afdc6afbe6b6dbf"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]
@@ -459,7 +433,7 @@ checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 name = "xrpl-common-stdlib"
 version = "0.8.0"
 dependencies = [
- "mockall 0.15.0",
+ "mockall",
  "trybuild",
  "xrpl-macros",
 ]
@@ -468,7 +442,7 @@ dependencies = [
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 dependencies = [
- "mockall 0.14.0",
+ "mockall",
  "trybuild",
  "xrpl-common-stdlib",
  "xrpl-stdlib-test-utils",
@@ -490,7 +464,7 @@ dependencies = [
 name = "xrpl-stdlib-test-utils"
 version = "0.1.0"
 dependencies = [
- "mockall 0.15.0",
+ "mockall",
  "xrpl-common-stdlib",
 ]
 
