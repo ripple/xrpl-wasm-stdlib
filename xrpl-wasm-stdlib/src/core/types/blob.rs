@@ -260,7 +260,7 @@ mod tests {
         assert_eq!(blob.len(), 0);
         assert!(blob.is_empty());
         assert_eq!(blob.capacity(), 32);
-        assert_eq!(blob.as_slice(), &[]);
+        assert_eq!(blob.as_slice(), &[] as &[u8]);
     }
 
     #[test]
@@ -303,7 +303,7 @@ mod tests {
 
         assert_eq!(blob.len(), 0);
         assert!(blob.is_empty());
-        assert_eq!(blob.as_slice(), &[]);
+        assert_eq!(blob.as_slice(), &[] as &[u8]);
     }
 
     #[test]
@@ -400,7 +400,7 @@ mod tests {
         assert_eq!(EMPTY_BLOB.len(), 0);
         assert_eq!(EMPTY_BLOB.capacity(), 0);
         assert!(EMPTY_BLOB.is_empty());
-        assert_eq!(EMPTY_BLOB.as_slice(), &[]);
+        assert_eq!(EMPTY_BLOB.as_slice(), &[] as &[u8]);
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod tests {
         let blob: Blob<0> = Blob::from_slice(&data);
 
         assert_eq!(blob.len(), 0);
-        assert_eq!(blob.as_slice(), &[]);
+        assert_eq!(blob.as_slice(), &[] as &[u8]);
     }
 
     #[test]
