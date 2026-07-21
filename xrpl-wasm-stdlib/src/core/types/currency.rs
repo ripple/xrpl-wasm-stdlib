@@ -110,54 +110,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_currency_creation() {
-        // Create a test currency code
-        let code_bytes = [1u8; CURRENCY_SIZE];
-        let currency = Currency::new(code_bytes);
-
-        // Verify the bytes
-        assert_eq!(currency.as_bytes(), &code_bytes);
-    }
-
-    #[test]
-    fn test_currency_from_bytes() {
-        // Create a test byte array
-        let bytes = [2u8; CURRENCY_SIZE];
-
-        // Create a Currency from bytes
-        let currency = Currency::from(bytes);
-
-        // Verify the bytes
-        assert_eq!(currency.as_bytes(), &bytes);
-    }
-
-    #[test]
-    fn test_currency_equality() {
-        // Create two identical currency codes
-        let code1 = Currency::new([3u8; CURRENCY_SIZE]);
-        let code2 = Currency::new([3u8; CURRENCY_SIZE]);
-
-        // Create a different currency code
-        let code3 = Currency::new([4u8; CURRENCY_SIZE]);
-
-        // Test equality
-        assert_eq!(code1, code2);
-        assert_ne!(code1, code3);
-    }
-
-    #[test]
     fn test_currency_from_standard_bytes() {
-        // Create a 3-byte array representing "USD"
+        // Test From<[u8; 3]> - places 3-byte code at bytes 12-14
         let standard_bytes = *b"USD";
-
-        // Convert to Currency
         let currency = Currency::from(standard_bytes);
 
-        // Create the expected 20-byte array (zeros with "USD" at positions 12-14)
         let mut expected = [0u8; CURRENCY_SIZE];
         expected[12..15].copy_from_slice(&standard_bytes);
 
-        // Verify the bytes
         assert_eq!(currency.as_bytes(), &expected);
+    }
+
+    #[test]
+    fn test_standard_currency_byte_layout() {
+        // Standard currencies are placed at bytes 12-14 with zeros elsewhere
+        let eur = Currency::from(*b"EUR");
+        let bytes = eur.as_bytes();
+
+        // Bytes 0-11 should be zero
+        assert_eq!(&bytes[0..12], &[0u8; 12]);
+        // Bytes 12-14 should be "EUR"
+        assert_eq!(&bytes[12..15], b"EUR");
+        // Bytes 15-19 should be zero
+        assert_eq!(&bytes[15..20], &[0u8; 5]);
+    }
+
+    #[test]
+    fn test_currency_new_and_from_20_bytes() {
+        // Non-standard 20-byte currency code
+        let original: [u8; CURRENCY_SIZE] = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+            0x0F, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+
+        // Exercise Currency::new
+        let currency_new = Currency::new(original);
+        assert_eq!(currency_new.as_bytes(), &original);
+
+        // Exercise From<[u8; 20]> for Currency
+        let currency_from = Currency::from(original);
+        assert_eq!(currency_from.as_bytes(), &original);
+
+        // Both constructors should produce the same result
+        assert_eq!(currency_new, currency_from);
     }
 }
