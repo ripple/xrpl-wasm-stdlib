@@ -4,7 +4,7 @@ use xrpl_common_stdlib::core::ledger_objects::current_ledger_object;
 use xrpl_common_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_common_stdlib::core::types::account_id::AccountID;
 use xrpl_common_stdlib::core::types::amount::Amount;
-use xrpl_common_stdlib::core::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, WasmBlob};
+use xrpl_common_stdlib::core::types::blob::{ConditionBlob, WasmBlob};
 use xrpl_common_stdlib::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use xrpl_common_stdlib::core::types::uint::Hash256;
 use xrpl_common_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
@@ -177,6 +177,7 @@ mod tests {
     mod current_escrow_fields {
         use super::*;
         use crate::ledger_objects::current_escrow::CurrentEscrow;
+        use xrpl_common_stdlib::core::types::blob::CONDITION_BLOB_SIZE;
         use xrpl_common_stdlib::core::types::blob::WASM_BLOB_SIZE;
         use xrpl_common_stdlib::host::setup_mock;
 
