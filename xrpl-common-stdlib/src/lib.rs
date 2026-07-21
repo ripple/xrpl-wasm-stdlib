@@ -4,6 +4,15 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+#[cfg(target_arch = "wasm32")]
+const VERSION_STR: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg(target_arch = "wasm32")]
+#[used]
+#[unsafe(link_section = "xrpl-common-stdlib-version")]
+static VERSION_METADATA: [u8; VERSION_STR.len()] =
+    *unsafe { &*VERSION_STR.as_ptr().cast::<[u8; VERSION_STR.len()]>() };
+
 // Re-export macros for convenient access
 pub use xrpl_macros::blob;
 pub use xrpl_macros::currency;
