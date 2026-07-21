@@ -30,10 +30,10 @@ use crate::sfield::SField;
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-/// use xrpl_wasm_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
-/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_common_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
+/// use xrpl_common_stdlib::core::types::account_id::AccountID;
+/// use xrpl_common_stdlib::core::types::amount::Amount;
+/// use xrpl_common_stdlib::sfield;
 ///
 /// fn example() {
 ///   let slot = 0;
@@ -399,8 +399,8 @@ pub mod current_ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use xrpl_wasm_stdlib::core::ledger_objects::current_ledger_object;
-    /// use xrpl_wasm_stdlib::sfield;
+    /// use xrpl_common_stdlib::core::ledger_objects::current_ledger_object;
+    /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
     /// let flags = current_ledger_object::get_field(sfield::Flags).unwrap();  // u32
@@ -832,8 +832,8 @@ pub mod ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use xrpl_wasm_stdlib::core::ledger_objects::ledger_object;
-    /// use xrpl_wasm_stdlib::sfield;
+    /// use xrpl_common_stdlib::core::ledger_objects::ledger_object;
+    /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
     /// let balance = ledger_object::get_field(0, sfield::Balance).unwrap();  // Amount

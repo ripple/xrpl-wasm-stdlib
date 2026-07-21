@@ -4,11 +4,11 @@
 //! tests read in terms of the escrow scenario instead of raw host-function wiring.
 
 use crate::mock_common::{MockGuard, MockHostBindings, apply_default_expectations, setup_mock};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::Error;
-use xrpl_wasm_stdlib::host::error_codes::BUFFER_TOO_SMALL;
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::host::Error;
+use xrpl_common_stdlib::host::error_codes::BUFFER_TOO_SMALL;
+use xrpl_common_stdlib::sfield;
 
 /// Pre-wires common Smart Escrow test setups onto a [`MockHostBindings`].
 ///
@@ -126,7 +126,7 @@ fn write_bytes(bytes: &[u8], out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xrpl_wasm_stdlib::core::current_tx::get_field;
+    use xrpl_common_stdlib::core::current_tx::get_field;
 
     fn test_account() -> AccountID {
         AccountID::from([0xAB; 20])
@@ -168,7 +168,7 @@ mod tests {
 
         // OfferSequence wasn't configured by the scenario; the default fallback (declared
         // after the scenario's expectation) still handles it instead of panicking.
-        let result: xrpl_wasm_stdlib::host::Result<u32> = get_field(sfield::OfferSequence);
+        let result: xrpl_common_stdlib::host::Result<u32> = get_field(sfield::OfferSequence);
         assert!(result.is_ok());
     }
 
@@ -179,7 +179,8 @@ mod tests {
             .install();
 
         let payload = b"payload";
-        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code =
+            unsafe { xrpl_common_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, payload.len() as i32);
     }
 
@@ -190,7 +191,8 @@ mod tests {
             .install();
 
         let payload = b"payload";
-        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code =
+            unsafe { xrpl_common_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, Error::InternalError.code());
         assert!(code < 0);
     }

@@ -8,7 +8,7 @@
 //! avoids fragile `.stderr` snapshots. `r_address!` still exercises its full
 //! fixture set here (no decoder unit tests exist for it yet).
 //!
-//! Happy-path coverage lives in `xrpl-wasm-stdlib/tests/macros.rs`.
+//! Happy-path coverage lives in `xrpl-common-stdlib/tests/macros.rs`.
 //!
 //! Regenerate snapshots with:
 //!   TRYBUILD=overwrite cargo test -p xrpl-macros --test compile_fail

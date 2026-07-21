@@ -1,8 +1,8 @@
 //! `TxOnly` only implements `FromCurrentTx`, so passing it to a function that
 //! requires `FromLedger` must fail to compile.
 
-use xrpl_wasm_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
-use xrpl_wasm_stdlib::host::Error;
+use xrpl_common_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
+use xrpl_common_stdlib::host::Error;
 
 struct TxOnly;
 

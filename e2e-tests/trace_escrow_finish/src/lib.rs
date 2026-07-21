@@ -15,17 +15,17 @@ const EXPECTED_CONDITION: [u8; 39] = [
 /// This is a PREIMAGE-SHA-256 fulfillment (7 bytes) for preimage "shh"
 const EXPECTED_FULFILLMENT: [u8; 7] = [0xA0, 0x05, 0x80, 0x03, 0x73, 0x68, 0x68];
 
-use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
-use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
-use xrpl_wasm_stdlib::host;
-use xrpl_wasm_stdlib::host::trace::{
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::locator::Locator;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::transaction_type::TransactionType;
+use xrpl_common_stdlib::host;
+use xrpl_common_stdlib::host::trace::{
     DataRepr, trace, trace_account, trace_account_buf, trace_amount, trace_data, trace_num,
 };
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::sfield;
+use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
@@ -460,7 +460,7 @@ mod coverage_tests {
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.

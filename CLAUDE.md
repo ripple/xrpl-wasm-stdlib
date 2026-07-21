@@ -74,7 +74,7 @@ The library workspace is split into three crates with a strict dependency direct
   - Typed-constant macros: `r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!` — validate at compile time and emit a typed XRPL value.
   - Entry-point macros: `#[smart_escrow]`, `#[smart_contract]` — wrap a user function in the `extern "C"` symbol the XRPL host calls. Both share a `parse → validate → codegen` pipeline in `entry_point/`; adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
 - **`xrpl-wasm-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
-- **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Re-exports `xrpl_wasm_stdlib::*`, so contract code typically only needs to depend on `xrpl-escrow-stdlib`.
+- **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Re-exports `xrpl_common_stdlib::*`, so contract code typically only needs to depend on `xrpl-escrow-stdlib`.
 
 **Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
 
@@ -143,7 +143,7 @@ Minimal template (see `examples/smart-escrows/hello_world/src/lib.rs`):
 extern crate std;
 
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult, smart_escrow};
-use xrpl_wasm_stdlib::host::trace::trace;
+use xrpl_common_stdlib::host::trace::trace;
 
 #[smart_escrow]
 fn run(_ctx: EscrowFinishContext) -> FinishResult {

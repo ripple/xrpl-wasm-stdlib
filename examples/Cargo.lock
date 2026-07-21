@@ -6,16 +6,18 @@ version = 4
 name = "atomic_swap1"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
 name = "atomic_swap2"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -81,17 +83,18 @@ dependencies = [
 name = "freelancer_escrow"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
 name = "hello_world"
 version = "1.0.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
  "xrpl-macros",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -107,16 +110,18 @@ dependencies = [
 name = "kyc"
 version = "0.0.1"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
 name = "ledger_sqn"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -129,24 +134,27 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 name = "nft_owner"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
 name = "notary"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
 name = "oracle"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -180,9 +188,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.119"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
+checksum = "a207d6d6a2b7fc470b80443726053f18a2481b7e1eee970597051596567987a3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -217,10 +225,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "xrpl-common-stdlib"
+version = "0.8.0"
+dependencies = [
+ "xrpl-macros",
+]
+
+[[package]]
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -232,11 +247,4 @@ dependencies = [
  "quote",
  "sha2",
  "syn",
-]
-
-[[package]]
-name = "xrpl-wasm-stdlib"
-version = "0.8.0"
-dependencies = [
- "xrpl-macros",
 ]

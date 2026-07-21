@@ -76,10 +76,10 @@ use crate::sfield::SField;
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-/// use xrpl_wasm_stdlib::core::current_tx::{get_field, get_field_optional};
-/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-/// use xrpl_wasm_stdlib::core::types::amount::Amount;
-/// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_common_stdlib::core::current_tx::{get_field, get_field_optional};
+/// use xrpl_common_stdlib::core::types::account_id::AccountID;
+/// use xrpl_common_stdlib::core::types::amount::Amount;
+/// use xrpl_common_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
 ///   let account: AccountID = get_field(sfield::Account).unwrap();
@@ -232,8 +232,8 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_wasm_stdlib::core::current_tx::get_field;
-/// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_common_stdlib::core::current_tx::get_field;
+/// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
 /// let sequence = get_field(sfield::Sequence).unwrap();  // u32
@@ -260,8 +260,8 @@ pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_wasm_stdlib::core::current_tx::get_field_optional;
-/// use xrpl_wasm_stdlib::sfield;
+/// use xrpl_common_stdlib::core::current_tx::get_field_optional;
+/// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
 /// let flags = get_field_optional(sfield::Flags).unwrap();  // Option<u32>

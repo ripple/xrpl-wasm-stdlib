@@ -77,7 +77,7 @@ fn hex_char_to_nibble(c: u8) -> Option<u8> {
 ///
 /// Example:
 /// ```
-/// # use xrpl_wasm_stdlib::decode_hex_32;
+/// # use xrpl_common_stdlib::decode_hex_32;
 /// let hex = *b"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 /// let bytes = decode_hex_32(&hex).unwrap();
 /// assert_eq!(bytes.len(), 32);
@@ -138,7 +138,7 @@ pub fn decode_hex_32(hex: &[u8; 64]) -> Option<[u8; 32]> {
 ///
 /// Example:
 /// ```
-/// # use xrpl_wasm_stdlib::decode_hex_20;
+/// # use xrpl_common_stdlib::decode_hex_20;
 /// let hex = *b"00112233445566778899aabbccddeeff00112233";
 /// let bytes = decode_hex_20(&hex).unwrap();
 /// assert_eq!(bytes.len(), 20);

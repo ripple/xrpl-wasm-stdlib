@@ -9,19 +9,19 @@
 //! account data correctly.
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::keylets::account_keylet;
+use xrpl_common_stdlib::core::ledger_objects::account_root::AccountRoot;
+use xrpl_common_stdlib::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::host::cache_ledger_obj;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::{AccountFields, LedgerObjectCommonFields};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::cache_ledger_obj;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 
 // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory (whereas locally
 // this returns the bytes 0x00).
 #[cfg(target_arch = "wasm32")]
-use xrpl_wasm_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::core::types::amount::Amount;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
@@ -40,7 +40,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Compute the keylet for this account's AccountRoot object
         // AccountRoot keylet = 0x61 (a) + SHA512Half(account_id)
-        // use xrpl_wasm_stdlib::core::keylet::account_root_keylet;
+        // use xrpl_common_stdlib::core::keylet::account_root_keylet;
         let account_keylet = account_keylet(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled
@@ -296,7 +296,7 @@ mod coverage_tests {
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.

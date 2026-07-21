@@ -49,7 +49,7 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
     let data_tokens = data.iter().map(|b| quote! { #b });
 
     let expanded = quote! {
-        ::xrpl_wasm_stdlib::core::types::blob::Blob::<#n> {
+        ::xrpl_common_stdlib::core::types::blob::Blob::<#n> {
             data: [#(#data_tokens),*],
             len: #len,
         }

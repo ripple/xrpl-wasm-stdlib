@@ -1,8 +1,8 @@
 //! `ObjOnly` only implements `FromLedger`, so passing it to a function that
 //! requires `FromCurrentTx` must fail to compile.
 
-use xrpl_wasm_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
-use xrpl_wasm_stdlib::host::Error;
+use xrpl_common_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
+use xrpl_common_stdlib::host::Error;
 
 struct ObjOnly;
 

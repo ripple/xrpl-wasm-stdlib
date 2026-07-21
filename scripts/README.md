@@ -125,7 +125,7 @@ This script:
 1. Fetches SField definitions from rippled source (local path or GitHub URL)
 2. Generates type-safe Rust constants with proper type mappings
 3. Applies custom type overrides for special fields (TransactionType, Condition, Fulfillment)
-4. Outputs to `xrpl-wasm-stdlib/src/sfield.rs` by default
+4. Outputs to `xrpl-common-stdlib/src/sfield.rs` by default
 
 **Custom type mappings:**
 

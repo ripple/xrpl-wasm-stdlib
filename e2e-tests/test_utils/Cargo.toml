@@ -11,4 +11,4 @@ publish = false
 crate-type = ["rlib"]
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../../xrpl-wasm-stdlib" }
+xrpl-common-stdlib = { path = "../../xrpl-common-stdlib" }

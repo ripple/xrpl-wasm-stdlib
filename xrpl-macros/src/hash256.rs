@@ -17,7 +17,7 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
     // `Hash256` is a type alias for `UInt<32>`, which cannot be used as a tuple-struct
     // constructor — so emit the underlying generic struct directly.
     let expanded = quote! {
-        ::xrpl_wasm_stdlib::core::types::uint::UInt::<32>([#(#bytes_tokens),*])
+        ::xrpl_common_stdlib::core::types::uint::UInt::<32>([#(#bytes_tokens),*])
     };
     Ok(expanded)
 }

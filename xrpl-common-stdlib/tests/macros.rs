@@ -11,12 +11,12 @@
 //!
 //! Compile-fail rejection paths live in `xrpl-macros/tests/compile_fail.rs`.
 
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::blob::Blob;
-use xrpl_wasm_stdlib::core::types::currency::Currency;
-use xrpl_wasm_stdlib::core::types::public_key::PublicKey;
-use xrpl_wasm_stdlib::core::types::uint::Hash256;
-use xrpl_wasm_stdlib::{blob, currency, hash256, pubkey, r_address};
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::blob::Blob;
+use xrpl_common_stdlib::core::types::currency::Currency;
+use xrpl_common_stdlib::core::types::public_key::PublicKey;
+use xrpl_common_stdlib::core::types::uint::Hash256;
+use xrpl_common_stdlib::{blob, currency, hash256, pubkey, r_address};
 
 #[test]
 fn r_address_expands_to_const_account_id() {
