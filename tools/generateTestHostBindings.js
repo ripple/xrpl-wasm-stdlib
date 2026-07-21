@@ -9,7 +9,7 @@ if (process.argv.length != 2) {
 const path = require("path")
 const fs = require("fs/promises")
 
-const HOST_DIR = path.join(__dirname, "../xrpl-wasm-stdlib/src/host")
+const HOST_DIR = path.join(__dirname, "../xrpl-common-stdlib/src/host")
 
 const FILES = {
   trait: "host_bindings_trait.rs",

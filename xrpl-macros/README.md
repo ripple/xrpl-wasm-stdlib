@@ -2,23 +2,23 @@
 
 ⚠️ **INTERNAL CRATE - DO NOT USE DIRECTLY** ⚠️
 
-This is an internal procedural macro crate for `xrpl-wasm-stdlib`.
+This is an internal procedural macro crate for `xrpl-common-stdlib`.
 
-**Users should add `xrpl-wasm-stdlib` to their dependencies, NOT this crate.**
+**Users should add `xrpl-common-stdlib` to their dependencies, NOT this crate.**
 
 Due to Rust's requirement that procedural macros must be in a separate crate, this is published
-alongside `xrpl-wasm-stdlib` but is not intended for direct use. The macro is re-exported from
-`xrpl-wasm-stdlib` for your convenience.
+alongside `xrpl-common-stdlib` but is not intended for direct use. The macro is re-exported from
+`xrpl-common-stdlib` for your convenience.
 
 ## For Users
 
-Add the [xrpl-wasm-stdlib crate](https://crates.io/crates/xrpl-wasm-stdlib) to your `Cargo.toml`.
+Add the [xrpl-common-stdlib crate](https://crates.io/crates/xrpl-common-stdlib) to your `Cargo.toml`.
 
 Then use the macro:
 
 ```rust
-use xrpl_wasm_stdlib::r_address;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::r_address;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
 
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
@@ -49,7 +49,7 @@ means:
 
 - The macro's dependencies (`bs58`, `sha2`, `syn`, `quote`) run during compilation only
 - These dependencies are NEVER included in your final WASM binary
-- The `xrpl-wasm-stdlib` library remains fully `no-std` compatible
+- The `xrpl-common-stdlib` library remains fully `no-std` compatible
 - The macro only outputs an `AccountID(...)` literal containing the 20 decoded bytes
 
 For example, this code:
@@ -69,8 +69,8 @@ No runtime code from the macro or its dependencies exists in the final binary.
 ## Usage
 
 ```rust
-use xrpl_wasm_stdlib::r_address;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::r_address;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
 
 // Convert r-address to AccountID at compile time
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");

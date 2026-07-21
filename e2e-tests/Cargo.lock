@@ -65,23 +65,23 @@ dependencies = [
 name = "float_tests"
 version = "0.8.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
 name = "gas_benchmark"
 version = "0.8.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
 name = "host_functions_test"
 version = "0.8.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -97,8 +97,8 @@ dependencies = [
 name = "keylet_exists"
 version = "0.1.0"
 dependencies = [
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -138,9 +138,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.106"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ede7c438028d4436d71104916910f5bb611972c5cfd7f89b8300a8186e6fada6"
+checksum = "a207d6d6a2b7fc470b80443726053f18a2481b7e1eee970597051596567987a3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -151,7 +151,7 @@ dependencies = [
 name = "test_utils"
 version = "0.8.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -174,8 +174,8 @@ name = "trace_escrow_account"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -183,8 +183,8 @@ name = "trace_escrow_finish"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -192,8 +192,8 @@ name = "trace_escrow_ledger_object"
 version = "0.8.0"
 dependencies = [
  "test_utils",
+ "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
- "xrpl-wasm-stdlib",
 ]
 
 [[package]]
@@ -209,10 +209,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f63a545481291138910575129486daeaf8ac54aee4387fe7906919f7830c7d9d"
 
 [[package]]
+name = "xrpl-common-stdlib"
+version = "0.8.0"
+dependencies = [
+ "xrpl-macros",
+]
+
+[[package]]
 name = "xrpl-escrow-stdlib"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
 ]
 
 [[package]]
@@ -224,11 +231,4 @@ dependencies = [
  "quote",
  "sha2",
  "syn",
-]
-
-[[package]]
-name = "xrpl-wasm-stdlib"
-version = "0.8.0"
-dependencies = [
- "xrpl-macros",
 ]

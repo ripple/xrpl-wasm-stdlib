@@ -102,14 +102,13 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 
 ```rust ignore
 
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::ledger_objects::account_root::get_account_balance;
+use xrpl_common_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
-use xrpl_wasm_stdlib::smart_escrow;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
@@ -143,8 +142,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
 xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
+xrpl-macros = { path = "../xrpl-macros" }
 
 [lib]
 crate-type = ["cdylib"]
@@ -232,8 +232,8 @@ let escrow_sequence = tx.get_escrow_sequence().unwrap();
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::sfield;
 
 let tx = EscrowFinish;
 
@@ -254,9 +254,9 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::core::ledger_objects::account_root::get_account_balance;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::sfield;
 
 let account = AccountID::from([0u8; 20]); // Replace with real account
 
@@ -271,8 +271,8 @@ let balance = get_account_balance(&account);
 
 ```rust ignore
 // NFT functionality uses the NFToken type
-use xrpl_wasm_stdlib::core::types::nft::NFToken;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::nft::NFToken;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
 
 let owner = AccountID::from([0u8; 20]);
 let nft_id_bytes = [0u8; 32]; // 32-byte NFT identifier
@@ -305,14 +305,14 @@ let uri = nft_token.uri(&owner)?;
 #### Core Types
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::types::{
+use xrpl_common_stdlib::core::types::{
     account_id::AccountID,           // 20-byte XRPL account identifier
     amount::Amount, // Token amounts (XRP, IOU, MPT)
 };
-use xrpl_wasm_stdlib::types::NFT;      // [u8; 32] NFT identifier
+use xrpl_common_stdlib::types::NFT;      // [u8; 32] NFT identifier
 
 // Create AccountID from r-address at compile time
-// const ACCOUNT: AccountID = xrpl_wasm_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+// const ACCOUNT: AccountID = xrpl_common_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
 
 // Create from raw bytes
 let account = AccountID::from([0u8; 20]);
@@ -329,14 +329,14 @@ let nft: NFT = [0u8; 32];
 Keylets are used to locate objects in the ledger:
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::keylets::{
+use xrpl_common_stdlib::core::keylets::{
     account_keylet,
     line_keylet,
     escrow_keylet,
     oracle_keylet,
 };
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::asset::Asset;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::amount::asset::Asset;
 
 let account = AccountID::from([0u8; 20]);
 let sequence = 12345i32;
@@ -365,12 +365,12 @@ Low-level host function access through the `host` module.
 
 ```rust
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::cache_ledger_obj;
-use xrpl_wasm_stdlib::host::Error;
+use xrpl_common_stdlib::core::ledger_objects::account_root::AccountRoot;
+use xrpl_common_stdlib::core::ledger_objects::traits::AccountFields;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::keylets::account_keylet;
+use xrpl_common_stdlib::host::cache_ledger_obj;
+use xrpl_common_stdlib::host::Error;
 
 // The correct approach is to use the trait methods
 fn main() {
@@ -392,7 +392,7 @@ fn main() {
 ```rust ignore
 // Use the high-level trait methods instead of low-level host functions
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 fn main() {
@@ -416,14 +416,14 @@ The library uses custom `Result` types for comprehensive error handling:
 
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::{get_account_balance, AccountRoot};
-use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::{cache_ledger_obj, Error, Result};
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::ledger_objects::account_root::{get_account_balance, AccountRoot};
+use xrpl_common_stdlib::core::ledger_objects::traits::AccountFields;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::amount::Amount;
+use xrpl_common_stdlib::core::keylets::account_keylet;
+use xrpl_common_stdlib::host::{cache_ledger_obj, Error, Result};
+use xrpl_common_stdlib::host::Result::{Ok, Err};
 
 fn process_escrow() -> Result<i32> {
     let tx = EscrowFinish;
@@ -478,7 +478,7 @@ fn process_escrow() -> Result<i32> {
 Host functions return negative integers for errors. You can use trace functions to log error codes for debugging:
 
 ```rust ignore
-use xrpl_wasm_stdlib::host::trace::trace_num;
+use xrpl_common_stdlib::host::trace::trace_num;
 
 let result = unsafe { some_host_function(params) };
 if result < 0 {
@@ -753,13 +753,11 @@ let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(
 **Add trace statements:**
 
 ```rust ignore
-use xrpl_wasm_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
-use xrpl_wasm_stdlib::smart_escrow;
-use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {

@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../../../xrpl-wasm-stdlib" }
+xrpl-common-stdlib = { path = "../../../xrpl-common-stdlib" }
 xrpl-escrow-stdlib = { path = "../../../xrpl-escrow-stdlib" }

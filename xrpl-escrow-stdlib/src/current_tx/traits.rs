@@ -1,12 +1,12 @@
 //! Escrow-finish-specific transaction field accessor trait.
 
-use xrpl_wasm_stdlib::core::current_tx::get_field;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::blob::{ConditionBlob, FulfillmentBlob};
-use xrpl_wasm_stdlib::host::error_codes::match_result_code_optional;
-use xrpl_wasm_stdlib::host::{Result, get_tx_field};
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::core::current_tx::get_field;
+use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::core::types::blob::{ConditionBlob, FulfillmentBlob};
+use xrpl_common_stdlib::host::error_codes::match_result_code_optional;
+use xrpl_common_stdlib::host::{Result, get_tx_field};
+use xrpl_common_stdlib::sfield;
 
 /// Trait providing access to fields specific to EscrowFinish transactions.
 ///
@@ -129,8 +129,8 @@ pub trait EscrowFinishFields: TransactionCommonFields {
 #[cfg(test)]
 mod tests {
     use mockall::predicate::{always, eq};
-    use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_wasm_stdlib::sfield::SField;
+    use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
+    use xrpl_common_stdlib::sfield::SField;
 
     /// Helper to set up a mock expectation for `get_tx_field`.
     fn expect_tx_field<T: Send + std::fmt::Debug + PartialEq + 'static, const CODE: i32>(
@@ -151,16 +151,18 @@ mod tests {
             use crate::current_tx::escrow_finish::EscrowFinish;
             use crate::current_tx::traits::EscrowFinishFields;
             use crate::current_tx::traits::tests::expect_tx_field;
-            use xrpl_wasm_stdlib::core::types::blob::{CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE};
-            use xrpl_wasm_stdlib::host::error_codes::{
+            use xrpl_common_stdlib::core::types::blob::{
+                CONDITION_BLOB_SIZE, FULFILLMENT_BLOB_SIZE,
+            };
+            use xrpl_common_stdlib::host::error_codes::{
                 FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
             };
-            use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-            use xrpl_wasm_stdlib::host::setup_mock;
-            use xrpl_wasm_stdlib::sfield;
+            use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
+            use xrpl_common_stdlib::host::setup_mock;
+            use xrpl_common_stdlib::sfield;
 
             use mockall::predicate::{always, eq};
-            use xrpl_wasm_stdlib::sfield::{Condition, Fulfillment};
+            use xrpl_common_stdlib::sfield::{Condition, Fulfillment};
 
             #[test]
             fn test_optional_fields_return_some() {
@@ -302,13 +304,13 @@ mod tests {
             use crate::current_tx::traits::EscrowFinishFields;
             use crate::current_tx::traits::tests::expect_tx_field;
             use mockall::predicate::{always, eq};
-            use xrpl_wasm_stdlib::core::types::account_id::ACCOUNT_ID_SIZE;
-            use xrpl_wasm_stdlib::host::error_codes::{
+            use xrpl_common_stdlib::core::types::account_id::ACCOUNT_ID_SIZE;
+            use xrpl_common_stdlib::host::error_codes::{
                 FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
             };
-            use xrpl_wasm_stdlib::host::host_bindings_trait::MockHostBindings;
-            use xrpl_wasm_stdlib::host::setup_mock;
-            use xrpl_wasm_stdlib::sfield;
+            use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
+            use xrpl_common_stdlib::host::setup_mock;
+            use xrpl_common_stdlib::sfield;
 
             #[test]
             fn test_mandatory_fields_return_ok() {

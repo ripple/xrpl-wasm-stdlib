@@ -6,7 +6,7 @@
 //! directly against `decode_classic_address_to_20bytes` next to the decoder,
 //! which is faster and avoids fragile `.stderr` snapshots.
 //!
-//! Happy-path coverage lives in `xrpl-wasm-stdlib/tests/macros.rs`.
+//! Happy-path coverage lives in `xrpl-common-stdlib/tests/macros.rs`.
 //!
 //! Regenerate snapshots with:
 //!   TRYBUILD=overwrite cargo test -p xrpl-macros --test r_address

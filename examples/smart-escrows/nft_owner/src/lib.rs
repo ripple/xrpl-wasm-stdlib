@@ -3,15 +3,16 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_common_stdlib::core::locator::Locator;
+use xrpl_common_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
+use xrpl_common_stdlib::host::get_tx_nested_field;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+
 use xrpl_escrow_stdlib::ledger_objects::current_escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::nft::{NFT_ID_SIZE, NFToken};
-use xrpl_wasm_stdlib::host::get_tx_nested_field;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::sfield;
-use xrpl_wasm_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<ContractData>> {

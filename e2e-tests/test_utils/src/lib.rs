@@ -1,7 +1,7 @@
 //! Test utilities for XRPL WASM e2e tests.
 //!
 //! This crate provides testing utilities that are useful for e2e tests,
-//! but should not be included in the production xrpl-wasm-stdlib.
+//! but should not be included in the production xrpl-common-stdlib.
 //!
 //! ## Features
 //!

@@ -47,7 +47,7 @@ pub mod host_bindings_trait;
 #[cfg(all(
     not(any(test, feature = "test-host-bindings")),
     not(target_arch = "wasm32")
-))] // <-- e.g., `cargo build` or `... --features xrpl-wasm-stdlib/test-host-bindings`
+))] // <-- e.g., `cargo build` or `... --features xrpl-common-stdlib/test-host-bindings`
 include!("host_bindings_empty.rs");
 
 #[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))] // <-- e.g., `cargo test` or cov

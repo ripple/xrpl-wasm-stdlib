@@ -1,5 +1,5 @@
 [package]
-name = "xrpl-wasm-stdlib"
+name = "xrpl-common-stdlib"
 version = "0.8.0"
 edition = "2024"
 description = "Standard library for XRPL WebAssembly smart contracts"

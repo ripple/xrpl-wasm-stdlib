@@ -8,7 +8,7 @@
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::host::{HostBindings, WasmHostBindings};
+/// use xrpl_common_stdlib::host::{HostBindings, WasmHostBindings};
 ///
 /// fn my_function<H: HostBindings>(host: &H) {
 ///     unsafe {

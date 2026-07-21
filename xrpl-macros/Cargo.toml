@@ -2,7 +2,7 @@
 name = "xrpl-macros"
 version = "0.1.0"
 edition = "2024"
-description = "Internal proc macro for xrpl-wasm-stdlib - use xrpl-wasm-stdlib instead"
+description = "Internal proc macro for xrpl-common-stdlib - use xrpl-common-stdlib instead"
 license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"

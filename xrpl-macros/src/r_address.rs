@@ -7,8 +7,8 @@
 //!
 //! # Example
 //! ```shell
-//! use xrpl_wasm_stdlib::r_address;
-//! use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+//! use xrpl_common_stdlib::r_address;
+//! use xrpl_common_stdlib::core::types::account_id::AccountID;
 //!
 //! // ✅ Works - compile-time literal
 //! const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
@@ -32,7 +32,7 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! { #b });
     let expanded = quote! {
-        ::xrpl_wasm_stdlib::core::types::account_id::AccountID([#(#bytes_tokens),*])
+        ::xrpl_common_stdlib::core::types::account_id::AccountID([#(#bytes_tokens),*])
     };
 
     Ok(expanded)

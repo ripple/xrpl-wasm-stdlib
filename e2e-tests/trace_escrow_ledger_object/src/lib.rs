@@ -20,11 +20,11 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
+use xrpl_common_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
@@ -197,7 +197,7 @@ mod coverage_tests {
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.

@@ -21,7 +21,7 @@ Different file types follow different conventions based on their language ecosys
 **Crate/Package Names**
 
 - Use **kebab-case** for crate names in `Cargo.toml` and top-level crate directories
-- Examples: `xrpl-wasm-stdlib`, `xrpl-macros`
+- Examples: `xrpl-common-stdlib`, `xrpl-macros`
 - Rationale: Cargo convention for package names
 
 **Module Directories**
@@ -76,7 +76,7 @@ Different file types follow different conventions based on their language ecosys
 | File Type               | Convention           | Example                  |
 | ----------------------- | -------------------- | ------------------------ |
 | Rust source files       | snake_case           | `account_id.rs`          |
-| Rust crate names        | kebab-case           | `xrpl-wasm-stdlib`       |
+| Rust crate names        | kebab-case           | `xrpl-common-stdlib`     |
 | Rust module directories | snake_case           | `float_tests`            |
 | JavaScript files        | camelCase            | `compareGasResults.js`   |
 | Shell scripts           | kebab-case           | `benchmark-gas.sh`       |

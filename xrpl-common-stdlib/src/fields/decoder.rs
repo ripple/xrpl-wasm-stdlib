@@ -6,8 +6,8 @@
 //! # Examples
 //!
 //! ```
-//! use xrpl_wasm_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx};
-//! use xrpl_wasm_stdlib::host::Error;
+//! use xrpl_common_stdlib::fields::decoder::{FieldDecoder, FromCurrentTx};
+//! use xrpl_common_stdlib::host::Error;
 //!
 //! /// A toy field: a single boolean flag byte (0 or 1).
 //! struct Flag(bool);
