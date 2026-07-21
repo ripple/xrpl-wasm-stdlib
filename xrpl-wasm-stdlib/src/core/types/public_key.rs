@@ -37,12 +37,21 @@ impl From<[u8; 64]> for PublicKey {
     }
 }
 
-impl From<&[u8]> for PublicKey {
-    fn from(bytes: &[u8]) -> Self {
+impl TryFrom<&[u8]> for PublicKey {
+    type Error = &'static str;
+
+    /// Attempts to create a `PublicKey` from a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the slice length is not exactly `PUBLIC_KEY_BUFFER_SIZE` (33) bytes.
+    fn try_from(bytes: &[u8]) -> core::result::Result<Self, Self::Error> {
+        if bytes.len() != PUBLIC_KEY_BUFFER_SIZE {
+            return Err("slice must be exactly 33 bytes to construct a PublicKey");
+        }
         let mut key_bytes = [0u8; PUBLIC_KEY_BUFFER_SIZE];
-        key_bytes[..bytes.len().min(PUBLIC_KEY_BUFFER_SIZE)]
-            .copy_from_slice(&bytes[..bytes.len().min(PUBLIC_KEY_BUFFER_SIZE)]);
-        PublicKey(key_bytes)
+        key_bytes.copy_from_slice(bytes);
+        Ok(PublicKey(key_bytes))
     }
 }
 
@@ -83,111 +92,79 @@ impl CurrentTxFieldGetter for PublicKey {
 mod tests {
     use super::*;
 
-    const PUBKEY_SECP256K1: [u8; 33] = [
-        0x02, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
-        0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD,
-        0xEE, 0xFF, 0x01,
+    // secp256k1 compressed public key (0x02 prefix)
+    const PUBKEY_SECP256K1: [u8; PUBLIC_KEY_BUFFER_SIZE] = [
+        0x02, 0xC7, 0x38, 0x7F, 0xFC, 0x25, 0xC1, 0x56, 0xCA, 0x7F, 0x8A, 0x6D, 0x76, 0x0C, 0x8D,
+        0x01, 0xEF, 0x64, 0x2C, 0xEE, 0x9C, 0xE4, 0x68, 0x0C, 0x33, 0xFF, 0xB3, 0xFF, 0x39, 0xAF,
+        0xEC, 0xFE, 0x70,
     ];
 
-    const PUBKEY_ED25519: [u8; 33] = [
-        0xED, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-        0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D,
-        0x1E, 0x1F, 0x20,
+    // ed25519 public key (0xED prefix)
+    const PUBKEY_ED25519: [u8; PUBLIC_KEY_BUFFER_SIZE] = [
+        0xED, 0xD9, 0xB3, 0x59, 0x98, 0x02, 0xB2, 0x14, 0xA9, 0x9D, 0x75, 0x77, 0x12, 0xD6, 0xAB,
+        0xDF, 0x72, 0xF8, 0x3C, 0x63, 0xBB, 0xD5, 0x38, 0x61, 0x41, 0x17, 0x90, 0xB1, 0x3D, 0x04,
+        0xB2, 0xC5, 0xC9,
     ];
 
     #[test]
-    fn test_from_64_byte_array_truncates() {
+    fn test_from_33_bytes_secp256k1() {
+        // Test From<[u8; 33]> with a secp256k1 key (0x02 prefix)
+        let pk = PublicKey::from(PUBKEY_SECP256K1);
+        assert_eq!(pk.0, PUBKEY_SECP256K1);
+    }
+
+    #[test]
+    fn test_from_33_bytes_ed25519() {
+        // Test From<[u8; 33]> with an ed25519 key (0xED prefix)
+        let pk = PublicKey::from(PUBKEY_ED25519);
+        assert_eq!(pk.0, PUBKEY_ED25519);
+    }
+
+    #[test]
+    fn test_from_64_byte_array_takes_first_33() {
         // Test From<[u8; 64]> - should take first 33 bytes
         let mut bytes_64 = [0xAAu8; 64];
-        // Put distinct values in first 33 bytes
         for (i, byte) in bytes_64.iter_mut().enumerate().take(33) {
             *byte = i as u8;
         }
-
         let pubkey = PublicKey::from(bytes_64);
-
-        // Verify first 33 bytes are preserved
         for i in 0..33 {
             assert_eq!(pubkey.0[i], i as u8);
         }
     }
 
     #[test]
-    fn test_from_slice_shorter_than_33_bytes() {
-        // Test From<&[u8]> with fewer than 33 bytes - should zero-pad
-        let short_slice: &[u8] = &[0x02, 0xAA, 0xBB, 0xCC, 0xDD];
-        let pubkey = PublicKey::from(short_slice);
-
-        // First 5 bytes should match input
-        assert_eq!(&pubkey.0[..5], short_slice);
-        // Remaining bytes should be zero
-        assert_eq!(&pubkey.0[5..], &[0u8; 28]);
-    }
-
-    #[test]
-    fn test_from_slice_longer_than_33_bytes_truncates() {
-        // Test From<&[u8]> with more than 33 bytes - should truncate
-        let long_slice: &[u8] = &[0xFFu8; 50];
-        let pubkey = PublicKey::from(long_slice);
-
-        // Should only contain first 33 bytes
-        assert_eq!(pubkey.0, [0xFFu8; 33]);
-    }
-
-    #[test]
-    fn test_from_empty_slice() {
-        // Test From<&[u8]> with empty slice - should be all zeros
-        let empty_slice: &[u8] = &[];
-        let pubkey = PublicKey::from(empty_slice);
-        assert_eq!(pubkey.0, [0u8; 33]);
-    }
-
-    #[test]
-    fn test_from_33_bytes() {
-        use super::PublicKey;
-        let pk = PublicKey::from(PUBKEY_SECP256K1);
+    fn test_try_from_slice_exact_33_bytes_secp256k1() {
+        // TryFrom<&[u8]> succeeds when slice is exactly 33 bytes
+        let pk = PublicKey::try_from(PUBKEY_SECP256K1.as_slice()).unwrap();
         assert_eq!(pk.0, PUBKEY_SECP256K1);
     }
 
     #[test]
-    fn test_from_64_bytes_truncates() {
-        use super::PublicKey;
-        let mut bytes_64 = [0xAA; 64];
-        bytes_64[0] = 0x02; // secp256k1 prefix
-        let pk = PublicKey::from(bytes_64);
-        assert_eq!(pk.0, bytes_64[..PUBLIC_KEY_BUFFER_SIZE]);
-    }
-
-    #[test]
-    fn test_from_slice_exact_size() {
-        use super::PublicKey;
-        let slice: &[u8] = &PUBKEY_ED25519;
-        let pk = PublicKey::from(slice);
+    fn test_try_from_slice_exact_33_bytes_ed25519() {
+        // TryFrom<&[u8]> succeeds when slice is exactly 33 bytes
+        let pk = PublicKey::try_from(PUBKEY_ED25519.as_slice()).unwrap();
         assert_eq!(pk.0, PUBKEY_ED25519);
     }
 
     #[test]
-    fn test_from_slice_shorter_pads_with_zeros() {
-        use super::PublicKey;
-        let short: &[u8] = &[0xED, 0x01, 0x02];
-        let pk = PublicKey::from(short);
-        assert_eq!(&pk.0[..3], short);
-        assert_eq!(&pk.0[3..], &[0u8; PUBLIC_KEY_BUFFER_SIZE - 3]);
+    fn test_try_from_slice_shorter_than_33_bytes_errors() {
+        // TryFrom<&[u8]> must reject slices shorter than 33 bytes
+        let short_slice: &[u8] = &[0x02, 0xAA, 0xBB, 0xCC, 0xDD];
+        assert!(PublicKey::try_from(short_slice).is_err());
     }
 
     #[test]
-    fn test_from_slice_longer_truncates() {
-        use super::PublicKey;
-        let long: Vec<u8> = (0..64).collect();
-        let pk = PublicKey::from(long.as_slice());
-        assert_eq!(&pk.0, &long[..PUBLIC_KEY_BUFFER_SIZE]);
+    fn test_try_from_slice_longer_than_33_bytes_errors() {
+        // TryFrom<&[u8]> must reject slices longer than 33 bytes
+        let long_slice: &[u8] = &[0xFFu8; 50];
+        assert!(PublicKey::try_from(long_slice).is_err());
     }
 
     #[test]
-    fn test_from_slice_empty() {
-        use super::PublicKey;
+    fn test_try_from_slice_empty_errors() {
+        // TryFrom<&[u8]> must reject empty slices
         let empty: &[u8] = &[];
-        let pk = PublicKey::from(empty);
-        assert_eq!(pk.0, [0u8; PUBLIC_KEY_BUFFER_SIZE]);
+        assert!(PublicKey::try_from(empty).is_err());
     }
 }

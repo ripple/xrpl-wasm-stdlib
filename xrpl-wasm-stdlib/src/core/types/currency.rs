@@ -134,4 +134,24 @@ mod tests {
         // Bytes 15-19 should be zero
         assert_eq!(&bytes[15..20], &[0u8; 5]);
     }
+
+    #[test]
+    fn test_currency_new_and_from_20_bytes() {
+        // Non-standard 20-byte currency code
+        let original: [u8; CURRENCY_SIZE] = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+            0x0F, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+
+        // Exercise Currency::new
+        let currency_new = Currency::new(original);
+        assert_eq!(currency_new.as_bytes(), &original);
+
+        // Exercise From<[u8; 20]> for Currency
+        let currency_from = Currency::from(original);
+        assert_eq!(currency_from.as_bytes(), &original);
+
+        // Both constructors should produce the same result
+        assert_eq!(currency_new, currency_from);
+    }
 }
