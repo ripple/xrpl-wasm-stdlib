@@ -39,11 +39,6 @@ impl From<&[u8]> for PublicKey {
     }
 }
 
-// `PublicKey` deliberately has no `FieldDecoder` impl: no `sfield` constant is typed
-// `SField<PublicKey, _>` (`PublicKey`/`MessageKey`/`SigningPubKey` are all `SField<PublicKeyBlob,
-// _>`), so it is never read directly via `get_field` — only via the `PublicKeyBlob` (`Blob<33>`)
-// it is converted from, e.g. in `TransactionCommonFields::get_signing_pub_key`.
-
 #[cfg(test)]
 mod test_public_key {
     use crate::types::public_key::PUBLIC_KEY_BUFFER_SIZE;

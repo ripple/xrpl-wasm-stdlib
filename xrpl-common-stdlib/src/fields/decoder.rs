@@ -13,10 +13,6 @@ use crate::types::decode_error::DecodeError;
 pub trait FieldDecoder: Sized {
     /// The buffer a `get_field` caller allocates before invoking the host function. Each type
     /// picks its own size (an associated type, not a `const`, so this stays on stable Rust).
-    ///
-    /// Note: this is `AsMut<[u8]>` only, not `+ Default` — `[u8; N]: Default` is only
-    /// implemented by std for a handful of small `N`, not arbitrary const generics, so
-    /// zero-initialization goes through [`FieldDecoder::empty_buffer`] instead.
     type Buffer: AsMut<[u8]>;
 
     /// Returns a zero-initialized buffer of this type's `Buffer` size.
