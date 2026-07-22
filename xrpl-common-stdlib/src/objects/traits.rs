@@ -959,7 +959,7 @@ mod tests {
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
         }
     }
-    
+
     mod current_ledger_object_common_fields {
         use super::*;
         use crate::host::setup_mock;
