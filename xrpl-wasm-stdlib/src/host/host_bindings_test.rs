@@ -182,6 +182,37 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
         .returning(move |_, msg_len, _, float_len| sum_lengths(msg_len, float_len));
     mock.expect_trace_amount()
         .returning(move |_, msg_len, _, amt_len| sum_lengths(msg_len, amt_len));
+
+    // Parameter functions
+    mock.expect_instance_param()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_function_param()
+        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+
+    // Data storage functions
+    mock.expect_get_data_object_field()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_data_nested_object_field()
+        .returning(|_, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_data_array_element_field()
+        .returning(|_, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_get_data_nested_array_element_field()
+        .returning(|_, _, _, _, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_set_data_object_field()
+        .returning(|_, _, _, _, _, _| 0);
+    mock.expect_set_data_nested_object_field()
+        .returning(|_, _, _, _, _, _, _, _| 0);
+    mock.expect_set_data_array_element_field()
+        .returning(|_, _, _, _, _, _, _| 0);
+    mock.expect_set_data_nested_array_element_field()
+        .returning(|_, _, _, _, _, _, _, _, _| 0);
+
+    // Transaction building functions
+    mock.expect_build_txn().returning(|_| 0);
+    mock.expect_add_txn_field().returning(|_, _, _, _| 0);
+    mock.expect_emit_built_txn().returning(|_| 0);
+    mock.expect_emit_txn().returning(|_, _| 0);
+    mock.expect_emit_event().returning(|_, _, _, _| 0);
 }
 
 // #[cfg(test)]
@@ -313,6 +344,22 @@ export_host_functions! {
     fn trace_opaque_float(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
     fn trace_amount(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
 
+    // Other functions
+    fn instance_param(index: i32, st_type_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn function_param(index: i32, st_type_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_data_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_nested_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, nst_ptr: *const u8, nst_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_nested_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, nst_ptr: *const u8, nst_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn set_data_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_nested_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, nst_ptr: *const u8, nst_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_nested_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, nst_ptr: *const u8, nst_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn build_txn(txn_type: i32) -> i32;
+    fn add_txn_field(index: i32, field: i32, write_ptr: *const u8, write_len: usize) -> i32;
+    fn emit_built_txn(index: i32) -> i32;
+    fn emit_txn(txn_read_ptr: *const u8, txn_read_len: usize) -> i32;
+    fn emit_event(name_ptr: *const u8, name_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
 }
 
 #[cfg(test)]

@@ -164,4 +164,20 @@ export_host_functions! {
     fn trace_opaque_float(_msg_read_ptr: *const u8, _msg_read_len: usize, _opaque_float_ptr: *const u8, _opaque_float_len: usize) -> i32;
     fn trace_amount(_msg_read_ptr: *const u8, _msg_read_len: usize, _amount_ptr: *const u8, _amount_len: usize) -> i32;
 
+    // Other functions
+    fn instance_param(_index: i32, _st_type_id: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn function_param(_index: i32, _st_type_id: i32, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn get_data_object_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _out_buff_ptr: *const u8, _out_buff_len: usize) -> i32;
+    fn get_data_nested_object_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _nst_ptr: *const u8, _nst_len: usize, _out_buff_ptr: *const u8, _out_buff_len: usize) -> i32;
+    fn get_data_array_element_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _index: i32, _out_buff_ptr: *const u8, _out_buff_len: usize) -> i32;
+    fn get_data_nested_array_element_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _index: i32, _nst_ptr: *const u8, _nst_len: usize, _out_buff_ptr: *const u8, _out_buff_len: usize) -> i32;
+    fn set_data_object_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _data_ptr: *const u8, _data_len: usize) -> i32;
+    fn set_data_nested_object_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _nst_ptr: *const u8, _nst_len: usize, _data_ptr: *const u8, _data_len: usize) -> i32;
+    fn set_data_array_element_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _index: i32, _data_ptr: *const u8, _data_len: usize) -> i32;
+    fn set_data_nested_array_element_field(_account_ptr: *const u8, _account_len: usize, _key_ptr: *const u8, _key_len: usize, _index: i32, _nst_ptr: *const u8, _nst_len: usize, _data_ptr: *const u8, _data_len: usize) -> i32;
+    fn build_txn(_txn_type: i32) -> i32;
+    fn add_txn_field(_index: i32, _field: i32, _write_ptr: *const u8, _write_len: usize) -> i32;
+    fn emit_built_txn(_index: i32) -> i32;
+    fn emit_txn(_txn_read_ptr: *const u8, _txn_read_len: usize) -> i32;
+    fn emit_event(_name_ptr: *const u8, _name_len: usize, _data_ptr: *const u8, _data_len: usize) -> i32;
 }

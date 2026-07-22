@@ -394,6 +394,109 @@ mod host_defined_functions {
             amount_ptr: *const u8,
             amount_len: usize,
         ) -> i32;
+        pub(super) fn instance_param(
+            index: i32,
+            st_type_id: i32,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn function_param(
+            index: i32,
+            st_type_id: i32,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn get_data_object_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            out_buff_ptr: *const u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn get_data_nested_object_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            nst_ptr: *const u8,
+            nst_len: usize,
+            out_buff_ptr: *const u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn get_data_array_element_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            index: i32,
+            out_buff_ptr: *const u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn get_data_nested_array_element_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            index: i32,
+            nst_ptr: *const u8,
+            nst_len: usize,
+            out_buff_ptr: *const u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn set_data_object_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            data_ptr: *const u8,
+            data_len: usize,
+        ) -> i32;
+        pub(super) fn set_data_nested_object_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            nst_ptr: *const u8,
+            nst_len: usize,
+            data_ptr: *const u8,
+            data_len: usize,
+        ) -> i32;
+        pub(super) fn set_data_array_element_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            index: i32,
+            data_ptr: *const u8,
+            data_len: usize,
+        ) -> i32;
+        pub(super) fn set_data_nested_array_element_field(
+            account_ptr: *const u8,
+            account_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            index: i32,
+            nst_ptr: *const u8,
+            nst_len: usize,
+            data_ptr: *const u8,
+            data_len: usize,
+        ) -> i32;
+        pub(super) fn build_txn(txn_type: i32) -> i32;
+        pub(super) fn add_txn_field(
+            index: i32,
+            field: i32,
+            write_ptr: *const u8,
+            write_len: usize,
+        ) -> i32;
+        pub(super) fn emit_built_txn(index: i32) -> i32;
+        pub(super) fn emit_txn(txn_read_ptr: *const u8, txn_read_len: usize) -> i32;
+        pub(super) fn emit_event(
+            name_ptr: *const u8,
+            name_len: usize,
+            data_ptr: *const u8,
+            data_len: usize,
+        ) -> i32;
     }
 }
 
@@ -1418,6 +1521,254 @@ impl HostBindings for WasmHostBindings {
             host_defined_functions::trace_amount(msg_read_ptr, msg_read_len, amount_ptr, amount_len)
         }
     }
+
+    unsafe fn instance_param(
+        &self,
+        index: i32,
+        st_type_id: i32,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::instance_param(index, st_type_id, out_buff_ptr, out_buff_len)
+        }
+    }
+
+    unsafe fn function_param(
+        &self,
+        index: i32,
+        st_type_id: i32,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::function_param(index, st_type_id, out_buff_ptr, out_buff_len)
+        }
+    }
+
+    unsafe fn get_data_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::get_data_object_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn get_data_nested_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::get_data_nested_object_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                nst_ptr,
+                nst_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn get_data_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::get_data_array_element_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                index,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn get_data_nested_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        out_buff_ptr: *const u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::get_data_nested_array_element_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                index,
+                nst_ptr,
+                nst_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn set_data_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::set_data_object_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                data_ptr,
+                data_len,
+            )
+        }
+    }
+
+    unsafe fn set_data_nested_object_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::set_data_nested_object_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                nst_ptr,
+                nst_len,
+                data_ptr,
+                data_len,
+            )
+        }
+    }
+
+    unsafe fn set_data_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::set_data_array_element_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                index,
+                data_ptr,
+                data_len,
+            )
+        }
+    }
+
+    unsafe fn set_data_nested_array_element_field(
+        &self,
+        account_ptr: *const u8,
+        account_len: usize,
+        key_ptr: *const u8,
+        key_len: usize,
+        index: i32,
+        nst_ptr: *const u8,
+        nst_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::set_data_nested_array_element_field(
+                account_ptr,
+                account_len,
+                key_ptr,
+                key_len,
+                index,
+                nst_ptr,
+                nst_len,
+                data_ptr,
+                data_len,
+            )
+        }
+    }
+
+    unsafe fn build_txn(&self, txn_type: i32) -> i32 {
+        unsafe { host_defined_functions::build_txn(txn_type) }
+    }
+
+    unsafe fn add_txn_field(
+        &self,
+        index: i32,
+        field: i32,
+        write_ptr: *const u8,
+        write_len: usize,
+    ) -> i32 {
+        unsafe { host_defined_functions::add_txn_field(index, field, write_ptr, write_len) }
+    }
+
+    unsafe fn emit_built_txn(&self, index: i32) -> i32 {
+        unsafe { host_defined_functions::emit_built_txn(index) }
+    }
+
+    unsafe fn emit_txn(&self, txn_read_ptr: *const u8, txn_read_len: usize) -> i32 {
+        unsafe { host_defined_functions::emit_txn(txn_read_ptr, txn_read_len) }
+    }
+
+    unsafe fn emit_event(
+        &self,
+        name_ptr: *const u8,
+        name_len: usize,
+        data_ptr: *const u8,
+        data_len: usize,
+    ) -> i32 {
+        unsafe { host_defined_functions::emit_event(name_ptr, name_len, data_ptr, data_len) }
+    }
 }
 
 // Re-export all host functions as public functions for use by the rest of the codebase
@@ -1517,4 +1868,20 @@ export_host_functions! {
     fn trace_opaque_float(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
     fn trace_amount(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
 
+    // Other functions
+    fn instance_param(index: i32, st_type_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn function_param(index: i32, st_type_id: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn get_data_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_nested_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, nst_ptr: *const u8, nst_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn get_data_nested_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, nst_ptr: *const u8, nst_len: usize, out_buff_ptr: *const u8, out_buff_len: usize) -> i32;
+    fn set_data_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_nested_object_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, nst_ptr: *const u8, nst_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, data_ptr: *const u8, data_len: usize) -> i32;
+    fn set_data_nested_array_element_field(account_ptr: *const u8, account_len: usize, key_ptr: *const u8, key_len: usize, index: i32, nst_ptr: *const u8, nst_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
+    fn build_txn(txn_type: i32) -> i32;
+    fn add_txn_field(index: i32, field: i32, write_ptr: *const u8, write_len: usize) -> i32;
+    fn emit_built_txn(index: i32) -> i32;
+    fn emit_txn(txn_read_ptr: *const u8, txn_read_len: usize) -> i32;
+    fn emit_event(name_ptr: *const u8, name_len: usize, data_ptr: *const u8, data_len: usize) -> i32;
 }
