@@ -2,17 +2,15 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
-use crate::core::ledger_objects::{current_ledger_object, ledger_object};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::blob::{
-    CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob,
-};
-use crate::core::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use crate::core::types::uint::{Hash128, Hash256};
 use crate::host::error_codes::{match_result_code, match_result_code_optional};
 use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
+use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob};
+use crate::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use crate::types::uint::{Hash128, Hash256};
 
 /// Trait providing access to common fields present in all ledger objects.
 ///
@@ -371,10 +369,10 @@ pub trait AccountFields: LedgerObjectCommonFields {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::ledger_objects::LedgerObjectFieldGetter;
-    use crate::core::ledger_objects::account_root::AccountRoot;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::objects::LedgerObjectFieldGetter;
+    use crate::objects::account_root::AccountRoot;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
 
@@ -511,8 +509,8 @@ mod tests {
 
     mod escrow_fields {
         use super::*;
-        use crate::core::types::blob::WASM_BLOB_SIZE;
         use crate::host::setup_mock;
+        use crate::types::blob::WASM_BLOB_SIZE;
 
         struct TestLedgerObject {
             slot_num: i32,
@@ -717,9 +715,9 @@ mod tests {
 
     mod account_fields {
         use super::*;
-        use crate::core::types::account_id::ACCOUNT_ID_SIZE;
-        use crate::core::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
         use crate::host::setup_mock;
+        use crate::types::account_id::ACCOUNT_ID_SIZE;
+        use crate::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
 
         #[test]
         fn test_mandatory_fields_return_ok() {
@@ -980,11 +978,11 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let obj = TestCurrentLedgerObject;
+            let escrow = TestCurrentLedgerObject;
 
             // All mandatory fields should return Ok
-            assert!(obj.get_flags().is_ok());
-            assert!(obj.get_ledger_entry_type().is_ok());
+            assert!(escrow.get_flags().is_ok());
+            assert!(escrow.get_ledger_entry_type().is_ok());
         }
 
         #[test]
@@ -999,8 +997,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let obj = TestCurrentLedgerObject;
-            let result = obj.get_flags();
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_flags();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
@@ -1017,8 +1015,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let obj = TestCurrentLedgerObject;
-            let result = obj.get_ledger_entry_type();
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_ledger_entry_type();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
@@ -1036,8 +1034,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let obj = TestCurrentLedgerObject;
-            let result = obj.get_flags();
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.get_flags();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);

@@ -25,17 +25,17 @@ extern crate std;
 // -700 to -799: Data Update Functions (1 function)
 //
 
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
-use xrpl_common_stdlib::core::types::amount::Amount;
-use xrpl_common_stdlib::core::types::currency::Currency;
-use xrpl_common_stdlib::core::types::mpt_id::MptId;
-use xrpl_common_stdlib::core::types::opaque_float::OpaqueFloat;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{
     DataRepr, trace, trace_account_buf, trace_amount, trace_data, trace_num,
 };
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::types::currency::Currency;
+use xrpl_common_stdlib::types::mpt_id::MptId;
+use xrpl_common_stdlib::types::opaque_float::OpaqueFloat;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 
 #[unsafe(no_mangle)]

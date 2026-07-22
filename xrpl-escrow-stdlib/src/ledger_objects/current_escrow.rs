@@ -1,4 +1,4 @@
-use xrpl_common_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
+use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
 
 use crate::ledger_objects::traits::CurrentEscrowFields;
 

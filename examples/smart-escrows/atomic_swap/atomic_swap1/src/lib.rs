@@ -3,20 +3,23 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::core::keylets::XRPL_KEYLET_SIZE;
-use xrpl_common_stdlib::core::ledger_objects::traits::EscrowFields;
-use xrpl_common_stdlib::core::locator::Locator;
-use xrpl_common_stdlib::core::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
+use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_common_stdlib::host::get_tx_nested_field;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
+use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
-use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
+use xrpl_escrow_stdlib::EscrowFinishContext;
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_macros::smart_escrow;
+
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
 const KEYLET_PLUS_TIMESTAMP_SIZE: usize = 36;
@@ -247,7 +250,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Current escrow CancelAfter:", cancel_after as i64);
 
     // Build new data field: counterpart keylet (32 bytes) + CancelAfter (4 bytes)
-    let mut new_data = xrpl_common_stdlib::core::types::contract_data::ContractData {
+    let mut new_data = xrpl_common_stdlib::types::contract_data::ContractData {
         data: [0u8; XRPL_CONTRACT_DATA_SIZE],
         len: 0,
     };
@@ -287,9 +290,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 /// 2. Gets the current ledger time
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
-fn phase2_complete(
-    current_data: &xrpl_common_stdlib::core::types::contract_data::ContractData,
-) -> i32 {
+fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::ContractData) -> i32 {
     let _ = trace_num("Phase 2: Timing validation", 0);
 
     // Validate data field contains at least 36 bytes (32 bytes keylet + 4 bytes timing)
@@ -351,9 +352,9 @@ fn phase2_complete(
 /// 2. Gets the current ledger time
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let current_escrow = current_escrow::get_current_escrow();
+#[smart_escrow]
+fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
+    let current_escrow = ctx.escrow();
 
     // Get the current data field - this stores the atomic swap state
     // FIELD_NOT_FOUND (-2) means no data field exists yet, which indicates Phase 1
@@ -363,7 +364,7 @@ pub extern "C" fn finish() -> i32 {
             // If the data field doesn't exist, this is Phase 1
             if e.code() == xrpl_common_stdlib::host::error_codes::FIELD_NOT_FOUND {
                 let _ = trace_num("No data field found - this is Phase 1", 0);
-                return phase1_initialize(&current_escrow);
+                return phase1_initialize(current_escrow);
             }
             let _ = trace_num("Error getting current escrow data:", e.code() as i64);
             return e.code();
@@ -376,7 +377,7 @@ pub extern "C" fn finish() -> i32 {
     // Phase 1: data.len == 0 (no state stored yet)
     // Phase 2: data.len >= 36 (contains counterpart keylet + timing data)
     if current_data.len == 0 {
-        phase1_initialize(&current_escrow)
+        phase1_initialize(current_escrow)
     } else {
         phase2_complete(&current_data)
     }

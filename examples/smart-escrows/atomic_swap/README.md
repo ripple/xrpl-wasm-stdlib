@@ -115,9 +115,14 @@ stateDiagram-v2
 
 ```shell
 # Build a specific example
-cd atomic_swap1  # or atomic_swap2
+cd atomic_swap1  # or atomic_swap2, from within examples/smart-escrows/atomic_swap/
 cargo build --target wasm32v1-none --release
 ```
+
+Each entry point is annotated with `#[smart_escrow]` (from `xrpl_escrow_stdlib`), which generates the
+`extern "C" fn finish() -> i32` export the XRPL host calls. Both examples keep their annotated functions
+returning `i32` directly rather than `FinishResult`, since their multi-phase state machines already thread raw
+return codes through several helper functions.
 
 ## Production Considerations
 
