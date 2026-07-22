@@ -3,21 +3,22 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::trace_num;
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
-use xrpl_common_stdlib::r_address;
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_escrow_stdlib::current_tx::escrow_finish::get_current_escrow_finish;
+use xrpl_escrow_stdlib::EscrowFinishContext;
+use xrpl_macros::r_address;
+use xrpl_macros::smart_escrow;
 
 // The notary account that is authorized to complete escrows
 // Using example notary account for testing
 const NOTARY_ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let escrow_finish = get_current_escrow_finish();
-    let tx_account = match escrow_finish.get_account() {
+#[smart_escrow]
+fn notary_finish(ctx: EscrowFinishContext) -> i32 {
+    let tx_account = match ctx.tx().get_account() {
         Ok(v) => v,
         Err(e) => {
             let _ = trace_num("Error in Notary contract", e.code() as i64);
@@ -25,5 +26,6 @@ pub extern "C" fn finish() -> i32 {
         }
     };
 
-    (tx_account == NOTARY_ACCOUNT) as i32 // <-- Finish the escrow to indicate a successful outcome
+    // <-- Finish the escrow to indicate a successful outcome
+    (tx_account == NOTARY_ACCOUNT) as i32
 }

@@ -23,7 +23,9 @@ The Rust code demonstrates how to interact with XRPL oracle objects using the XR
 
 ### Key Functions
 
-- `finish()`: Main entry point that determines escrow unlock status
+- `oracle_finish(ctx: EscrowFinishContext) -> FinishResult`: Main entry point that determines escrow unlock
+  status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn finish() -> i32` export the XRPL
+  host calls.
 - `get_price_from_oracle(slot)`: Retrieves price from cached oracle object
 - `get_u64_from_buffer(bytes)`: Converts big-endian bytes to u64 price value
 

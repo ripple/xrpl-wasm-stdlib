@@ -8,7 +8,10 @@ The contract retrieves the current ledger sequence number and checks if it's gre
 
 ## Function
 
-`finish() -> i32` — returns 1 if ledger sequence > 5 (allow), 0 otherwise (deny). On host errors, the function returns a non-zero error code from the host.
+The entry point, `check_ledger_sqn(_ctx: EscrowFinishContext) -> i32`, is annotated with `#[smart_escrow]`, which
+generates the `extern "C" fn finish() -> i32` export the XRPL host calls. It returns `1` directly (as `i32`, no
+`FinishResult` wrapper needed here) if ledger sequence > 5 (allow), `0` otherwise (deny). On host errors, the
+function panics rather than propagating an error code — see [`src/lib.rs`](./src/lib.rs).
 
 ## Prerequisites
 
