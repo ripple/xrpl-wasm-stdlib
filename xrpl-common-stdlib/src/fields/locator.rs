@@ -5,11 +5,7 @@
 //!
 //! Example
 //! ```no_run
-<<<<<<<< HEAD:xrpl-common-stdlib/src/fields/locator.rs
 //! use xrpl_common_stdlib::fields::locator::Locator;
-========
-//! use xrpl_common_stdlib::core::locator::Locator;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/locator.rs
 //! use xrpl_common_stdlib::sfield;
 //! let mut l = Locator::new();
 //! l.pack(sfield::Memos);

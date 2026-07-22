@@ -2,18 +2,9 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
-<<<<<<< HEAD:xrpl-common-stdlib/src/objects/traits.rs
 use crate::host::error_codes::{match_result_code, match_result_code_optional};
 use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
 use crate::objects::{current_ledger_object, ledger_object};
-=======
-use crate::core::ledger_objects::{current_ledger_object, ledger_object};
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
-use crate::core::types::blob::{PublicKeyBlob, UriBlob};
-use crate::core::types::uint::{Hash128, Hash256};
-use crate::host::Result;
->>>>>>> bc8003f (draft):xrpl-wasm-stdlib/src/core/ledger_objects/traits.rs
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;

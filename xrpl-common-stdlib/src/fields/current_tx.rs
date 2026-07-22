@@ -24,8 +24,6 @@
 //! Concrete transaction wrappers (e.g., `EscrowFinish`) live in their respective
 //! companion crates (`xrpl-escrow-stdlib` for escrow flows).
 
-pub mod traits;
-
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::error_codes::FIELD_NOT_FOUND;

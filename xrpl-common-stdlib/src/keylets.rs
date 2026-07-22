@@ -34,13 +34,8 @@ pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 ///
 /// ```rust
 ///
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::account_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::account_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
@@ -90,17 +85,10 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::issue::{Issue, XrpIssue, IouIssue};
 /// use xrpl_common_stdlib::types::currency::Currency;
 /// use xrpl_common_stdlib::keylets::amm_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::issue::{Issue, XrpIssue, IouIssue};
-/// use xrpl_common_stdlib::core::types::currency::Currency;
-/// use xrpl_common_stdlib::core::keylets::amm_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let issue1: Issue = Issue::XRP(XrpIssue {});
@@ -159,13 +147,8 @@ pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::check_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::check_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -220,13 +203,8 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::credential_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::credential_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let subject: AccountID =
@@ -286,13 +264,8 @@ pub fn credential_keylet(
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::delegate_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::delegate_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
@@ -345,13 +318,8 @@ pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<Key
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::deposit_preauth_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::deposit_preauth_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
@@ -406,13 +374,8 @@ pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Res
 ///
 /// ```rust
 ///
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::did_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::did_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
@@ -464,13 +427,8 @@ pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::escrow_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::escrow_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -525,15 +483,9 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::currency::Currency;
 /// use xrpl_common_stdlib::keylets::line_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::currency::Currency;
-/// use xrpl_common_stdlib::core::keylets::line_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let account1: AccountID =
@@ -596,13 +548,8 @@ pub fn line_keylet(
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::mpt_issuance_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::mpt_issuance_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -656,15 +603,9 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::mpt_id::MptId;
 /// use xrpl_common_stdlib::keylets::mptoken_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::mpt_id::MptId;
-/// use xrpl_common_stdlib::core::keylets::mptoken_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let issuer: AccountID =
@@ -720,13 +661,8 @@ pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> 
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::nft_offer_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::nft_offer_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -782,13 +718,8 @@ pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::offer_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::offer_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -844,13 +775,8 @@ pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::oracle_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::oracle_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -907,13 +833,8 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::paychan_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::paychan_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -977,13 +898,8 @@ pub fn paychan_keylet(
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::permissioned_domain_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::permissioned_domain_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -1039,13 +955,8 @@ pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<Keyle
 ///
 /// ```rust
 ///
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::signers_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::signers_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
@@ -1097,13 +1008,8 @@ pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::ticket_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::ticket_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -1159,13 +1065,8 @@ pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Example
 ///
 /// ```rust
-<<<<<<<< HEAD:xrpl-common-stdlib/src/keylets.rs
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::keylets::vault_keylet;
-========
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::keylets::vault_keylet;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/keylets.rs
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {

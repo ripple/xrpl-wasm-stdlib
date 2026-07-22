@@ -30,15 +30,9 @@ use crate::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-<<<<<<<< HEAD:xrpl-common-stdlib/src/objects/mod.rs
 /// use xrpl_common_stdlib::objects::{ledger_object, current_ledger_object};
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::amount::Amount;
-========
-/// use xrpl_common_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::amount::Amount;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/ledger_objects/mod.rs
 /// use xrpl_common_stdlib::sfield;
 ///
 /// fn example() {
@@ -405,11 +399,7 @@ pub mod current_ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-<<<<<<<< HEAD:xrpl-common-stdlib/src/objects/mod.rs
     /// use xrpl_common_stdlib::objects::current_ledger_object;
-========
-    /// use xrpl_common_stdlib::core::ledger_objects::current_ledger_object;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/ledger_objects/mod.rs
     /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
@@ -842,11 +832,7 @@ pub mod ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-<<<<<<<< HEAD:xrpl-common-stdlib/src/objects/mod.rs
     /// use xrpl_common_stdlib::objects::ledger_object;
-========
-    /// use xrpl_common_stdlib::core::ledger_objects::ledger_object;
->>>>>>>> 38f2382 (renames, import fixes):xrpl-common-stdlib/src/core/ledger_objects/mod.rs
     /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
