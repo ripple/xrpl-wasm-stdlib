@@ -167,7 +167,7 @@ impl FieldDecoder for TransactionType {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; 2] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(array.into())
     }
 }

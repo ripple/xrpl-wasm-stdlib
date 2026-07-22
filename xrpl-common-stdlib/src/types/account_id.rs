@@ -104,7 +104,7 @@ impl FieldDecoder for AccountID {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; ACCOUNT_ID_SIZE] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(array.into())
     }
 }

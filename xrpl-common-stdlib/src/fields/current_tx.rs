@@ -41,7 +41,7 @@ impl FieldDecoder for u8 {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; 1] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(u8::from_ne_bytes(array))
     }
 }
@@ -59,7 +59,7 @@ impl FieldDecoder for u16 {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; 2] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(u16::from_ne_bytes(array))
     }
 }
@@ -77,7 +77,7 @@ impl FieldDecoder for u32 {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; 4] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(u32::from_ne_bytes(array))
     }
 }
@@ -95,7 +95,7 @@ impl FieldDecoder for u64 {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: [u8; 8] = bytes.try_into().map_err(|_| DecodeError)?;
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
         Ok(u64::from_ne_bytes(array))
     }
 }
@@ -135,7 +135,7 @@ pub fn get_field<T: FromCurrentTx, const CODE: i32>(_: SField<T, CODE>) -> Resul
     if n < 0 {
         return Result::Err(host::Error::from_code(n));
     }
-    let bytes = buf.as_mut();
+    let bytes = buf.as_ref();
     let n = n as usize;
     if n > bytes.len() {
         // A conformant host never reports writing more bytes than the buffer holds; a positive
@@ -186,7 +186,7 @@ pub fn get_field_optional<T: FromCurrentTx, const CODE: i32>(
     if n < 0 {
         return Result::Err(host::Error::from_code(n));
     }
-    let bytes = buf.as_mut();
+    let bytes = buf.as_ref();
     let n = n as usize;
     if n > bytes.len() {
         return Result::Err(host::Error::PointerOutOfBounds);
