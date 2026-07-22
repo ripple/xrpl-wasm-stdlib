@@ -78,6 +78,18 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "internal invariant violated")]
+    fn test_sha512_half_wrong_byte_count() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_compute_sha512_half()
+            .times(1)
+            .returning(|_, _, _, _| 16); // host returns wrong (non-32) byte count
+        let _guard = setup_mock(mock);
+
+        let _ = sha512_half(b"hello");
+    }
+
+    #[test]
     fn test_sha512_half_oversized() {
         let mut mock = MockHostBindings::new();
         mock.expect_compute_sha512_half()
