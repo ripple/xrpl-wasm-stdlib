@@ -4,13 +4,13 @@
 extern crate std;
 
 // Generic XRPL primitives.
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::types::account_id::AccountID;
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::trace_num;
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
-use xrpl_common_stdlib::r_address;
+use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::EscrowFinishContext;
+use xrpl_macros::r_address;
 use xrpl_macros::smart_escrow;
 
 // The notary account that is authorized to complete escrows

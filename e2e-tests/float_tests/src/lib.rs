@@ -5,9 +5,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::core::locator::Locator;
-use xrpl_common_stdlib::core::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
 use xrpl_common_stdlib::decode_hex_32;
+use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::trace::DataRepr::AsHex;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
 use xrpl_common_stdlib::host::{
@@ -17,6 +16,7 @@ use xrpl_common_stdlib::host::{
     trace_opaque_float,
 };
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
 
 fn test_float_from_host() {
     let _ = trace("\n$$$ test_float_from_host $$$");

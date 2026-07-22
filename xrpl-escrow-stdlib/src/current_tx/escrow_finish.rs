@@ -3,7 +3,7 @@
 //! This module provides functionality for handling EscrowFinish transactions within the
 //! XRPL Programmability environment.
 
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 
 use crate::current_tx::traits::EscrowFinishFields;
 
@@ -82,7 +82,7 @@ impl EscrowFinishFields for EscrowFinish {}
 /// ```no_run
 /// use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 /// use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
-/// use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
+/// use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 /// let tx = EscrowFinish;
 /// let owner = tx.get_owner().unwrap_or_panic();
 /// let offer_seq = tx.get_offer_sequence().unwrap_or_panic();

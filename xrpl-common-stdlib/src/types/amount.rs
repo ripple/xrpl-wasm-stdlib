@@ -1,15 +1,15 @@
-use crate::core::current_tx::CurrentTxFieldGetter;
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
-use crate::core::types::account_id::AccountID;
-use crate::core::types::currency::Currency;
-use crate::core::types::mpt_id::MptId;
-use crate::core::types::opaque_float::OpaqueFloat;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
+use crate::types::account_id::AccountID;
+use crate::types::currency::Currency;
+use crate::types::mpt_id::MptId;
+use crate::types::opaque_float::OpaqueFloat;
 
 pub const AMOUNT_SIZE: usize = 48;
 
@@ -374,7 +374,7 @@ impl CurrentTxFieldGetter for Amount {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::types::opaque_float::OpaqueFloat;
+    use crate::types::opaque_float::OpaqueFloat;
 
     #[test]
     fn test_parse_xrp_amount() {

@@ -3,9 +3,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::core::keylets::credential_keylet;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_common_stdlib::keylets::credential_keylet;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;

@@ -76,9 +76,9 @@ use crate::sfield::SField;
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::core::current_tx::{get_field, get_field_optional};
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::amount::Amount;
+/// use xrpl_common_stdlib::current_tx::{get_field, get_field_optional};
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
 /// # fn example() {
 ///   // Get required fields from the current transaction
@@ -232,7 +232,7 @@ impl<T: FixedSizeFieldType> CurrentTxFieldGetter for T {
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::core::current_tx::get_field;
+/// use xrpl_common_stdlib::current_tx::get_field;
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
@@ -260,7 +260,7 @@ pub fn get_field<T: CurrentTxFieldGetter, const CODE: i32>(field: SField<T, CODE
 /// # Example
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::core::current_tx::get_field_optional;
+/// use xrpl_common_stdlib::current_tx::get_field_optional;
 /// use xrpl_common_stdlib::sfield;
 ///
 /// // Type is automatically inferred from the SField constant
@@ -277,15 +277,15 @@ pub fn get_field_optional<T: CurrentTxFieldGetter, const CODE: i32>(
 #[cfg(test)]
 mod tests {
     use super::{CurrentTxFieldGetter, get_field, get_field_optional};
-    use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
-    use crate::core::types::amount::{AMOUNT_SIZE, Amount};
-    use crate::core::types::blob::{Blob, DEFAULT_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
-    use crate::core::types::transaction_type::TransactionType;
-    use crate::core::types::uint::{HASH256_SIZE, Hash256};
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
     use crate::sfield;
+    use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::types::amount::{AMOUNT_SIZE, Amount};
+    use crate::types::blob::{Blob, DEFAULT_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+    use crate::types::transaction_type::TransactionType;
+    use crate::types::uint::{HASH256_SIZE, Hash256};
     use mockall::predicate::{always, eq};
 
     fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {

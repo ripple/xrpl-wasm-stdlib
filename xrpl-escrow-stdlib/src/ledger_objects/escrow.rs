@@ -1,4 +1,5 @@
-use xrpl_common_stdlib::core::ledger_objects::traits::{EscrowFields, LedgerObjectCommonFields};
+use xrpl_common_stdlib::objects::traits::{EscrowFields, LedgerObjectCommonFields};
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Escrow {
     pub(crate) slot_num: i32,
