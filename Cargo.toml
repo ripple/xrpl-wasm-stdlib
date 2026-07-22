@@ -3,7 +3,10 @@ resolver = "2"
 members = [
     "xrpl-wasm-stdlib",
     "xrpl-macros",
-    "xrpl-escrow-stdlib", "xrpl-stdlib-test-utils",
+    "xrpl-escrow-stdlib",
+    "xrpl-stdlib-test-utils",
+    "xrpl-contract-stdlib",
+    "xrpl-contract-stdlib/xrpl-parameter-macro",
 ]
 exclude = [
     "examples",

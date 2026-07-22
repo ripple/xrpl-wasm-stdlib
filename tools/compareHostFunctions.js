@@ -46,6 +46,32 @@ const PENDING_CPP_ALLOWLIST = new Set([
   "set_data_object_field",
 ])
 
+// Host functions that exist in the Rust stdlib ahead of the C++ rippled
+// implementation. The audit tolerates these being "extra in Rust" so the PR
+// can land without blocking on the rippled side. Remove a name from this list
+// once the corresponding C++ host function is merged into rippled.
+//
+// All entries below are smart-contract entry-point/data/event/transaction
+// builder functions that have not yet been specified or implemented in
+// rippled's WasmVM.cpp / HostFuncWrapper.h.
+const PENDING_CPP_ALLOWLIST = new Set([
+  "add_txn_field",
+  "build_txn",
+  "emit_built_txn",
+  "emit_event",
+  "emit_txn",
+  "function_param",
+  "instance_param",
+  "get_data_array_element_field",
+  "get_data_nested_array_element_field",
+  "get_data_nested_object_field",
+  "get_data_object_field",
+  "set_data_array_element_field",
+  "set_data_nested_array_element_field",
+  "set_data_nested_object_field",
+  "set_data_object_field",
+])
+
 async function main() {
   const wasmImportFile = await read(
     process.argv[2],

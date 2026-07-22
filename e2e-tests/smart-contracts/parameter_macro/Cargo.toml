@@ -1,0 +1,15 @@
+[package]
+name = "parameter_macro"
+version = "0.1.0"
+edition = "2024"
+description = ""
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=-bulk-memory"]
+
+[dependencies]
+xrpl-contract-stdlib = { path = "../../../xrpl-contract-stdlib" }

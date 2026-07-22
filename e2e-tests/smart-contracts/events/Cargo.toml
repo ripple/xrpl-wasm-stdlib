@@ -1,0 +1,12 @@
+[package]
+name = "event_tests"
+version = "0.1.0"
+edition = "2024"
+description = ""
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-contract-stdlib = { path = "../../../xrpl-contract-stdlib" }

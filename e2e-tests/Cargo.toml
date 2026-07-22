@@ -9,11 +9,20 @@ members = [
     "trace_escrow_account",
     "trace_escrow_finish",
     "trace_escrow_ledger_object",
+    "smart-contracts/amount_tests",
+    "smart-contracts/contract_data",
+    "smart-contracts/emit_txn",
+    "smart-contracts/events",
+    "smart-contracts/function_params",
+    "smart-contracts/instance_params_uint",
+    "smart-contracts/instance_params_other",
+    "smart-contracts/parameter_macro",
 ]
 
 [workspace.dependencies]
 xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
 xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
+xrpl-contract-stdlib = { path = "../xrpl-contract-stdlib" }
 test_utils = { path = "test_utils" }
 
 [profile.release]
