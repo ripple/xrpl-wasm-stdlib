@@ -8,7 +8,10 @@ The contract checks whether the destination account has a credential with the ty
 
 ## Function
 
-`finish() -> i32` — returns 1 to allow finishing the escrow, 0 to reject. On host errors, the function returns a non-zero error code from the host.
+The entry point, `kyc_finish(ctx: EscrowFinishContext) -> FinishResult`, is annotated with `#[smart_escrow]`,
+which generates the `extern "C" fn finish() -> i32` export the XRPL host calls. `FinishResult::succeed()` allows
+finishing the escrow, `FinishResult::reject()` denies it, and host errors are propagated as their error code via
+`.into()`.
 
 ## Prerequisites
 

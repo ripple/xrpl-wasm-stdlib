@@ -14,10 +14,11 @@ use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
-
-use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
+use xrpl_escrow_stdlib::EscrowFinishContext;
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_macros::smart_escrow;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
@@ -351,9 +352,9 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
 /// 2. Gets the current ledger time
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let current_escrow = current_escrow::get_current_escrow();
+#[smart_escrow]
+fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
+    let current_escrow = ctx.escrow();
 
     // Get the current data field - this stores the atomic swap state
     // FIELD_NOT_FOUND (-2) means no data field exists yet, which indicates Phase 1
@@ -363,7 +364,7 @@ pub extern "C" fn finish() -> i32 {
             // If the data field doesn't exist, this is Phase 1
             if e.code() == xrpl_common_stdlib::host::error_codes::FIELD_NOT_FOUND {
                 let _ = trace_num("No data field found - this is Phase 1", 0);
-                return phase1_initialize(&current_escrow);
+                return phase1_initialize(current_escrow);
             }
             let _ = trace_num("Error getting current escrow data:", e.code() as i64);
             return e.code();
@@ -376,7 +377,7 @@ pub extern "C" fn finish() -> i32 {
     // Phase 1: data.len == 0 (no state stored yet)
     // Phase 2: data.len >= 36 (contains counterpart keylet + timing data)
     if current_data.len == 0 {
-        phase1_initialize(&current_escrow)
+        phase1_initialize(current_escrow)
     } else {
         phase2_complete(&current_data)
     }

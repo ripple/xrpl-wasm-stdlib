@@ -184,21 +184,20 @@ sequenceDiagram
 
 ## Return Values
 
-The `finish()` entry point returns:
+The entry point is `escrow(ctx: EscrowFinishContext) -> FinishResult`, annotated with `#[smart_escrow]`. The
+macro generates the `extern "C" fn finish() -> i32` export the XRPL host actually calls, converting the returned
+`FinishResult` into that ABI:
 
-| Value | Meaning                                                |
-| ----- | ------------------------------------------------------ |
-| `> 0` | Escrow finishes — funds released to the freelancer     |
-| `0`   | Escrow rejected or state updated — funds remain locked |
-| `< 0` | Host error code — transaction fails                    |
+| `FinishResult`                 | `finish()` return | Meaning                                                |
+| ------------------------------ | ----------------- | ------------------------------------------------------ |
+| `FinishResult::succeed()`      | `> 0`             | Escrow finishes — funds released to the freelancer     |
+| `FinishResult::reject()`       | `0`               | Escrow rejected or state updated — funds remain locked |
+| `e.code().into()` (host error) | `< 0`             | Host error code — transaction fails                    |
 
 ## Building
 
-From the repo root:
-
 ```shell
-cd examples
-cargo build -p freelancer_escrow --target wasm32v1-none --release
+cargo build --target wasm32v1-none --release
 ```
 
 The compiled WASM is written to `examples/target/wasm32v1-none/release/freelancer_escrow.wasm`.

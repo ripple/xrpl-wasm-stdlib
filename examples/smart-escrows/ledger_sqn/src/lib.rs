@@ -6,9 +6,11 @@ extern crate std;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_common_stdlib::host::trace::trace_num;
+use xrpl_escrow_stdlib::EscrowFinishContext;
+use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
     unsafe {
         let mut ledger_sqn_buffer = [0u8; 4];
         let result_code =

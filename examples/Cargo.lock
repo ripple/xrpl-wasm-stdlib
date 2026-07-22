@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -16,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -83,6 +85,7 @@ version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -109,6 +112,7 @@ version = "0.0.1"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -116,6 +120,8 @@ name = "ledger_sqn"
 version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
+ "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -130,6 +136,7 @@ version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -138,6 +145,7 @@ version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
  "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
@@ -145,6 +153,8 @@ name = "oracle"
 version = "0.1.0"
 dependencies = [
  "xrpl-common-stdlib",
+ "xrpl-escrow-stdlib",
+ "xrpl-macros",
 ]
 
 [[package]]
