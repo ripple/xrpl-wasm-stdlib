@@ -31,11 +31,6 @@ use crate::host::{Result, get_tx_field};
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
 
-// `FieldDecoder` for the fixed-width unsigned integers the host writes directly. Each reads
-// exactly its own width and reinterprets the raw bytes as the host laid them out (native-endian
-// on wasm32, hence `from_ne_bytes`). All four are readable from both a transaction and a ledger
-// object.
-
 impl FieldDecoder for u8 {
     type Buffer = [u8; 1];
 
