@@ -3,12 +3,15 @@
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
 use crate::host::error_codes::{match_result_code, match_result_code_optional};
+use crate::host::field_helpers::get_variable_size_field_optional;
 use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob};
+use crate::types::blob::{
+    CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, URI_BLOB_SIZE, UriBlob, WasmBlob,
+};
 use crate::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use crate::types::uint::{Hash128, Hash256};
 
@@ -363,6 +366,35 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// An arbitrary 256-bit value that users can set.
     fn wallet_locator(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::WalletLocator)
+    }
+}
+
+/// Trait providing access to fields specific to DID (Decentralized Identifier) objects.
+///
+/// This trait extends `LedgerObjectCommonFields` and provides methods to access the fields of a
+/// DID ledger object.
+pub trait DidFields: LedgerObjectCommonFields {
+    /// The account that controls the DID. This is the same as the address of the DID object.
+    fn get_account(&self) -> Result<AccountID> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Account)
+    }
+
+    /// The DID document associated with the DID, if present.
+    fn did_document(&self) -> Result<Option<UriBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DIDDocument)
+    }
+
+    /// The Universal Resource Identifier that points to the corresponding DID document, if present.
+    fn uri(&self) -> Result<Option<UriBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
+    }
+
+    /// The public attestations of identity credentials associated with the DID, if present.
+    fn data(&self) -> Result<Option<UriBlob>> {
+        get_variable_size_field_optional::<URI_BLOB_SIZE, _>(sfield::Data, |fc, buf, size| unsafe {
+            get_ledger_obj_field(self.get_slot_num(), fc, buf, size)
+        })
+        .map(|opt| opt.map(|(data, len)| UriBlob { data, len }))
     }
 }
 
@@ -954,6 +986,74 @@ mod tests {
 
             let account = AccountRoot { slot_num: 1 };
             let result = account.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+    }
+
+    mod did_fields {
+        use super::*;
+        use crate::host::setup_mock;
+        use crate::objects::did_document::DidDocument;
+        use crate::types::account_id::ACCOUNT_ID_SIZE;
+
+        #[test]
+        fn test_fields_return_ok() {
+            let mut mock = MockHostBindings::new();
+
+            // get_account (mandatory)
+            expect_ledger_field(&mut mock, 1, sfield::Account, ACCOUNT_ID_SIZE, 1);
+            // did_document (optional, UriBlob, capped at 256 bytes)
+            expect_ledger_field(&mut mock, 1, sfield::DIDDocument, URI_BLOB_SIZE, 1);
+            // uri (optional, UriBlob)
+            expect_ledger_field(&mut mock, 1, sfield::URI, URI_BLOB_SIZE, 1);
+            // data (optional, UriBlob-sized, capped at 256 bytes on a DID entry)
+            expect_ledger_field(&mut mock, 1, sfield::Data, URI_BLOB_SIZE, 1);
+
+            let _guard = setup_mock(mock);
+
+            let did = DidDocument { slot_num: 1 };
+
+            assert!(did.get_account().is_ok());
+            // Variable-size blob fields always decode to Some (they cannot distinguish
+            // "absent" from "present but empty").
+            assert!(did.did_document().unwrap().is_some());
+            assert!(did.uri().unwrap().is_some());
+            assert!(did.data().unwrap().is_some());
+        }
+
+        #[test]
+        fn test_mandatory_field_error_on_internal_error() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                .times(1)
+                .returning(|_, _, _, _| INTERNAL_ERROR);
+
+            let _guard = setup_mock(mock);
+
+            let did = DidDocument { slot_num: 1 };
+            let result = did.get_account();
+
+            assert!(result.is_err());
+            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        }
+
+        #[test]
+        fn test_mandatory_field_error_on_invalid_field() {
+            let mut mock = MockHostBindings::new();
+
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
+                .times(1)
+                .returning(|_, _, _, _| INVALID_FIELD);
+
+            let _guard = setup_mock(mock);
+
+            let did = DidDocument { slot_num: 1 };
+            let result = did.get_account();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);

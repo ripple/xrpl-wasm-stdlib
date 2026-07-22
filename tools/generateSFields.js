@@ -135,9 +135,11 @@ async function main() {
     FinishFunction: "WasmBlob",
     PublicKey: "PublicKeyBlob",
     Domain: "UriBlob",
+    DIDDocument: "UriBlob",
     MessageKey: "PublicKeyBlob",
     SigningPubKey: "PublicKeyBlob",
     TxnSignature: "SignatureBlob",
+    Signature: "SignatureBlob",
     URI: "UriBlob",
   }
 

@@ -1,5 +1,6 @@
 pub mod account_root;
 pub mod array_object;
+pub mod did_document;
 pub mod traits;
 
 use crate::host::error_codes::{
