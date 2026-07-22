@@ -3,8 +3,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::core::locator::Locator;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::Result;
 use xrpl_common_stdlib::host::error_codes::{
     match_result_code, match_result_code_optional, match_result_code_with_expected_bytes,
@@ -313,7 +313,7 @@ fn benchmark_locator_repack_last() -> u64 {
 fn benchmark_blob_creation() -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        use xrpl_common_stdlib::core::types::blob::Blob;
+        use xrpl_common_stdlib::types::blob::Blob;
         let blob = Blob {
             data: [0u8; 102400],
             len: 102400,

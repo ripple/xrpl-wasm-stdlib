@@ -7,8 +7,8 @@
 //! targets, the expressions are evaluated (preserving side effects) but the
 //! assertions themselves are skipped.
 
-use xrpl_common_stdlib::core::types::transaction_type::TransactionType;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::types::transaction_type::TransactionType;
 
 /// Trait for types that can be traced in assertions.
 ///

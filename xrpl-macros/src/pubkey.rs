@@ -18,7 +18,7 @@ pub fn expand(input: TokenStream) -> syn::Result<TokenStream> {
 
     let bytes_tokens = bytes.iter().map(|b| quote! {#b});
     let expanded = quote! {
-        ::xrpl_common_stdlib::core::types::public_key::PublicKey([#(#bytes_tokens),*])
+        ::xrpl_common_stdlib::types::public_key::PublicKey([#(#bytes_tokens),*])
     };
     Ok(expanded)
 }

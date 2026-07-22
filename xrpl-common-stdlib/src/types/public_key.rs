@@ -1,4 +1,4 @@
-use crate::core::current_tx::CurrentTxFieldGetter;
+use crate::current_tx::CurrentTxFieldGetter;
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
@@ -81,7 +81,7 @@ impl CurrentTxFieldGetter for PublicKey {
 
 #[cfg(test)]
 mod test_public_key {
-    use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
+    use crate::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
 
     // secp256k1
     const PUBKEY_SECP256K1: [u8; PUBLIC_KEY_BUFFER_SIZE] = [

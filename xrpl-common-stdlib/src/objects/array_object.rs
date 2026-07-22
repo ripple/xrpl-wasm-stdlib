@@ -30,7 +30,7 @@ pub struct Object;
 
 // Implement FieldGetter for Array and Object as no-ops
 // These are placeholder types and should not be used for actual field retrieval
-use crate::core::ledger_objects::LedgerObjectFieldGetter;
+use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 
 impl LedgerObjectFieldGetter for Array {

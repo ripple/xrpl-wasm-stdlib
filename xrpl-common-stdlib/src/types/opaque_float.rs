@@ -35,7 +35,7 @@
 /// # Example
 ///
 /// ```no_run
-/// # use xrpl_common_stdlib::core::types::opaque_float::OpaqueFloat;
+/// # use xrpl_common_stdlib::types::opaque_float::OpaqueFloat;
 /// // Create from host function
 /// let mut float_bytes = [0u8; 8];
 /// // float_from_int(100, float_bytes.as_mut_ptr(), 8, 0);

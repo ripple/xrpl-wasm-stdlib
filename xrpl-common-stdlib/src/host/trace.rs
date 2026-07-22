@@ -1,9 +1,9 @@
 use crate::host::error_codes::match_result_code;
 
-use crate::core::types::account_id::AccountID;
-use crate::core::types::amount::Amount;
 use crate::host;
 use crate::host::Result;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
 
 /// Data representation
 #[derive(Clone, Copy)]
@@ -128,9 +128,9 @@ pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::types::amount::Amount;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
+    use crate::types::amount::Amount;
     use mockall::predicate::always;
 
     #[test]
@@ -173,8 +173,8 @@ mod tests {
         let _guard = setup_mock(mock);
 
         // Create a test MPT Amount
-        use crate::core::types::account_id::AccountID;
-        use crate::core::types::mpt_id::MptId;
+        use crate::types::account_id::AccountID;
+        use crate::types::mpt_id::MptId;
 
         const VALUE: u64 = 500_000;
         const SEQUENCE_NUM: u32 = 12345;
@@ -210,9 +210,9 @@ mod tests {
         let _guard = setup_mock(mock);
 
         // Create a test IOU Amount
-        use crate::core::types::account_id::AccountID;
-        use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
+        use crate::types::account_id::AccountID;
+        use crate::types::currency::Currency;
+        use crate::types::opaque_float::OpaqueFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
@@ -282,9 +282,9 @@ mod tests {
         assert_eq!(&bytes[0..8], &expected_bytes);
 
         // Test IOU format
-        use crate::core::types::account_id::AccountID;
-        use crate::core::types::currency::Currency;
-        use crate::core::types::opaque_float::OpaqueFloat;
+        use crate::types::account_id::AccountID;
+        use crate::types::currency::Currency;
+        use crate::types::opaque_float::OpaqueFloat;
 
         let currency_bytes = [2u8; 20];
         let issuer_bytes = [3u8; 20];
@@ -300,7 +300,7 @@ mod tests {
         assert_eq!(&bytes[0..8], &amount_bytes); // Should match the opaque float bytes
 
         // Test MPT format
-        use crate::core::types::mpt_id::MptId;
+        use crate::types::mpt_id::MptId;
 
         const VALUE: u64 = 500_000;
         const SEQUENCE_NUM: u32 = 12345;

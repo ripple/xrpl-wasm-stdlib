@@ -2,12 +2,12 @@ pub mod account_root;
 pub mod array_object;
 pub mod traits;
 
-use crate::core::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::sfield::SField;
+use crate::types::uint::{HASH160_SIZE, HASH192_SIZE, Hash160, Hash192};
 
 /// Trait for types that can be retrieved from ledger object fields.
 ///
@@ -30,9 +30,9 @@ use crate::sfield::SField;
 /// ## Usage Patterns
 ///
 /// ```rust,no_run
-/// use xrpl_common_stdlib::core::ledger_objects::{ledger_object, current_ledger_object};
-/// use xrpl_common_stdlib::core::types::account_id::AccountID;
-/// use xrpl_common_stdlib::core::types::amount::Amount;
+/// use xrpl_common_stdlib::objects::{ledger_object, current_ledger_object};
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::types::amount::Amount;
 /// use xrpl_common_stdlib::sfield;
 ///
 /// fn example() {
@@ -399,7 +399,7 @@ pub mod current_ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use xrpl_common_stdlib::core::ledger_objects::current_ledger_object;
+    /// use xrpl_common_stdlib::objects::current_ledger_object;
     /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
@@ -435,19 +435,19 @@ pub mod current_ledger_object {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
-        use crate::core::types::amount::{AMOUNT_SIZE, Amount};
-        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
-        use crate::core::types::currency::{CURRENCY_SIZE, Currency};
-        use crate::core::types::issue::Issue;
-        use crate::core::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
-        use crate::core::types::uint::{
-            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
-            Hash256,
-        };
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield::{self, SField};
+        use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+        use crate::types::amount::{AMOUNT_SIZE, Amount};
+        use crate::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+        use crate::types::currency::{CURRENCY_SIZE, Currency};
+        use crate::types::issue::Issue;
+        use crate::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
+        use crate::types::uint::{
+            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
+            Hash256,
+        };
         use mockall::predicate::{always, eq};
 
         // ========================================
@@ -832,7 +832,7 @@ pub mod ledger_object {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use xrpl_common_stdlib::core::ledger_objects::ledger_object;
+    /// use xrpl_common_stdlib::objects::ledger_object;
     /// use xrpl_common_stdlib::sfield;
     ///
     /// // Type is automatically inferred from the SField constant
@@ -871,18 +871,18 @@ pub mod ledger_object {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::core::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
-        use crate::core::types::amount::{AMOUNT_SIZE, Amount};
-        use crate::core::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
-        use crate::core::types::currency::{CURRENCY_SIZE, Currency};
-        use crate::core::types::issue::Issue;
-        use crate::core::types::uint::{
-            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
-            Hash256,
-        };
         use crate::host::host_bindings_trait::MockHostBindings;
         use crate::host::setup_mock;
         use crate::sfield::{self, SField};
+        use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+        use crate::types::amount::{AMOUNT_SIZE, Amount};
+        use crate::types::blob::{Blob, PUBLIC_KEY_BLOB_SIZE, PublicKeyBlob};
+        use crate::types::currency::{CURRENCY_SIZE, Currency};
+        use crate::types::issue::Issue;
+        use crate::types::uint::{
+            HASH128_SIZE, HASH160_SIZE, HASH192_SIZE, HASH256_SIZE, Hash128, Hash160, Hash192,
+            Hash256,
+        };
         use mockall::predicate::{always, eq};
 
         /// Helper to set up a mock expectation for get_ledger_obj_field.

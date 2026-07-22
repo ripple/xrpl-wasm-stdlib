@@ -13,10 +13,12 @@ pub use xrpl_macros::r_address;
 pub use xrpl_macros::smart_contract;
 pub use xrpl_macros::smart_escrow;
 
-pub mod core;
 pub mod ctx;
+pub mod current_tx;
 pub mod fields;
 pub mod host;
+pub mod keylets;
+pub mod objects;
 pub mod sfield;
 pub(crate) mod tx_flags;
 pub mod types;
