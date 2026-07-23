@@ -40,7 +40,8 @@ pub fn check_sig(key: &PublicKey, msg: &[u8], sig: &[u8]) -> Result<bool> {
     match rescode {
         0 => Result::Ok(false),
         1 => Result::Ok(true),
-        _ => Result::Err(Error::from_code(rescode)),
+        code if code < 0 => Result::Err(Error::from_code(code)),
+        code => panic!("internal invariant violated: host returned unexpected value {code}"),
     }
 }
 
@@ -162,5 +163,18 @@ mod tests {
         let result = check_sig(&key, &[0u8; 1025], b"signature");
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), DATA_FIELD_TOO_LARGE);
+    }
+
+    #[test]
+    #[should_panic(expected = "internal invariant violated")]
+    fn test_check_sig_unexpected_positive() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_check_sig()
+            .times(1)
+            .returning(|_, _, _, _, _, _| 2); // host returns 2 — only 0 and 1 are valid
+        let _guard = setup_mock(mock);
+
+        let key = PublicKey::from(PUBKEY_BYTES);
+        let _ = check_sig(&key, b"m", b"s");
     }
 }
