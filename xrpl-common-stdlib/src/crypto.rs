@@ -25,8 +25,7 @@ pub fn sha512_half(data: &[u8]) -> Result<[u8; 32]> {
 ///
 /// Errors: `InvalidParams` if the key is malformed (not 33 bytes / bad prefix);
 /// `DataFieldTooLarge` if any parameter exceeds 1024 bytes.
-pub fn check_sig(key: &PublicKey, msg: &[u8], sig: &[u8]) -> Result<bool> {
-    // Host arg order is (message, signature, pubkey); the wrapper reorders to (key, msg, sig).
+pub fn check_sig(msg: &[u8], sig: &[u8], key: &PublicKey) -> Result<bool> {
     let rescode = unsafe {
         host::check_sig(
             msg.as_ptr(),
@@ -120,7 +119,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(&key, b"message", b"signature");
+        let result = check_sig(b"message", b"signature", &key);
         assert!(result.unwrap());
     }
 
@@ -133,7 +132,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(&key, b"message", b"signature");
+        let result = check_sig(b"message", b"signature", &key);
         assert!(!result.unwrap());
     }
 
@@ -146,7 +145,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(&key, b"message", b"signature");
+        let result = check_sig(b"message", b"signature", &key);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), INVALID_PARAMS);
     }
@@ -160,7 +159,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(&key, &[0u8; 1025], b"signature");
+        let result = check_sig(&[0u8; 1025], b"signature", &key);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), DATA_FIELD_TOO_LARGE);
     }
@@ -175,6 +174,6 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let _ = check_sig(&key, b"m", b"s");
+        let _ = check_sig(b"m", b"s", &key);
     }
 }
