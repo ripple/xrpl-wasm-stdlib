@@ -60,7 +60,7 @@ impl FieldDecoder for u16 {
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
         let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u16::from_ne_bytes(array))
+        Ok(u16::from_le_bytes(array))
     }
 }
 
@@ -78,7 +78,7 @@ impl FieldDecoder for u32 {
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
         let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u32::from_ne_bytes(array))
+        Ok(u32::from_le_bytes(array))
     }
 }
 
@@ -96,7 +96,7 @@ impl FieldDecoder for u64 {
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
         let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u64::from_ne_bytes(array))
+        Ok(u64::from_le_bytes(array))
     }
 }
 
@@ -200,6 +200,7 @@ pub fn get_field_optional<T: FromCurrentTx, const CODE: i32>(
 #[cfg(test)]
 mod tests {
     use super::{get_field, get_field_optional};
+    use crate::fields::decoder::FieldDecoder;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
@@ -281,6 +282,24 @@ mod tests {
         let result = get_field::<u32, _>(sfield::Flags);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+    }
+
+    #[test]
+    fn test_u16_decodes_little_endian_host_bytes() {
+        let result = u16::decode(&[0x02, 0x01]);
+        assert_eq!(result.unwrap(), 0x0102u16);
+    }
+
+    #[test]
+    fn test_u32_decodes_little_endian_host_bytes() {
+        let result = u32::decode(&[0x04, 0x03, 0x02, 0x01]);
+        assert_eq!(result.unwrap(), 0x01020304u32);
+    }
+
+    #[test]
+    fn test_u64_decodes_little_endian_host_bytes() {
+        let result = u64::decode(&[0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]);
+        assert_eq!(result.unwrap(), 0x0102030405060708u64);
     }
 
     #[test]
