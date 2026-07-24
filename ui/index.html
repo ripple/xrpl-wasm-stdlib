@@ -8,6 +8,83 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- Send XRP Modal -->
+    <div id="sendXrpModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Send XRP</h3>
+          <button class="modal-close" onclick="closeSendXrpModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>From Account:</label>
+            <div id="sendFromAccount" class="modal-account-info"></div>
+          </div>
+          <div class="form-group">
+            <label for="sendToAddress">To Address:</label>
+            <input
+              type="text"
+              id="sendToAddress"
+              class="form-control"
+              placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            />
+          </div>
+          <div class="form-group">
+            <label for="sendAmount">Amount (XRP):</label>
+            <input
+              type="number"
+              id="sendAmount"
+              class="form-control"
+              placeholder="0.00"
+              step="0.000001"
+              min="0.000001"
+            />
+          </div>
+          <div class="form-group">
+            <label for="sendDestinationTag">Destination Tag (optional):</label>
+            <input
+              type="number"
+              id="sendDestinationTag"
+              class="form-control"
+              placeholder="12345"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeSendXrpModal()">Cancel</button>
+          <button class="btn btn-success" onclick="executeSendXrp()">Send XRP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Account Modal -->
+    <div id="importAccountModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Import Account with Seed</h3>
+          <button class="modal-close" onclick="closeImportAccountModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="importSeed">Seed (Secret Key):</label>
+            <input
+              type="text"
+              id="importSeed"
+              class="form-control"
+              placeholder="sXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            />
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+              Enter a seed starting with 's' (e.g., sEdSVgf2XHNxZ8eJWX1vM59wdfMzUoT)
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeImportAccountModal()">Cancel</button>
+          <button class="btn btn-success" onclick="executeImportAccount()">Import Account</button>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
       <div class="header">
         <h1>Smart Escrow Testing UI</h1>
@@ -53,8 +130,20 @@
               </div>
             </div>
           </div>
+          <div class="form-group">
+            <label for="connectionTimeout">Connection Timeout (seconds):</label>
+            <input
+              type="number"
+              id="connectionTimeout"
+              class="form-control"
+              value="5"
+              min="1"
+              max="60"
+              onchange="saveConnectionTimeoutToStorage(this.value)"
+            />
+          </div>
           <button id="connectBtn" class="btn" onclick="connectToNetwork()">
-            Connect
+            <span id="connectText">Connect</span>
           </button>
           <button
             id="disconnectBtn"
@@ -62,7 +151,7 @@
             onclick="disconnectFromNetwork()"
             style="display: none"
           >
-            Disconnect
+            <span id="disconnectText">Disconnect</span>
           </button>
         </div>
 
@@ -186,12 +275,27 @@
                 Generate New Account
               </button>
               <button
+                id="importBtn"
+                class="btn btn-success"
+                onclick="openImportAccountModal()"
+              >
+                Import Account
+              </button>
+              <button
                 id="fundBtn"
                 class="btn btn-warning"
                 onclick="fundSelectedAccount()"
                 style="display: none"
               >
                 Fund Selected
+              </button>
+              <button
+                id="clearAccountsBtn"
+                class="btn btn-danger"
+                onclick="clearAllAccounts()"
+                style="display: none"
+              >
+                Clear All Accounts
               </button>
             </div>
             <div
@@ -208,6 +312,9 @@
               <div class="empty-state">
                 No accounts loaded. Generate or load accounts to get started.
               </div>
+            </div>
+            <div id="disconnectedTip" class="info-tip" style="display: none; margin-top: 10px; padding: 12px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+              <strong>💡 Tip:</strong> Connect to a network above to view wallet balances and interact with accounts.
             </div>
           </div>
 
@@ -493,6 +600,80 @@
       let lastOfferSequence = null
       let ledgerInterval = null
 
+      // LocalStorage keys
+      const STORAGE_KEYS = {
+        ACCOUNTS: 'xrpl_ui_accounts',
+        CONNECTION_TIMEOUT: 'xrpl_ui_connection_timeout'
+      }
+
+      // LocalStorage functions
+      function saveAccountsToStorage() {
+        try {
+          const accountsData = accounts.map(acc => ({
+            address: acc.address,
+            seed: acc.seed,
+            publicKey: acc.publicKey,
+            privateKey: acc.privateKey
+          }))
+          localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accountsData))
+          log('💾 Accounts saved to localStorage')
+        } catch (error) {
+          log(`⚠️ Failed to save accounts: ${error.message}`)
+        }
+      }
+
+      function loadAccountsFromStorage() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.ACCOUNTS)
+          if (stored) {
+            const accountsData = JSON.parse(stored)
+            accounts = accountsData.map(data => {
+              // Reconstruct wallet from stored data
+              return xrpl.Wallet.fromSeed(data.seed)
+            })
+            log(`📂 Loaded ${accounts.length} account(s) from localStorage`)
+            return true
+          }
+        } catch (error) {
+          log(`⚠️ Failed to load accounts: ${error.message}`)
+        }
+        return false
+      }
+
+      function saveConnectionTimeoutToStorage(timeout) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.CONNECTION_TIMEOUT, timeout.toString())
+        } catch (error) {
+          log(`⚠️ Failed to save connection timeout: ${error.message}`)
+        }
+      }
+
+      function loadConnectionTimeoutFromStorage() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.CONNECTION_TIMEOUT)
+          if (stored) {
+            const timeout = parseInt(stored)
+            if (timeout > 0) {
+              document.getElementById('connectionTimeout').value = timeout
+              log(`📂 Loaded connection timeout: ${timeout}s`)
+              return timeout
+            }
+          }
+        } catch (error) {
+          log(`⚠️ Failed to load connection timeout: ${error.message}`)
+        }
+        return 5 // Default
+      }
+
+      function clearAccountsFromStorage() {
+        try {
+          localStorage.removeItem(STORAGE_KEYS.ACCOUNTS)
+          log('🗑️ Accounts cleared from localStorage')
+        } catch (error) {
+          log(`⚠️ Failed to clear accounts: ${error.message}`)
+        }
+      }
+
       // Utility Functions
       function log(message, isHtml = false) {
         const logArea = document.getElementById("logArea")
@@ -678,6 +859,16 @@
           'input[name="network"]:checked',
         ).value
 
+        const timeoutSeconds = parseInt(document.getElementById("connectionTimeout").value) || 5
+        const timeoutMs = timeoutSeconds * 1000
+
+        const connectBtn = document.getElementById("connectBtn")
+        const connectText = document.getElementById("connectText")
+
+        // Set loading state
+        connectBtn.disabled = true
+        connectText.innerHTML = '<div class="spinner-small"></div>Connecting...'
+
         try {
           if (client && client.isConnected()) {
             await client.disconnect()
@@ -689,13 +880,20 @@
             ledgerInterval = null
           }
 
-          log(`Connecting to ${selectedNetwork}...`)
-          client = new xrpl.Client(selectedNetwork)
+          log(`Connecting to ${selectedNetwork} (timeout: ${timeoutSeconds}s)...`)
+          client = new xrpl.Client(selectedNetwork, {
+            connectionTimeout: timeoutMs
+          })
 
           // Add connection event listeners
-          client.on("connected", () => {
+          client.on("connected", async () => {
             updateConnectionStatus(true, selectedNetwork)
             log(`Successfully connected to ${selectedNetwork}`)
+            // Auto-fetch balances if we have accounts
+            if (accounts.length > 0) {
+              log(`Fetching balances for ${accounts.length} account(s)...`)
+              await updateAccountsList()
+            }
           })
 
           client.on("disconnected", () => {
@@ -719,10 +917,21 @@
         } catch (error) {
           logError(`Failed to connect: ${error.message}`)
           updateConnectionStatus(false)
+        } finally {
+          // Restore button state
+          connectBtn.disabled = false
+          connectText.textContent = "Connect"
         }
       }
 
       async function disconnectFromNetwork() {
+        const disconnectBtn = document.getElementById("disconnectBtn")
+        const disconnectText = document.getElementById("disconnectText")
+
+        // Set loading state
+        disconnectBtn.disabled = true
+        disconnectText.innerHTML = '<div class="spinner-small"></div>Disconnecting...'
+
         try {
           if (ledgerInterval) {
             clearInterval(ledgerInterval)
@@ -733,12 +942,11 @@
             await client.disconnect()
           }
 
-          // Clear accounts and escrows
-          accounts = []
+          // Clear escrows but keep accounts
           escrows = []
           selectedAccount = null
 
-          // Update UI to reflect cleared state
+          // Update UI to reflect disconnected state
           await updateAccountsList()
           await updateEscrowsList()
 
@@ -747,6 +955,10 @@
         } catch (error) {
           log(`Error disconnecting: ${error.message}`)
           updateConnectionStatus(false)
+        } finally {
+          // Restore button state
+          disconnectBtn.disabled = false
+          disconnectText.textContent = "Disconnect"
         }
       }
 
@@ -943,6 +1155,7 @@
 
           accounts.push(fundedWallet)
           await updateAccountsList()
+          saveAccountsToStorage()
           log(`Generated and funded account: ${fundedWallet.address}`)
           showToast("Account generated and funded successfully!", "success")
         } catch (error) {
@@ -952,6 +1165,73 @@
           generateBtn.disabled = false
           generateBtn.textContent = "Generate New Account"
           accountLoading.style.display = "none"
+        }
+      }
+
+      function openImportAccountModal() {
+        const modal = document.getElementById("importAccountModal")
+        document.getElementById("importSeed").value = ""
+        modal.style.display = "flex"
+      }
+
+      function closeImportAccountModal() {
+        const modal = document.getElementById("importAccountModal")
+        modal.style.display = "none"
+      }
+
+      async function executeImportAccount() {
+        if (typeof xrpl === "undefined") {
+          logError("XRPL library is not loaded. Please refresh the page.", "warning")
+          return
+        }
+
+        const seed = document.getElementById("importSeed").value.trim()
+
+        if (!seed) {
+          logError("Please enter a seed", "warning")
+          return
+        }
+
+        if (!seed.startsWith("s")) {
+          logError("Invalid seed format. Seed should start with 's'", "warning")
+          return
+        }
+
+        const importBtn = document.querySelector("button[onclick='executeImportAccount()']")
+        const originalText = importBtn.textContent
+        importBtn.disabled = true
+        importBtn.innerHTML = '<div class="spinner-small"></div>Importing...'
+
+        try {
+          log(`Importing account from seed...`)
+
+          // Try to create wallet from seed
+          let wallet
+          try {
+            wallet = xrpl.Wallet.fromSeed(seed)
+          } catch (error) {
+            throw new Error(`Invalid seed format: ${error.message}`)
+          }
+
+          // Check if this account is already imported
+          const existingAccount = accounts.find(acc => acc.address === wallet.address)
+          if (existingAccount) {
+            logError("This account is already imported", "warning")
+            return
+          }
+
+          accounts.push(wallet)
+          await updateAccountsList()
+          saveAccountsToStorage()
+          log(`✅ Successfully imported account: ${wallet.address}`)
+          showToast("Account imported successfully!", "success")
+
+          closeImportAccountModal()
+        } catch (error) {
+          logError(`Failed to import account: ${error.message}`)
+        } finally {
+          importBtn.disabled = false
+          importBtn.textContent = originalText
         }
       }
 
@@ -1009,9 +1289,35 @@
         }
       }
 
+      function clearAllAccounts() {
+        if (!confirm(`Are you sure you want to clear all ${accounts.length} account(s)? This will remove them from localStorage.`)) {
+          return
+        }
+
+        accounts = []
+        escrows = []
+        selectedAccount = null
+
+        clearAccountsFromStorage()
+        updateAccountsList()
+        updateEscrowsList()
+
+        log('🗑️ All accounts cleared')
+        showToast('All accounts cleared successfully', 'success')
+      }
+
       async function updateAccountsList() {
         const accountsList = document.getElementById("accountsList")
         const fundBtn = document.getElementById("fundBtn")
+        const clearAccountsBtn = document.getElementById("clearAccountsBtn")
+        const disconnectedTip = document.getElementById("disconnectedTip")
+
+        // Show tip if we have accounts but not connected
+        if (accounts.length > 0 && (!client || !client.isConnected())) {
+          disconnectedTip.style.display = "block"
+        } else {
+          disconnectedTip.style.display = "none"
+        }
 
         if (accounts.length === 0) {
           accountsList.innerHTML = `
@@ -1020,11 +1326,14 @@
                     </div>
                 `
           fundBtn.style.display = "none"
+          clearAccountsBtn.style.display = "none"
+          disconnectedTip.style.display = "none"
           return
         }
 
-        // Show the fund button when there are accounts
+        // Show the fund and clear buttons when there are accounts
         fundBtn.style.display = "inline-block"
+        clearAccountsBtn.style.display = "inline-block"
 
         let html = ""
         for (let i = 0; i < accounts.length; i++) {
@@ -1050,9 +1359,18 @@
                                 <strong>Account ${i + 1}</strong>
                                 <div class="account-balance">${balance}</div>
                             </div>
-                            <button class="btn btn-small" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📋</button>
+                            <div class="account-buttons">
+                                <button class="btn btn-small" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📋 Address</button>
+                                <button class="btn btn-small btn-warning" onclick="showSeed(${i}); event.stopPropagation();" title="Show seed">🔑 Seed</button>
+                                <button class="btn btn-small btn-success" onclick="openSendXrpModal(${i}); event.stopPropagation();" title="Send XRP">💸 Send</button>
+                            </div>
                         </div>
                         <div class="account-address">${account.address}</div>
+                        <div class="account-seed" id="seed-${i}" style="display: none;">
+                            <div class="seed-label">🔐 Seed (Keep Secret!):</div>
+                            <div class="seed-value">${account.seed}</div>
+                            <button class="btn btn-small" onclick="copyToClipboard('${account.seed}'); event.stopPropagation();">📋 Copy Seed</button>
+                        </div>
                     </div>
                 `
         }
@@ -1068,6 +1386,137 @@
         selectedAccount = accounts[index]
         updateAccountsList()
         log(`Selected account: ${selectedAccount.address}`)
+      }
+
+      function showSeed(index) {
+        const seedDiv = document.getElementById(`seed-${index}`)
+        if (seedDiv) {
+          const isVisible = seedDiv.style.display !== "none"
+          // Hide all other seeds
+          document.querySelectorAll('.account-seed').forEach(div => {
+            div.style.display = "none"
+          })
+          // Toggle the clicked one
+          seedDiv.style.display = isVisible ? "none" : "block"
+
+          if (!isVisible) {
+            log(`⚠️ Seed revealed for Account ${index + 1}. Keep it secret!`)
+          }
+        }
+      }
+
+      let sendFromAccountIndex = null
+
+      function openSendXrpModal(index) {
+        if (!client || !client.isConnected()) {
+          logError("Please connect to network first", "warning")
+          return
+        }
+
+        const account = accounts[index]
+        sendFromAccountIndex = index
+
+        const modal = document.getElementById("sendXrpModal")
+        const fromAccountDiv = document.getElementById("sendFromAccount")
+
+        fromAccountDiv.innerHTML = `
+          <div><strong>Account ${index + 1}</strong></div>
+          <div class="account-address">${account.address}</div>
+        `
+
+        // Clear previous inputs
+        document.getElementById("sendToAddress").value = ""
+        document.getElementById("sendAmount").value = ""
+        document.getElementById("sendDestinationTag").value = ""
+
+        modal.style.display = "flex"
+      }
+
+      function closeSendXrpModal() {
+        const modal = document.getElementById("sendXrpModal")
+        modal.style.display = "none"
+        sendFromAccountIndex = null
+      }
+
+      async function executeSendXrp() {
+        if (!client || !client.isConnected()) {
+          logError("Please connect to network first", "warning")
+          return
+        }
+
+        if (sendFromAccountIndex === null) {
+          logError("No account selected", "warning")
+          return
+        }
+
+        const toAddress = document.getElementById("sendToAddress").value.trim()
+        const amount = document.getElementById("sendAmount").value.trim()
+        const destinationTag = document.getElementById("sendDestinationTag").value.trim()
+
+        if (!toAddress) {
+          logError("Please enter a destination address", "warning")
+          return
+        }
+
+        if (!amount || parseFloat(amount) <= 0) {
+          logError("Please enter a valid amount", "warning")
+          return
+        }
+
+        const sendBtn = document.querySelector("button[onclick='executeSendXrp()']")
+        const originalText = sendBtn.textContent
+        sendBtn.disabled = true
+        sendBtn.innerHTML = '<div class="spinner-small"></div>Sending...'
+
+        try {
+          const fromAccount = accounts[sendFromAccountIndex]
+          const amountInDrops = xrpl.xrpToDrops(amount)
+
+          const tx = {
+            TransactionType: "Payment",
+            Account: fromAccount.address,
+            Destination: toAddress,
+            Amount: amountInDrops,
+          }
+
+          if (destinationTag) {
+            tx.DestinationTag = parseInt(destinationTag)
+          }
+
+          log(`💸 Sending ${amount} XRP from ${fromAccount.address} to ${toAddress}...`)
+          const result = await client.submitAndWait(tx, {
+            autofill: true,
+            wallet: fromAccount,
+          })
+
+          if (result.result.meta.TransactionResult === "tesSUCCESS") {
+            log(`✅ Payment successful! Sent ${amount} XRP`)
+            logWithExplorer(
+              `Transaction hash: ${result.result.hash}`,
+              result.result.hash,
+            )
+            showToast(`Successfully sent ${amount} XRP!`, "success")
+
+            // Close modal and refresh accounts
+            closeSendXrpModal()
+            await updateAccountsList()
+          } else {
+            const transactionResult = result.result.meta.TransactionResult
+            log(`❌ Payment failed: ${transactionResult}`)
+            if (transactionResult.startsWith("tec")) {
+              logWithExplorer(
+                `Transaction hash: ${result.result.hash}`,
+                result.result.hash,
+              )
+            }
+            logError(`Payment failed: ${transactionResult}`)
+          }
+        } catch (error) {
+          logError(`Failed to send XRP: ${error.message}`)
+        } finally {
+          sendBtn.disabled = false
+          sendBtn.textContent = originalText
+        }
       }
 
       function copyToClipboard(text) {
@@ -1661,14 +2110,28 @@
               )
             } else {
               log("✅ XRPL library loaded successfully")
-              log("Connect to a network and generate accounts to get started")
+              initializeApp()
             }
           }, 2000)
         } else {
           log("✅ XRPL library loaded successfully")
-          log("Connect to a network and generate accounts to get started")
+          initializeApp()
         }
       })
+
+      function initializeApp() {
+        // Load connection timeout from storage
+        loadConnectionTimeoutFromStorage()
+
+        // Load accounts from storage
+        const accountsLoaded = loadAccountsFromStorage()
+        if (accountsLoaded && accounts.length > 0) {
+          updateAccountsList()
+          showToast(`Loaded ${accounts.length} account(s) from storage`, "info")
+        }
+
+        log("Connect to a network and generate accounts to get started")
+      }
     </script>
   </body>
 </html>
