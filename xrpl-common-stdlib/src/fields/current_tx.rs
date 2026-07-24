@@ -42,7 +42,7 @@ impl FieldDecoder for u8 {
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
         let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u8::from_ne_bytes(array))
+        Ok(u8::from_le_bytes(array))
     }
 }
 
