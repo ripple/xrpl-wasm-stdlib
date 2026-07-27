@@ -24,84 +24,11 @@
 //! Concrete transaction wrappers (e.g., `EscrowFinish`) live in their respective
 //! companion crates (`xrpl-escrow-stdlib` for escrow flows).
 
-use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
+use crate::fields::decoder::FromCurrentTx;
 use crate::host;
 use crate::host::error_codes::FIELD_NOT_FOUND;
 use crate::host::{Result, get_tx_field};
 use crate::sfield::SField;
-use crate::types::decode_error::DecodeError;
-
-impl FieldDecoder for u8 {
-    type Buffer = [u8; 1];
-
-    #[inline]
-    fn empty_buffer() -> Self::Buffer {
-        [0u8; 1]
-    }
-
-    #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u8::from_le_bytes(array))
-    }
-}
-
-impl FromCurrentTx for u8 {}
-impl FromLedger for u8 {}
-
-impl FieldDecoder for u16 {
-    type Buffer = [u8; 2];
-
-    #[inline]
-    fn empty_buffer() -> Self::Buffer {
-        [0u8; 2]
-    }
-
-    #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u16::from_le_bytes(array))
-    }
-}
-
-impl FromCurrentTx for u16 {}
-impl FromLedger for u16 {}
-
-impl FieldDecoder for u32 {
-    type Buffer = [u8; 4];
-
-    #[inline]
-    fn empty_buffer() -> Self::Buffer {
-        [0u8; 4]
-    }
-
-    #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u32::from_le_bytes(array))
-    }
-}
-
-impl FromCurrentTx for u32 {}
-impl FromLedger for u32 {}
-
-impl FieldDecoder for u64 {
-    type Buffer = [u8; 8];
-
-    #[inline]
-    fn empty_buffer() -> Self::Buffer {
-        [0u8; 8]
-    }
-
-    #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(u64::from_le_bytes(array))
-    }
-}
-
-impl FromCurrentTx for u64 {}
-impl FromLedger for u64 {}
 
 /// Retrieves a field from the current transaction using an SField constant.
 ///
