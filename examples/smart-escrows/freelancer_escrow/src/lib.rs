@@ -12,8 +12,9 @@ use xrpl_common_stdlib::host::trace::trace_num;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::types::contract_data::ContractData;
+use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
+use xrpl_escrow_stdlib::ledger_objects::escrow_storage::{EscrowStorage, load_data, save_data};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
@@ -113,17 +114,6 @@ impl State {
     const FREELANCER_CONFIRMED: usize = 25;
     const DISPUTING_PARTY: usize = 26;
 
-    fn load(escrow: &CurrentEscrow) -> Result<Self> {
-        let inner = match escrow.get_data() {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
-        if inner.len < Self::SIZE {
-            return Err(Error::InvalidParams);
-        }
-        Ok(Self { inner })
-    }
-
     fn arbitrator(&self) -> AccountID {
         let mut buf = [0u8; 20];
         buf.copy_from_slice(&self.inner.data[Self::ARBITRATOR]);
@@ -172,9 +162,29 @@ impl State {
             DisputeState::ArbLocked => 3,
         };
     }
+}
 
-    fn persist(self) -> Result<()> {
-        CurrentEscrow::update_current_escrow_data(self.inner)
+impl EscrowStorage for State {
+    fn encode(&self, out: &mut [u8]) -> Result<usize> {
+        if out.len() < Self::SIZE {
+            return Err(Error::InvalidParams);
+        }
+        out[..Self::SIZE].copy_from_slice(&self.inner.data[..Self::SIZE]);
+        Ok(Self::SIZE)
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self> {
+        if bytes.len() < Self::SIZE {
+            return Err(Error::InvalidParams);
+        }
+        let mut data = [0u8; XRPL_CONTRACT_DATA_SIZE];
+        data[..Self::SIZE].copy_from_slice(&bytes[..Self::SIZE]);
+        Ok(Self {
+            inner: ContractData {
+                data,
+                len: Self::SIZE,
+            },
+        })
     }
 }
 
@@ -256,7 +266,10 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
     let escrow: &CurrentEscrow = ctx.escrow();
     let client = try_or_trace!(escrow.get_account(), "client");
     let freelancer = try_or_trace!(escrow.get_destination(), "freelancer");
-    let mut state = try_or_trace!(State::load(escrow), "state");
+    let mut state = match try_or_trace!(load_data::<State>(&ctx), "state") {
+        Some(state) => state,
+        None => return FinishResult::reject(),
+    };
     let intent = try_or_trace!(read_intent(), "intent");
 
     let role = match identify(tx_account, client, freelancer, state.arbitrator()) {
@@ -282,7 +295,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
             state.set_confirmation(party_of(role), intent == Intent::Confirm);
             let release = state.client_confirmed() && state.freelancer_confirmed()
                 || try_or_trace!(deadline_release(&state), "ledger_time");
-            try_or_trace!(state.persist(), "persist");
+            try_or_trace!(save_data(&ctx, &state), "persist");
             (release as i32).into()
         }
         // Participant raises a dispute, clears confirmations
@@ -290,7 +303,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
             state.set_confirmation(Party::Client, false);
             state.set_confirmation(Party::Freelancer, false);
             state.set_dispute(DisputeState::ActiveBy(party_of(role)));
-            try_or_trace!(state.persist(), "persist");
+            try_or_trace!(save_data(&ctx, &state), "persist");
             FinishResult::reject()
         }
         // Disputing party withdraws their own dispute
@@ -298,7 +311,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
             if by == party_of(role) =>
         {
             state.set_dispute(DisputeState::None);
-            try_or_trace!(state.persist(), "persist");
+            try_or_trace!(save_data(&ctx, &state), "persist");
             FinishResult::reject()
         }
         // Arbitrator rules on an active dispute
@@ -306,7 +319,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
             Some(ArbRuling::ForFreelancer) => FinishResult::succeed(),
             Some(ArbRuling::ForClient) => {
                 state.set_dispute(DisputeState::ArbLocked);
-                try_or_trace!(state.persist(), "persist");
+                try_or_trace!(save_data(&ctx, &state), "persist");
                 FinishResult::reject()
             }
             None => FinishResult::reject(),
