@@ -1,7 +1,6 @@
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
@@ -211,42 +210,6 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     ) -> Result<Option<Self>> {
         get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
-        })
-        .map(|opt| opt.map(|(data, len)| Blob { data, len }))
-    }
-}
-
-/// Implementation of `CurrentTxFieldGetter` for variable-length binary data.
-///
-/// This implementation handles blob fields in XRPL transactions, which can contain
-/// arbitrary binary data such as transaction signatures, memos, fulfillment data,
-/// and other variable-length content that doesn't fit into fixed-size types.
-///
-/// # Buffer Management
-///
-/// Uses a buffer of size `N` to accommodate blob field data. The actual
-/// length of the data is determined by the return value from the host function
-/// and stored in the Blob's `len` field. No strict byte count validation is
-/// performed since blobs can vary significantly in size.
-///
-/// # Type Parameters
-///
-/// * `N` - The maximum capacity of the blob buffer in bytes
-impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(data, len)| Blob { data, len })
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
         })
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }

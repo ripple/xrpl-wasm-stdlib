@@ -3,12 +3,11 @@
 //! This type wraps a 20-byte AccountID and is returned by many accessors.
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
@@ -88,39 +87,6 @@ impl LedgerObjectFieldGetter for AccountID {
         get_fixed_size_field_with_expected_bytes_optional::<ACCOUNT_ID_SIZE, _>(
             i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
-    }
-}
-
-/// Implementation of `CurrentTxFieldGetter` for XRPL account identifiers.
-///
-/// This implementation handles 20-byte account ID fields in XRPL transactions.
-/// Account IDs identify transaction participants such as the sending account,
-/// destination account, and various other account references throughout the transaction.
-///
-/// # Buffer Management
-///
-/// Uses a 20-byte buffer (ACCOUNT_ID_SIZE) and validates that exactly 20 bytes
-/// are returned from the host function. The buffer is converted to an AccountID
-/// using the `From<[u8; 20]>` implementation.
-impl CurrentTxFieldGetter for AccountID {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<ACCOUNT_ID_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }

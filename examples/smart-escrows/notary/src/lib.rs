@@ -3,7 +3,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-// Generic XRPL primitives.
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::trace_num;

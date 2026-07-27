@@ -1,11 +1,10 @@
 //! Generic unsigned integer types with configurable bit sizes
 
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
@@ -174,38 +173,6 @@ impl LedgerObjectFieldGetter for Hash256 {
         get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
             i32::from(field),
             |fc, buf, size| unsafe { get_ledger_obj_field(register_num, fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
-    }
-}
-
-/// Implementation of `CurrentTxFieldGetter` for 256-bit cryptographic hashes.
-///
-/// This implementation handles 32-byte hash fields in XRPL transactions.
-/// Hash256 values are used for transaction IDs, account transaction IDs,
-/// references to other transactions, and various cryptographic identifiers.
-///
-/// # Buffer Management
-///
-/// Uses a 32-byte buffer (HASH256_SIZE) and validates that exactly 32 bytes
-/// are returned from the host function to ensure data integrity.
-impl CurrentTxFieldGetter for Hash256 {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
         )
         .map(|buffer| buffer.map(|b| b.into()))
     }

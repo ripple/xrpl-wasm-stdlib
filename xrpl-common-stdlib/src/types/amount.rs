@@ -1,10 +1,9 @@
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::account_id::AccountID;
@@ -336,39 +335,6 @@ impl LedgerObjectFieldGetter for Amount {
         get_variable_size_field_optional::<AMOUNT_SIZE, _>(field, |fc, buf, size| unsafe {
             get_ledger_obj_field(register_num, fc, buf, size)
         })
-        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
-    }
-}
-
-/// Implementation of `CurrentTxFieldGetter` for XRPL amount values.
-///
-/// This implementation handles amount fields in XRPL transactions, which can represent
-/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
-/// and issuer information). Common uses include transaction fees, payment amounts,
-/// offer amounts, and escrow amounts.
-///
-/// # Buffer Management
-///
-/// Uses a 48-byte buffer (AMOUNT_SIZE) to accommodate the largest possible amount
-/// representation. The Amount type handles the parsing of different amount formats
-/// internally. No strict byte count validation is performed since amounts can vary in size.
-impl CurrentTxFieldGetter for Amount {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(buffer, _len)| Amount::from(buffer))
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
