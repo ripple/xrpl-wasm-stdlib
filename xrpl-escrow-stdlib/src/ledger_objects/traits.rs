@@ -1,109 +1,68 @@
 //! Escrow-specific ledger-object field accessor traits.
+//!
+//! The mechanical field getters (`get_account`, `get_amount`, etc.) live in the generated
+//! `EscrowFields` (slot-based) and `CurrentEscrowFields` (current-object) traits — see
+//! `xrpl_common_stdlib::objects::generated` and `crate::ledger_objects::generated`
+//! respectively. This module adds `EscrowContractData` / `CurrentEscrowContractData`, which are
+//! hand-written because the `Data` field's `ContractData` semantics (a mutable, host-updatable
+//! blob) aren't representable by the generator.
 
-use xrpl_common_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
-use xrpl_common_stdlib::host::{Error, get_current_ledger_obj_field, update_data};
+use xrpl_common_stdlib::host::error_codes::match_result_code;
+use xrpl_common_stdlib::host::{
+    Error, get_current_ledger_obj_field, get_ledger_obj_field, update_data,
+};
 use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::objects::current_ledger_object;
-use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
+use xrpl_common_stdlib::objects::traits::EscrowFields;
+use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
 use xrpl_common_stdlib::sfield;
-use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::types::amount::Amount;
-use xrpl_common_stdlib::types::blob::{ConditionBlob, WasmBlob};
 use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use xrpl_common_stdlib::types::uint::Hash256;
 
-/// Trait providing access to fields specific to Escrow objects in the current ledger.
+pub use crate::ledger_objects::generated::CurrentEscrowFields;
+
+/// Trait providing access to the mutable `data` field of an Escrow object in any ledger.
 ///
-/// This trait extends `CurrentLedgerObjectCommonFields` and provides methods to access
-/// fields that are specific to Escrow objects in the current ledger being processed.
-pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
-    /// The address of the owner (sender) of this escrow. This is the account that provided the XRP
-    /// and gets it back if the escrow is canceled.
-    fn get_account(&self) -> Result<AccountID> {
-        current_ledger_object::get_field(sfield::Account)
-    }
+/// This is kept separate from the generated `EscrowFields` because `ContractData` has
+/// hand-written semantics that the field-getter generator doesn't model.
+pub trait EscrowContractData: EscrowFields + LedgerObjectCommonFields {
+    /// Retrieves the contract data from the specified ledger object.
+    ///
+    /// This function fetches the `data` field from the ledger object at the specified register
+    /// and returns it as a ContractData structure. The data is read into a fixed-size buffer
+    /// of XRPL_CONTRACT_DATA_SIZE.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<ContractData>` where:
+    /// * `Ok(ContractData)` - Contains the retrieved data and its actual length
+    /// * `Err(Error)` - If the retrieval operation failed
+    fn get_data(&self) -> Result<ContractData> {
+        let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
-    /// The amount currently held in the escrow (could be XRP, IOU, or MPT).
-    fn get_amount(&self) -> Result<Amount> {
-        current_ledger_object::get_field(sfield::Amount)
-    }
-
-    /// The escrow can be canceled if and only if this field is present and the time it specifies
-    /// has passed. Specifically, this is specified as seconds since the Ripple Epoch and it
-    /// "has passed" if it's earlier than the close time of the previous validated ledger.
-    fn get_cancel_after(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::CancelAfter)
-    }
-
-    /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
-    /// transaction must contain a fulfillment that satisfies this condition.
-    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = ConditionBlob::new();
         let result_code = unsafe {
-            get_current_ledger_obj_field(
-                sfield::Condition.into(),
-                buffer.data.as_mut_ptr(),
-                buffer.capacity(),
+            get_ledger_obj_field(
+                self.get_slot_num(),
+                sfield::Data.into(),
+                data.as_mut_ptr(),
+                data.len(),
             )
         };
-        match_result_code_optional(result_code, || {
-            buffer.len = result_code as usize;
-            (result_code > 0).then_some(buffer)
-        })
-    }
 
-    /// The destination address where the XRP is paid if the escrow is successful.
-    fn get_destination(&self) -> Result<AccountID> {
-        current_ledger_object::get_field(sfield::Destination)
+        match result_code {
+            code if code >= 0 => Ok(ContractData {
+                data,
+                len: code as usize,
+            }),
+            code => Err(Error::from_code(code)),
+        }
     }
+}
 
-    /// A hint indicating which page of the destination's owner directory links to this object, in
-    /// case the directory consists of multiple pages. Omitted on escrows created before enabling the fix1523 amendment.
-    fn get_destination_node(&self) -> Result<Option<u64>> {
-        current_ledger_object::get_field_optional(sfield::DestinationNode)
-    }
-
-    /// An arbitrary tag to further specify the destination for this escrow, such as a hosted
-    /// recipient at the destination address.
-    fn get_destination_tag(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::DestinationTag)
-    }
-
-    /// The time, in seconds since the Ripple Epoch, after which this escrow can be finished. Any
-    /// EscrowFinish transaction before this time fails. (Specifically, this is compared with the
-    /// close time of the previous validated ledger.)
-    fn get_finish_after(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::FinishAfter)
-    }
-
-    /// A hint indicating which page of the sender's owner directory links to this entry, in case
-    /// the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
-        current_ledger_object::get_field(sfield::OwnerNode)
-    }
-
-    /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
-        current_ledger_object::get_field(sfield::PreviousTxnID)
-    }
-
-    /// The index of the ledger that contains the transaction that most recently modified this
-    /// entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
-        current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
-    }
-
-    /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient
-    /// at the owner's address.
-    fn get_source_tag(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::SourceTag)
-    }
-
-    /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        current_ledger_object::get_field_optional(sfield::FinishFunction)
-    }
-
+/// Trait providing access to the mutable `data` field of the current Escrow object.
+///
+/// This is kept separate from the generated `CurrentEscrowFields` because `ContractData` has
+/// hand-written mutation semantics (`update_current_escrow_data`) that the field-getter
+/// generator doesn't model.
+pub trait CurrentEscrowContractData: CurrentEscrowFields {
     /// Retrieves the contract `data` from the current escrow object.
     ///
     /// This function fetches the `data` field from the current ledger object and returns it as a
@@ -256,7 +215,7 @@ mod tests {
                 .with(eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-            // get_condition - returns 0 for None
+            // get_condition - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
@@ -293,13 +252,17 @@ mod tests {
 
             // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
             assert!(escrow.get_cancel_after().unwrap().is_none());
-            assert!(escrow.get_condition().unwrap().is_none());
             assert!(escrow.get_destination_node().unwrap().is_none());
             assert!(escrow.get_destination_tag().unwrap().is_none());
             assert!(escrow.get_finish_after().unwrap().is_none());
             assert!(escrow.get_source_tag().unwrap().is_none());
 
             // Variable-size optional fields return Some with len=0 when not found
+            // (they cannot distinguish between "not present" and "present with 0 bytes")
+            let condition = escrow.get_condition().unwrap();
+            assert!(condition.is_some());
+            assert_eq!(condition.unwrap().len, 0);
+
             let finish_function = escrow.get_finish_function().unwrap();
             assert!(finish_function.is_some());
             assert_eq!(finish_function.unwrap().len, 0);

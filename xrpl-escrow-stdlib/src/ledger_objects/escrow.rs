@@ -1,23 +1,11 @@
-use xrpl_common_stdlib::objects::traits::{EscrowFields, LedgerObjectCommonFields};
+//! The `Escrow` struct and its `EscrowFields` impl are generated — see
+//! `crate::ledger_objects::generated`.
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct Escrow {
-    pub(crate) slot_num: i32,
-}
+use crate::ledger_objects::traits::EscrowContractData;
 
-impl LedgerObjectCommonFields for Escrow {
-    fn get_slot_num(&self) -> i32 {
-        self.slot_num
-    }
-}
+pub use crate::ledger_objects::generated::Escrow;
 
-impl EscrowFields for Escrow {}
-
-impl Escrow {
-    pub fn new(slot_num: i32) -> Self {
-        Self { slot_num }
-    }
-}
+impl EscrowContractData for Escrow {}
 
 #[cfg(test)]
 mod tests {

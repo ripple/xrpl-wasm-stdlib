@@ -1,6 +1,36 @@
 pub mod account_root;
 pub mod array_object;
+pub mod generated;
 pub mod traits;
+
+// `generated::ContractData` (the ContractData ledger entry) is intentionally not
+// re-exported here: it would collide with `crate::types::contract_data::ContractData`
+// (the escrow data-blob type used throughout the escrow field accessors). Reach it via
+// `crate::objects::generated::ContractData` if needed.
+pub use generated::{
+    AMM, AMMFields, AccountRoot, AccountRootFields, Amendments, AmendmentsFields, Bridge,
+    BridgeFields, Check, CheckFields, Contract, ContractDataFields, ContractFields, ContractSource,
+    ContractSourceFields, Credential, CredentialFields, CurrentAMMFields, CurrentAccountRootFields,
+    CurrentAmendmentsFields, CurrentBridgeFields, CurrentCheckFields, CurrentContractDataFields,
+    CurrentContractFields, CurrentContractSourceFields, CurrentCredentialFields, CurrentDIDFields,
+    CurrentDelegateFields, CurrentDepositPreauthFields, CurrentDirectoryNodeFields,
+    CurrentFeeSettingsFields, CurrentLedgerHashesFields, CurrentLoanBrokerFields,
+    CurrentLoanFields, CurrentMPTokenFields, CurrentMPTokenIssuanceFields,
+    CurrentNFTokenOfferFields, CurrentNFTokenPageFields, CurrentNegativeUNLFields,
+    CurrentOfferFields, CurrentOracleFields, CurrentPayChannelFields,
+    CurrentPermissionedDomainFields, CurrentRippleStateFields, CurrentSignerListFields,
+    CurrentTicketFields, CurrentVaultFields, CurrentXChainOwnedClaimIDFields,
+    CurrentXChainOwnedCreateAccountClaimIDFields, DID, DIDFields, Delegate, DelegateFields,
+    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, EscrowFields,
+    FeeSettings, FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker,
+    LoanBrokerFields, LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields,
+    NFTokenOffer, NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL,
+    NegativeUNLFields, Offer, OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields,
+    PermissionedDomain, PermissionedDomainFields, RippleState, RippleStateFields, SignerList,
+    SignerListFields, Ticket, TicketFields, Vault, VaultFields, XChainOwnedClaimID,
+    XChainOwnedClaimIDFields, XChainOwnedCreateAccountClaimID,
+    XChainOwnedCreateAccountClaimIDFields,
+};
 
 use crate::host::error_codes::{
     match_result_code_with_expected_bytes, match_result_code_with_expected_bytes_optional,
