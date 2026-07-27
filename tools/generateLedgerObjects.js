@@ -17,8 +17,12 @@ if (process.argv.length != 3 && process.argv.length != 4) {
 ////////////////////////////////////////////////////////////////////////
 const path = require("path")
 const fs = require("fs/promises")
+const { execFileSync } = require("child_process")
 const { readSourceFile: read } = require("./rippledSource")
 const { resolveRustTypeDetailed } = require("./sfieldTypeMap")
+
+const XRPL_DEV_PORTAL_RAW =
+  "https://raw.githubusercontent.com/XRPLF/xrpl-dev-portal/master/docs/references/protocol/ledger-data/ledger-entry-types"
 
 // Strip C-style comments (both `/* */` blocks and `//` lines).
 function stripComments(text) {
@@ -72,86 +76,71 @@ function parseLedgerEntries(macroFile) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-//  LedgerFormats.h parsing (per-entry lsf* flags)
+//  xrpl-dev-portal doc-comment fetching
 ////////////////////////////////////////////////////////////////////////
 
-// Parses the `LEDGER_OBJECT(ClassName, LSF_FLAG(name, value) ...)` groups out
-// of the XMACRO(LEDGER_OBJECT, LSF_FLAG, LSF_FLAG2) table in LedgerFormats.h.
-// Returns a Map<className, [{name, value}]>. LSF_FLAG2 (used once, for
-// MPToken's lsfMPTLocked alias) is treated the same as LSF_FLAG.
-function parseLsfFlagsByClass(ledgerFormatsFileRaw) {
-  // Locate the region on the raw text first -- the end marker is itself a
-  // `//` comment, so it would disappear if we stripped comments beforehand.
-  const xmacroStart = ledgerFormatsFileRaw.indexOf(
-    "#define XMACRO(LEDGER_OBJECT, LSF_FLAG, LSF_FLAG2)",
-  )
-  const xmacroEnd = ledgerFormatsFileRaw.indexOf(
-    "// clang-format on",
-    xmacroStart,
-  )
-  const body = stripComments(
-    ledgerFormatsFileRaw.substring(xmacroStart, xmacroEnd),
-  )
+// Cleans a raw markdown table-cell description into readable doc-comment
+// prose: strips `{% ... %}` templating tags, converts `[text](url)` links to
+// their visible text, and collapses/trims whitespace.
+function cleanDescription(text) {
+  return text
+    .replace(/\{%[\s\S]*?%\}/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+}
 
-  // Split into one chunk per `LEDGER_OBJECT(Name, ...)` group, the same way
-  // generateTxFlags.js splits TxFlags.h's XMACRO body per `TRANSACTION(...)`.
-  // A naive non-greedy `...\)\)` regex mis-terminates as soon as it sees ANY
-  // "))" substring, which happens one LSF_FLAG early whenever a group has 2+
-  // flags (the last flag's own closing paren plus LEDGER_OBJECT's closing
-  // paren look identical to an inner flag's ")"  followed by the group's
-  // final ")"). Slicing between successive `LEDGER_OBJECT(` starts sidesteps
-  // needing to balance parens at all.
-  const objectStarts = [
-    ...body.matchAll(/LEDGER_OBJECT\(\s*([A-Za-z0-9]+)\s*,/g),
-  ]
+// Parses the first "## ... Fields" table in an xrpl-dev-portal ledger-entry
+// markdown file into a Map<fieldName, cleanedDescription>. Only the table
+// immediately following the top-level "Fields" heading is used -- later
+// "### <SubObject> Fields" tables describe nested/array sub-objects, not the
+// entry's own top-level fields.
+function parseFieldsTable(markdown) {
   const map = new Map()
-  for (let i = 0; i < objectStarts.length; ++i) {
-    const className = objectStarts[i][1]
-    const chunkStart = objectStarts[i].index
-    const chunkEnd =
-      i + 1 < objectStarts.length ? objectStarts[i + 1].index : body.length
-    const chunk = body.substring(chunkStart, chunkEnd)
+  const headingMatch = markdown.match(/^##\s+.*Fields\s*$/m)
+  if (!headingMatch) return map
 
-    const flags = []
-    for (const [, name, value] of chunk.matchAll(
-      /LSF_FLAG2?\(\s*(ls[a-zA-Z0-9]+)\s*,\s*(0x[0-9a-fA-F]+)\s*\)/g,
-    )) {
-      flags.push({ name, value })
-    }
-    map.set(className, flags)
+  const start = headingMatch.index + headingMatch[0].length
+  const nextHeadingMatch = markdown.slice(start).match(/^#{2,3}\s+/m)
+  const section = nextHeadingMatch
+    ? markdown.slice(start, start + nextHeadingMatch.index)
+    : markdown.slice(start)
+
+  const rowRe =
+    /^\|\s*`?([A-Za-z0-9]+)`?[^|]*\|[^|]*\|[^|]*\|[^|]*\|(.*)\|\s*$/gm
+  for (const [, field, description] of section.matchAll(rowRe)) {
+    map.set(field, cleanDescription(description))
   }
   return map
 }
 
-////////////////////////////////////////////////////////////////////////
-//  Doc-comment side map (tools/fieldDocs.json)
-////////////////////////////////////////////////////////////////////////
+// Fetches (and caches) the field-description map for one entry's
+// xrpl-dev-portal page. Returns an empty map if the page or its Fields table
+// can't be found -- callers fall back to a generic doc comment in that case.
+const docPageCache = new Map()
+async function fetchFieldDocs(className) {
+  const key = className.toLowerCase()
+  if (docPageCache.has(key)) return docPageCache.get(key)
 
-async function loadFieldDocs() {
-  const docsFile = path.join(__dirname, "fieldDocs.json")
+  let markdown
   try {
-    const text = await fs.readFile(docsFile, "utf8")
-    return JSON.parse(text)
+    const response = await fetch(`${XRPL_DEV_PORTAL_RAW}/${key}.md`)
+    markdown = response.ok ? await response.text() : ""
   } catch {
-    return {}
+    markdown = ""
   }
+  const map = parseFieldsTable(markdown)
+  docPageCache.set(key, map)
+  return map
 }
 
-// Resolves a field's doc comment, preferring the most specific source:
-//   1. an entry-qualified "<Class>.<Field>" key (e.g. "Escrow.Sequence"),
-//   2. a bare "<Field>" key (generic fallback shared across entries),
-//   3. a synthesized minimal doc.
-// Entry-qualified keys exist because the same sfield name means different
-// things on different objects (e.g. sfSequence, sfTransferRate on Escrow vs
-// AccountRoot), so a bare-name lookup would otherwise splice AccountRoot prose
-// onto an Escrow getter.
-function docCommentFor(fieldDocs, className, sfName, soe) {
-  const doc = fieldDocs[`${className}.${sfName}`] ?? fieldDocs[sfName]
-  if (doc) {
-    return doc
-      .split("\n")
-      .map((line) => (line.length > 0 ? `    /// ${line}` : "    ///"))
-      .join("\n")
+// Resolves a field's doc comment: prefers the cleaned xrpl-dev-portal
+// description, falling back to a generic minimal doc when the page or field
+// row isn't found.
+function docCommentFor(fieldDocsForClass, sfName, soe) {
+  const description = fieldDocsForClass.get(sfName)
+  if (description) {
+    return `    /// ${description}`
   }
   const requirement = soe === "SOEREQUIRED" ? "Required" : "Optional"
   return `    /// The ${sfName} field (${requirement}).`
@@ -161,78 +150,41 @@ function docCommentFor(fieldDocs, className, sfName, soe) {
 //  Field-name -> accessor-name conversion
 ////////////////////////////////////////////////////////////////////////
 
-// Converts an sfield name (PascalCase, e.g. "NFTokenMinter") into the
-// snake_case getter name used throughout traits.rs (e.g. "get_nf_token_minter").
-// Mirrors the naming already used for hand-written getters: acronym runs
-// (e.g. "NF", "ID", "AMM") are kept together rather than split letter-by-letter.
+const ABBREVIATIONS = [
+  "AMM",
+  "DID",
+  "ID",
+  "LP",
+  "MPToken",
+  "NFT",
+  "NFToken",
+  "NFTs",
+  "NoRipple",
+  "UNL",
+  "URI",
+  "XChain",
+]
+
+const CAMEL_TO_SNAKE_CASE_REGEX = /^[^A-Z]+|[A-Z]+(?![^A-Z])|[A-Z][^A-Z]*/g
+
+function pyCapitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+}
+
+// Converts an sfield name (PascalCase, e.g. "NFTokenID", "AMMID") into the
+// snake_case getter name used throughout the generated traits (e.g.
+// "get_nftoken_id", "get_amm_id").
 function toGetterName(sfName) {
-  // Insert an underscore between a lowercase/digit and an uppercase letter,
-  // and between an acronym run and a following Titlecase word (e.g.
-  // "NFTokenMinter" -> "NF_Token_Minter", "AMMID" -> "AMMID" stays put but
-  // "AMMID" as a whole field is handled as a single acronym below).
-  let s = sfName
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-  return "get_" + s.toLowerCase()
-}
-
-////////////////////////////////////////////////////////////////////////
-//  Output routing
-////////////////////////////////////////////////////////////////////////
-
-// Named output targets. Each target is a (crate, path) pair; `crate` drives
-// whether stdlib items are imported via `crate::` (when the file lives IN
-// xrpl-common-stdlib) or via `xrpl_common_stdlib::` (any other crate).
-const TARGETS = {
-  wasmStdlib: {
-    crate: "xrpl-common-stdlib",
-    path: "xrpl-common-stdlib/src/objects/",
-  },
-  escrowStdlib: {
-    crate: "xrpl-escrow-stdlib",
-    path: "xrpl-escrow-stdlib/src/ledger_objects/",
-  },
-}
-
-// A generated entry produces three artifact kinds that may be routed
-// independently:
-//   - slotTrait:    `<Class>Fields` (slot-based, generic; generic consumers
-//                   must be able to read the object by slot without pulling in
-//                   any feature-specific crate).
-//   - currentTrait: `Current<Class>Fields` (reads the current ledger object).
-//   - struct:       `pub struct <Class>` + its `impl <Class>Fields`.
-// Default for every entry: all three -> xrpl-common-stdlib. Per-entry overrides
-// below relocate individual artifact kinds (e.g. escrow's current-object
-// trait + concrete struct belong in the escrow crate, but its slot-based
-// generic trait stays in wasm-stdlib).
-const DEFAULT_ROUTING = {
-  slotTrait: TARGETS.wasmStdlib,
-  currentTrait: TARGETS.wasmStdlib,
-  struct: TARGETS.wasmStdlib,
-}
-
-const ENTRY_ROUTING = {
-  ltESCROW: {
-    slotTrait: TARGETS.wasmStdlib,
-    currentTrait: TARGETS.escrowStdlib,
-    struct: TARGETS.escrowStdlib,
-  },
-}
-
-function routingFor(entryName) {
-  return ENTRY_ROUTING[entryName] || DEFAULT_ROUTING
-}
-
-// LedgerFormats.h's XMACRO(LEDGER_OBJECT, ...) table names a couple of
-// objects differently than ledger_entries.macro's className column. Maps
-// ledger_entries.macro's className -> the LEDGER_OBJECT name used in
-// LedgerFormats.h, for the one known divergence (DirectoryNode/DirNode).
-const LSF_CLASS_NAME_ALIASES = {
-  DirectoryNode: "DirNode",
-}
-
-function lsfClassNameFor(className) {
-  return LSF_CLASS_NAME_ALIASES[className] || className
+  let field = sfName
+  for (const abbreviation of ABBREVIATIONS) {
+    if (field.includes(abbreviation)) {
+      field = field.split(abbreviation).join(pyCapitalize(abbreviation))
+    }
+  }
+  const words = [...field.matchAll(CAMEL_TO_SNAKE_CASE_REGEX)].map((m) =>
+    m[0].toLowerCase(),
+  )
+  return "get_" + words.join("_")
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -247,26 +199,152 @@ function lsfClassNameFor(className) {
 //   CurrentLedgerObjectCommonFields, so per-entry traits must not redeclare them.
 const EXCLUDED_FIELDS = new Set(["LedgerIndex", "Flags", "LedgerEntryType"])
 
-// Per-entry "<Entry>.<Field>" pairs whose getter is intentionally hand-written
-// and must NOT be generated (in EITHER the slot or current trait). Unlike a
-// field that fell through the type map, these have a bespoke Rust surface the
-// generic getter cannot reproduce, so a `// SKIPPED` marker is emitted in
-// place of the getter to make the omission explicit.
-//   - Escrow.Data: hand-written `get_data`/`update_current_escrow_data` in the
-//     escrow crate use ContractData + a bespoke buffer + the `update_data`
-//     host call; the generic Blob getter would silently change its type.
-const HANDWRITTEN_FIELDS = new Map([
-  ["Escrow.Data", "hand-written (ContractData semantics)"],
-])
+// The Escrow entry is excluded entirely -- its field accessors, including the
+// mutable ContractData `Data` field, are hand-written in xrpl-escrow-stdlib.
+const EXCLUDED_ENTRIES = new Set(["ltESCROW"])
+
+////////////////////////////////////////////////////////////////////////
+//  Entry -> keylet-constructor mapping
+////////////////////////////////////////////////////////////////////////
+
+// Maps a generated entry's className to the inherent `load()` constructor it
+// should get, built on top of the matching function in
+// xrpl-common-stdlib/src/keylets.rs. `params` names the Rust fn arguments
+// (used both for the `load()` signature and for forwarding into the keylet
+// call); `keyletFn` is the keylets.rs function name. Entries with no keylet
+// function (singletons: Amendments, LedgerHashes, FeeSettings, NegativeUNL,
+// DirectoryNode; plus any entry not listed here) get no `load()` -- just
+// `new(slot_num)`.
+const KEYLET_ROUTING = {
+  AccountRoot: ["account_keylet", [["account", "&AccountID"]]],
+  AMM: [
+    "amm_keylet",
+    [
+      ["issue1", "&Issue"],
+      ["issue2", "&Issue"],
+    ],
+  ],
+  Check: [
+    "check_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  Credential: [
+    "credential_keylet",
+    [
+      ["subject", "&AccountID"],
+      ["issuer", "&AccountID"],
+      ["credential_type", "&[u8]"],
+    ],
+  ],
+  Delegate: [
+    "delegate_keylet",
+    [
+      ["account", "&AccountID"],
+      ["authorize", "&AccountID"],
+    ],
+  ],
+  DepositPreauth: [
+    "deposit_preauth_keylet",
+    [
+      ["account", "&AccountID"],
+      ["authorize", "&AccountID"],
+    ],
+  ],
+  DID: ["did_keylet", [["account", "&AccountID"]]],
+  RippleState: [
+    "line_keylet",
+    [
+      ["account1", "&AccountID"],
+      ["account2", "&AccountID"],
+      ["currency", "&Currency"],
+    ],
+  ],
+  MPTokenIssuance: [
+    "mpt_issuance_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  MPToken: [
+    "mptoken_keylet",
+    [
+      ["mptid", "&MptId"],
+      ["holder", "&AccountID"],
+    ],
+  ],
+  NFTokenOffer: [
+    "nft_offer_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  Offer: [
+    "offer_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  Oracle: [
+    "oracle_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["document_id", "u32"],
+    ],
+  ],
+  PayChannel: [
+    "paychan_keylet",
+    [
+      ["account", "&AccountID"],
+      ["destination", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  PermissionedDomain: [
+    "permissioned_domain_keylet",
+    [
+      ["account", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  SignerList: ["signers_keylet", [["account", "&AccountID"]]],
+  Ticket: [
+    "ticket_keylet",
+    [
+      ["owner", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+  Vault: [
+    "vault_keylet",
+    [
+      ["account", "&AccountID"],
+      ["seq", "u32"],
+    ],
+  ],
+}
+
+// Rust types with a single, fixed import path -- covers both field-getter
+// return types and KEYLET_ROUTING param types.
+const SIMPLE_TYPE_IMPORTS = {
+  AccountID: "crate::types::account_id::AccountID",
+  Amount: "crate::types::amount::Amount",
+  Currency: "crate::types::currency::Currency",
+  Issue: "crate::types::issue::Issue",
+  MptId: "crate::types::mpt_id::MptId",
+}
 
 ////////////////////////////////////////////////////////////////////////
 //  Rust emission
 ////////////////////////////////////////////////////////////////////////
 
-const BANNER = [
-  "// GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.",
-  "",
-]
+const BANNER =
+  "// GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.\n"
 
 // Blob type aliases that live in crate::types::blob.
 const BLOB_TYPES = [
@@ -279,32 +357,27 @@ const BLOB_TYPES = [
   "PublicKeyBlob",
 ]
 
-// Resolves each field of an entry to one of three dispositions:
-//   { kind: "field",  field, rustType }         -> emit a getter
-//   { kind: "skip",   field, reason }           -> emit a `// SKIPPED` marker
-// EXCLUDED_FIELDS (Flags/LedgerEntryType/LedgerIndex) are dropped entirely
-// (no marker) since they are covered by the common trait / are synthetic.
-// A field is SKIPPED when either (a) it's on the hand-written list, or (b) its
-// XRPL wire type has no genuine Rust mapping and only *would* fall back to u8
-// -- emitting a u8 getter for a 32-byte VECTOR256 (etc.) is a runtime footgun.
-function resolveEntryFields(entry, sfieldTypes, skipped) {
+// Fixed-size placeholder capacity for fields whose XRPL wire type has no
+// genuine Rust mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...).
+// These getters return raw, unparsed bytes rather than a semantic type.
+const RAW_UNMAPPED_FIELD_SIZE_CONST = "RAW_UNMAPPED_FIELD_SIZE"
+const RAW_UNMAPPED_FIELD_SIZE = 512
+
+// Resolves each field of an entry to one of two dispositions:
+//   { kind: "field", field, rustType }  -> emit a getter for a mapped type
+//   { kind: "raw",   field, wireType }  -> emit a raw `[u8; N]` placeholder
+//                                          getter for an unmapped wire type
+// EXCLUDED_FIELDS (Flags/LedgerEntryType/LedgerIndex) are dropped entirely.
+function resolveEntryFields(entry, sfieldTypes, unmapped) {
   const out = []
   for (const field of entry.fields) {
     if (EXCLUDED_FIELDS.has(field.sfName)) continue
 
-    const handwrittenKey = `${entry.className}.${field.sfName}`
-    if (HANDWRITTEN_FIELDS.has(handwrittenKey)) {
-      const reason = HANDWRITTEN_FIELDS.get(handwrittenKey)
-      out.push({ kind: "skip", field, reason })
-      skipped.push({ entry: entry.className, sfName: field.sfName, reason })
-      continue
-    }
-
     const def = sfieldTypes.get(field.sfName)
     if (!def) {
-      const reason = "not found in sfields.macro"
-      out.push({ kind: "skip", field, reason })
-      skipped.push({ entry: entry.className, sfName: field.sfName, reason })
+      // Not found in sfields.macro -- shouldn't normally happen since
+      // ledger_entries.macro and sfields.macro come from the same rippled
+      // source, but skip defensively rather than crash.
       continue
     }
 
@@ -313,14 +386,10 @@ function resolveEntryFields(entry, sfieldTypes, skipped) {
       def.xrplType,
     )
     if (source === "none") {
-      // Wire type is real but not yet representable (VECTOR256, XCHAIN_BRIDGE,
-      // NUMBER, INT32, JSON, ...). Do NOT fabricate a u8 getter.
-      const reason = `${def.xrplType} is not yet representable in Rust`
-      out.push({ kind: "skip", field, reason, wireType: def.xrplType })
-      skipped.push({
+      out.push({ kind: "raw", field, wireType: def.xrplType })
+      unmapped.push({
         entry: entry.className,
         sfName: field.sfName,
-        reason,
         wireType: def.xrplType,
       })
       continue
@@ -331,91 +400,12 @@ function resolveEntryFields(entry, sfieldTypes, skipped) {
   return out
 }
 
-// The `use` prefix for stdlib items depends on where the file lives: files IN
-// xrpl-common-stdlib reference it as `crate::`; files in any other crate must
-// use the external crate path `xrpl_common_stdlib::`.
-function stdlibPrefix(crate) {
-  return crate === "xrpl-common-stdlib" ? "crate" : "xrpl_common_stdlib"
-}
-
-// Builds the `use` block for a file, given the target crate and the set of
-// Rust types actually referenced by artifacts written into that file. Only
-// the modules a file actually needs are imported.
-function buildImports(crate, usedRustTypes, opts) {
-  const p = stdlibPrefix(crate)
-  const lines = []
-
-  // Common-trait imports depend on which traits the file references.
-  const commonTraits = []
-  if (opts.needsSlotCommon) commonTraits.push("LedgerObjectCommonFields")
-  if (opts.needsCurrentCommon)
-    commonTraits.push("CurrentLedgerObjectCommonFields")
-  if (commonTraits.length > 0) {
-    commonTraits.sort()
-    lines.push(
-      commonTraits.length === 1
-        ? `use ${p}::objects::traits::${commonTraits[0]};`
-        : `use ${p}::objects::traits::{${commonTraits.join(", ")}};`,
-    )
-  }
-
-  // Accessor modules: ledger_object (slot) and/or current_ledger_object.
-  const accessors = []
-  if (opts.needsSlotAccessor) accessors.push("ledger_object")
-  if (opts.needsCurrentAccessor) accessors.push("current_ledger_object")
-  if (accessors.length > 0) {
-    accessors.sort()
-    lines.push(
-      accessors.length === 1
-        ? `use ${p}::objects::${accessors[0]};`
-        : `use ${p}::objects::{${accessors.join(", ")}};`,
-    )
-  }
-
-  function pushGrouped(modulePath, items) {
-    if (items.length === 0) return
-    const sorted = [...items].sort()
-    lines.push(
-      sorted.length === 1
-        ? `use ${modulePath}::${sorted[0]};`
-        : `use ${modulePath}::{${sorted.join(", ")}};`,
-    )
-  }
-
-  if (usedRustTypes.has("AccountID"))
-    lines.push(`use ${p}::types::account_id::AccountID;`)
-  if (usedRustTypes.has("Amount"))
-    lines.push(`use ${p}::types::amount::Amount;`)
-  if (usedRustTypes.has("Currency"))
-    lines.push(`use ${p}::types::currency::Currency;`)
-  if (usedRustTypes.has("Issue")) lines.push(`use ${p}::types::issue::Issue;`)
-
-  // Array/Object are placeholder types that implement `LedgerObjectFieldGetter` as
-  // no-ops; they live in `ledger_objects::array_object`, NOT `core::types::{array,object}`
-  // (which intentionally do not implement the getter trait). This mirrors sfield.rs's import.
-  const arrayObjectTypes = [...usedRustTypes].filter(
-    (t) => t === "Array" || t === "Object",
-  )
-  pushGrouped(`${p}::objects::array_object`, arrayObjectTypes)
-
-  const blobTypes = [...usedRustTypes].filter((t) => BLOB_TYPES.includes(t))
-  pushGrouped(`${p}::types::blob`, blobTypes)
-
-  const hashTypes = [...usedRustTypes].filter((t) => t.startsWith("Hash"))
-  pushGrouped(`${p}::types::uint`, hashTypes)
-
-  if (opts.needsResult) lines.push(`use ${p}::host::Result;`)
-  if (opts.needsSfield) lines.push(`use ${p}::sfield;`)
-
-  return lines
-}
-
 // Renders a single getter method's lines for either the slot-based or the
 // current-object trait.
-function renderGetter(entry, field, rustType, fieldDocs, useCurrent) {
+function renderGetter(field, rustType, fieldDocsForClass, useCurrent) {
   const { sfName, soe } = field
   const getterName = toGetterName(sfName)
-  const doc = docCommentFor(fieldDocs, entry.className, sfName, soe)
+  const doc = docCommentFor(fieldDocsForClass, sfName, soe)
   const isOptional = soe === "SOEOPTIONAL" || soe === "SOEDEFAULT"
   const returnType = isOptional
     ? `Result<Option<${rustType}>>`
@@ -432,11 +422,43 @@ function renderGetter(entry, field, rustType, fieldDocs, useCurrent) {
   ]
 }
 
-// Renders the body of one trait (slot-based or current), including SKIPPED
-// markers, but NOT the surrounding imports. Returns { lines, usedRustTypes }.
-function renderTrait(entry, resolved, fieldDocs, { useCurrent }) {
+// Renders a raw placeholder getter for a field whose wire type has no
+// genuine Rust mapping yet. Reads the field's raw bytes into a fixed-size
+// buffer via the buffered host accessor and returns them as-is.
+function renderRawGetter(field, wireType, fieldDocsForClass, useCurrent) {
+  const { sfName, soe } = field
+  const getterName = toGetterName(sfName)
+  const doc = docCommentFor(fieldDocsForClass, sfName, soe)
+  const isOptional = soe === "SOEOPTIONAL" || soe === "SOEDEFAULT"
+  const returnType = isOptional
+    ? `Result<Option<[u8; ${RAW_UNMAPPED_FIELD_SIZE_CONST}]>>`
+    : `Result<[u8; ${RAW_UNMAPPED_FIELD_SIZE_CONST}]>`
+  const hostCall = useCurrent
+    ? `get_current_ledger_obj_field(sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
+    : `get_ledger_obj_field(self.get_slot_num(), sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
+  const matcher = isOptional
+    ? `match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))`
+    : `match_result_code(result_code, || buffer)`
+  return [
+    doc,
+    `    /// Raw bytes; ${wireType} is not yet typed in Rust.`,
+    `    fn ${getterName}(&self) -> ${returnType} {`,
+    `        let mut buffer = [0u8; ${RAW_UNMAPPED_FIELD_SIZE_CONST}];`,
+    `        let result_code = unsafe { ${hostCall} };`,
+    `        ${matcher}`,
+    `    }`,
+    "",
+  ]
+}
+
+// Renders the body of one trait (slot-based or current), NOT the
+// surrounding imports. Returns { lines, usedRustTypes, hasRawRequired,
+// hasRawOptional }.
+function renderTrait(entry, resolved, fieldDocsForClass, { useCurrent }) {
   const { className } = entry
   const usedRustTypes = new Set()
+  let hasRawRequired = false
+  let hasRawOptional = false
   const lines = []
   if (useCurrent) {
     lines.push(
@@ -452,59 +474,36 @@ function renderTrait(entry, resolved, fieldDocs, { useCurrent }) {
     lines.push(`pub trait ${className}Fields: LedgerObjectCommonFields {`)
   }
   for (const item of resolved) {
-    if (item.kind === "skip") {
+    if (item.kind === "raw") {
+      const isOptional =
+        item.field.soe === "SOEOPTIONAL" || item.field.soe === "SOEDEFAULT"
+      if (isOptional) hasRawOptional = true
+      else hasRawRequired = true
       lines.push(
-        `    // SKIPPED ${toGetterName(item.field.sfName)}: ${item.reason}`,
+        ...renderRawGetter(
+          item.field,
+          item.wireType,
+          fieldDocsForClass,
+          useCurrent,
+        ),
       )
-      lines.push("")
       continue
     }
     usedRustTypes.add(item.rustType)
     lines.push(
-      ...renderGetter(entry, item.field, item.rustType, fieldDocs, useCurrent),
+      ...renderGetter(item.field, item.rustType, fieldDocsForClass, useCurrent),
     )
   }
   if (lines[lines.length - 1] === "") lines.pop()
   lines.push("}")
-  return { lines, usedRustTypes }
+  return { lines, usedRustTypes, hasRawRequired, hasRawOptional }
 }
 
-// Renders the `mod flags { ... }` block for an entry.
-function renderFlagsModule(entry, lsfFlagsByClass) {
-  const { className } = entry
-  const lsfFlags = lsfFlagsByClass.get(lsfClassNameFor(className)) || []
-  const lines = []
-  lines.push(`/// \`lsf*\` flag constants for ${className} objects.`)
-  lines.push(`#[allow(non_upper_case_globals, dead_code)]`)
-  lines.push(`pub mod ${flagsModName(className)} {`)
-  for (const { name, value } of lsfFlags) {
-    lines.push(`    pub const ${name}: u32 = ${value};`)
-  }
-  if (lsfFlags.length === 0) {
-    lines.push(
-      `    // No lsf* flags are defined for ${className} in LedgerFormats.h.`,
-    )
-  }
-  lines.push(`}`)
-  return lines
-}
-
-// Since several entries may share one output file, a bare `mod flags` per
-// entry would collide. Name each flags module after the entry (snake_case).
-function flagsModName(className) {
-  return (
-    className
-      .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-      .toLowerCase() + "_flags"
-  )
-}
-
-// Renders the concrete `pub struct <Class>` + inherent `new` + common-fields
-// impl + `impl <Class>Fields`.
+// Renders the concrete `pub struct <Class>` + inherent `new`, `load()` (when
+// a keylet is available) + common-fields impl + `impl <Class>Fields`.
 function renderStruct(entry) {
   const { className } = entry
-  return [
+  const lines = [
     `#[derive(Debug, Clone, Copy, Eq, PartialEq)]`,
     `pub struct ${className} {`,
     `    pub(crate) slot_num: i32,`,
@@ -514,6 +513,33 @@ function renderStruct(entry) {
     `    pub fn new(slot_num: i32) -> Self {`,
     `        Self { slot_num }`,
     `    }`,
+    "",
+  ]
+
+  const routing = KEYLET_ROUTING[className]
+  if (routing) {
+    const [keyletFn, params] = routing
+    const paramList = params.map(([name, ty]) => `${name}: ${ty}`).join(", ")
+    const argList = params.map(([name]) => name).join(", ")
+    lines.push(
+      `    /// Loads the ${className} ledger object identified by the given keylet arguments,`,
+      `    /// caching it in a host-managed slot.`,
+      `    pub fn load(${paramList}) -> Result<Self> {`,
+      `        let keylet = match crate::keylets::${keyletFn}(${argList}) {`,
+      `            Result::Ok(k) => k,`,
+      `            Result::Err(e) => return Result::Err(e),`,
+      `        };`,
+      `        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };`,
+      `        if slot < 0 {`,
+      `            return Result::Err(crate::host::Error::from_code(slot));`,
+      `        }`,
+      `        Result::Ok(Self { slot_num: slot })`,
+      `    }`,
+      "",
+    )
+  }
+
+  lines.push(
     `}`,
     "",
     `impl LedgerObjectCommonFields for ${className} {`,
@@ -523,196 +549,472 @@ function renderStruct(entry) {
     `}`,
     "",
     `impl ${className}Fields for ${className} {}`,
+  )
+  return { lines, hasLoad: Boolean(routing) }
+}
+
+// Builds the `use` block for one generated file.
+function buildImports(usedRustTypes, opts) {
+  const lines = []
+
+  const commonTraits = []
+  if (opts.needsSlotCommon)
+    commonTraits.push("crate::objects::traits::LedgerObjectCommonFields")
+  if (opts.needsCurrentCommon)
+    commonTraits.push("crate::objects::traits::CurrentLedgerObjectCommonFields")
+  for (const t of commonTraits.sort()) lines.push(`use ${t};`)
+
+  const accessors = []
+  if (opts.needsSlotAccessor) accessors.push("ledger_object")
+  if (opts.needsCurrentAccessor) accessors.push("current_ledger_object")
+  if (accessors.length > 0) {
+    accessors.sort()
+    lines.push(
+      accessors.length === 1
+        ? `use crate::objects::${accessors[0]};`
+        : `use crate::objects::{${accessors.join(", ")}};`,
+    )
+  }
+
+  function pushGrouped(modulePath, items) {
+    if (items.length === 0) return
+    const sorted = [...items].sort()
+    lines.push(
+      sorted.length === 1
+        ? `use ${modulePath}::${sorted[0]};`
+        : `use ${modulePath}::{${sorted.join(", ")}};`,
+    )
+  }
+
+  for (const [type, modulePath] of Object.entries(SIMPLE_TYPE_IMPORTS)) {
+    if (usedRustTypes.has(type)) lines.push(`use ${modulePath};`)
+  }
+
+  // Array/Object are placeholder types that implement `LedgerObjectFieldGetter` as
+  // no-ops; they live in `objects::array_object`, NOT `types::{array,object}`.
+  const arrayObjectTypes = [...usedRustTypes].filter(
+    (t) => t === "Array" || t === "Object",
+  )
+  pushGrouped("crate::objects::array_object", arrayObjectTypes)
+
+  const blobTypes = [...usedRustTypes].filter((t) => BLOB_TYPES.includes(t))
+  pushGrouped("crate::types::blob", blobTypes)
+
+  const hashTypes = [...usedRustTypes].filter((t) => t.startsWith("Hash"))
+  pushGrouped("crate::types::uint", hashTypes)
+
+  if (opts.needsResult) lines.push(`use crate::host::Result;`)
+  const matchFns = []
+  if (opts.hasRawRequired) matchFns.push("match_result_code")
+  if (opts.hasRawOptional) matchFns.push("match_result_code_optional")
+  pushGrouped("crate::host::error_codes", matchFns)
+  if (opts.hasRawGetter && opts.needsCurrentAccessor)
+    lines.push(`use crate::host::get_current_ledger_obj_field;`)
+  if (opts.hasRawGetter && opts.needsSlotAccessor)
+    lines.push(`use crate::host::get_ledger_obj_field;`)
+  if (opts.needsSfield) lines.push(`use crate::sfield;`)
+
+  return lines
+}
+
+// Rust types with a fixed, known byte size whose `LedgerObjectFieldGetter` impl uses
+// `match_result_code_with_expected_bytes[_optional]` (exact-size match). Used to decide
+// whether a generated `optional_fields_none` test can additionally assert `.is_none()`
+// for a given optional getter, on top of the blanket `.is_ok()` assertion that applies to
+// every optional getter regardless of size class. Every other type (Amount, Issue, any
+// Blob alias, Array/Object placeholders, and the raw `[u8; N]` unmapped-field
+// placeholder) is variable-size or raw and only gets the blanket `.is_ok()` check, since
+// FIELD_NOT_FOUND doesn't reliably map to `None` for those getters (see the module doc in
+// generated/mod.rs and the semantics captured in match_result_code_optional).
+const FIXED_SIZE_OPTIONAL_TYPES = new Set([
+  "u8",
+  "u16",
+  "u32",
+  "u64",
+  "AccountID",
+  "Currency",
+  "Hash128",
+  "Hash160",
+  "Hash192",
+  "Hash256",
+])
+
+// Renders the `#[cfg(test)] mod tests { ... }` block appended to a generated entry file.
+// Kept thin: almost all mock-setup logic lives in `test_support.rs`; this only calls into
+// it and asserts on the results.
+function renderTestsBlock(entry, resolved) {
+  const { className } = entry
+  const routing = KEYLET_ROUTING[className]
+  const requiredGetters = []
+  const optionalGetters = []
+  for (const item of resolved) {
+    // Array/Object are placeholder types (used only for Location-based nested-field
+    // navigation, e.g. iterating a PriceDataSeries or SignerEntries array element by
+    // element) whose LedgerObjectFieldGetter impl unconditionally panics via
+    // `unreachable!()` -- they must never be called directly, so the generated smoke
+    // tests skip these getters entirely rather than exercising the panic path.
+    if (
+      item.kind === "field" &&
+      (item.rustType === "Array" || item.rustType === "Object")
+    )
+      continue
+
+    const isOptional =
+      item.field.soe === "SOEOPTIONAL" || item.field.soe === "SOEDEFAULT"
+    const getterName = toGetterName(item.field.sfName)
+    const isFixedSizeOptional =
+      item.kind === "field" && FIXED_SIZE_OPTIONAL_TYPES.has(item.rustType)
+    ;(isOptional ? optionalGetters : requiredGetters).push({
+      getterName,
+      isFixedSizeOptional,
+    })
+  }
+
+  const lines = [
+    "#[cfg(test)]",
+    "mod tests {",
+    "    use super::*;",
+    "    use crate::host::host_bindings_trait::MockHostBindings;",
+    "    use crate::host::setup_mock;",
+    "    use crate::objects::test_support::*;",
+    "",
   ]
-}
 
-// Builds the per-artifact blocks for one entry. Each block records which
-// output target it goes to, its rendered body lines, the Rust types it uses,
-// and which imports it requires. The `flags` module rides along with the
-// struct's target (it's most useful next to the concrete type).
-function buildEntryArtifacts(
-  entry,
-  resolved,
-  lsfFlagsByClass,
-  fieldDocs,
-  routing,
-) {
-  const artifacts = []
+  // `read_all_fields`: smoke test that every getter (required + optional) succeeds when
+  // every field is reported present.
+  lines.push(
+    "    #[test]",
+    "    fn read_all_fields() {",
+    "        let mut mock = MockHostBindings::new();",
+    "        mock_all_fields_present(&mut mock);",
+    "        let _guard = setup_mock(mock);",
+    "",
+    `        let obj = ${className}::new(0);`,
+    "",
+  )
+  for (const { getterName } of [...requiredGetters, ...optionalGetters]) {
+    lines.push(`        assert!(obj.${getterName}().is_ok());`)
+  }
+  lines.push("    }", "")
 
-  const slot = renderTrait(entry, resolved, fieldDocs, { useCurrent: false })
-  const hasGetter = resolved.some((r) => r.kind === "field")
-  artifacts.push({
-    target: routing.slotTrait,
-    lines: slot.lines,
-    usedRustTypes: slot.usedRustTypes,
-    needs: {
-      needsSlotCommon: true,
-      needsSlotAccessor: hasGetter,
-      needsResult: hasGetter,
-      needsSfield: hasGetter,
-    },
-  })
-
-  const current = renderTrait(entry, resolved, fieldDocs, { useCurrent: true })
-  artifacts.push({
-    target: routing.currentTrait,
-    lines: current.lines,
-    usedRustTypes: current.usedRustTypes,
-    needs: {
-      needsCurrentCommon: true,
-      needsCurrentAccessor: hasGetter,
-      needsResult: hasGetter,
-      needsSfield: hasGetter,
-    },
-  })
-
-  artifacts.push({
-    target: routing.struct,
-    lines: [
-      ...renderFlagsModule(entry, lsfFlagsByClass),
+  // `optional_fields_none`: only emitted if there's at least one optional getter. When the
+  // host reports FIELD_NOT_FOUND, fixed-size optional getters (match_result_code_with_
+  // expected_bytes_optional) return `Ok(None)`; every other optional getter (variable-size
+  // Amount/Issue/Blob fields, and the raw unmapped-type placeholder getters) routes
+  // through match_result_code_optional / a `result_code > 0` check, both of which treat a
+  // negative code -- including FIELD_NOT_FOUND -- as `Err`, not `Ok(None)`. So this test
+  // only smoke-tests that the fixed-size getters decode `None` correctly; it deliberately
+  // does not assert success for the variable-size/raw getters here, since FIELD_NOT_FOUND
+  // is not how the host represents "absent" for those (a 0-byte success response is).
+  const fixedSizeOptionalGetters = optionalGetters.filter(
+    (g) => g.isFixedSizeOptional,
+  )
+  if (fixedSizeOptionalGetters.length > 0) {
+    lines.push(
+      "    #[test]",
+      "    fn optional_fields_none() {",
+      "        let mut mock = MockHostBindings::new();",
+      "        mock_all_fields_not_found(&mut mock);",
+      "        let _guard = setup_mock(mock);",
       "",
-      ...renderStruct(entry),
-    ],
-    usedRustTypes: new Set(),
-    // The struct references LedgerObjectCommonFields (for get_slot_num) and
-    // the entry's own <Class>Fields trait. The latter lives in the slotTrait
-    // target -- when that's a DIFFERENT crate/file, the struct must import it.
-    needs: {
-      needsSlotCommon: true,
-    },
-    // Extra import the struct needs to name `<Class>Fields` when the trait is
-    // defined elsewhere. Resolved during file assembly (needs cross-file info).
-    structForEntry: entry,
-    slotTraitTarget: routing.slotTrait,
+      `        let obj = ${className}::new(0);`,
+      "",
+    )
+    for (const { getterName } of fixedSizeOptionalGetters) {
+      lines.push(`        assert!(obj.${getterName}().unwrap().is_none());`)
+    }
+    lines.push("    }", "")
+  }
+
+  // `load_success` / `load_cache_error`: only emitted for entries with a `load()`
+  // constructor, i.e. a KEYLET_ROUTING entry.
+  if (routing) {
+    const [keyletFn, params] = routing
+    const mockKeyletFn = `mock_${keyletFn}_success`
+    const sampleArgs = params
+      .map(([name, ty]) => {
+        const sampleName = keyletParamSampleName(name)
+        // `sample::credential_type()` already returns `&[u8]` (a reference type), so it
+        // must not be re-borrowed; every other sample fn returns an owned value that
+        // needs `&` added when the keylet param type itself is a reference.
+        const alreadyRef = sampleName === "credential_type"
+        return ty.startsWith("&") && !alreadyRef
+          ? `&sample::${sampleName}()`
+          : `sample::${sampleName}()`
+      })
+      .join(", ")
+
+    lines.push(
+      "    #[test]",
+      "    fn load_success() {",
+      "        let mut mock = MockHostBindings::new();",
+      `        ${mockKeyletFn}(&mut mock);`,
+      "        mock_cache_ledger_obj_success(&mut mock, 7);",
+      "        let _guard = setup_mock(mock);",
+      "",
+      `        let result = ${className}::load(${sampleArgs});`,
+      "        assert!(result.is_ok());",
+      "    }",
+      "",
+      "    #[test]",
+      "    fn load_cache_error() {",
+      "        use crate::host::error_codes::INTERNAL_ERROR;",
+      "",
+      "        let mut mock = MockHostBindings::new();",
+      `        ${mockKeyletFn}(&mut mock);`,
+      "        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);",
+      "        let _guard = setup_mock(mock);",
+      "",
+      `        let result = ${className}::load(${sampleArgs});`,
+      "        assert!(result.is_err());",
+      "    }",
+      "",
+    )
+  }
+
+  if (lines[lines.length - 1] === "") lines.pop()
+  lines.push("}")
+  return lines
+}
+
+// Maps a KEYLET_ROUTING parameter name to the corresponding `test_support::sample`
+// function name. The first account-shaped parameter in each keylet's param list samples
+// the generic account; a second, distinct account-shaped parameter (e.g. `authorize`,
+// `account2`, `destination`, `holder`) samples `account_id_b` so two-account keylets
+// (line_keylet, delegate_keylet, deposit_preauth_keylet, paychan_keylet, mptoken_keylet)
+// pass two different values rather than the same account twice.
+const SECOND_ACCOUNT_PARAM_NAMES = new Set([
+  "authorize",
+  "account2",
+  "destination",
+  "holder",
+])
+
+function keyletParamSampleName(paramName) {
+  switch (paramName) {
+    case "account":
+    case "owner":
+    case "subject":
+    case "issuer":
+    case "account1":
+      return "account_id"
+    case "seq":
+      return "seq"
+    case "document_id":
+      return "document_id"
+    case "credential_type":
+      return "credential_type"
+    case "issue1":
+    case "issue2":
+      return "issue"
+    case "currency":
+      return "currency"
+    case "mptid":
+      return "mpt_id"
+    default:
+      if (SECOND_ACCOUNT_PARAM_NAMES.has(paramName)) return "account_id_b"
+      throw new Error(`No sample mapping for keylet param: ${paramName}`)
+  }
+}
+
+// Renders one entry's complete file contents (banner + imports + slot trait
+// + current trait + struct).
+function renderEntryFile(entry, resolved, fieldDocsForClass) {
+  const hasRawGetter = resolved.some((r) => r.kind === "raw")
+  const hasAnyGetter = resolved.length > 0
+
+  const slot = renderTrait(entry, resolved, fieldDocsForClass, {
+    useCurrent: false,
+  })
+  const current = renderTrait(entry, resolved, fieldDocsForClass, {
+    useCurrent: true,
+  })
+  const struct = renderStruct(entry)
+
+  const usedRustTypes = new Set([
+    ...slot.usedRustTypes,
+    ...current.usedRustTypes,
+  ])
+  const routing = KEYLET_ROUTING[entry.className]
+  if (routing) {
+    for (const [, ty] of routing[1]) {
+      usedRustTypes.add(ty.replace(/^&/, ""))
+    }
+  }
+
+  const importLines = buildImports(usedRustTypes, {
+    needsSlotCommon: true,
+    needsCurrentCommon: true,
+    needsSlotAccessor: hasAnyGetter,
+    needsCurrentAccessor: hasAnyGetter,
+    needsResult: hasAnyGetter || struct.hasLoad,
+    hasRawGetter,
+    hasRawRequired: slot.hasRawRequired || current.hasRawRequired,
+    hasRawOptional: slot.hasRawOptional || current.hasRawOptional,
+    needsSfield: hasAnyGetter,
   })
 
-  return artifacts
+  const lines = [BANNER]
+  if (hasRawGetter) {
+    lines.push(
+      `/// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust`,
+      `/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return`,
+      `/// raw, unparsed bytes; see the summary at the top of \`generated/mod.rs\`.`,
+      `const ${RAW_UNMAPPED_FIELD_SIZE_CONST}: usize = ${RAW_UNMAPPED_FIELD_SIZE};`,
+      "",
+    )
+  }
+  lines.push(...importLines, "")
+  lines.push(...slot.lines, "")
+  lines.push(...current.lines, "")
+  lines.push(...struct.lines, "")
+  lines.push("", ...renderTestsBlock(entry, resolved))
+
+  return lines.join("\n")
 }
+
+// Renders the `//!` module-doc header listing every field whose XRPL wire
+// type has no genuine Rust mapping yet, grouped by wire type. Deterministic:
+// wire types are sorted, and entries within each wire type are sorted too.
+function renderUnmappedHeader(unmapped) {
+  if (unmapped.length === 0) return []
+
+  const byWireType = new Map()
+  for (const { entry, sfName, wireType } of unmapped) {
+    if (!byWireType.has(wireType)) byWireType.set(wireType, [])
+    byWireType.get(wireType).push(`${entry}.${sfName}`)
+  }
+
+  const lines = [
+    "//! Fields returned as raw bytes pending a typed Rust representation:",
+  ]
+  for (const wireType of [...byWireType.keys()].sort()) {
+    const items = [...byWireType.get(wireType)].sort()
+    lines.push(`//!   ${wireType}: ${items.join(", ")}`)
+  }
+  lines.push("")
+  return lines
+}
+
+// Renders `objects/generated/mod.rs`: one `pub mod <snake_entry>;` per
+// generated entry, plus a flat re-export of every public item.
+function renderModFile(entries, unmapped) {
+  const lines = [...renderUnmappedHeader(unmapped), BANNER]
+  const modNames = entries.map((e) => snakeCase(e.className))
+  for (const modName of [...modNames].sort()) {
+    lines.push(`pub mod ${modName};`)
+  }
+  lines.push("")
+  for (const entry of entries) {
+    const modName = snakeCase(entry.className)
+    const { className } = entry
+    lines.push(
+      `pub use ${modName}::{${className}, ${className}Fields, Current${className}Fields};`,
+    )
+  }
+  return lines.join("\n") + "\n"
+}
+
+function snakeCase(className) {
+  return toGetterName(className).slice("get_".length)
+}
+
+////////////////////////////////////////////////////////////////////////
+//  Main
+////////////////////////////////////////////////////////////////////////
 
 async function main() {
   const rippledSource = process.argv[2]
   const outputDir = process.argv[3] || path.join(__dirname, "..")
 
-  const [ledgerEntriesMacro, sfieldsMacro, ledgerFormatsRaw] =
-    await Promise.all([
-      read(rippledSource, "include/xrpl/protocol/detail/ledger_entries.macro"),
-      read(rippledSource, "include/xrpl/protocol/detail/sfields.macro"),
-      read(rippledSource, "include/xrpl/protocol/LedgerFormats.h"),
-    ])
+  const [ledgerEntriesMacro, sfieldsMacro] = await Promise.all([
+    read(rippledSource, "include/xrpl/protocol/detail/ledger_entries.macro"),
+    read(rippledSource, "include/xrpl/protocol/detail/sfields.macro"),
+  ])
 
-  const entries = parseLedgerEntries(ledgerEntriesMacro)
+  const allEntries = parseLedgerEntries(ledgerEntriesMacro)
+  const entries = allEntries.filter((e) => !EXCLUDED_ENTRIES.has(e.entryName))
   const sfieldTypes = parseSfields(sfieldsMacro)
-  const lsfFlagsByClass = parseLsfFlagsByClass(ledgerFormatsRaw)
-  const fieldDocs = await loadFieldDocs()
 
-  console.log(`Ledger entries parsed: ${entries.length}`)
+  console.log(`Ledger entries parsed: ${allEntries.length}`)
+  console.log(`Ledger entries generated (Escrow excluded): ${entries.length}`)
+
   let totalGetters = 0
-  const skipped = []
+  const unmapped = []
+  const withLoad = []
+  const withoutLoad = []
 
-  // Build every artifact for every entry, tagged with its output target.
-  const artifacts = []
-  for (const entry of entries) {
-    const routing = routingFor(entry.entryName)
-    const resolved = resolveEntryFields(entry, sfieldTypes, skipped)
-    totalGetters += resolved.filter((r) => r.kind === "field").length
-    for (const artifact of buildEntryArtifacts(
-      entry,
-      resolved,
-      lsfFlagsByClass,
-      fieldDocs,
-      routing,
-    )) {
-      const file = path.join(outputDir, artifact.target.path, "generated.rs")
-      artifacts.push({ ...artifact, file })
+  const genDir = path.join(
+    outputDir,
+    "xrpl-common-stdlib/src/objects/generated",
+  )
+  await fs.mkdir(genDir, { recursive: true })
+
+  // Prune stale generated files: any `.rs` already in genDir that this run will
+  // not (re)write is an orphan from a removed or renamed ledger entry. Deleting
+  // it here keeps the directory a faithful mirror of the current rippled source
+  // -- otherwise a dropped entry would leave dead code on disk that `mod.rs` no
+  // longer references (and that the drift check, comparing like-for-like, would
+  // never flag). Sorted only for deterministic log output; deletion order is
+  // irrelevant to the result.
+  const expectedFiles = new Set([
+    "mod.rs",
+    ...entries.map((e) => `${snakeCase(e.className)}.rs`),
+  ])
+  const existingFiles = await fs.readdir(genDir)
+  for (const name of existingFiles.sort()) {
+    if (name.endsWith(".rs") && !expectedFiles.has(name)) {
+      await fs.rm(path.join(genDir, name))
+      console.log(`Pruned stale generated file: ${name}`)
     }
   }
+
+  for (const entry of entries) {
+    const resolved = resolveEntryFields(entry, sfieldTypes, unmapped)
+    totalGetters += resolved.length
+
+    const fieldDocsForClass = await fetchFieldDocs(entry.className)
+    const contents = renderEntryFile(entry, resolved, fieldDocsForClass)
+
+    const file = path.join(genDir, `${snakeCase(entry.className)}.rs`)
+    await fs.writeFile(file, contents, "utf8")
+
+    if (KEYLET_ROUTING[entry.className]) withLoad.push(entry.className)
+    else withoutLoad.push(entry.className)
+  }
+
+  const modFile = path.join(genDir, "mod.rs")
+  await fs.writeFile(modFile, renderModFile(entries, unmapped), "utf8")
 
   console.log(`Total getters emitted (across all entries): ${totalGetters}`)
-  console.log(`Total fields skipped: ${skipped.length}`)
-  if (skipped.length > 0) {
-    console.log("Skipped fields:")
-    for (const s of skipped) {
-      console.log(`  ${s.entry}.sf${s.sfName}: ${s.reason}`)
+  console.log(
+    `Total fields with no Rust type mapping (raw placeholder): ${unmapped.length}`,
+  )
+  if (unmapped.length > 0) {
+    console.log("Unmapped fields (emitted as raw bytes):")
+    for (const u of unmapped) {
+      console.log(`  ${u.entry}.sf${u.sfName}: ${u.wireType}`)
     }
   }
+  console.log(`Entries with load(): ${withLoad.join(", ")}`)
+  console.log(
+    `Entries without load() (no keylet fn): ${withoutLoad.join(", ")}`,
+  )
 
-  // Group artifacts by their output file.
-  const byFile = new Map()
-  for (const a of artifacts) {
-    if (!byFile.has(a.file)) byFile.set(a.file, [])
-    byFile.get(a.file).push(a)
-  }
-
-  for (const [file, group] of byFile) {
-    const crate = group[0].target.crate
-
-    // Union of what the file's artifacts need for imports.
-    const usedRustTypes = new Set()
-    const needs = {
-      needsSlotCommon: false,
-      needsCurrentCommon: false,
-      needsSlotAccessor: false,
-      needsCurrentAccessor: false,
-      needsResult: false,
-      needsSfield: false,
-    }
-    // Cross-file trait imports the structs in this file require (e.g. an
-    // Escrow struct here needs `EscrowFields` defined in another file/crate).
-    const externalTraitImports = new Set()
-
-    for (const a of group) {
-      for (const t of a.usedRustTypes) usedRustTypes.add(t)
-      for (const k of Object.keys(needs)) {
-        if (a.needs[k]) needs[k] = true
-      }
-      // A struct artifact whose <Class>Fields trait lives in a different file
-      // must import that trait. When the slot trait is in the SAME file, the
-      // trait is already in scope and no import is needed.
-      if (a.structForEntry) {
-        const traitFile = path.join(
-          outputDir,
-          a.slotTraitTarget.path,
-          "generated.rs",
-        )
-        if (traitFile !== file) {
-          const p = stdlibPrefix(crate)
-          // Once wired in, the generated slot traits are expected to live at
-          // the same path the hand-written ones do today
-          // (<crate>::objects::traits). The `mod` wiring is a
-          // later step; this import assumes that destination.
-          externalTraitImports.add(
-            `use ${p}::objects::traits::${a.structForEntry.className}Fields;`,
-          )
-        }
-      }
-    }
-
-    const importLines = buildImports(crate, usedRustTypes, needs)
-    for (const imp of externalTraitImports) importLines.push(imp)
-
-    const lines = [...BANNER]
-    if (importLines.length > 0) {
-      lines.push(...importLines)
-      lines.push("")
-    }
-    for (let i = 0; i < group.length; i++) {
-      lines.push(...group[i].lines)
-      lines.push("")
-    }
-
-    const fullContents = lines.join("\n")
-    await fs.mkdir(path.dirname(file), { recursive: true })
-    await fs.writeFile(file, fullContents, "utf8")
-    console.log(`Wrote ${group.length} artifact(s) to ${file}`)
-  }
+  console.log("")
+  console.log("🎨 Formatting generated output with rustfmt...")
+  const allFiles = [
+    modFile,
+    ...entries.map((e) => path.join(genDir, `${snakeCase(e.className)}.rs`)),
+  ]
+  execFileSync("rustfmt", ["--edition", "2024", ...allFiles], {
+    stdio: "inherit",
+  })
 
   console.log("")
   console.log(
-    "Note: generated files were formatted with a standalone `rustfmt --edition 2024` pass. " +
-      "They are consumed via `pub mod generated;` in each crate's ledger_objects/mod.rs " +
-      "(xrpl-common-stdlib/src/objects/mod.rs and " +
-      "xrpl-escrow-stdlib/src/ledger_objects/mod.rs). To add/edit doc comments, edit " +
-      "tools/fieldDocs.json (keyed by sfield name).",
+    "Note: generated files are consumed via 'pub mod generated;' in " +
+      "xrpl-common-stdlib/src/objects/mod.rs.",
   )
 }
 

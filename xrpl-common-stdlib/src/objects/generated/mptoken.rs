@@ -1,0 +1,180 @@
+// GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
+
+use crate::host::Result;
+use crate::objects::traits::CurrentLedgerObjectCommonFields;
+use crate::objects::traits::LedgerObjectCommonFields;
+use crate::objects::{current_ledger_object, ledger_object};
+use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::mpt_id::MptId;
+use crate::types::uint::{Hash192, Hash256};
+
+/// Trait providing access to fields specific to MPToken objects in any ledger.
+pub trait MPTokenFields: LedgerObjectCommonFields {
+    /// The owner (holder) of these MPTs.
+    fn get_account(&self) -> Result<AccountID> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Account)
+    }
+
+    /// The `MPTokenIssuance` identifier.
+    fn get_mptoken_issuance_id(&self) -> Result<Hash192> {
+        ledger_object::get_field(self.get_slot_num(), sfield::MPTokenIssuanceID)
+    }
+
+    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
+    fn get_mpt_amount(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::MPTAmount)
+    }
+
+    /// The amount of tokens currently locked up (for example, in escrow).
+    fn get_locked_amount(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LockedAmount)
+    }
+
+    /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_owner_node(&self) -> Result<u64> {
+        ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
+    }
+
+    /// The identifying hash of the transaction that most recently modified this entry.
+    fn get_previous_txn_id(&self) -> Result<Hash256> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
+    }
+
+    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
+    }
+}
+
+/// Trait providing access to fields specific to the current MPToken object.
+pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
+    /// The owner (holder) of these MPTs.
+    fn get_account(&self) -> Result<AccountID> {
+        current_ledger_object::get_field(sfield::Account)
+    }
+
+    /// The `MPTokenIssuance` identifier.
+    fn get_mptoken_issuance_id(&self) -> Result<Hash192> {
+        current_ledger_object::get_field(sfield::MPTokenIssuanceID)
+    }
+
+    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
+    fn get_mpt_amount(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::MPTAmount)
+    }
+
+    /// The amount of tokens currently locked up (for example, in escrow).
+    fn get_locked_amount(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::LockedAmount)
+    }
+
+    /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_owner_node(&self) -> Result<u64> {
+        current_ledger_object::get_field(sfield::OwnerNode)
+    }
+
+    /// The identifying hash of the transaction that most recently modified this entry.
+    fn get_previous_txn_id(&self) -> Result<Hash256> {
+        current_ledger_object::get_field(sfield::PreviousTxnID)
+    }
+
+    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+        current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct MPToken {
+    pub(crate) slot_num: i32,
+}
+
+impl MPToken {
+    pub fn new(slot_num: i32) -> Self {
+        Self { slot_num }
+    }
+
+    /// Loads the MPToken ledger object identified by the given keylet arguments,
+    /// caching it in a host-managed slot.
+    pub fn load(mptid: &MptId, holder: &AccountID) -> Result<Self> {
+        let keylet = match crate::keylets::mptoken_keylet(mptid, holder) {
+            Result::Ok(k) => k,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
+        if slot < 0 {
+            return Result::Err(crate::host::Error::from_code(slot));
+        }
+        Result::Ok(Self { slot_num: slot })
+    }
+}
+
+impl LedgerObjectCommonFields for MPToken {
+    fn get_slot_num(&self) -> i32 {
+        self.slot_num
+    }
+}
+
+impl MPTokenFields for MPToken {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use crate::objects::test_support::*;
+
+    #[test]
+    fn read_all_fields() {
+        let mut mock = MockHostBindings::new();
+        mock_all_fields_present(&mut mock);
+        let _guard = setup_mock(mock);
+
+        let obj = MPToken::new(0);
+
+        assert!(obj.get_account().is_ok());
+        assert!(obj.get_mptoken_issuance_id().is_ok());
+        assert!(obj.get_owner_node().is_ok());
+        assert!(obj.get_previous_txn_id().is_ok());
+        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.get_mpt_amount().is_ok());
+        assert!(obj.get_locked_amount().is_ok());
+    }
+
+    #[test]
+    fn optional_fields_none() {
+        let mut mock = MockHostBindings::new();
+        mock_all_fields_not_found(&mut mock);
+        let _guard = setup_mock(mock);
+
+        let obj = MPToken::new(0);
+
+        assert!(obj.get_mpt_amount().unwrap().is_none());
+        assert!(obj.get_locked_amount().unwrap().is_none());
+    }
+
+    #[test]
+    fn load_success() {
+        let mut mock = MockHostBindings::new();
+        mock_mptoken_keylet_success(&mut mock);
+        mock_cache_ledger_obj_success(&mut mock, 7);
+        let _guard = setup_mock(mock);
+
+        let result = MPToken::load(&sample::mpt_id(), &sample::account_id_b());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn load_cache_error() {
+        use crate::host::error_codes::INTERNAL_ERROR;
+
+        let mut mock = MockHostBindings::new();
+        mock_mptoken_keylet_success(&mut mock);
+        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+
+        let result = MPToken::load(&sample::mpt_id(), &sample::account_id_b());
+        assert!(result.is_err());
+    }
+}

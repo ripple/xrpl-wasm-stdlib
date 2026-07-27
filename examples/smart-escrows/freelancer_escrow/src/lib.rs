@@ -14,7 +14,7 @@ use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::contract_data::ContractData;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
-use xrpl_escrow_stdlib::ledger_objects::traits::{CurrentEscrowContractData, CurrentEscrowFields};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 

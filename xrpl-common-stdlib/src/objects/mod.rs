@@ -1,6 +1,7 @@
-pub mod account_root;
 pub mod array_object;
 pub mod generated;
+#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+pub mod test_support;
 pub mod traits;
 
 // `generated::ContractData` (the ContractData ledger entry) is intentionally not
@@ -21,15 +22,14 @@ pub use generated::{
     CurrentPermissionedDomainFields, CurrentRippleStateFields, CurrentSignerListFields,
     CurrentTicketFields, CurrentVaultFields, CurrentXChainOwnedClaimIDFields,
     CurrentXChainOwnedCreateAccountClaimIDFields, DID, DIDFields, Delegate, DelegateFields,
-    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, EscrowFields,
-    FeeSettings, FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker,
-    LoanBrokerFields, LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields,
-    NFTokenOffer, NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL,
-    NegativeUNLFields, Offer, OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields,
-    PermissionedDomain, PermissionedDomainFields, RippleState, RippleStateFields, SignerList,
-    SignerListFields, Ticket, TicketFields, Vault, VaultFields, XChainOwnedClaimID,
-    XChainOwnedClaimIDFields, XChainOwnedCreateAccountClaimID,
-    XChainOwnedCreateAccountClaimIDFields,
+    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, FeeSettings,
+    FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker, LoanBrokerFields,
+    LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields, NFTokenOffer,
+    NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL, NegativeUNLFields, Offer,
+    OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields, PermissionedDomain,
+    PermissionedDomainFields, RippleState, RippleStateFields, SignerList, SignerListFields, Ticket,
+    TicketFields, Vault, VaultFields, XChainOwnedClaimID, XChainOwnedClaimIDFields,
+    XChainOwnedCreateAccountClaimID, XChainOwnedCreateAccountClaimIDFields,
 };
 
 use crate::host::error_codes::{

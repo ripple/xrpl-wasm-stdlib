@@ -17,9 +17,7 @@ use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONT
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
-use xrpl_escrow_stdlib::ledger_objects::traits::{
-    CurrentEscrowContractData, CurrentEscrowFields, EscrowContractData,
-};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_macros::smart_escrow;
 
 // Security constants for validation
@@ -270,7 +268,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     );
 
     // Persist the updated data field to the escrow object
-    match <CurrentEscrow as CurrentEscrowContractData>::update_current_escrow_data(new_data) {
+    match <CurrentEscrow as CurrentEscrowFields>::update_current_escrow_data(new_data) {
         Ok(()) => {
             let _ = trace_num("Successfully updated escrow data", 0);
         }

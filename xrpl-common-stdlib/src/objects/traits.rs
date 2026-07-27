@@ -1,16 +1,21 @@
 //! Generic ledger-object field accessor traits.
 //!
-//! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
-//! Per-ledger-entry field traits (`EscrowFields`, `AccountRootFields`, etc.) are generated in
-//! `crate::objects::generated` and re-exported here, since generated code in other
-//! crates/files (e.g. `xrpl-escrow-stdlib`'s `Escrow` struct) imports per-entry field traits from
-//! this stable path.
+//! `EscrowFields` is hand-written here (Escrow is excluded from code generation — its `Data`
+//! field has bespoke `ContractData` semantics the generator doesn't model). Every other
+//! per-ledger-entry field trait (`AccountRootFields`, `OracleFields`, etc.) is generated in
+//! `crate::objects::generated` and re-exported from `crate::objects::mod`.
 
-pub use crate::objects::generated::{AccountRootFields, EscrowFields};
+pub use crate::objects::generated::AccountRootFields;
 
-use crate::host::Result;
+use crate::host::error_codes::{match_result_code, match_result_code_optional};
+use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, WasmBlob};
+use crate::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use crate::types::uint::Hash256;
 
 /// Trait providing access to common fields present in all ledger objects.
 ///
@@ -87,19 +92,169 @@ pub trait CurrentLedgerObjectCommonFields {
     }
 }
 
-// The `EscrowFields` and `AccountRootFields` traits are generated — see
-// `crate::objects::generated` — and re-exported at the top of this module. The escrow `Data`-field
-// accessor (`get_data`) is not representable by the generator; it lives in the hand-written
-// `EscrowContractData` trait in the `xrpl-escrow-stdlib` crate.
+/// Trait providing access to fields specific to Escrow objects in any ledger.
+///
+/// This trait extends `LedgerObjectCommonFields` and provides methods to access
+/// fields that are specific to Escrow objects in any ledger, not just the current one.
+/// Each method requires a register number to identify which ledger object to access.
+///
+/// Hand-written rather than generated: Escrow is excluded from code generation because its
+/// `Data` field has bespoke, host-mutable `ContractData` semantics the generator doesn't model.
+pub trait EscrowFields: LedgerObjectCommonFields {
+    /// The address of the owner (sender) of this escrow. This is the account that provided the XRP
+    /// and gets it back if the escrow is canceled.
+    fn get_account(&self) -> Result<AccountID> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Account)
+    }
+
+    /// The amount of XRP, in drops, currently held in the escrow.
+    fn get_amount(&self) -> Result<Amount> {
+        // Create a buffer large enough for any Amount type
+        const BUFFER_SIZE: usize = 48usize;
+        let mut buffer = [0u8; BUFFER_SIZE];
+
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                self.get_slot_num(),
+                sfield::Amount.into(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        };
+
+        match_result_code(result_code, || Amount::from(buffer))
+    }
+
+    /// The escrow can be canceled if and only if this field is present and the time it specifies
+    /// has passed. Specifically, this is specified as seconds since the Ripple Epoch and it
+    /// "has passed" if it's earlier than the close time of the previous validated ledger.
+    fn get_cancel_after(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
+    }
+
+    /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
+    /// transaction must contain a fulfillment that satisfies this condition.
+    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
+        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
+
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                self.get_slot_num(),
+                sfield::Condition.into(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        };
+
+        match_result_code_optional(result_code, || {
+            if result_code > 0 {
+                let blob = ConditionBlob {
+                    data: buffer,
+                    len: result_code as usize,
+                };
+                Some(blob)
+            } else {
+                None
+            }
+        })
+    }
+
+    /// The destination address where the XRP is paid if the escrow is successful.
+    fn get_destination(&self) -> Result<AccountID> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Destination)
+    }
+
+    /// A hint indicating which page of the destination's owner directory links to this object, in
+    /// case the directory consists of multiple pages. Omitted on escrows created before enabling the fix1523 amendment.
+    fn get_destination_node(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
+    }
+
+    /// An arbitrary tag to further specify the destination for this escrow, such as a hosted
+    /// recipient at the destination address.
+    fn get_destination_tag(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
+    }
+
+    /// The time, in seconds since the Ripple Epoch, after which this escrow can be finished. Any
+    /// EscrowFinish transaction before this time fails. (Specifically, this is compared with the
+    /// close time of the previous validated ledger.)
+    fn get_finish_after(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
+    }
+
+    /// A hint indicating which page of the sender's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
+    fn get_owner_node(&self) -> Result<u64> {
+        ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
+    }
+
+    /// The identifying hash of the transaction that most recently modified this entry.
+    fn get_previous_txn_id(&self) -> Result<Hash256> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
+    }
+
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
+    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
+    }
+
+    /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient
+    /// at the owner's address.
+    fn get_source_tag(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SourceTag)
+    }
+
+    /// The WASM code that is executing.
+    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
+    }
+
+    /// Retrieves the contract data from the specified ledger object.
+    ///
+    /// This function fetches the `data` field from the ledger object at the specified register
+    /// and returns it as a ContractData structure. The data is read into a fixed-size buffer
+    /// of XRPL_CONTRACT_DATA_SIZE.
+    ///
+    /// # Arguments
+    ///
+    /// * `register_num` - The register number where the ledger object is stored
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<ContractData>` where:
+    /// * `Ok(ContractData)` - Contains the retrieved data and its actual length
+    /// * `Err(Error)` - If the retrieval operation failed
+    fn get_data(&self) -> Result<ContractData> {
+        let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
+
+        let result_code = unsafe {
+            get_ledger_obj_field(
+                self.get_slot_num(),
+                sfield::Data.into(),
+                data.as_mut_ptr(),
+                data.len(),
+            )
+        };
+
+        match result_code {
+            code if code >= 0 => Ok(ContractData {
+                data,
+                len: code as usize,
+            }),
+            code => Err(Error::from_code(code)),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::objects::AccountRoot;
     use crate::objects::LedgerObjectFieldGetter;
-    use crate::objects::account_root::AccountRoot;
-    use crate::objects::generated::{AccountRootFields, EscrowFields};
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
 
@@ -321,7 +476,7 @@ mod tests {
                 .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_condition - variable size field, returns 0 for empty (Some with len=0)
+            // get_condition - hand-written getter treats a 0 result code as None
             mock.expect_get_ledger_obj_field()
                 .with(
                     eq(1),
@@ -373,11 +528,9 @@ mod tests {
             assert!(obj.get_finish_after().unwrap().is_none());
             assert!(obj.get_source_tag().unwrap().is_none());
 
-            // Variable-size optional fields return Some with len=0 when not found
-            // (they cannot distinguish between "not present" and "present with 0 bytes")
-            let condition = obj.get_condition().unwrap();
-            assert!(condition.is_some());
-            assert_eq!(condition.unwrap().len, 0);
+            // get_condition returns None for a 0 result code (see the `result_code > 0` check
+            // in its hand-written impl above).
+            assert!(obj.get_condition().unwrap().is_none());
 
             let finish_function = obj.get_finish_function().unwrap();
             assert!(finish_function.is_some());
@@ -468,21 +621,21 @@ mod tests {
 
             // get_account_txn_id
             expect_ledger_field(&mut mock, 1, sfield::AccountTxnID, 32, 1);
-            // get_ammid
+            // get_amm_id
             expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
-            // get_burned_nf_tokens
+            // get_burned_nftokens
             expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
             // get_domain
             expect_ledger_field(&mut mock, 1, sfield::Domain, DOMAIN_BLOB_SIZE, 1);
             // get_email_hash
             expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
-            // get_first_nf_token_sequence
+            // get_first_nftoken_sequence
             expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
             // get_message_key
             expect_ledger_field(&mut mock, 1, sfield::MessageKey, PUBLIC_KEY_BLOB_SIZE, 1);
-            // get_minted_nf_tokens
+            // get_minted_nftokens
             expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
-            // get_nf_token_minter
+            // get_nftoken_minter
             expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
             // get_regular_key
             expect_ledger_field(&mut mock, 1, sfield::RegularKey, ACCOUNT_ID_SIZE, 1);
@@ -501,14 +654,14 @@ mod tests {
 
             // All optional fields should return Ok(Some(...))
             assert!(account.get_account_txn_id().unwrap().is_some());
-            assert!(account.get_ammid().unwrap().is_some());
-            assert!(account.get_burned_nf_tokens().unwrap().is_some());
+            assert!(account.get_amm_id().unwrap().is_some());
+            assert!(account.get_burned_nftokens().unwrap().is_some());
             assert!(account.get_domain().unwrap().is_some());
             assert!(account.get_email_hash().unwrap().is_some());
-            assert!(account.get_first_nf_token_sequence().unwrap().is_some());
+            assert!(account.get_first_nftoken_sequence().unwrap().is_some());
             assert!(account.get_message_key().unwrap().is_some());
-            assert!(account.get_minted_nf_tokens().unwrap().is_some());
-            assert!(account.get_nf_token_minter().unwrap().is_some());
+            assert!(account.get_minted_nftokens().unwrap().is_some());
+            assert!(account.get_nftoken_minter().unwrap().is_some());
             assert!(account.get_regular_key().unwrap().is_some());
             assert!(account.get_ticket_count().unwrap().is_some());
             assert!(account.get_tick_size().unwrap().is_some());
@@ -525,12 +678,12 @@ mod tests {
                 .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_ammid
+            // get_amm_id
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::AMMID), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_burned_nf_tokens
+            // get_burned_nftokens
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
                 .times(1)
@@ -545,7 +698,7 @@ mod tests {
                 .with(eq(1), eq(sfield::EmailHash), always(), eq(16))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_first_nf_token_sequence
+            // get_first_nftoken_sequence
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
                 .times(1)
@@ -560,12 +713,12 @@ mod tests {
                 )
                 .times(1)
                 .returning(|_, _, _, _| 0);
-            // get_minted_nf_tokens
+            // get_minted_nftokens
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::MintedNFTokens), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_nf_token_minter
+            // get_nftoken_minter
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::NFTokenMinter), always(), eq(20))
                 .times(1)
@@ -602,12 +755,12 @@ mod tests {
 
             // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
             assert!(account.get_account_txn_id().unwrap().is_none());
-            assert!(account.get_ammid().unwrap().is_none());
-            assert!(account.get_burned_nf_tokens().unwrap().is_none());
+            assert!(account.get_amm_id().unwrap().is_none());
+            assert!(account.get_burned_nftokens().unwrap().is_none());
             assert!(account.get_email_hash().unwrap().is_none());
-            assert!(account.get_first_nf_token_sequence().unwrap().is_none());
-            assert!(account.get_minted_nf_tokens().unwrap().is_none());
-            assert!(account.get_nf_token_minter().unwrap().is_none());
+            assert!(account.get_first_nftoken_sequence().unwrap().is_none());
+            assert!(account.get_minted_nftokens().unwrap().is_none());
+            assert!(account.get_nftoken_minter().unwrap().is_none());
             assert!(account.get_regular_key().unwrap().is_none());
             assert!(account.get_ticket_count().unwrap().is_none());
             assert!(account.get_tick_size().unwrap().is_none());

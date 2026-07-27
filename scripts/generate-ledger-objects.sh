@@ -1,17 +1,19 @@
 #!/bin/bash
 # Generate ledger-object field accessor traits from rippled source.
 #
-# This regenerates a `generated.rs` file per target directory (NOT the
-# hand-written `traits.rs` files) from rippled's
-# include/xrpl/protocol/detail/ledger_entries.macro (field lists),
-# include/xrpl/protocol/detail/sfields.macro (field Rust types, via the shared
-# tools/sfieldTypeMap.js), and include/xrpl/protocol/LedgerFormats.h (lsf*
-# per-entry flags). See tools/generateLedgerObjects.js for the parsing and
-# emission logic, and tools/fieldDocs.json for the doc-comment side map.
+# This regenerates xrpl-common-stdlib/src/objects/generated/ (one file per ledger
+# entry, plus mod.rs) from rippled's include/xrpl/protocol/detail/ledger_entries.macro
+# (field lists) and include/xrpl/protocol/detail/sfields.macro (field Rust types, via
+# the shared tools/sfieldTypeMap.js). Doc comments are fetched live from the
+# xrpl-dev-portal ledger-entry-types docs. See tools/generateLedgerObjects.js for the
+# parsing and emission logic.
 #
-# Only a single rippled source is read (unlike generate-sfields.sh /
-# generate-tx-flags.sh, which merge an escrow branch and a contract branch --
-# ledger-entry definitions don't currently have that same base/contract split).
+# Escrow is excluded -- it stays hand-written in xrpl-escrow-stdlib because its `Data`
+# field has bespoke, host-mutable ContractData semantics the generator doesn't model.
+#
+# Only a single rippled source is read (unlike generate-sfields.sh / generate-tx-flags.sh,
+# which merge an escrow branch and a contract branch -- ledger-entry definitions don't
+# currently have that same base/contract split).
 
 set -euo pipefail
 
@@ -26,9 +28,8 @@ cd "$REPO_ROOT"
 DEFAULT_SOURCE="https://github.com/XRPLF/rippled/tree/${RIPPLED_BRANCH:-xrplf/smart-contracts}"
 RIPPLED_SOURCE="${1:-$DEFAULT_SOURCE}"
 
-# Output root (can be overridden with the second argument). Per-entry files
-# are written under <OUTPUT_ROOT>/<crate>/.../generated.rs as configured by
-# the ENTRY_ROUTING map in tools/generateLedgerObjects.js.
+# Output root (can be overridden with the second argument). Per-entry files are
+# written under <OUTPUT_ROOT>/xrpl-common-stdlib/src/objects/generated/.
 OUTPUT_ROOT="${2:-$REPO_ROOT}"
 
 echo "🔧 Generating ledger-object field accessor traits..."
@@ -42,18 +43,12 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Run the generator
-echo "🔍 Fetching ledger-entry definitions from rippled..."
+# Run the generator. It writes xrpl-common-stdlib/src/objects/generated/*.rs and
+# runs `rustfmt --edition 2024` on its own output.
 node tools/generateLedgerObjects.js "$RIPPLED_SOURCE" "$OUTPUT_ROOT"
 
 echo ""
-echo "🎨 Formatting generated output..."
-rustfmt --edition 2024 xrpl-common-stdlib/src/objects/generated.rs
-rustfmt --edition 2024 xrpl-escrow-stdlib/src/ledger_objects/generated.rs
-
+echo "✅ Ledger-object generated/ files written successfully!"
 echo ""
-echo "✅ Ledger-object generated.rs files written successfully!"
-echo ""
-echo "💡 These files are consumed via 'pub mod generated;' in each crate's ledger_objects/mod.rs"
-echo "   (xrpl-common-stdlib/src/objects/mod.rs and xrpl-escrow-stdlib/src/ledger_objects/mod.rs)."
-echo "💡 To add/edit doc comments, edit tools/fieldDocs.json (keyed by sfield name)."
+echo "💡 These files are consumed via 'pub mod generated;' in"
+echo "   xrpl-common-stdlib/src/objects/mod.rs."

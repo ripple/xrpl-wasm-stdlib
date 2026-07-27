@@ -120,6 +120,12 @@ src/
 
 `xrpl-escrow-stdlib/src/ctx/escrow_finish.rs` shows the pattern for a feature context: a struct holding a `current_tx` marker type (`EscrowFinish`) plus a ledger-object helper (`CurrentEscrow`), implementing `SmartFeatureContext`, with feature-unique host calls as inherent methods (all `unsafe` FFI stays inside the context type — user contract code stays fully safe).
 
+## Ledger-object field accessors (generated)
+
+`xrpl-common-stdlib/src/objects/generated/` holds one file per XRPL ledger-entry type (`oracle.rs`, `account_root.rs`, `bridge.rs`, ...) plus `mod.rs` (module declarations, flat re-exports, and a `//!` header listing every field whose XRPL wire type has no typed Rust mapping yet, grouped by wire type). All of it — including a `#[cfg(test)] mod tests` block per entry — is produced by `tools/generateLedgerObjects.js` from rippled's `ledger_entries.macro`/`sfields.macro`, invoked via `./scripts/generate-ledger-objects.sh`. Escrow is excluded (`xrpl-escrow-stdlib` hand-writes `EscrowFields` because `Data` has bespoke `ContractData` semantics). Do not hand-edit anything under `generated/` — `scripts/check-ledger-objects-generated.sh` regenerates and diffs it in CI; fix drift by changing the generator, not the output.
+
+Per-entry generated tests call into `xrpl-common-stdlib/src/objects/test_support.rs` (hand-written, cfg-gated identically to `MockHostBindings`) rather than duplicating mock setup: `mock_all_fields_present`/`mock_all_fields_not_found` wire both ledger-object host getters uniformly; one `mock_<keylet_fn>_success` helper per `KEYLET_ROUTING` keylet function; `mock_cache_ledger_obj_success`/`_error`; and a `sample` submodule of deterministic sample values for every keylet-constructor parameter type. A generated entry's `optional_fields_none` test only asserts `.unwrap().is_none()` for fixed-size optional getters (u8/u16/u32/u64/AccountID/Currency/Hash128/160/192/256) — variable-size and raw-placeholder optional getters treat FIELD_NOT_FOUND as `Err`, not `Ok(None)`, so they're not exercised by that test. `Array`/`Object` placeholder-type getters (used only for `Location`-based nested-field navigation) are skipped entirely by the generated smoke tests since their `LedgerObjectFieldGetter` impl unconditionally panics.
+
 ## WASM build profile (matters for size and panic behavior)
 
 Both the root and `examples/` `Cargo.toml` set the same release profile:

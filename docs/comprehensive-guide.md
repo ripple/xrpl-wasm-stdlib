@@ -104,7 +104,8 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::traits::AccountRootFields;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
@@ -120,8 +121,9 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
     };
 
     // Check account balance
-    match get_account_balance(&account) {
-        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
+    let balance = AccountRoot::load(&account).and_then(|acc| acc.get_balance());
+    match balance {
+        Ok(Amount::XRP { num_drops }) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
         _ => FinishResult::reject(), // Keep locked
     }
 }
@@ -255,14 +257,15 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::traits::AccountRootFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::sfield;
 
 let account = AccountID::from([0u8; 20]); // Replace with real account
 
-// Get XRP balance (in drops) - returns Option<Amount>
-let balance = get_account_balance(&account);
+// Load the AccountRoot ledger object and read its XRP balance (in drops).
+let balance = AccountRoot::load(&account).and_then(|acc| acc.get_balance());
 
 // Use host functions to get account fields directly
 // (Note: Specific helper functions may vary based on current API)
@@ -366,7 +369,7 @@ Low-level host function access through the `host` module.
 
 ```rust
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_common_stdlib::objects::account_root::AccountRoot;
+use xrpl_common_stdlib::objects::AccountRoot;
 use xrpl_common_stdlib::objects::traits::AccountRootFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::keylets::account_keylet;
@@ -418,7 +421,7 @@ The library uses custom `Result` types for comprehensive error handling:
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::objects::account_root::{get_account_balance, AccountRoot};
+use xrpl_common_stdlib::objects::AccountRoot;
 use xrpl_common_stdlib::objects::traits::AccountRootFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
@@ -435,7 +438,7 @@ fn process_escrow() -> Result<i32> {
         Err(e) => return Err(e), // Invalid transaction
     };
 
-    let balance = get_account_balance(&account);
+    let balance = AccountRoot::load(&account).and_then(|acc| acc.get_balance());
 
     // Handle specific errors - create AccountRoot to access account fields
     let account_keylet = match account_keylet(&account) {
@@ -684,7 +687,7 @@ match operation() {
 ```rust ignore
 // Good: Call once, use cached result
 let account = tx.get_account();
-let balance = get_account_balance(&account);
+let balance = AccountRoot::load(&account).and_then(|acc| acc.get_balance());
 // Create AccountRoot to access account fields
 let account_keylet = account_keylet(&account);
 let slot = cache_ledger_obj(&account_keylet);
@@ -692,7 +695,7 @@ let account_root = AccountRoot::new(slot);
 let sequence = account_root.get_sequence();
 
 // Bad: Multiple calls for same data
-let balance = get_account_balance(&tx.get_account());
+let balance = AccountRoot::load(&tx.get_account()).and_then(|acc| acc.get_balance());
 // Bad: Multiple calls - should cache the account and keylet
 let account_keylet = account_keylet(&tx.get_account());
 let slot = cache_ledger_obj(&account_keylet);

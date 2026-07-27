@@ -24,7 +24,7 @@ use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data,
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
-use xrpl_escrow_stdlib::ledger_objects::traits::{CurrentEscrowContractData, CurrentEscrowFields};
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {

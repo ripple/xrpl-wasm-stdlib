@@ -1,0 +1,237 @@
+// GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
+
+use crate::host::Result;
+use crate::objects::traits::CurrentLedgerObjectCommonFields;
+use crate::objects::traits::LedgerObjectCommonFields;
+use crate::objects::{current_ledger_object, ledger_object};
+use crate::sfield;
+use crate::types::account_id::AccountID;
+use crate::types::amount::Amount;
+use crate::types::currency::Currency;
+use crate::types::uint::Hash256;
+
+/// Trait providing access to fields specific to RippleState objects in any ledger.
+pub trait RippleStateFields: LedgerObjectCommonFields {
+    /// The balance of the trust line, from the perspective of the low account. A negative balance indicates that the high account holds tokens issued by the low account. The issuer in this is always set to the neutral value ACCOUNT_ONE.
+    fn get_balance(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::Balance)
+    }
+
+    /// The limit that the low account has set on the trust line. The `issuer` is the address of the low account that set this limit.
+    fn get_low_limit(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::LowLimit)
+    }
+
+    /// The limit that the high account has set on the trust line. The `issuer` is the address of the high account that set this limit.
+    fn get_high_limit(&self) -> Result<Amount> {
+        ledger_object::get_field(self.get_slot_num(), sfield::HighLimit)
+    }
+
+    /// The identifying hash of the transaction that most recently modified this entry.
+    fn get_previous_txn_id(&self) -> Result<Hash256> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
+    }
+
+    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
+    }
+
+    /// (Omitted in some historical ledgers) A hint indicating which page of the low account's owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_low_node(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowNode)
+    }
+
+    /// The inbound quality set by the low account, as an integer in the implied ratio `LowQualityIn`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_low_quality_in(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowQualityIn)
+    }
+
+    /// The outbound quality set by the low account, as an integer in the implied ratio `LowQualityOut`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_low_quality_out(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowQualityOut)
+    }
+
+    /// (Omitted in some historical ledgers) A hint indicating which page of the high account's owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_high_node(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighNode)
+    }
+
+    /// The inbound quality set by the high account, as an integer in the implied ratio `HighQualityIn`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_high_quality_in(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityIn)
+    }
+
+    /// The outbound quality set by the high account, as an integer in the implied ratio `HighQualityOut`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_high_quality_out(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityOut)
+    }
+}
+
+/// Trait providing access to fields specific to the current RippleState object.
+pub trait CurrentRippleStateFields: CurrentLedgerObjectCommonFields {
+    /// The balance of the trust line, from the perspective of the low account. A negative balance indicates that the high account holds tokens issued by the low account. The issuer in this is always set to the neutral value ACCOUNT_ONE.
+    fn get_balance(&self) -> Result<Amount> {
+        current_ledger_object::get_field(sfield::Balance)
+    }
+
+    /// The limit that the low account has set on the trust line. The `issuer` is the address of the low account that set this limit.
+    fn get_low_limit(&self) -> Result<Amount> {
+        current_ledger_object::get_field(sfield::LowLimit)
+    }
+
+    /// The limit that the high account has set on the trust line. The `issuer` is the address of the high account that set this limit.
+    fn get_high_limit(&self) -> Result<Amount> {
+        current_ledger_object::get_field(sfield::HighLimit)
+    }
+
+    /// The identifying hash of the transaction that most recently modified this entry.
+    fn get_previous_txn_id(&self) -> Result<Hash256> {
+        current_ledger_object::get_field(sfield::PreviousTxnID)
+    }
+
+    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+        current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
+    }
+
+    /// (Omitted in some historical ledgers) A hint indicating which page of the low account's owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_low_node(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::LowNode)
+    }
+
+    /// The inbound quality set by the low account, as an integer in the implied ratio `LowQualityIn`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_low_quality_in(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::LowQualityIn)
+    }
+
+    /// The outbound quality set by the low account, as an integer in the implied ratio `LowQualityOut`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_low_quality_out(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::LowQualityOut)
+    }
+
+    /// (Omitted in some historical ledgers) A hint indicating which page of the high account's owner directory links to this entry, in case the directory consists of multiple pages.
+    fn get_high_node(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::HighNode)
+    }
+
+    /// The inbound quality set by the high account, as an integer in the implied ratio `HighQualityIn`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_high_quality_in(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::HighQualityIn)
+    }
+
+    /// The outbound quality set by the high account, as an integer in the implied ratio `HighQualityOut`:1,000,000,000. As a special case, the value 0 is equivalent to 1 billion, or face value.
+    fn get_high_quality_out(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::HighQualityOut)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct RippleState {
+    pub(crate) slot_num: i32,
+}
+
+impl RippleState {
+    pub fn new(slot_num: i32) -> Self {
+        Self { slot_num }
+    }
+
+    /// Loads the RippleState ledger object identified by the given keylet arguments,
+    /// caching it in a host-managed slot.
+    pub fn load(account1: &AccountID, account2: &AccountID, currency: &Currency) -> Result<Self> {
+        let keylet = match crate::keylets::line_keylet(account1, account2, currency) {
+            Result::Ok(k) => k,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
+        if slot < 0 {
+            return Result::Err(crate::host::Error::from_code(slot));
+        }
+        Result::Ok(Self { slot_num: slot })
+    }
+}
+
+impl LedgerObjectCommonFields for RippleState {
+    fn get_slot_num(&self) -> i32 {
+        self.slot_num
+    }
+}
+
+impl RippleStateFields for RippleState {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::host::host_bindings_trait::MockHostBindings;
+    use crate::host::setup_mock;
+    use crate::objects::test_support::*;
+
+    #[test]
+    fn read_all_fields() {
+        let mut mock = MockHostBindings::new();
+        mock_all_fields_present(&mut mock);
+        let _guard = setup_mock(mock);
+
+        let obj = RippleState::new(0);
+
+        assert!(obj.get_balance().is_ok());
+        assert!(obj.get_low_limit().is_ok());
+        assert!(obj.get_high_limit().is_ok());
+        assert!(obj.get_previous_txn_id().is_ok());
+        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.get_low_node().is_ok());
+        assert!(obj.get_low_quality_in().is_ok());
+        assert!(obj.get_low_quality_out().is_ok());
+        assert!(obj.get_high_node().is_ok());
+        assert!(obj.get_high_quality_in().is_ok());
+        assert!(obj.get_high_quality_out().is_ok());
+    }
+
+    #[test]
+    fn optional_fields_none() {
+        let mut mock = MockHostBindings::new();
+        mock_all_fields_not_found(&mut mock);
+        let _guard = setup_mock(mock);
+
+        let obj = RippleState::new(0);
+
+        assert!(obj.get_low_node().unwrap().is_none());
+        assert!(obj.get_low_quality_in().unwrap().is_none());
+        assert!(obj.get_low_quality_out().unwrap().is_none());
+        assert!(obj.get_high_node().unwrap().is_none());
+        assert!(obj.get_high_quality_in().unwrap().is_none());
+        assert!(obj.get_high_quality_out().unwrap().is_none());
+    }
+
+    #[test]
+    fn load_success() {
+        let mut mock = MockHostBindings::new();
+        mock_line_keylet_success(&mut mock);
+        mock_cache_ledger_obj_success(&mut mock, 7);
+        let _guard = setup_mock(mock);
+
+        let result = RippleState::load(
+            &sample::account_id(),
+            &sample::account_id_b(),
+            &sample::currency(),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn load_cache_error() {
+        use crate::host::error_codes::INTERNAL_ERROR;
+
+        let mut mock = MockHostBindings::new();
+        mock_line_keylet_success(&mut mock);
+        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+
+        let result = RippleState::load(
+            &sample::account_id(),
+            &sample::account_id_b(),
+            &sample::currency(),
+        );
+        assert!(result.is_err());
+    }
+}

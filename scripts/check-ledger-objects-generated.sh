@@ -1,10 +1,10 @@
 #!/bin/bash
-# Ledger-object generated.rs drift check
-# Regenerates the two generated ledger-object files from rippled source and
-# verifies they match what's currently committed/on-disk. Fails if a source
-# change (e.g. to ledger_entries.macro, sfields.macro, LedgerFormats.h,
-# tools/generateLedgerObjects.js, tools/sfieldTypeMap.js, or tools/fieldDocs.json)
-# would produce different output than what's checked in.
+# Ledger-object generated/ drift check
+# Regenerates xrpl-common-stdlib/src/objects/generated/ from rippled source and
+# verifies it matches what's currently committed/on-disk. Fails if a source change
+# (e.g. to ledger_entries.macro, sfields.macro, tools/generateLedgerObjects.js, or
+# tools/sfieldTypeMap.js) -- or a change to the xrpl-dev-portal doc pages --  would
+# produce different output than what's checked in.
 
 set -euo pipefail
 
@@ -15,8 +15,7 @@ cd "$REPO_ROOT"
 
 echo "🔍 Checking generated ledger-object files are up to date..."
 
-WASM_STDLIB_FILE="xrpl-common-stdlib/src/objects/generated.rs"
-ESCROW_STDLIB_FILE="xrpl-escrow-stdlib/src/ledger_objects/generated.rs"
+GENERATED_DIR="xrpl-common-stdlib/src/objects/generated"
 
 # Check if Node.js is available
 if ! command -v node &> /dev/null; then
@@ -24,14 +23,13 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Save the current contents of the generated files so we can restore them
-# after regenerating (the generator writes in place, and this check must
-# never leave the working tree dirty on success).
+# Save the current contents of the generated directory so we can restore it after
+# regenerating (the generator writes in place, and this check must never leave the
+# working tree dirty on success).
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-cp "$WASM_STDLIB_FILE" "$TMP_DIR/wasm-stdlib.before.rs"
-cp "$ESCROW_STDLIB_FILE" "$TMP_DIR/escrow-stdlib.before.rs"
+cp -R "$GENERATED_DIR" "$TMP_DIR/generated.before"
 
 echo "🔧 Regenerating ledger-object files from rippled..."
 ./scripts/generate-ledger-objects.sh
@@ -41,22 +39,16 @@ echo "🔧 Regenerating ledger-object files from rippled..."
 
 DRIFT=0
 
-if ! diff -q "$TMP_DIR/wasm-stdlib.before.rs" "$WASM_STDLIB_FILE" > /dev/null; then
-    echo "❌ $WASM_STDLIB_FILE is out of date"
-    diff -u "$TMP_DIR/wasm-stdlib.before.rs" "$WASM_STDLIB_FILE" || true
+if ! diff -rq "$TMP_DIR/generated.before" "$GENERATED_DIR" > /dev/null; then
+    echo "❌ $GENERATED_DIR is out of date"
+    diff -ru "$TMP_DIR/generated.before" "$GENERATED_DIR" || true
     DRIFT=1
 fi
 
-if ! diff -q "$TMP_DIR/escrow-stdlib.before.rs" "$ESCROW_STDLIB_FILE" > /dev/null; then
-    echo "❌ $ESCROW_STDLIB_FILE is out of date"
-    diff -u "$TMP_DIR/escrow-stdlib.before.rs" "$ESCROW_STDLIB_FILE" || true
-    DRIFT=1
-fi
-
-# Restore the original files regardless of outcome, so this check never
-# leaves the working tree dirty.
-cp "$TMP_DIR/wasm-stdlib.before.rs" "$WASM_STDLIB_FILE"
-cp "$TMP_DIR/escrow-stdlib.before.rs" "$ESCROW_STDLIB_FILE"
+# Restore the original directory regardless of outcome, so this check never leaves
+# the working tree dirty.
+rm -rf "$GENERATED_DIR"
+cp -R "$TMP_DIR/generated.before" "$GENERATED_DIR"
 
 if [[ "$DRIFT" -ne 0 ]]; then
     echo ""
