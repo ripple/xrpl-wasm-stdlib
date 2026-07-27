@@ -1,4 +1,5 @@
 use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
@@ -8,6 +9,7 @@ use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
+use crate::types::decode_error::DecodeError;
 use crate::types::mpt_id::MptId;
 use crate::types::opaque_float::OpaqueFloat;
 
@@ -370,6 +372,29 @@ impl CurrentTxFieldGetter for Amount {
         .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
     }
 }
+
+/// `FieldDecoder` for XRPL amount values: zero-pads whatever bytes the host wrote (an XRP amount
+/// is only 8 bytes, MPT 33, IOU the full 48) up to `AMOUNT_SIZE`, then parses via
+/// `Amount::from_bytes`, mapping any parse failure to `DecodeError`.
+impl FieldDecoder for Amount {
+    type Buffer = [u8; AMOUNT_SIZE];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; AMOUNT_SIZE]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let mut padded = [0u8; AMOUNT_SIZE];
+        let n = bytes.len().min(AMOUNT_SIZE);
+        padded[..n].copy_from_slice(&bytes[..n]);
+        Amount::from_bytes(&padded).ok().ok_or(DecodeError)
+    }
+}
+
+impl FromCurrentTx for Amount {}
+impl FromLedger for Amount {}
 
 #[cfg(test)]
 mod tests {
