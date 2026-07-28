@@ -1,4 +1,4 @@
-pub const XRPL_CONTRACT_DATA_SIZE: usize = 4096; //TODO size??
+pub const XRPL_CONTRACT_DATA_SIZE: usize = 1024;
 
 /// A 4096-byte buffer for contract data on the XRP Ledger.
 ///

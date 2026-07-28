@@ -9,7 +9,7 @@ use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
-use xrpl_common_stdlib::types::XRPL_CONTRACT_DATA_SIZE;
+use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;

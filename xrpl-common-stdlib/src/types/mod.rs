@@ -14,9 +14,3 @@ pub mod opaque_float;
 pub mod public_key;
 pub mod transaction_type;
 pub mod uint;
-
-// TODO: Move these to the `types` crate.
-// Relocated from the old top-level `src/types.rs`, which collided with this
-// directory's module path once `core::types` was promoted to `crate::types`.
-pub const XRPL_CONTRACT_DATA_SIZE: usize = 1024;
-pub type ContractData = [u8; XRPL_CONTRACT_DATA_SIZE];

@@ -198,7 +198,7 @@ mod tests {
             // get_previous_txn_lgr_seq
             expect_current_field(&mut mock, sfield::PreviousTxnLgrSeq, 4, 1);
             // get_data (mandatory for escrow)
-            expect_current_field(&mut mock, sfield::Data, 4096, 1);
+            expect_current_field(&mut mock, sfield::Data, XRPL_CONTRACT_DATA_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -329,7 +329,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::Data), always(), eq(4096))
+                .with(eq(sfield::Data), always(), eq(XRPL_CONTRACT_DATA_SIZE))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
 
