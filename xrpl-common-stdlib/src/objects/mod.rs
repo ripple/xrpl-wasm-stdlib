@@ -22,14 +22,15 @@ pub use generated::{
     CurrentPermissionedDomainFields, CurrentRippleStateFields, CurrentSignerListFields,
     CurrentTicketFields, CurrentVaultFields, CurrentXChainOwnedClaimIDFields,
     CurrentXChainOwnedCreateAccountClaimIDFields, DID, DIDFields, Delegate, DelegateFields,
-    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, FeeSettings,
-    FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker, LoanBrokerFields,
-    LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields, NFTokenOffer,
-    NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL, NegativeUNLFields, Offer,
-    OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields, PermissionedDomain,
-    PermissionedDomainFields, RippleState, RippleStateFields, SignerList, SignerListFields, Ticket,
-    TicketFields, Vault, VaultFields, XChainOwnedClaimID, XChainOwnedClaimIDFields,
-    XChainOwnedCreateAccountClaimID, XChainOwnedCreateAccountClaimIDFields,
+    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, Escrow, EscrowFields,
+    FeeSettings, FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker,
+    LoanBrokerFields, LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields,
+    NFTokenOffer, NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL,
+    NegativeUNLFields, Offer, OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields,
+    PermissionedDomain, PermissionedDomainFields, RippleState, RippleStateFields, SignerList,
+    SignerListFields, Ticket, TicketFields, Vault, VaultFields, XChainOwnedClaimID,
+    XChainOwnedClaimIDFields, XChainOwnedCreateAccountClaimID,
+    XChainOwnedCreateAccountClaimIDFields,
 };
 
 use crate::host::error_codes::{

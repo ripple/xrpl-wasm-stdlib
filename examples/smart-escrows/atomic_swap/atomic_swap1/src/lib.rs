@@ -16,7 +16,7 @@ use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
-use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
+use xrpl_escrow_stdlib::ledger_objects::escrow::{Escrow, EscrowContractData};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_macros::smart_escrow;
 

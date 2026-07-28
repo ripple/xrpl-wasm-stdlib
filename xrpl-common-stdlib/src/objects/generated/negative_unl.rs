@@ -71,6 +71,7 @@ pub struct NegativeUNL {
 }
 
 impl NegativeUNL {
+    /// Binds this handle to a host-managed slot holding a NegativeUNL ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

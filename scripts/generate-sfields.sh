@@ -45,7 +45,7 @@ node tools/generateSFields.js "$ESCROW_SOURCE" "$CONTRACT_SOURCE" "$OUTPUT_FILE"
 
 echo ""
 echo "🎨 Formatting generated output..."
-cargo fmt -p xrpl-wasm-stdlib
+cargo fmt -p xrpl-common-stdlib
 
 echo ""
 echo "✅ SField constants and STI_* type codes generated successfully!"

@@ -123,22 +123,9 @@ pub struct AMM {
 }
 
 impl AMM {
+    /// Binds this handle to a host-managed slot holding a AMM ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
-    }
-
-    /// Loads the AMM ledger object identified by the given keylet arguments,
-    /// caching it in a host-managed slot.
-    pub fn load(issue1: &Issue, issue2: &Issue) -> Result<Self> {
-        let keylet = match crate::keylets::amm_keylet(issue1, issue2) {
-            Result::Ok(k) => k,
-            Result::Err(e) => return Result::Err(e),
-        };
-        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-        if slot < 0 {
-            return Result::Err(crate::host::Error::from_code(slot));
-        }
-        Result::Ok(Self { slot_num: slot })
     }
 }
 
@@ -186,29 +173,5 @@ mod tests {
         assert!(obj.get_trading_fee().unwrap().is_none());
         assert!(obj.get_previous_txn_id().unwrap().is_none());
         assert!(obj.get_previous_txn_lgr_seq().unwrap().is_none());
-    }
-
-    #[test]
-    fn load_success() {
-        let mut mock = MockHostBindings::new();
-        mock_amm_keylet_success(&mut mock);
-        mock_cache_ledger_obj_success(&mut mock, 7);
-        let _guard = setup_mock(mock);
-
-        let result = AMM::load(&sample::issue(), &sample::issue());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn load_cache_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
-
-        let mut mock = MockHostBindings::new();
-        mock_amm_keylet_success(&mut mock);
-        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
-        let _guard = setup_mock(mock);
-
-        let result = AMM::load(&sample::issue(), &sample::issue());
-        assert!(result.is_err());
     }
 }

@@ -148,6 +148,7 @@ pub struct Bridge {
 }
 
 impl Bridge {
+    /// Binds this handle to a host-managed slot holding a Bridge ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

@@ -81,7 +81,7 @@ jobs:
           node-version: 24.x
 
       - name: Check generated ledger-object files are up to date
-        run: ./scripts/check-ledger-objects-generated.sh
+        run: ./scripts/generate-ledger-objects.sh --check
 
   host_function_audit:
     runs-on: ubuntu-latest

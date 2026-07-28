@@ -5,9 +5,7 @@ use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
-use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::currency::Currency;
 use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to RippleState objects in any ledger.
@@ -132,22 +130,9 @@ pub struct RippleState {
 }
 
 impl RippleState {
+    /// Binds this handle to a host-managed slot holding a RippleState ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
-    }
-
-    /// Loads the RippleState ledger object identified by the given keylet arguments,
-    /// caching it in a host-managed slot.
-    pub fn load(account1: &AccountID, account2: &AccountID, currency: &Currency) -> Result<Self> {
-        let keylet = match crate::keylets::line_keylet(account1, account2, currency) {
-            Result::Ok(k) => k,
-            Result::Err(e) => return Result::Err(e),
-        };
-        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-        if slot < 0 {
-            return Result::Err(crate::host::Error::from_code(slot));
-        }
-        Result::Ok(Self { slot_num: slot })
     }
 }
 
@@ -201,37 +186,5 @@ mod tests {
         assert!(obj.get_high_node().unwrap().is_none());
         assert!(obj.get_high_quality_in().unwrap().is_none());
         assert!(obj.get_high_quality_out().unwrap().is_none());
-    }
-
-    #[test]
-    fn load_success() {
-        let mut mock = MockHostBindings::new();
-        mock_line_keylet_success(&mut mock);
-        mock_cache_ledger_obj_success(&mut mock, 7);
-        let _guard = setup_mock(mock);
-
-        let result = RippleState::load(
-            &sample::account_id(),
-            &sample::account_id_b(),
-            &sample::currency(),
-        );
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn load_cache_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
-
-        let mut mock = MockHostBindings::new();
-        mock_line_keylet_success(&mut mock);
-        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
-        let _guard = setup_mock(mock);
-
-        let result = RippleState::load(
-            &sample::account_id(),
-            &sample::account_id_b(),
-            &sample::currency(),
-        );
-        assert!(result.is_err());
     }
 }

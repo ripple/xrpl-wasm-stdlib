@@ -6,7 +6,6 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
-use crate::types::mpt_id::MptId;
 use crate::types::uint::{Hash192, Hash256};
 
 /// Trait providing access to fields specific to MPToken objects in any ledger.
@@ -91,22 +90,9 @@ pub struct MPToken {
 }
 
 impl MPToken {
+    /// Binds this handle to a host-managed slot holding a MPToken ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
-    }
-
-    /// Loads the MPToken ledger object identified by the given keylet arguments,
-    /// caching it in a host-managed slot.
-    pub fn load(mptid: &MptId, holder: &AccountID) -> Result<Self> {
-        let keylet = match crate::keylets::mptoken_keylet(mptid, holder) {
-            Result::Ok(k) => k,
-            Result::Err(e) => return Result::Err(e),
-        };
-        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-        if slot < 0 {
-            return Result::Err(crate::host::Error::from_code(slot));
-        }
-        Result::Ok(Self { slot_num: slot })
     }
 }
 
@@ -152,29 +138,5 @@ mod tests {
 
         assert!(obj.get_mpt_amount().unwrap().is_none());
         assert!(obj.get_locked_amount().unwrap().is_none());
-    }
-
-    #[test]
-    fn load_success() {
-        let mut mock = MockHostBindings::new();
-        mock_mptoken_keylet_success(&mut mock);
-        mock_cache_ledger_obj_success(&mut mock, 7);
-        let _guard = setup_mock(mock);
-
-        let result = MPToken::load(&sample::mpt_id(), &sample::account_id_b());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn load_cache_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
-
-        let mut mock = MockHostBindings::new();
-        mock_mptoken_keylet_success(&mut mock);
-        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
-        let _guard = setup_mock(mock);
-
-        let result = MPToken::load(&sample::mpt_id(), &sample::account_id_b());
-        assert!(result.is_err());
     }
 }

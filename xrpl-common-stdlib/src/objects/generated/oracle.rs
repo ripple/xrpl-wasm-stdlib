@@ -122,22 +122,9 @@ pub struct Oracle {
 }
 
 impl Oracle {
+    /// Binds this handle to a host-managed slot holding a Oracle ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
-    }
-
-    /// Loads the Oracle ledger object identified by the given keylet arguments,
-    /// caching it in a host-managed slot.
-    pub fn load(owner: &AccountID, document_id: u32) -> Result<Self> {
-        let keylet = match crate::keylets::oracle_keylet(owner, document_id) {
-            Result::Ok(k) => k,
-            Result::Err(e) => return Result::Err(e),
-        };
-        let slot = unsafe { crate::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-        if slot < 0 {
-            return Result::Err(crate::host::Error::from_code(slot));
-        }
-        Result::Ok(Self { slot_num: slot })
     }
 }
 
@@ -184,29 +171,5 @@ mod tests {
         let obj = Oracle::new(0);
 
         assert!(obj.get_oracle_document_id().unwrap().is_none());
-    }
-
-    #[test]
-    fn load_success() {
-        let mut mock = MockHostBindings::new();
-        mock_oracle_keylet_success(&mut mock);
-        mock_cache_ledger_obj_success(&mut mock, 7);
-        let _guard = setup_mock(mock);
-
-        let result = Oracle::load(&sample::account_id(), sample::document_id());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn load_cache_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
-
-        let mut mock = MockHostBindings::new();
-        mock_oracle_keylet_success(&mut mock);
-        mock_cache_ledger_obj_error(&mut mock, INTERNAL_ERROR);
-        let _guard = setup_mock(mock);
-
-        let result = Oracle::load(&sample::account_id(), sample::document_id());
-        assert!(result.is_err());
     }
 }

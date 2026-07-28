@@ -22,6 +22,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
 const path = require("path")
 const fs = require("fs/promises")
 const { readSourceFile: read } = require("./rippledSource")
+const { typeMap, customFieldTypes, parseSfields } = require("./sfieldTypeMap")
 
 function parseStypes(sfieldHeaderFile) {
   let stypeHits = [
@@ -40,20 +41,6 @@ function parseStypes(sfieldHeaderFile) {
     stypeMap[key] = value
   })
   return stypeMap
-}
-
-// Returns a Map from field name (without the "sf" prefix) to {xrplType, ordinal}.
-function parseSfields(sfieldMacroFile) {
-  const hits = [
-    ...sfieldMacroFile.matchAll(
-      /^ *[A-Z]*TYPED_SFIELD *\( *sf([^,\n]*),[ \n]*([^, \n]+)[ \n]*,[ \n]*([0-9]+)/gm,
-    ),
-  ]
-  const map = new Map()
-  for (const hit of hits) {
-    map.set(hit[1], { xrplType: hit[2], ordinal: parseInt(hit[3]) })
-  }
-  return map
 }
 
 // Escrow fields are authoritative (a rename/change there is always picked
@@ -105,41 +92,6 @@ async function main() {
   // escrow-side losses observed), so the contract branch alone is a safe,
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
-
-  // Map XRPL types to Rust types
-  // All types now have FieldGetter implementations
-  const typeMap = {
-    UINT8: "u8",
-    UINT16: "u16",
-    UINT32: "u32",
-    UINT64: "u64",
-    UINT128: "Hash128",
-    UINT160: "Hash160",
-    UINT192: "Hash192",
-    UINT256: "Hash256",
-    AMOUNT: "Amount",
-    ACCOUNT: "AccountID",
-    VL: "StandardBlob",
-    CURRENCY: "Currency",
-    ISSUE: "Issue",
-    ARRAY: "Array",
-    OBJECT: "Object",
-  }
-
-  // Custom type overrides for specific field names
-  // These override the default type mapping from typeMap
-  const customFieldTypes = {
-    TransactionType: "TransactionType",
-    Condition: "ConditionBlob",
-    Fulfillment: "FulfillmentBlob",
-    FinishFunction: "WasmBlob",
-    PublicKey: "PublicKeyBlob",
-    Domain: "UriBlob",
-    MessageKey: "PublicKeyBlob",
-    SigningPubKey: "PublicKeyBlob",
-    TxnSignature: "SignatureBlob",
-    URI: "UriBlob",
-  }
 
   ////////////////////////////////////////////////////////////////////////
   //  SField processing (escrow branch is authoritative; contract branch

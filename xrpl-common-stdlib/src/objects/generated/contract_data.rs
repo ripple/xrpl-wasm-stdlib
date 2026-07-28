@@ -107,6 +107,7 @@ pub struct ContractData {
 }
 
 impl ContractData {
+    /// Binds this handle to a host-managed slot holding a ContractData ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

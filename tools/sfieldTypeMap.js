@@ -2,6 +2,42 @@
 // code generators. Extracted from generateSFields.js so both generators stay
 // in sync automatically instead of maintaining two copies.
 
+// Strip C-style comments (both `/* */` blocks and `//` lines) from a source
+// string. Shared by every rippled-macro parser here.
+function stripComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\r\n]*/g, "")
+}
+
+// Parses an sfields.macro file into a Map<sfFieldName (without the "sf"
+// prefix), {xrplType, ordinal}>. Shared by generateSFields.js and
+// generateLedgerObjects.js so both read the field table the same way.
+// e.g. `TYPED_SFIELD(sfAccount, ACCOUNT, 1)` -> map entry
+//      "Account" => { xrplType: "ACCOUNT", ordinal: 1 }
+function parseSfields(sfieldMacroFile) {
+  const hits = [
+    ...sfieldMacroFile.matchAll(
+      /^ *[A-Z]*TYPED_SFIELD *\( *sf([^,\n]*),[ \n]*([^, \n]+)[ \n]*,[ \n]*([0-9]+)/gm,
+    ),
+  ]
+  const map = new Map()
+  for (const hit of hits) {
+    map.set(hit[1], { xrplType: hit[2], ordinal: parseInt(hit[3]) })
+  }
+  return map
+}
+
+// Rust blob-type aliases that live in `crate::types::blob`. Used by the
+// ledger-object generator to route these types to the right import path.
+const BLOB_TYPES = [
+  "StandardBlob",
+  "ConditionBlob",
+  "FulfillmentBlob",
+  "SignatureBlob",
+  "UriBlob",
+  "WasmBlob",
+  "PublicKeyBlob",
+]
+
 // Map XRPL types to Rust types
 // All types now have FieldGetter implementations
 const typeMap = {
@@ -67,4 +103,7 @@ module.exports = {
   customFieldTypes,
   resolveRustType,
   resolveRustTypeDetailed,
+  stripComments,
+  parseSfields,
+  BLOB_TYPES,
 }
