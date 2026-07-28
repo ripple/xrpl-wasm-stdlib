@@ -352,10 +352,8 @@ impl FieldDecoder for Amount {
 
     #[inline]
     fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let mut padded = [0u8; AMOUNT_SIZE];
-        let n = bytes.len().min(AMOUNT_SIZE);
-        padded[..n].copy_from_slice(&bytes[..n]);
-        Amount::from_bytes(&padded).ok().ok_or(DecodeError)
+        let amount_bytes: [u8; AMOUNT_SIZE] = bytes.try_into().map_err(|_| DecodeError)?;
+        Amount::from_bytes(&amount_bytes).ok().ok_or(DecodeError)
     }
 }
 
