@@ -188,19 +188,19 @@ mod tests {
 
     #[test]
     fn test_u16_decodes_little_endian_host_bytes() {
-        let result = u16::decode(&[0x02, 0x01]);
+        let result = u16::decode(&[0x02, 0x01], 2);
         assert_eq!(result.unwrap(), 0x0102u16);
     }
 
     #[test]
     fn test_u32_decodes_little_endian_host_bytes() {
-        let result = u32::decode(&[0x04, 0x03, 0x02, 0x01]);
+        let result = u32::decode(&[0x04, 0x03, 0x02, 0x01], 4);
         assert_eq!(result.unwrap(), 0x01020304u32);
     }
 
     #[test]
     fn test_u64_decodes_little_endian_host_bytes() {
-        let result = u64::decode(&[0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]);
+        let result = u64::decode(&[0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01], 8);
         assert_eq!(result.unwrap(), 0x0102030405060708u64);
     }
 

@@ -190,9 +190,11 @@ impl<const N: usize> FieldDecoder for UInt<N> {
     }
 
     #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(array.into())
+    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        if bytes_written != buf.len() {
+            return core::result::Result::Err(DecodeError);
+        }
+        Ok((*buf).into())
     }
 }
 

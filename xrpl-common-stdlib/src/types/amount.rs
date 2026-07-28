@@ -339,9 +339,10 @@ impl LedgerObjectFieldGetter for Amount {
     }
 }
 
-/// `FieldDecoder` for XRPL amount values: zero-pads whatever bytes the host wrote (an XRP amount
-/// is only 8 bytes, MPT 33, IOU the full 48) up to `AMOUNT_SIZE`, then parses via
-/// `Amount::from_bytes`, mapping any parse failure to `DecodeError`.
+/// `FieldDecoder` for XRPL amount values. The host writes a variable number of bytes into the
+/// fixed `AMOUNT_SIZE` buffer — 8 for XRP, 33 for MPT, 48 for IOU — with the remainder left as
+/// `empty_buffer()`'s zero-padding, which is exactly the shape `Amount::from_bytes` wants, so it
+/// reads the buffer in place with no re-slice or re-copy.
 impl FieldDecoder for Amount {
     type Buffer = [u8; AMOUNT_SIZE];
 
@@ -351,13 +352,9 @@ impl FieldDecoder for Amount {
     }
 
     #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        match bytes.len() {
-            8 | 33 | AMOUNT_SIZE => {
-                let mut amount_bytes = [0u8; AMOUNT_SIZE];
-                amount_bytes[..bytes.len()].copy_from_slice(bytes);
-                Amount::from_bytes(&amount_bytes).ok().ok_or(DecodeError)
-            }
+    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        match bytes_written {
+            8 | 33 | AMOUNT_SIZE => Amount::from_bytes(buf).ok().ok_or(DecodeError),
             _ => core::result::Result::Err(DecodeError),
         }
     }
