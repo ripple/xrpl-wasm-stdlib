@@ -12,7 +12,7 @@ pub use xrpl_macros::pubkey;
 pub use xrpl_macros::r_address;
 pub use xrpl_macros::smart_contract;
 pub use xrpl_macros::smart_escrow;
-
+pub mod crypto;
 pub mod ctx;
 pub mod current_tx;
 pub mod fields;

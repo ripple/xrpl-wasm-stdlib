@@ -1,9 +1,11 @@
 use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_tx_field};
 use crate::sfield::SField;
+use crate::types::decode_error::DecodeError;
 
 /// The type of any given XRPL transaction.
 ///
@@ -186,6 +188,27 @@ impl CurrentTxFieldGetter for TransactionType {
         .map(|buffer| buffer.map(|b| i16::from_le_bytes(b).into()))
     }
 }
+
+/// `FieldDecoder` for XRPL transaction types: decodes a 2-byte buffer via the existing
+/// (infallible) `i16` mapping, failing only if the host wrote a different number of bytes.
+impl FieldDecoder for TransactionType {
+    type Buffer = [u8; 2];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 2]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(array.into())
+    }
+}
+
+// Tx-only: the transaction type is a transaction field. Ledger objects carry `LedgerEntryType`
+// as `SField<u16, _>`, not `SField<TransactionType, _>`, so there is no `FromLedger` impl here.
+impl FromCurrentTx for TransactionType {}
 
 #[cfg(test)]
 mod tests {
