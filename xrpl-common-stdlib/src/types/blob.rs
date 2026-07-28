@@ -1,8 +1,10 @@
 use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
+use crate::types::decode_error::DecodeError;
 
 /// Default blob size for general use (memos, etc.)
 pub const DEFAULT_BLOB_SIZE: usize = 1024;
@@ -249,6 +251,26 @@ impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
         .map(|opt| opt.map(|(data, len)| Blob { data, len }))
     }
 }
+
+/// `FieldDecoder` for any `Blob<N>`: copies whatever bytes the host wrote (at most `N`) into a
+/// `Blob<N>`, recording the actual length. Unlike fixed-size types, this never fails — blobs are
+/// variable-length by design.
+impl<const N: usize> FieldDecoder for Blob<N> {
+    type Buffer = [u8; N];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; N]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        Ok(Blob::from_slice(bytes))
+    }
+}
+
+impl<const N: usize> FromCurrentTx for Blob<N> {}
+impl<const N: usize> FromLedger for Blob<N> {}
 
 #[cfg(test)]
 mod tests {

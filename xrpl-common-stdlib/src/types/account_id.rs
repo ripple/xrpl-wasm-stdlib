@@ -4,12 +4,14 @@
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
 use crate::current_tx::CurrentTxFieldGetter;
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
 use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
+use crate::types::decode_error::DecodeError;
 
 pub const ACCOUNT_ID_SIZE: usize = 20;
 
@@ -123,3 +125,23 @@ impl CurrentTxFieldGetter for AccountID {
         .map(|buffer| buffer.map(|b| b.into()))
     }
 }
+
+/// `FieldDecoder` for XRPL account identifiers: decodes a 20-byte buffer into an `AccountID`,
+/// failing if the host wrote a different number of bytes.
+impl FieldDecoder for AccountID {
+    type Buffer = [u8; ACCOUNT_ID_SIZE];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; ACCOUNT_ID_SIZE]
+    }
+
+    #[inline]
+    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
+        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
+        Ok(array.into())
+    }
+}
+
+impl FromCurrentTx for AccountID {}
+impl FromLedger for AccountID {}
