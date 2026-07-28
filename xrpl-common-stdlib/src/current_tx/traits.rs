@@ -737,6 +737,36 @@ mod tests {
             }
 
             #[test]
+            fn test_get_fee_ok_when_host_writes_only_xrp_amount_bytes() {
+                // A real XRP amount from the host is only 8 bytes (not the full 48-byte
+                // AMOUNT_SIZE buffer used for IOU/MPT amounts); decode must zero-pad rather
+                // than requiring an exact 48-byte slice.
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .returning(|_, buf, _| {
+                        // XRP positive flag (0x40) + 1,000,000 drops in the low 7 bytes.
+                        let mut bytes = [0u8; 8];
+                        bytes[0] = 0x40;
+                        bytes[1..8].copy_from_slice(&1_000_000u64.to_be_bytes()[1..8]);
+                        unsafe {
+                            core::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
+                        }
+                        bytes.len() as i32
+                    });
+
+                let _guard = setup_mock(mock);
+                let result = TestTransaction.get_fee();
+                assert!(result.is_ok());
+                match result.unwrap() {
+                    crate::types::amount::Amount::XRP { num_drops } => {
+                        assert_eq!(num_drops, 1_000_000);
+                    }
+                    _ => panic!("Expected Amount::XRP"),
+                }
+            }
+
+            #[test]
             fn test_get_fee_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
