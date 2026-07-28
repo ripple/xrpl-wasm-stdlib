@@ -61,13 +61,43 @@ pub const WASM_BLOB_SIZE: usize = 4096;
 /// // Create a smaller 256-byte blob for URIs
 /// let uri_blob: UriBlob = UriBlob::new();
 /// ```
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
 pub struct Blob<const N: usize> {
     pub data: [u8; N],
 
     /// The actual length of this blob, if less than data.len()
     pub len: usize,
+}
+
+impl<const N: usize> core::fmt::Debug for Blob<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Blob")
+            .field("data", &self.as_slice())
+            .field("len", &self.len)
+            .finish()
+    }
+}
+
+impl<const N: usize> PartialEq for Blob<N> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+
+impl<const N: usize> Eq for Blob<N> {}
+
+impl<const N: usize> Clone for Blob<N> {
+    fn clone(&self) -> Self {
+        Self::from_slice(self.as_slice())
+    }
+}
+
+impl<const N: usize> core::ops::Deref for Blob<N> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
 }
 
 impl<const N: usize> Blob<N> {
@@ -360,7 +390,7 @@ mod tests {
     }
 
     #[test]
-    fn test_equality_compares_full_struct() {
+    fn test_equality_compares_data_and_len() {
         let blob1: Blob<5> = Blob::from_slice(&[1, 2, 3]);
         let blob2: Blob<5> = Blob::from_slice(&[1, 2, 3]);
         let blob3: Blob<5> = Blob::from_slice(&[1, 2, 3, 4]);
@@ -370,16 +400,50 @@ mod tests {
     }
 
     #[test]
-    fn test_clone_creates_independent_copy() {
-        let blob1: Blob<5> = Blob::from_slice(&[1, 2, 3]);
-        let mut blob2 = blob1;
+    fn test_equality_ignores_bytes_beyond_len() {
+        // Same len, same logical content, but differing bytes past `len` in the backing array.
+        let blob1: Blob<5> = Blob {
+            data: [1, 2, 3, 0, 0],
+            len: 3,
+        };
+        let blob2: Blob<5> = Blob {
+            data: [1, 2, 3, 0xAA, 0xBB],
+            len: 3,
+        };
 
-        // Modify blob2
-        blob2.data[0] = 99;
+        assert_eq!(blob1, blob2);
+    }
 
-        // blob1 should be unchanged (Copy trait means independent copy)
-        assert_eq!(blob1.data[0], 1);
-        assert_eq!(blob2.data[0], 99);
+    #[test]
+    fn test_clone_does_not_carry_over_bytes_beyond_len() {
+        let original: Blob<5> = Blob {
+            data: [1, 2, 0xFF, 0xFF, 0xFF],
+            len: 2,
+        };
+
+        let cloned = original.clone();
+
+        assert_eq!(cloned, original);
+        assert_eq!(cloned.data, [1, 2, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_debug_output_excludes_bytes_beyond_len() {
+        let blob: Blob<5> = Blob {
+            data: [1, 2, 0xFF, 0xFF, 0xFF],
+            len: 2,
+        };
+
+        let debug_str = format!("{:?}", blob);
+        assert!(!debug_str.contains("255"));
+    }
+
+    #[test]
+    fn test_deref_returns_slice_up_to_len() {
+        let blob: Blob<5> = Blob::from_slice(&[9, 8, 7]);
+        let slice: &[u8] = &blob;
+
+        assert_eq!(slice, &[9, 8, 7]);
     }
 
     #[test]
