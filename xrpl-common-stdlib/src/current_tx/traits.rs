@@ -715,11 +715,6 @@ mod tests {
             fn test_variable_size_fields_ok_when_zero_length() {
                 let mut mock = MockHostBindings::new();
 
-                // get_fee - returns 0 (zero length)
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
-                    .times(1)
-                    .returning(|_, _, _| 0);
                 // get_signing_pub_key - returns 0 (zero length)
                 mock.expect_get_tx_field()
                     .with(
@@ -734,15 +729,27 @@ mod tests {
 
                 let tx = TestTransaction;
 
-                // Variable-size field (Amount) returns Ok with zero length
-                let fee_result = tx.get_fee();
-                assert!(fee_result.is_ok());
-
                 // SigningPubKey is special: zero length indicates multi-signature transaction
                 // and should return Ok(None), not an error
                 let signing_key_result = tx.get_signing_pub_key();
                 assert!(signing_key_result.is_ok());
                 assert!(signing_key_result.unwrap().is_none());
+            }
+
+            #[test]
+            fn test_get_fee_errors_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+                let result = TestTransaction.get_fee();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
