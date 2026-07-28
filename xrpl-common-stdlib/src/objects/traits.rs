@@ -539,7 +539,7 @@ mod tests {
             // get_previous_txn_lgr_seq
             expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
             // get_data (mandatory for escrow)
-            expect_ledger_field(&mut mock, 1, sfield::Data, 4096, 1);
+            expect_ledger_field(&mut mock, 1, sfield::Data, XRPL_CONTRACT_DATA_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -680,7 +680,12 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::Data), always(), eq(4096))
+                .with(
+                    eq(1),
+                    eq(sfield::Data),
+                    always(),
+                    eq(XRPL_CONTRACT_DATA_SIZE),
+                )
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
 

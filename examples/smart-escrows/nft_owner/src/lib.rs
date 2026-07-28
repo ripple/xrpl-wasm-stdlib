@@ -8,15 +8,18 @@ use xrpl_common_stdlib::host::get_tx_nested_field;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use xrpl_common_stdlib::types::nft::{NFT_ID_SIZE, NFToken};
-use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<ContractData>> {
-    let mut data: ContractData = [0; XRPL_CONTRACT_DATA_SIZE];
+    let mut data: ContractData = ContractData {
+        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
+        len: 0,
+    };
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
@@ -25,8 +28,8 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
         get_tx_nested_field(
             locator.as_ptr(),
             locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
+            data.data.as_mut_ptr(),
+            data.data.len(),
         )
     };
 
@@ -57,7 +60,7 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
     };
 
     // Extract NFT ID from memo (first 32 bytes) and create NFToken
-    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo[0..32].try_into().unwrap();
+    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..32].try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
     let _ = trace_data("NFT ID from memo:", nft_token.as_bytes(), DataRepr::AsHex);
 
