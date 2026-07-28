@@ -7,6 +7,7 @@
 //! type at compile time; the context-specific `get_field` functions (see
 //! [`crate::fields::current_tx`], [`crate::fields::ledger_obj`]) require the matching marker.
 
+use crate::host;
 use crate::types::decode_error::DecodeError;
 
 /// Decodes a typed value from the raw bytes a host function wrote.
@@ -31,6 +32,30 @@ pub trait FromCurrentTx: FieldDecoder {}
 
 /// Marker: this type can be read from a ledger object via [`crate::fields::ledger_obj`].
 pub trait FromLedger: FieldDecoder {}
+
+/// Shared step behind every `get_field`/`get_field_optional` in [`crate::fields::current_tx`]
+/// and [`crate::fields::ledger_obj`]: turn a host result code and the buffer it (partially)
+/// filled into a typed value.
+///
+/// Callers handle the "field not found" case themselves (only `get_field_optional` has one)
+/// before reaching here; `n` is assumed to be either a real byte count or a hard error.
+#[inline]
+pub(crate) fn decode_result<T: FieldDecoder>(buf: &T::Buffer, n: i32) -> host::Result<T> {
+    if n < 0 {
+        return host::Result::Err(host::Error::from_code(n));
+    }
+    let bytes = buf.as_ref();
+    let n = n as usize;
+    if n > bytes.len() {
+        // A conformant host never reports writing more bytes than the buffer holds; a positive
+        // count past our buffer means it described memory outside the allowed region.
+        return host::Result::Err(host::Error::PointerOutOfBounds);
+    }
+    match T::decode(&bytes[..n]) {
+        Ok(value) => host::Result::Ok(value),
+        Err(_) => host::Result::Err(host::Error::InvalidDecoding),
+    }
+}
 
 impl FieldDecoder for u8 {
     type Buffer = [u8; 1];

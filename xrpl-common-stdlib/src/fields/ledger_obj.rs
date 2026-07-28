@@ -5,8 +5,7 @@
 //! implementing [`crate::fields::decoder::FromLedger`] — see [`crate::fields::decoder`] for
 //! how a type opts into that.
 
-use crate::fields::decoder::FromLedger;
-use crate::host;
+use crate::fields::decoder::{FromLedger, decode_result};
 use crate::host::error_codes::FIELD_NOT_FOUND;
 use crate::host::{Result, get_ledger_obj_field};
 use crate::sfield::SField;
@@ -25,20 +24,7 @@ pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) 
         let slice = buf.as_mut();
         unsafe { get_ledger_obj_field(slot, CODE, slice.as_mut_ptr(), slice.len()) }
     };
-    if n < 0 {
-        return Result::Err(host::Error::from_code(n));
-    }
-    let bytes = buf.as_mut();
-    let n = n as usize;
-    if n > bytes.len() {
-        // A conformant host never reports writing more bytes than the buffer holds; a positive
-        // count past our buffer means it described memory outside the allowed region.
-        return Result::Err(host::Error::PointerOutOfBounds);
-    }
-    match T::decode(&bytes[..n]) {
-        core::result::Result::Ok(value) => Result::Ok(value),
-        core::result::Result::Err(_) => Result::Err(host::Error::InvalidDecoding),
-    }
+    decode_result::<T>(&buf, n)
 }
 
 /// Retrieves an optionally present field from the ledger object cached in `slot`.
@@ -62,18 +48,7 @@ pub fn get_field_optional<T: FromLedger, const CODE: i32>(
     if n == FIELD_NOT_FOUND {
         return Result::Ok(None);
     }
-    if n < 0 {
-        return Result::Err(host::Error::from_code(n));
-    }
-    let bytes = buf.as_mut();
-    let n = n as usize;
-    if n > bytes.len() {
-        return Result::Err(host::Error::PointerOutOfBounds);
-    }
-    match T::decode(&bytes[..n]) {
-        core::result::Result::Ok(value) => Result::Ok(Some(value)),
-        core::result::Result::Err(_) => Result::Err(host::Error::InvalidDecoding),
-    }
+    decode_result::<T>(&buf, n).map(Some)
 }
 
 #[cfg(test)]
