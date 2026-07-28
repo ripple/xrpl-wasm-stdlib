@@ -1,6 +1,7 @@
 use crate::ctx::escrow_finish::EscrowFinishContext;
 use crate::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_common_stdlib::host::Result;
+use xrpl_common_stdlib::types::XRPL_CONTRACT_DATA_SIZE;
 
 pub trait EscrowStorage: Sized {
     fn encode(&self, out: &mut [u8]) -> Result<usize>;
@@ -22,7 +23,7 @@ pub fn load_data<T: EscrowStorage>(ctx: &EscrowFinishContext) -> Result<Option<T
 }
 
 pub fn save_data<T: EscrowStorage>(ctx: &EscrowFinishContext, data: &T) -> Result<()> {
-    let mut bytes = [0u8; 1024];
+    let mut bytes = [0u8; XRPL_CONTRACT_DATA_SIZE];
     let n = match data.encode(&mut bytes) {
         Result::Ok(n) => n,
         Result::Err(e) => return Result::Err(e),
