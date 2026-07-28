@@ -352,9 +352,9 @@ impl FieldDecoder for Amount {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
         match bytes_written {
-            8 | 33 | AMOUNT_SIZE => Amount::from_bytes(buf).ok().ok_or(DecodeError),
+            8 | 33 | AMOUNT_SIZE => Amount::from_bytes(&buf).ok().ok_or(DecodeError),
             _ => core::result::Result::Err(DecodeError),
         }
     }

@@ -27,8 +27,10 @@ pub trait FieldDecoder: Sized {
     ///
     /// `bytes_written` carries the length that a `&[u8]` slice would otherwise bundle inside its
     /// fat pointer — passing the whole buffer plus `bytes_written` lets fixed-layout types (e.g.
-    /// `Amount`) read the padded buffer in place, with no re-slice or re-copy.
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError>;
+    /// `Amount`) read the padded buffer in place, with no re-slice or re-copy. `buf` is taken by
+    /// value (the caller's local buffer is never used again) so implementations can move it
+    /// straight into `Self` instead of copying — this matters for large buffers like `WasmBlob`.
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError>;
 }
 
 /// Marker: this type can be read from the current transaction via [`crate::fields::current_tx`].
@@ -44,7 +46,7 @@ pub trait FromLedger: FieldDecoder {}
 /// Callers handle the "field not found" case themselves (only `get_field_optional` has one)
 /// before reaching here; `n` is assumed to be either a real byte count or a hard error.
 #[inline]
-pub(crate) fn decode_result<T: FieldDecoder>(buf: &T::Buffer, n: i32) -> host::Result<T> {
+pub(crate) fn decode_result<T: FieldDecoder>(buf: T::Buffer, n: i32) -> host::Result<T> {
     if n < 0 {
         return host::Result::Err(host::Error::from_code(n));
     }
@@ -69,11 +71,11 @@ impl FieldDecoder for u8 {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
         if bytes_written != buf.len() {
             return Err(DecodeError);
         }
-        Ok(u8::from_le_bytes(*buf))
+        Ok(u8::from_le_bytes(buf))
     }
 }
 
@@ -89,11 +91,11 @@ impl FieldDecoder for u16 {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
         if bytes_written != buf.len() {
             return Err(DecodeError);
         }
-        Ok(u16::from_le_bytes(*buf))
+        Ok(u16::from_le_bytes(buf))
     }
 }
 
@@ -109,11 +111,11 @@ impl FieldDecoder for u32 {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
         if bytes_written != buf.len() {
             return Err(DecodeError);
         }
-        Ok(u32::from_le_bytes(*buf))
+        Ok(u32::from_le_bytes(buf))
     }
 }
 
@@ -129,11 +131,11 @@ impl FieldDecoder for u64 {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
         if bytes_written != buf.len() {
             return Err(DecodeError);
         }
-        Ok(u64::from_le_bytes(*buf))
+        Ok(u64::from_le_bytes(buf))
     }
 }
 
@@ -154,7 +156,7 @@ mod tests {
             [0u8; 1]
         }
 
-        fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+        fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
             if bytes_written == 0 {
                 return Err(DecodeError);
             }
@@ -173,7 +175,7 @@ mod tests {
             [0u8; 1]
         }
 
-        fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+        fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
             if bytes_written == 0 {
                 return Err(DecodeError);
             }
@@ -192,7 +194,7 @@ mod tests {
             [0u8; 1]
         }
 
-        fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+        fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
             if bytes_written == 0 {
                 return Err(DecodeError);
             }
@@ -227,12 +229,12 @@ mod tests {
 
     #[test]
     fn decode_returns_value_on_success() {
-        assert_eq!(TxOnly::decode(&[42], 1), Ok(TxOnly(42)));
+        assert_eq!(TxOnly::decode([42], 1), Ok(TxOnly(42)));
     }
 
     #[test]
     fn decode_returns_error_on_empty_input() {
-        assert_eq!(TxOnly::decode(&[0], 0), Err(DecodeError));
+        assert_eq!(TxOnly::decode([0], 0), Err(DecodeError));
     }
 
     #[test]

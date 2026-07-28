@@ -103,11 +103,11 @@ impl FieldDecoder for AccountID {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
         if bytes_written != buf.len() {
             return core::result::Result::Err(DecodeError);
         }
-        Ok((*buf).into())
+        Ok(buf.into())
     }
 }
 
