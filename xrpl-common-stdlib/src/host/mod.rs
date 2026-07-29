@@ -22,7 +22,6 @@
 
 pub mod chain;
 pub mod error_codes;
-pub mod field_helpers;
 pub mod trace;
 
 // Float rounding mode constants (same as in host_bindings.rs)
@@ -206,27 +205,6 @@ impl From<i64> for Result<u64> {
             res if res >= 0 => Result::Ok(value as _),
             _ => Result::Err(Error::from_code(value as _)),
         }
-    }
-}
-
-/// Transposes an `Option` of a `Result` into a `Result` of an `Option`.
-///
-/// `None` will be mapped to `Ok(None)`.
-/// `Some(Ok(_))` and `Some(Err(_))` will be mapped to `Ok(Some(_))` and `Err(_)`.
-///
-/// # Examples
-///
-/// ```ignore
-/// let x: Option<Result<i32>> = Some(Ok(5));
-/// let y: Result<Option<i32>> = transpose_option(x);
-/// assert_eq!(y, Ok(Some(5)));
-/// ```
-#[inline]
-pub fn transpose_option<T>(opt: Option<Result<T>>) -> Result<Option<T>> {
-    match opt {
-        Some(Result::Ok(x)) => Result::Ok(Some(x)),
-        Some(Result::Err(e)) => Result::Err(e),
-        None => Result::Ok(None),
     }
 }
 

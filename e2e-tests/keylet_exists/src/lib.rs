@@ -7,7 +7,6 @@ use crate::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_account, trace_data, trace_num};
 use xrpl_common_stdlib::keylets;
-use xrpl_common_stdlib::objects::LedgerObjectFieldGetter;
 use xrpl_common_stdlib::objects::ledger_object;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::sfield::SField;
@@ -18,7 +17,7 @@ use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::get_current_escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
-pub fn object_exists<T: LedgerObjectFieldGetter, const CODE: i32>(
+pub fn object_exists<T, const CODE: i32>(
     keylet_result: Result<keylets::KeyletBytes>,
     keylet_type: &str,
     field: SField<T, CODE>,

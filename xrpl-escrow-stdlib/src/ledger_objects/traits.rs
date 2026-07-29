@@ -1,6 +1,6 @@
 //! Escrow-specific ledger-object field accessor traits.
 
-use xrpl_common_stdlib::host::error_codes::{match_result_code, match_result_code_optional};
+use xrpl_common_stdlib::host::error_codes::match_result_code;
 use xrpl_common_stdlib::host::{Error, get_current_ledger_obj_field, update_data};
 use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::current_ledger_object;
@@ -38,18 +38,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = ConditionBlob::new();
-        let result_code = unsafe {
-            get_current_ledger_obj_field(
-                sfield::Condition.into(),
-                buffer.data.as_mut_ptr(),
-                buffer.capacity(),
-            )
-        };
-        match_result_code_optional(result_code, || {
-            buffer.len = result_code as usize;
-            (result_code > 0).then_some(buffer)
-        })
+        current_ledger_object::get_blob_field_optional(sfield::Condition)
     }
 
     /// The destination address where the XRP is paid if the escrow is successful.
@@ -101,7 +90,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
 
     /// The WASM code that is executing.
     fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        current_ledger_object::get_field_optional(sfield::FinishFunction)
+        current_ledger_object::get_blob_field_optional(sfield::FinishFunction)
     }
 
     /// Retrieves the contract `data` from the current escrow object.
@@ -154,13 +143,13 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
 mod tests {
     use super::*;
     use mockall::predicate::{always, eq};
+    use xrpl_common_stdlib::fields::decoder::FromLedger;
     use xrpl_common_stdlib::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
-    use xrpl_common_stdlib::objects::LedgerObjectFieldGetter;
     use xrpl_common_stdlib::sfield::SField;
 
     fn expect_current_field<
-        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+        T: FromLedger + Send + std::fmt::Debug + PartialEq + 'static,
         const CODE: i32,
     >(
         mock: &mut MockHostBindings,
@@ -187,8 +176,12 @@ mod tests {
 
             // get_account
             expect_current_field(&mut mock, sfield::Account, 20, 1);
-            // get_amount
-            expect_current_field(&mut mock, sfield::Amount, 48, 1);
+            // get_amount: buffer is AMOUNT_SIZE (48), but the host reports the XRP variant's
+            // 8-byte wire length, which `Amount::decode` validates against the parsed variant.
+            mock.expect_get_current_ledger_obj_field()
+                .with(eq::<i32>(sfield::Amount.into()), always(), eq(48))
+                .times(1)
+                .returning(|_, _, _| 8);
             // get_destination
             expect_current_field(&mut mock, sfield::Destination, 20, 1);
             // get_owner_node
@@ -256,11 +249,11 @@ mod tests {
                 .with(eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-            // get_condition - returns 0 for None
+            // get_condition - FIELD_NOT_FOUND yields None
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
-                .returning(|_, _, _| 0);
+                .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_destination_node
             mock.expect_get_current_ledger_obj_field()
                 .with(eq(sfield::DestinationNode), always(), eq(8))
