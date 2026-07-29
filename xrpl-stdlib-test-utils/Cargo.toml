@@ -2,7 +2,7 @@
 name = "xrpl-stdlib-test-utils"
 version = "0.1.0"
 edition = "2024"
-description = "Test harness for XRPL WebAssembly smart contracts: MockHostBindings plus escrow scenario builders"
+description = "Test harness for XRPL WebAssembly smart contracts: MockHostBindings plus escrow/contract scenario builders"
 license.workspace = true
 repository.workspace = true
 

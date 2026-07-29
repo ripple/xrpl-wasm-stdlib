@@ -3,11 +3,12 @@
 //! Translates domain facts (account, amount, ...) into `MockHostBindings` expectations, so
 //! tests read in terms of the escrow scenario instead of raw host-function wiring.
 
-use crate::mock_common::{MockGuard, MockHostBindings, apply_default_expectations, setup_mock};
+use crate::mock_common::{
+    MockGuard, MockHostBindings, apply_default_expectations, setup_mock, write_bytes,
+};
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::types::amount::Amount;
 use xrpl_wasm_stdlib::host::Error;
-use xrpl_wasm_stdlib::host::error_codes::BUFFER_TOO_SMALL;
 use xrpl_wasm_stdlib::sfield;
 
 /// Pre-wires common Smart Escrow test setups onto a [`MockHostBindings`].
@@ -89,13 +90,13 @@ impl EscrowScenarioBuilder {
                     if field == account_code
                         && let Some(account) = account
                     {
-                        return write_bytes(&account.0, out_buff_ptr, out_buff_len);
+                        return unsafe { write_bytes(&account.0, out_buff_ptr, out_buff_len) };
                     }
                     if field == amount_code
                         && let Some(amount) = &amount
                     {
                         let (bytes, len) = amount.to_stamount_bytes();
-                        return write_bytes(&bytes[..len], out_buff_ptr, out_buff_len);
+                        return unsafe { write_bytes(&bytes[..len], out_buff_ptr, out_buff_len) };
                     }
                     out_buff_len as i32
                 });
@@ -111,18 +112,6 @@ impl EscrowScenarioBuilder {
     }
 }
 
-/// Writes `bytes` into the raw output buffer, mirroring how the real host functions report
-/// back the number of bytes written (or `BUFFER_TOO_SMALL` if the caller's buffer is too small).
-fn write_bytes(bytes: &[u8], out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
-    if out_buff_len < bytes.len() {
-        return BUFFER_TOO_SMALL;
-    }
-    unsafe {
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buff_ptr, bytes.len());
-    }
-    bytes.len() as i32
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -130,13 +119,6 @@ mod tests {
 
     fn test_account() -> AccountID {
         AccountID::from([0xAB; 20])
-    }
-
-    #[test]
-    fn write_bytes_returns_buffer_too_small_when_the_caller_buffer_is_undersized() {
-        let mut undersized = [0u8; 4];
-        let result = write_bytes(&[1, 2, 3, 4, 5], undersized.as_mut_ptr(), undersized.len());
-        assert_eq!(result, BUFFER_TOO_SMALL);
     }
 
     #[test]
@@ -202,7 +184,7 @@ mod tests {
         let expected_code: i32 = i32::from(sfield::Account);
         mock.expect_get_tx_field()
             .withf(move |field, _, _| *field == expected_code)
-            .returning(move |_, out_buff_ptr, out_buff_len| {
+            .returning(move |_, out_buff_ptr, out_buff_len| unsafe {
                 write_bytes(&overridden_account.0, out_buff_ptr, out_buff_len)
             });
 
