@@ -227,9 +227,9 @@ impl<const N: usize> FieldDecoder for Blob<N> {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
         Ok(Blob {
-            data: *buf,
+            data: buf,
             len: bytes_written,
         })
     }

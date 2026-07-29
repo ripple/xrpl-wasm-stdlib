@@ -23,7 +23,7 @@ pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) 
         let slice = buf.as_mut();
         unsafe { get_ledger_obj_field(slot, CODE, slice.as_mut_ptr(), slice.len()) }
     };
-    decode_host_result::<T>(&buf, n)
+    decode_host_result::<T>(buf, n)
 }
 
 /// Retrieves an optionally present field from the ledger object cached in `slot`.

@@ -13,7 +13,7 @@ impl FieldDecoder for ObjOnly {
         [0u8; 1]
     }
 
-    fn decode(_buf: &Self::Buffer, _bytes_written: usize) -> Result<Self, DecodeError> {
+    fn decode(_buf: Self::Buffer, _bytes_written: usize) -> Result<Self, DecodeError> {
         Ok(ObjOnly)
     }
 }

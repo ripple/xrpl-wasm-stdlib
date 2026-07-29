@@ -103,8 +103,8 @@ impl FieldDecoder for AccountID {
     }
 
     #[inline]
-    fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
-        decode_exact(*buf, bytes_written)
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        decode_exact(buf, bytes_written)
     }
 }
 
