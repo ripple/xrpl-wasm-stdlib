@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `xrpl_common_stdlib::objects::array_object::Array: FromCurrentTx` is not satisfied
+  --> tests/locator/fail_get_array_not_readable.rs:14:50
+   |
+14 |     let _ = Tx.path().field(sfield::Memos).get::<Array>();
+   |                                            ---   ^^^^^ the trait `FromCurrentTx` is not implemented for `xrpl_common_stdlib::objects::array_object::Array`
+   |                                            |
+   |                                            required by a bound introduced by this call
+   |
+   = help: the following other types implement trait `FromCurrentTx`:
+             AccountID
+             Amount
+             Blob<N>
+             TransactionType
+             UInt<xrpl_common_stdlib::::types::uint::UInt256::{constant#0}>
+             u16
+             u32
+             u64
+             u8
+note: required by a bound in `TxPathBuilder::get`
+  --> src/fields/locator.rs
+   |
+   |     pub fn get<T: FromCurrentTx>(&self) -> Result<T> {
+   |                   ^^^^^^^^^^^^^ required by this bound in `TxPathBuilder::get`
