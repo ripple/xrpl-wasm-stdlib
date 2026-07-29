@@ -1,0 +1,13 @@
+error: #[smart_contract] takes no arguments
+ --> tests/smart_contract/fail_attr_args.rs:5:18
+  |
+5 | #[smart_contract(foo)]
+  |                  ^^^
+
+warning: unused import: `call`
+ --> tests/smart_contract/fail_attr_args.rs:1:19
+  |
+1 | use xrpl_macros::{call, smart_contract};
+  |                   ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

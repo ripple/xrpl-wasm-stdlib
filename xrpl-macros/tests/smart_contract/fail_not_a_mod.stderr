@@ -1,0 +1,5 @@
+error: expected `mod`
+ --> tests/smart_contract/fail_not_a_mod.rs:4:1
+  |
+4 | struct Foo;
+  | ^^^^^^

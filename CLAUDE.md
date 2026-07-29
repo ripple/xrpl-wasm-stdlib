@@ -12,11 +12,11 @@ Smart escrow WASM modules export `extern "C" fn finish() -> i32`. Returning a po
 
 ## Three Cargo workspaces (intentional, do not merge)
 
-| Workspace | Path                   | Members                                                 |
-| --------- | ---------------------- | ------------------------------------------------------- |
-| Library   | `/Cargo.toml` (root)   | `xrpl-wasm-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib` |
-| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                  |
-| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates      |
+| Workspace | Path                   | Members                                                                                                                                                   |
+| --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Library   | `/Cargo.toml` (root)   | `xrpl-wasm-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-contract-stdlib` (+ `xrpl-contract-stdlib/xrpl-parameter-macro`), `xrpl-stdlib-test-utils` |
+| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                                                                                                                    |
+| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates                                                                                                        |
 
 The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they target `wasm32v1-none` with `crate-type = ["cdylib"]`. Build/clippy scripts `cd` into each workspace separately — if you add a new top-level workspace, mirror that in `scripts/build.sh` and `scripts/clippy.sh`.
 
@@ -72,11 +72,12 @@ The library workspace is split into three crates with a strict dependency direct
 
 - **`xrpl-macros`** — proc-macro crate, no runtime dependencies on the other two. Exports:
   - Typed-constant macros: `r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!` — validate at compile time and emit a typed XRPL value.
-  - Entry-point macros: `#[smart_escrow]`, `#[smart_contract]` — wrap a user function in the `extern "C"` symbol the XRPL host calls. Both share a `parse → validate → codegen` pipeline in `entry_point/`; adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
+  - Entry-point macros: `#[smart_escrow]` (function-level — wraps one function in the `extern "C" fn finish()` export) and `#[smart_contract]` (module-level — scans the annotated `mod` for `#[init]`, `#[call]`, `#[user_delete]`, `#[clawback]` functions and emits one named `extern "C"` export per function; at most one `#[init]`; lifecycle attributes export under a fixed name, `#[call]` exports under the Rust identifier). Both share the `parse → validate → codegen` pipeline in `entry_point/` (`ValidationRules`/`ReturnKind` are configurable per macro, e.g. the accepted wrapped return type); adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
 - **`xrpl-wasm-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
-- **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Re-exports `xrpl_wasm_stdlib::*`, so contract code typically only needs to depend on `xrpl-escrow-stdlib`.
+- **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`).
+- **`xrpl-contract-stdlib`** — Smart Contract (XLS-101)-specific entry-point context (`ContractCallContext`), contract-owned/user-owned persistent storage (`ContractStorage`), outbound transaction emission (`ctx.emit`), and function/instance parameter reading. Also owns `xrpl-parameter-macro`, a separate proc-macro crate for ergonomic parameter binding (`#[wasm_export]`), unrelated to `xrpl-macros`' entry-point pipeline. Root-workspace member alongside the other three.
 
-**Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
+**Rule of thumb:** domain-specific code (escrow, contract, and any future smart-feature type) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` and `ContractCallContext` implement — new features add a new context type/crate rather than extending this trait.
 
 ## Architecture: the three-implementation host-binding swap
 

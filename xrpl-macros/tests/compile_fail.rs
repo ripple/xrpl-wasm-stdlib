@@ -22,4 +22,5 @@ fn compile_fail() {
     t.compile_fail("tests/currency/fail_*.rs");
     t.compile_fail("tests/blob/fail_*.rs");
     t.compile_fail("tests/smart_escrow/fail_*.rs");
+    t.compile_fail("tests/smart_contract/fail_*.rs");
 }

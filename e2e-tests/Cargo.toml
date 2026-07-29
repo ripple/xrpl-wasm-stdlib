@@ -17,6 +17,7 @@ members = [
     "smart-contracts/instance_params_uint",
     "smart-contracts/instance_params_other",
     "smart-contracts/parameter_macro",
+    "smart-contracts/smart_contract_macro",
 ]
 
 [workspace.dependencies]

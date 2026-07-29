@@ -1,0 +1,13 @@
+error: return type must be `i32`
+  --> tests/smart_contract/fail_wrong_return.rs:10:42
+   |
+10 |     fn run(_ctx: ContractCallContext) -> String {
+   |                                          ^^^^^^
+
+warning: unused import: `call`
+ --> tests/smart_contract/fail_wrong_return.rs:1:19
+  |
+1 | use xrpl_macros::{call, smart_contract};
+  |                   ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

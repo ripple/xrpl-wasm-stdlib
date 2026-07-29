@@ -212,8 +212,106 @@ pub fn smart_escrow(attr: TokenStream, item: TokenStream) -> TokenStream {
     entry_point::smart_escrow::expand(attr, item)
 }
 
-/// Wraps a Smart Contract entry function in the appropriate `extern "C"` export.
+/// Scans a module for `#[init]`, `#[call]`, `#[user_delete]`, and `#[clawback]`
+/// functions and emits one named `extern "C"` export per function — the
+/// XRPL host routes an incoming `ContractCall` to the matching export by name.
+///
+/// Each annotated function must:
+/// - Take `ContractCallContext` as its first (and only) argument.
+/// - Return `i32`.
+///
+/// Lifecycle functions (`#[init]`, `#[user_delete]`, `#[clawback]`) always
+/// export under their fixed name, regardless of the Rust function identifier.
+/// `#[call]` functions export under the Rust function identifier. At most one
+/// `#[init]` function is allowed per module. Any other signature, a second
+/// `#[init]`, or a `mod` without an inline body (`mod name;`) is a compile
+/// error pointing at the offending token.
+///
+/// # Usage
+///
+/// Import this attribute directly from `xrpl_macros`. The generated code
+/// references `ContractCallContext` via the absolute path
+/// `::xrpl_contract_stdlib::ContractCallContext`, so the crate using this
+/// macro must depend on `xrpl-contract-stdlib` — but the macro itself is not
+/// re-exported from there; `xrpl_macros` is the only import path.
+///
+/// `#[init]`, `#[call]`, `#[user_delete]`, and `#[clawback]` do not need to
+/// be imported to tag functions inside the module: `#[smart_contract]`
+/// receives the module as unexpanded tokens, so rustc never tries to resolve
+/// them as attribute macros in their own right. Importing them anyway (e.g.
+/// `use xrpl_macros::call;`) triggers an unused-import warning, since nothing
+/// in the expanded code ends up referencing the import.
+///
+/// ```rust,ignore
+/// use xrpl_contract_stdlib::ContractCallContext;
+/// use xrpl_macros::smart_contract;
+///
+/// #[smart_contract]
+/// mod freelancer {
+///     use super::ContractCallContext;
+///
+///     #[init]
+///     fn initialize(_ctx: ContractCallContext) -> i32 {
+///         0
+///     }
+///
+///     #[call]
+///     fn submit_work(_ctx: ContractCallContext) -> i32 {
+///         0
+///     }
+///
+///     #[user_delete]
+///     fn cleanup(_ctx: ContractCallContext) -> i32 {
+///         0
+///     }
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn smart_contract(attr: TokenStream, item: TokenStream) -> TokenStream {
     entry_point::smart_contract::expand(attr, item)
+}
+
+/// Marks a function inside a `#[smart_contract]` module as the contract's
+/// one-time initializer, exported as `extern "C" fn init() -> i32`.
+///
+/// Inert on its own — `#[smart_contract]`'s expander consumes and strips this
+/// attribute during expansion. It exists as a real attribute macro (rather
+/// than a bare marker) so it resolves correctly if referenced outside a
+/// `#[smart_contract]` module, e.g. by an IDE or a stray import. Import
+/// directly from `xrpl_macros`, same as `#[smart_contract]` itself — see its
+/// doc comment for why importing it is unnecessary when used inside a
+/// `#[smart_contract]` module.
+#[proc_macro_attribute]
+pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+/// Marks a function inside a `#[smart_contract]` module as a callable entry
+/// point, exported as `extern "C" fn <fn-name>() -> i32`.
+///
+/// Inert on its own — `#[smart_contract]`'s expander consumes and strips this
+/// attribute during expansion.
+#[proc_macro_attribute]
+pub fn call(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+/// Marks a function inside a `#[smart_contract]` module as the fixed
+/// `user_delete` lifecycle export, exported as `extern "C" fn user_delete() -> i32`.
+///
+/// Inert on its own — `#[smart_contract]`'s expander consumes and strips this
+/// attribute during expansion.
+#[proc_macro_attribute]
+pub fn user_delete(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+/// Marks a function inside a `#[smart_contract]` module as the fixed
+/// `clawback` lifecycle export, exported as `extern "C" fn clawback() -> i32`.
+///
+/// Inert on its own — `#[smart_contract]`'s expander consumes and strips this
+/// attribute during expansion.
+#[proc_macro_attribute]
+pub fn clawback(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
 }

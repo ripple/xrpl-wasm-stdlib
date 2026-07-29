@@ -24,6 +24,7 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         &entry,
         &ValidationRules {
             expected_ctx_type: "EscrowFinishContext",
+            wrapped_return_type: Some("FinishResult"),
         },
     ) {
         Ok(k) => k,

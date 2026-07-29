@@ -1,0 +1,13 @@
+error: function can have at most one entry-point attribute
+  --> tests/smart_contract/fail_multiple_entry_attrs.rs:10:5
+   |
+10 |     #[call]
+   |     ^^^^^^^
+
+warning: unused imports: `call` and `init`
+ --> tests/smart_contract/fail_multiple_entry_attrs.rs:1:19
+  |
+1 | use xrpl_macros::{call, init, smart_contract};
+  |                   ^^^^  ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

@@ -1,0 +1,13 @@
+error: at most one #[init] function is allowed
+  --> tests/smart_contract/fail_multiple_init.rs:15:8
+   |
+15 |     fn setup_again(_ctx: ContractCallContext) -> i32 {
+   |        ^^^^^^^^^^^
+
+warning: unused import: `init`
+ --> tests/smart_contract/fail_multiple_init.rs:1:19
+  |
+1 | use xrpl_macros::{init, smart_contract};
+  |                   ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

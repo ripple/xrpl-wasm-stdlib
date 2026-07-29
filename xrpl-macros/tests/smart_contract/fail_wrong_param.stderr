@@ -1,0 +1,13 @@
+error: parameter type must be `ContractCallContext`
+ --> tests/smart_contract/fail_wrong_param.rs:6:17
+  |
+6 |     fn run(ctx: u32) -> i32 {
+  |                 ^^^
+
+warning: unused import: `call`
+ --> tests/smart_contract/fail_wrong_param.rs:1:19
+  |
+1 | use xrpl_macros::{call, smart_contract};
+  |                   ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

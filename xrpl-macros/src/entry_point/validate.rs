@@ -4,16 +4,20 @@ use super::parse::EntryFn;
 
 pub(crate) struct ValidationRules<'a> {
     pub expected_ctx_type: &'a str,
+    /// Name of an additional accepted return type that wraps an `i32` (e.g.
+    /// `FinishResult`). `None` means only a bare `i32` return is accepted.
+    pub wrapped_return_type: Option<&'a str>,
 }
 
 pub(crate) enum ReturnKind {
-    FinishResult,
+    /// A type other than `i32` that converts into one via `i32::from`.
+    Wrapped,
     I32,
 }
 
 pub(crate) fn validate(entry: &EntryFn, rules: &ValidationRules<'_>) -> syn::Result<ReturnKind> {
     check_params(entry, rules)?;
-    classify_return_type(entry)
+    classify_return_type(entry, rules)
 }
 
 fn check_params(entry: &EntryFn, rules: &ValidationRules<'_>) -> syn::Result<()> {
@@ -66,36 +70,49 @@ fn check_params(entry: &EntryFn, rules: &ValidationRules<'_>) -> syn::Result<()>
     Ok(())
 }
 
-fn classify_return_type(entry: &EntryFn) -> syn::Result<ReturnKind> {
+fn classify_return_type(entry: &EntryFn, rules: &ValidationRules<'_>) -> syn::Result<ReturnKind> {
     match &entry.func.sig.output {
         syn::ReturnType::Default => Err(syn::Error::new_spanned(
             &entry.func.sig.ident,
-            "entry-point function must return `FinishResult` or `i32`",
+            format!(
+                "entry-point function must return {}",
+                expected_return_desc(rules)
+            ),
         )),
-        syn::ReturnType::Type(_, ty) => classify_return(ty),
+        syn::ReturnType::Type(_, ty) => classify_return(ty, rules),
     }
 }
 
-fn classify_return(ty: &syn::Type) -> syn::Result<ReturnKind> {
+fn classify_return(ty: &syn::Type, rules: &ValidationRules<'_>) -> syn::Result<ReturnKind> {
     let type_path = match ty {
         syn::Type::Path(p) => p,
-        _ => return Err(return_type_error(ty)),
+        _ => return Err(return_type_error(ty, rules)),
     };
 
     let last = match type_path.path.segments.last() {
         Some(s) => s,
-        None => return Err(return_type_error(ty)),
+        None => return Err(return_type_error(ty, rules)),
     };
 
     if last.ident == "i32" {
         return Ok(ReturnKind::I32);
-    } else if last.ident == "FinishResult" {
-        return Ok(ReturnKind::FinishResult);
+    } else if rules.wrapped_return_type.is_some_and(|w| last.ident == w) {
+        return Ok(ReturnKind::Wrapped);
     }
 
-    Err(return_type_error(ty))
+    Err(return_type_error(ty, rules))
 }
 
-fn return_type_error(ty: &syn::Type) -> syn::Error {
-    syn::Error::new_spanned(ty, "return type must be `FinishResult` or `i32`")
+fn expected_return_desc(rules: &ValidationRules<'_>) -> String {
+    match rules.wrapped_return_type {
+        Some(wrapped) => format!("`{wrapped}` or `i32`"),
+        None => "`i32`".to_string(),
+    }
+}
+
+fn return_type_error(ty: &syn::Type, rules: &ValidationRules<'_>) -> syn::Error {
+    syn::Error::new_spanned(
+        ty,
+        format!("return type must be {}", expected_return_desc(rules)),
+    )
 }

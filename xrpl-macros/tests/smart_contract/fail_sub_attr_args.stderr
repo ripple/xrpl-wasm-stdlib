@@ -1,0 +1,13 @@
+error: #[call] takes no arguments
+ --> tests/smart_contract/fail_sub_attr_args.rs:9:5
+  |
+9 |     #[call(name = "submit_work")]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `call`
+ --> tests/smart_contract/fail_sub_attr_args.rs:1:19
+  |
+1 | use xrpl_macros::{call, smart_contract};
+  |                   ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

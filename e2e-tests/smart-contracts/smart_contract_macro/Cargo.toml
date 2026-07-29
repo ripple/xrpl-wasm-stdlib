@@ -1,0 +1,13 @@
+[package]
+name = "smart_contract_macro"
+version = "0.1.0"
+edition = "2024"
+description = "Exercises the #[smart_contract] macro: init/call/user_delete/clawback exported as named extern \"C\" functions."
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-contract-stdlib = { path = "../../../xrpl-contract-stdlib" }
+xrpl-macros = { path = "../../../xrpl-macros" }
