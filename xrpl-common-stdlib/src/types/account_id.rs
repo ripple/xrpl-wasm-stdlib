@@ -3,7 +3,7 @@
 //! This type wraps a 20-byte AccountID and is returned by many accessors.
 //! See also: <https://xrpl.org/docs/references/protocol/common-fields#accountid-fields>
 
-use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger, decode_exact};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
@@ -104,10 +104,7 @@ impl FieldDecoder for AccountID {
 
     #[inline]
     fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
-        if bytes_written != buf.len() {
-            return core::result::Result::Err(DecodeError);
-        }
-        Ok((*buf).into())
+        decode_exact(*buf, bytes_written)
     }
 }
 

@@ -24,9 +24,8 @@
 //! Concrete transaction wrappers (e.g., `EscrowFinish`) live in their respective
 //! companion crates (`xrpl-escrow-stdlib` for escrow flows).
 
-use crate::fields::decoder::{FromCurrentTx, decode_result};
-use crate::host::error_codes::FIELD_NOT_FOUND;
-use crate::host::{Result, get_tx_field};
+use crate::fields::decoder::{FromCurrentTx, decode_host_result};
+use crate::host::{Error, Result, get_tx_field};
 use crate::sfield::SField;
 
 /// Retrieves a field from the current transaction using an SField constant.
@@ -58,7 +57,7 @@ pub fn get_field<T: FromCurrentTx, const CODE: i32>(_: SField<T, CODE>) -> Resul
         let slice = buf.as_mut();
         unsafe { get_tx_field(CODE, slice.as_mut_ptr(), slice.len()) }
     };
-    decode_result::<T>(&buf, n)
+    decode_host_result::<T>(&buf, n)
 }
 
 /// Retrieves an optionally present field from the current transaction using an SField constant.
@@ -86,17 +85,13 @@ pub fn get_field<T: FromCurrentTx, const CODE: i32>(_: SField<T, CODE>) -> Resul
 /// ```
 #[inline]
 pub fn get_field_optional<T: FromCurrentTx, const CODE: i32>(
-    _: SField<T, CODE>,
+    field: SField<T, CODE>,
 ) -> Result<Option<T>> {
-    let mut buf = T::empty_buffer();
-    let n = {
-        let slice = buf.as_mut();
-        unsafe { get_tx_field(CODE, slice.as_mut_ptr(), slice.len()) }
-    };
-    if n == FIELD_NOT_FOUND {
-        return Result::Ok(None);
+    match get_field(field) {
+        Result::Ok(value) => Result::Ok(Some(value)),
+        Result::Err(Error::FieldNotFound) => Result::Ok(None),
+        Result::Err(e) => Result::Err(e),
     }
-    decode_result::<T>(&buf, n).map(Some)
 }
 
 #[cfg(test)]

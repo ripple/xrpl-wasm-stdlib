@@ -353,10 +353,23 @@ impl FieldDecoder for Amount {
 
     #[inline]
     fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
-        match bytes_written {
-            8 | 33 | AMOUNT_SIZE => Amount::from_bytes(buf).ok().ok_or(DecodeError),
-            _ => core::result::Result::Err(DecodeError),
+        // Unlike a fixed-size type, `Amount`'s variant is self-describing via the flag bits in
+        // byte 0, present regardless of how many bytes were written, so `bytes_written` can't be
+        // used to *pick* the variant. Parse the (zero-padded) buffer in place first, then confirm
+        // the host wrote exactly the number of bytes XRPL's wire format fixes for that variant
+        // (8 XRP / 33 MPT / 48 IOU). Trusting a `bytes_written` inconsistent with the parsed
+        // variant would mean silently accepting a truncated or malformed host response as a valid
+        // (but wrong) value rather than surfacing it as a decode error.
+        let amount = Amount::from_bytes(buf).ok().ok_or(DecodeError)?;
+        let expected_len = match amount {
+            Amount::XRP { .. } => 8,
+            Amount::MPT { .. } => 33,
+            Amount::IOU { .. } => AMOUNT_SIZE,
+        };
+        if bytes_written != expected_len {
+            return core::result::Result::Err(DecodeError);
         }
+        core::result::Result::Ok(amount)
     }
 }
 

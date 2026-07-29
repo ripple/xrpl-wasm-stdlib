@@ -8,7 +8,7 @@ use xrpl_common_stdlib::host::Error;
 use xrpl_common_stdlib::host::error_codes::BUFFER_TOO_SMALL;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::types::amount::{AMOUNT_SIZE, Amount};
 
 /// Pre-wires common Smart Escrow test setups onto a [`MockHostBindings`].
 ///
@@ -94,7 +94,16 @@ impl EscrowScenarioBuilder {
                     if field == amount_code
                         && let Some(amount) = &amount
                     {
-                        let (bytes, len) = amount.to_stamount_bytes();
+                        // `to_stamount_bytes` always reports 48 (the full trace buffer). A real
+                        // host instead returns only the bytes it wrote for the amount's variant
+                        // (8 XRP / 33 MPT / 48 IOU), which is what the getter's decoder validates
+                        // against — so model that here rather than claiming a full 48-byte write.
+                        let (bytes, _) = amount.to_stamount_bytes();
+                        let len = match amount {
+                            Amount::XRP { .. } => 8,
+                            Amount::MPT { .. } => 33,
+                            Amount::IOU { .. } => AMOUNT_SIZE,
+                        };
                         return write_bytes(&bytes[..len], out_buff_ptr, out_buff_len);
                     }
                     out_buff_len as i32

@@ -1,4 +1,4 @@
-use crate::fields::decoder::{FieldDecoder, FromCurrentTx};
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, decode_exact};
 use crate::types::decode_error::DecodeError;
 
 /// The type of any given XRPL transaction.
@@ -167,10 +167,7 @@ impl FieldDecoder for TransactionType {
 
     #[inline]
     fn decode(buf: &Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
-        if bytes_written != buf.len() {
-            return core::result::Result::Err(DecodeError);
-        }
-        Ok((*buf).into())
+        decode_exact(*buf, bytes_written)
     }
 }
 

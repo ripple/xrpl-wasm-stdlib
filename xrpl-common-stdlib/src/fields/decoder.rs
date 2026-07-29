@@ -28,6 +28,13 @@ pub trait FieldDecoder: Sized {
     /// `bytes_written` carries the length that a `&[u8]` slice would otherwise bundle inside its
     /// fat pointer — passing the whole buffer plus `bytes_written` lets fixed-layout types (e.g.
     /// `Amount`) read the padded buffer in place, with no re-slice or re-copy.
+    ///
+    /// Most fixed-size types require the host to have written *exactly* `Buffer`'s length and can
+    /// then be built with a plain `From<Buffer>` — for those, implement this as
+    /// `decode_exact(*buf, bytes_written)` (see [`decode_exact`]). Types with different semantics
+    /// — e.g. `Amount`, where a shorter write is legitimate (XRP is 8 bytes, MPT 33, of a 48-byte
+    /// buffer) and the variant is determined by the leading flag bits rather than the byte count
+    /// — write a bespoke body instead.
     fn decode(buf: &Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError>;
 }
 
@@ -44,7 +51,7 @@ pub trait FromLedger: FieldDecoder {}
 /// Callers handle the "field not found" case themselves (only `get_field_optional` has one)
 /// before reaching here; `n` is assumed to be either a real byte count or a hard error.
 #[inline]
-pub(crate) fn decode_result<T: FieldDecoder>(buf: &T::Buffer, n: i32) -> host::Result<T> {
+pub(crate) fn decode_host_result<T: FieldDecoder>(buf: &T::Buffer, n: i32) -> host::Result<T> {
     if n < 0 {
         return host::Result::Err(host::Error::from_code(n));
     }
@@ -58,6 +65,24 @@ pub(crate) fn decode_result<T: FieldDecoder>(buf: &T::Buffer, n: i32) -> host::R
         Ok(value) => host::Result::Ok(value),
         Err(_) => host::Result::Err(host::Error::InvalidDecoding),
     }
+}
+
+/// Shared `FieldDecoder::decode` body for fixed-size types that require an exact-length write and
+/// build `Self` via `From<Buffer>` (`AccountID`, `TransactionType`, `UInt<N>`). Not a default
+/// trait method: a `where Self: From<Self::Buffer>` bound on a trait method applies to every
+/// implementor, including ones that override the body, so a type without that `From` impl (e.g.
+/// `Amount`, whose variant is decided by flag bits rather than length) couldn't compile at all.
+/// A plain function sidesteps that — callers opt in explicitly.
+#[inline]
+pub(crate) fn decode_exact<T, Buf>(buf: Buf, bytes_written: usize) -> Result<T, DecodeError>
+where
+    Buf: AsRef<[u8]>,
+    T: From<Buf>,
+{
+    if bytes_written != buf.as_ref().len() {
+        return Err(DecodeError);
+    }
+    Ok(T::from(buf))
 }
 
 impl FieldDecoder for u8 {
