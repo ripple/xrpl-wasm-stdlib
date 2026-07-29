@@ -621,8 +621,13 @@ mod tests {
                 expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
                 // get_computation_allowance
                 expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
-                // get_fee
-                expect_tx_field(&mut mock, sfield::Fee, AMOUNT_SIZE, 1);
+                // get_fee: a real XRP Fee is 8 bytes written into the 48-byte Amount buffer, not
+                // the full buffer length (`expect_tx_field` would report `AMOUNT_SIZE` written,
+                // which `Amount::decode` correctly rejects as inconsistent with the XRP variant).
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 8);
                 // get_sequence
                 expect_tx_field(&mut mock, sfield::Sequence, 4, 1);
                 // get_signing_pub_key
