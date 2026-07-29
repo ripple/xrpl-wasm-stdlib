@@ -1,0 +1,5 @@
+error: #[call(name = "...")] name must not be empty
+ --> tests/smart_contract/fail_call_name_empty.rs:9:19
+  |
+9 |     #[call(name = "")]
+  |                   ^^

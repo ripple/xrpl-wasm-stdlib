@@ -1,0 +1,11 @@
+error: export symbol "submit_work" is already used by another entry-point function in this module
+  --> tests/smart_contract/fail_duplicate_export_symbol.rs:15:8
+   |
+15 |     fn b(_ctx: ContractCallContext) -> i32 {
+   |        ^
+
+error: previous use of this export symbol
+  --> tests/smart_contract/fail_duplicate_export_symbol.rs:10:8
+   |
+10 |     fn a(_ctx: ContractCallContext) -> i32 {
+   |        ^

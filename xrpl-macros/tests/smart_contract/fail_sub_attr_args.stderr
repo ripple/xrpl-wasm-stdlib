@@ -1,13 +1,13 @@
-error: #[call] takes no arguments
+error: #[init] takes no arguments
  --> tests/smart_contract/fail_sub_attr_args.rs:9:5
   |
-9 |     #[call(name = "submit_work")]
+9 |     #[init(name = "submit_work")]
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: unused import: `call`
+warning: unused import: `init`
  --> tests/smart_contract/fail_sub_attr_args.rs:1:19
   |
-1 | use xrpl_macros::{call, smart_contract};
+1 | use xrpl_macros::{init, smart_contract};
   |                   ^^^^
   |
   = note: `#[warn(unused_imports)]` on by default

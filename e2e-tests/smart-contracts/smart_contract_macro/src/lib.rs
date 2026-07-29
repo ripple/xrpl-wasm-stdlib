@@ -17,8 +17,10 @@ mod freelancer {
         0
     }
 
-    #[call]
-    fn submit_work(_ctx: ContractCallContext) -> i32 {
+    // Exported ABI name is pinned to "submit_work" independently of the Rust
+    // identifier, so callers aren't broken by a Rust-side rename.
+    #[call(name = "submit_work")]
+    fn handle_submit_work(_ctx: ContractCallContext) -> i32 {
         let _ = trace("submit_work");
         0
     }

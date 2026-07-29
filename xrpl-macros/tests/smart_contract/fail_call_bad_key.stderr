@@ -1,0 +1,5 @@
+error: #[call] only accepts `name = "..."`
+ --> tests/smart_contract/fail_call_bad_key.rs:9:12
+  |
+9 |     #[call(symbol = "submit_work")]
+  |            ^^^^^^

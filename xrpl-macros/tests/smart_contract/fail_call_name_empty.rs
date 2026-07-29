@@ -1,4 +1,4 @@
-use xrpl_macros::{init, smart_contract};
+use xrpl_macros::smart_contract;
 
 struct ContractCallContext;
 
@@ -6,7 +6,7 @@ struct ContractCallContext;
 mod freelancer {
     use super::ContractCallContext;
 
-    #[init(name = "submit_work")]
+    #[call(name = "")]
     fn run(_ctx: ContractCallContext) -> i32 {
         0
     }

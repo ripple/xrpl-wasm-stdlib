@@ -222,10 +222,12 @@ pub fn smart_escrow(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// Lifecycle functions (`#[init]`, `#[user_delete]`, `#[clawback]`) always
 /// export under their fixed name, regardless of the Rust function identifier.
-/// `#[call]` functions export under the Rust function identifier. At most one
-/// `#[init]` function is allowed per module. Any other signature, a second
-/// `#[init]`, or a `mod` without an inline body (`mod name;`) is a compile
-/// error pointing at the offending token.
+/// `#[call]` functions export under the Rust function identifier by default,
+/// or under an explicit `#[call(name = "...")]` override — see [`call`] for
+/// why you'd want one. At most one `#[init]` function is allowed per module,
+/// and every export symbol in a module must be unique. Any other signature, a
+/// second `#[init]`, a duplicate export symbol, or a `mod` without an inline
+/// body (`mod name;`) is a compile error pointing at the offending token.
 ///
 /// # Usage
 ///
@@ -255,7 +257,7 @@ pub fn smart_escrow(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///         0
 ///     }
 ///
-///     #[call]
+///     #[call(name = "submit_work")]
 ///     fn submit_work(_ctx: ContractCallContext) -> i32 {
 ///         0
 ///     }
@@ -287,7 +289,15 @@ pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Marks a function inside a `#[smart_contract]` module as a callable entry
-/// point, exported as `extern "C" fn <fn-name>() -> i32`.
+/// point, exported as `extern "C" fn <fn-name>() -> i32` by default.
+///
+/// An explicit `#[call(name = "...")]` pins the exported ABI symbol
+/// independently of the Rust function name, so a Rust-side rename doesn't
+/// break callers targeting the deployed `FunctionName`. `name` must be a
+/// non-empty valid Rust identifier, and unique among all export symbols in
+/// the module. Omitting `name` still works — the Rust identifier is used —
+/// but triggers a `deprecated`-lint warning (an error under this repo's
+/// `RUSTFLAGS=-Dwarnings`) nudging toward an explicit name.
 ///
 /// Inert on its own — `#[smart_contract]`'s expander consumes and strips this
 /// attribute during expansion.

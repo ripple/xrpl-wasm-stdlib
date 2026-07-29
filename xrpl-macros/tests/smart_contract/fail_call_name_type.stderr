@@ -1,0 +1,5 @@
+error: #[call(name = "...")] value must be a string literal
+ --> tests/smart_contract/fail_call_name_type.rs:9:19
+  |
+9 |     #[call(name = 42)]
+  |                   ^^

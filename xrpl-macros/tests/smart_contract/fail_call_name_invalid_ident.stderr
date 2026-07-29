@@ -1,0 +1,5 @@
+error: #[call(name = "...")] name must be a valid identifier
+ --> tests/smart_contract/fail_call_name_invalid_ident.rs:9:19
+  |
+9 |     #[call(name = "not a valid ident")]
+  |                   ^^^^^^^^^^^^^^^^^^^
