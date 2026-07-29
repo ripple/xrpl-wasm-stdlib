@@ -51,8 +51,20 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
         .returning(|_, amendment_len| amendment_len as i32);
     mock.expect_cache_ledger_obj()
         .returning(|_, keylet_len, _| keylet_len as i32);
+    // A real host returns the number of bytes it actually wrote, which for an `Amount` is the
+    // variant's wire length (8 XRP / 33 MPT / 48 IOU), not the full buffer. Amount-typed fields
+    // are exactly those whose serialized type code (high 16 bits) is `STI_AMOUNT` (6); the zeroed
+    // default buffer decodes as XRP, so report 8 for them. Every other (fixed-size) field still
+    // reports the full buffer length, which equals its exact size.
     mock.expect_get_tx_field()
-        .returning(|_, _, out_buff_len| out_buff_len as i32);
+        .returning(|field, _, out_buff_len| {
+            const STI_AMOUNT: i32 = 6;
+            if field >> 16 == STI_AMOUNT {
+                8
+            } else {
+                out_buff_len as i32
+            }
+        });
     mock.expect_get_current_ledger_obj_field()
         .returning(|_, _, out_buff_len| out_buff_len as i32);
     mock.expect_get_ledger_obj_field()
