@@ -452,17 +452,12 @@ mod tests {
                     .times(1)
                     .returning(|_, _, _| 0);
 
-                // Mock trace_num calls (2 calls per field for byte mismatch: expected + actual)
-                mock.expect_trace_num()
-                    .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
-                    .times(12); // 6 fields * 2 calls each
-
                 let _guard = setup_mock(mock);
 
                 let tx = TestTransaction;
 
-                // Fixed-size optional fields should return Err when zero length (byte mismatch)
+                // Fixed-size optional fields return Err (InvalidDecoding) on a zero-length read:
+                // decode's length check rejects the byte-count mismatch.
                 assert!(tx.get_account_txn_id().is_err());
                 assert!(tx.get_flags().is_err());
                 assert!(tx.get_last_ledger_sequence().is_err());
@@ -505,12 +500,6 @@ mod tests {
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
-
-                // Mock trace_num calls (1 call per field for error codes)
-                mock.expect_trace_num()
-                    .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
-                    .times(6); // 6 fields * 1 call each
 
                 let _guard = setup_mock(mock);
 
@@ -577,12 +566,6 @@ mod tests {
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
 
-                // Mock trace_num calls (1 call per field for error codes)
-                mock.expect_trace_num()
-                    .with(always(), always(), always())
-                    .returning(|_, _, _| 0)
-                    .times(6); // 6 fields * 1 call each
-
                 let _guard = setup_mock(mock);
 
                 let tx = TestTransaction;
@@ -638,8 +621,13 @@ mod tests {
                 expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
                 // get_computation_allowance
                 expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
-                // get_fee
-                expect_tx_field(&mut mock, sfield::Fee, AMOUNT_SIZE, 1);
+                // get_fee: a real XRP Fee is 8 bytes written into the 48-byte Amount buffer, not
+                // the full buffer length (`expect_tx_field` would report `AMOUNT_SIZE` written,
+                // which `Amount::decode` correctly rejects as inconsistent with the XRP variant).
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 8);
                 // get_sequence
                 expect_tx_field(&mut mock, sfield::Sequence, 4, 1);
                 // get_signing_pub_key
@@ -661,66 +649,77 @@ mod tests {
                 assert!(tx.get_txn_signature().is_ok());
             }
 
-            // Zero length for a mandatory fixed-size field panics (byte mismatch). One test
-            // per field, since `#[should_panic]` only catches the first panic.
+            // A zero-length read of a mandatory fixed-size field fails `FieldDecoder::decode`'s
+            // length check and surfaces as `Err(InvalidDecoding)`.
 
             #[test]
-            #[should_panic]
-            fn test_get_account_panics_when_zero_length() {
+            fn test_get_account_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let _ = TestTransaction.get_account();
+                let result = TestTransaction.get_account();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
-            #[should_panic]
-            fn test_get_transaction_type_panics_when_zero_length() {
+            fn test_get_transaction_type_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let _ = TestTransaction.get_transaction_type();
+                let result = TestTransaction.get_transaction_type();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
-            #[should_panic]
-            fn test_get_computation_allowance_panics_when_zero_length() {
+            fn test_get_computation_allowance_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::ComputationAllowance), always(), eq(4))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let _ = TestTransaction.get_computation_allowance();
+                let result = TestTransaction.get_computation_allowance();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
-            #[should_panic]
-            fn test_get_sequence_panics_when_zero_length() {
+            fn test_get_sequence_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_get_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let _ = TestTransaction.get_sequence();
+                let result = TestTransaction.get_sequence();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]
             fn test_variable_size_fields_ok_when_zero_length() {
                 let mut mock = MockHostBindings::new();
 
-                // get_fee - returns 0 (zero length)
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
-                    .times(1)
-                    .returning(|_, _, _| 0);
                 // get_signing_pub_key - returns 0 (zero length)
                 mock.expect_get_tx_field()
                     .with(
@@ -735,15 +734,57 @@ mod tests {
 
                 let tx = TestTransaction;
 
-                // Variable-size field (Amount) returns Ok with zero length
-                let fee_result = tx.get_fee();
-                assert!(fee_result.is_ok());
-
                 // SigningPubKey is special: zero length indicates multi-signature transaction
                 // and should return Ok(None), not an error
                 let signing_key_result = tx.get_signing_pub_key();
                 assert!(signing_key_result.is_ok());
                 assert!(signing_key_result.unwrap().is_none());
+            }
+
+            #[test]
+            fn test_get_fee_ok_when_host_writes_only_xrp_amount_bytes() {
+                // A real XRP amount from the host is only 8 bytes (not the full 48-byte
+                // AMOUNT_SIZE buffer used for IOU/MPT amounts); decode must zero-pad rather
+                // than requiring an exact 48-byte slice.
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .returning(|_, buf, _| {
+                        // XRP positive flag (0x40) + 1,000,000 drops in the low 7 bytes.
+                        let mut bytes = [0u8; 8];
+                        bytes[0] = 0x40;
+                        bytes[1..8].copy_from_slice(&1_000_000u64.to_be_bytes()[1..8]);
+                        unsafe {
+                            core::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
+                        }
+                        bytes.len() as i32
+                    });
+
+                let _guard = setup_mock(mock);
+                let result = TestTransaction.get_fee();
+                assert!(result.is_ok());
+                match result.unwrap() {
+                    crate::types::amount::Amount::XRP { num_drops } => {
+                        assert_eq!(num_drops, 1_000_000);
+                    }
+                    _ => panic!("Expected Amount::XRP"),
+                }
+            }
+
+            #[test]
+            fn test_get_fee_errors_when_zero_length() {
+                let mut mock = MockHostBindings::new();
+                mock.expect_get_tx_field()
+                    .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
+                    .returning(|_, _, _| 0);
+
+                let _guard = setup_mock(mock);
+                let result = TestTransaction.get_fee();
+                assert!(result.is_err());
+                assert_eq!(
+                    result.err().unwrap().code(),
+                    crate::host::Error::InvalidDecoding.code()
+                );
             }
 
             #[test]

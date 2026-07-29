@@ -1,4 +1,7 @@
-//! Field decoding traits and helpers shared across XRPL field types.
+//! Typed accessors for reading fields from the current transaction and ledger objects, plus the
+//! [`locator::Locator`] builder for nested field paths.
 
+pub mod current_tx;
 pub mod decoder;
+pub mod ledger_obj;
 pub mod locator;
