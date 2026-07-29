@@ -2,13 +2,12 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
-use crate::host::error_codes::{match_result_code, match_result_code_optional};
 use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::blob::{CONDITION_BLOB_SIZE, ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob};
+use crate::types::blob::{ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob};
 use crate::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
 use crate::types::uint::{Hash128, Hash256};
 
@@ -101,20 +100,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
 
     /// The amount of XRP, in drops, currently held in the escrow.
     fn get_amount(&self) -> Result<Amount> {
-        // Create a buffer large enough for any Amount type
-        const BUFFER_SIZE: usize = 48usize;
-        let mut buffer = [0u8; BUFFER_SIZE];
-
-        let result_code = unsafe {
-            get_ledger_obj_field(
-                self.get_slot_num(),
-                sfield::Amount.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-
-        match_result_code(result_code, || Amount::from(buffer))
+        ledger_object::get_field(self.get_slot_num(), sfield::Amount)
     }
 
     /// The escrow can be canceled if and only if this field is present and the time it specifies
@@ -127,28 +113,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
     /// transaction must contain a fulfillment that satisfies this condition.
     fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        let mut buffer = [0u8; CONDITION_BLOB_SIZE];
-
-        let result_code = unsafe {
-            get_ledger_obj_field(
-                self.get_slot_num(),
-                sfield::Condition.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-
-        match_result_code_optional(result_code, || {
-            if result_code > 0 {
-                let blob = ConditionBlob {
-                    data: buffer,
-                    len: result_code as usize,
-                };
-                Some(blob)
-            } else {
-                None
-            }
-        })
+        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Condition)
     }
 
     /// The destination address where the XRP is paid if the escrow is successful.
@@ -200,7 +165,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
 
     /// The WASM code that is executing.
     fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
+        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 
     /// Retrieves the contract data from the specified ledger object.
@@ -277,7 +242,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// A domain associated with this account. In JSON, this is the hexadecimal for the ASCII representation of the
     /// domain. Cannot be more than 256 bytes in length.
     fn domain(&self) -> Result<Option<UriBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::Domain)
+        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Domain)
     }
 
     /// The MD5 hash of an email address. Clients can use this to look up an avatar through services such as Gravatar.
@@ -301,7 +266,7 @@ pub trait AccountFields: LedgerObjectCommonFields {
     /// 0xED for Ed25519 keys.
     // TODO: See https://github.com/ripple/xrpl-wasm-stdlib/issues/106
     fn message_key(&self) -> Result<Option<PublicKeyBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::MessageKey)
+        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::MessageKey)
     }
 
     /// How many total non-fungible tokens have been minted by and on behalf of this account.
@@ -369,9 +334,9 @@ pub trait AccountFields: LedgerObjectCommonFields {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fields::decoder::FromLedger;
     use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
-    use crate::objects::LedgerObjectFieldGetter;
     use crate::objects::account_root::AccountRoot;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
@@ -389,7 +354,7 @@ mod tests {
     ///
     /// When a test fails, mockall will show which parameter didn't match.
     fn expect_current_field<
-        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+        T: FromLedger + Send + std::fmt::Debug + PartialEq + 'static,
         const CODE: i32,
     >(
         mock: &mut MockHostBindings,
@@ -413,7 +378,7 @@ mod tests {
     ///
     /// When a test fails, mockall will show which parameter didn't match.
     fn expect_ledger_field<
-        T: LedgerObjectFieldGetter + Send + std::fmt::Debug + PartialEq + 'static,
+        T: FromLedger + Send + std::fmt::Debug + PartialEq + 'static,
         const CODE: i32,
     >(
         mock: &mut MockHostBindings,
@@ -510,7 +475,7 @@ mod tests {
     mod escrow_fields {
         use super::*;
         use crate::host::setup_mock;
-        use crate::types::blob::WASM_BLOB_SIZE;
+        use crate::types::blob::{CONDITION_BLOB_SIZE, WASM_BLOB_SIZE};
 
         struct TestLedgerObject {
             slot_num: i32,
@@ -528,8 +493,13 @@ mod tests {
 
             // get_account
             expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
-            // get_amount
-            expect_ledger_field(&mut mock, 1, sfield::Amount, 48, 1);
+            // get_amount: buffer is AMOUNT_SIZE (48), but the host reports the XRP variant's
+            // 8-byte length; `Amount::decode` validates the reported length against the parsed
+            // variant, so it must be the real wire length, not the buffer size.
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq::<i32>(sfield::Amount.into()), always(), eq(48))
+                .times(1)
+                .returning(|_, _, _, _| 8);
             // get_destination
             expect_ledger_field(&mut mock, 1, sfield::Destination, 20, 1);
             // get_owner_node
@@ -597,7 +567,7 @@ mod tests {
                 .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_condition - returns 0 for None
+            // get_condition - FIELD_NOT_FOUND yields None
             mock.expect_get_ledger_obj_field()
                 .with(
                     eq(1),
@@ -606,7 +576,7 @@ mod tests {
                     eq(CONDITION_BLOB_SIZE),
                 )
                 .times(1)
-                .returning(|_, _, _, _| 0);
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_destination_node
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::DestinationNode), always(), eq(8))
@@ -762,8 +732,11 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::AccountTxnID, 32, 1);
             // amm_id
             expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
-            // balance
-            expect_ledger_field(&mut mock, 1, sfield::Balance, 48, 1);
+            // balance: buffer is AMOUNT_SIZE (48), host reports the XRP variant's 8-byte length.
+            mock.expect_get_ledger_obj_field()
+                .with(eq(1), eq::<i32>(sfield::Balance.into()), always(), eq(48))
+                .times(1)
+                .returning(|_, _, _, _| 8);
             // burned_nf_tokens
             expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
             // domain
@@ -825,11 +798,11 @@ mod tests {
                 .with(eq(1), eq(sfield::AMMID), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // balance - variable size field, returns 0 for empty (Some with len=0)
+            // balance - an absent Amount reports FIELD_NOT_FOUND (there is no 0-length Amount)
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::Balance), always(), eq(48))
                 .times(1)
-                .returning(|_, _, _, _| 0);
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // burned_nf_tokens
             mock.expect_get_ledger_obj_field()
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
@@ -913,11 +886,10 @@ mod tests {
             assert!(account.tick_size().unwrap().is_none());
             assert!(account.transfer_rate().unwrap().is_none());
             assert!(account.wallet_locator().unwrap().is_none());
+            assert!(account.balance().unwrap().is_none());
 
-            // Variable-size optional fields return Some with len=0 when not found
+            // Blob-typed optional fields return Some with len=0 when the host writes 0 bytes
             // (they cannot distinguish between "not present" and "present with 0 bytes")
-            let balance = account.balance().unwrap();
-            assert!(balance.is_some());
             let domain = account.domain().unwrap();
             assert!(domain.is_some());
             assert_eq!(domain.unwrap().len, 0);

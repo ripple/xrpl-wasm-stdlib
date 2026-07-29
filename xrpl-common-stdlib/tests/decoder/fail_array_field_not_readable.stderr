@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `Array: FromLedger` is not satisfied
+ --> tests/decoder/fail_array_field_not_readable.rs:9:41
+  |
+9 |     let _ = ledger_object::get_field(0, sfield::Signers);
+  |             ------------------------    ^^^^^^^^^^^^^^^ the trait `FromLedger` is not implemented for `Array`
+  |             |
+  |             required by a bound introduced by this call
+  |
+  = help: the following other types implement trait `FromLedger`:
+            AccountID
+            Amount
+            Blob<N>
+            Currency
+            Issue
+            UInt<xrpl_common_stdlib::::types::uint::UInt128::{constant#0}>
+            UInt<xrpl_common_stdlib::::types::uint::UInt256::{constant#0}>
+            u16
+          and $N others
+note: required by a bound in `xrpl_common_stdlib::fields::ledger_obj::get_field`
+ --> src/fields/ledger_obj.rs
+  |
+  | pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) -> Result<T> {
+  |                     ^^^^^^^^^^ required by this bound in `get_field`

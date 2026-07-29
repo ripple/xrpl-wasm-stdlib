@@ -55,10 +55,11 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     // variant's wire length (8 XRP / 33 MPT / 48 IOU), not the full buffer. Amount-typed fields
     // are exactly those whose serialized type code (high 16 bits) is `STI_AMOUNT` (6); the zeroed
     // default buffer decodes as XRP, so report 8 for them. Every other (fixed-size) field still
-    // reports the full buffer length, which equals its exact size.
+    // reports the full buffer length, which equals its exact size. This applies uniformly to
+    // reads from the current transaction, the current ledger object, and a slot-cached one.
+    const STI_AMOUNT: i32 = 6;
     mock.expect_get_tx_field()
         .returning(|field, _, out_buff_len| {
-            const STI_AMOUNT: i32 = 6;
             if field >> 16 == STI_AMOUNT {
                 8
             } else {
@@ -66,9 +67,21 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
             }
         });
     mock.expect_get_current_ledger_obj_field()
-        .returning(|_, _, out_buff_len| out_buff_len as i32);
+        .returning(|field, _, out_buff_len| {
+            if field >> 16 == STI_AMOUNT {
+                8
+            } else {
+                out_buff_len as i32
+            }
+        });
     mock.expect_get_ledger_obj_field()
-        .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+        .returning(|_, field, _, out_buff_len| {
+            if field >> 16 == STI_AMOUNT {
+                8
+            } else {
+                out_buff_len as i32
+            }
+        });
     mock.expect_get_tx_nested_field()
         .returning(|_, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_get_current_ledger_obj_nested_field()
