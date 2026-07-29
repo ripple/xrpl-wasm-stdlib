@@ -1,10 +1,9 @@
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host;
 use crate::host::Error::InvalidParams;
 use crate::host::Result::{Err, Ok};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::account_id::AccountID;
@@ -340,42 +339,10 @@ impl LedgerObjectFieldGetter for Amount {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for XRPL amount values.
-///
-/// This implementation handles amount fields in XRPL transactions, which can represent
-/// either XRP amounts (8 bytes) or token amounts (up to 48 bytes including currency code
-/// and issuer information). Common uses include transaction fees, payment amounts,
-/// offer amounts, and escrow amounts.
-///
-/// # Buffer Management
-///
-/// Uses a 48-byte buffer (AMOUNT_SIZE) to accommodate the largest possible amount
-/// representation. The Amount type handles the parsing of different amount formats
-/// internally. No strict byte count validation is performed since amounts can vary in size.
-impl CurrentTxFieldGetter for Amount {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<AMOUNT_SIZE, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(buffer, _len)| Amount::from(buffer))
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<AMOUNT_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|opt| opt.map(|(buffer, _len)| Amount::from(buffer)))
-    }
-}
-
-/// `FieldDecoder` for XRPL amount values: zero-pads whatever bytes the host wrote (an XRP amount
-/// is only 8 bytes, MPT 33, IOU the full 48) up to `AMOUNT_SIZE`, then parses via
-/// `Amount::from_bytes`, mapping any parse failure to `DecodeError`.
+/// `FieldDecoder` for XRPL amount values. The host writes a variable number of bytes into the
+/// fixed `AMOUNT_SIZE` buffer — 8 for XRP, 33 for MPT, 48 for IOU — with the remainder left as
+/// `empty_buffer()`'s zero-padding, which is exactly the shape `Amount::from_bytes` wants, so it
+/// reads the buffer in place with no re-slice or re-copy.
 impl FieldDecoder for Amount {
     type Buffer = [u8; AMOUNT_SIZE];
 
@@ -385,9 +352,24 @@ impl FieldDecoder for Amount {
     }
 
     #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let amount_bytes: [u8; AMOUNT_SIZE] = bytes.try_into().map_err(|_| DecodeError)?;
-        Amount::from_bytes(&amount_bytes).ok().ok_or(DecodeError)
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        // Unlike a fixed-size type, `Amount`'s variant is self-describing via the flag bits in
+        // byte 0, present regardless of how many bytes were written, so `bytes_written` can't be
+        // used to *pick* the variant. Parse the (zero-padded) buffer in place first, then confirm
+        // the host wrote exactly the number of bytes XRPL's wire format fixes for that variant
+        // (8 XRP / 33 MPT / 48 IOU). Trusting a `bytes_written` inconsistent with the parsed
+        // variant would mean silently accepting a truncated or malformed host response as a valid
+        // (but wrong) value rather than surfacing it as a decode error.
+        let amount = Amount::from_bytes(&buf).ok().ok_or(DecodeError)?;
+        let expected_len = match amount {
+            Amount::XRP { .. } => 8,
+            Amount::MPT { .. } => 33,
+            Amount::IOU { .. } => AMOUNT_SIZE,
+        };
+        if bytes_written != expected_len {
+            return core::result::Result::Err(DecodeError);
+        }
+        core::result::Result::Ok(amount)
     }
 }
 

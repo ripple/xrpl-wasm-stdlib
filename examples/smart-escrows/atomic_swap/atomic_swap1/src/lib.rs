@@ -13,7 +13,9 @@ use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
-use xrpl_common_stdlib::types::{ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::types::contract_data::{
+    ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE,
+};
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::{Escrow, EscrowContractData};
@@ -58,7 +60,10 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// - Used to get the 32-byte keylet of the counterpart escrow
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
-    let mut data: ContractData = [0; TX_CONTRACT_DATA_SIZE];
+    let mut data: ContractData = ContractData {
+        data: [0u8; TX_CONTRACT_DATA_SIZE],
+        len: 0,
+    };
     let mut locator = Locator::new();
     locator.pack(sfield::Memos);
     locator.pack(0);
@@ -67,8 +72,8 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
         get_tx_nested_field(
             locator.as_ptr(),
             locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
+            data.data.as_mut_ptr(),
+            data.data.len(),
         )
     };
 
@@ -118,7 +123,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     }
 
     // Extract the counterpart escrow keylet (first 32 bytes of memo)
-    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo[0..32].try_into().unwrap();
+    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo.data[0..32].try_into().unwrap();
     let _ = trace_data(
         "Counterpart escrow ID from memo:",
         &counterpart_escrow_id,

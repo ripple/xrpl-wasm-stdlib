@@ -1,11 +1,10 @@
 //! Generic unsigned integer types with configurable bit sizes
 
-use crate::current_tx::CurrentTxFieldGetter;
-use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger, decode_exact};
 use crate::host::field_helpers::{
     get_fixed_size_field_with_expected_bytes, get_fixed_size_field_with_expected_bytes_optional,
 };
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
@@ -179,38 +178,6 @@ impl LedgerObjectFieldGetter for Hash256 {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for 256-bit cryptographic hashes.
-///
-/// This implementation handles 32-byte hash fields in XRPL transactions.
-/// Hash256 values are used for transaction IDs, account transaction IDs,
-/// references to other transactions, and various cryptographic identifiers.
-///
-/// # Buffer Management
-///
-/// Uses a 32-byte buffer (HASH256_SIZE) and validates that exactly 32 bytes
-/// are returned from the host function to ensure data integrity.
-impl CurrentTxFieldGetter for Hash256 {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_fixed_size_field_with_expected_bytes::<HASH256_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.into())
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_fixed_size_field_with_expected_bytes_optional::<HASH256_SIZE, _>(
-            i32::from(field),
-            |fc, buf, size| unsafe { get_tx_field(fc, buf, size) },
-        )
-        .map(|buffer| buffer.map(|b| b.into()))
-    }
-}
-
 /// `FieldDecoder` for any fixed-width unsigned integer (`Hash128`/`Hash160`/`Hash192`/`Hash256`,
 /// and any other `UInt<N>` instantiation): decodes an `N`-byte buffer into `UInt<N>`, failing if
 /// the host wrote a different number of bytes.
@@ -223,9 +190,8 @@ impl<const N: usize> FieldDecoder for UInt<N> {
     }
 
     #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        let array: Self::Buffer = bytes.try_into().map_err(|_| DecodeError)?;
-        Ok(array.into())
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        decode_exact(buf, bytes_written)
     }
 }
 

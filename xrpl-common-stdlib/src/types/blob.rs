@@ -1,7 +1,6 @@
-use crate::current_tx::CurrentTxFieldGetter;
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::host::field_helpers::{get_variable_size_field, get_variable_size_field_optional};
-use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field, get_tx_field};
+use crate::host::{Result, get_current_ledger_obj_field, get_ledger_obj_field};
 use crate::objects::LedgerObjectFieldGetter;
 use crate::sfield::SField;
 use crate::types::decode_error::DecodeError;
@@ -61,13 +60,43 @@ pub const WASM_BLOB_SIZE: usize = 4096;
 /// // Create a smaller 256-byte blob for URIs
 /// let uri_blob: UriBlob = UriBlob::new();
 /// ```
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
 pub struct Blob<const N: usize> {
     pub data: [u8; N],
 
     /// The actual length of this blob, if less than data.len()
     pub len: usize,
+}
+
+impl<const N: usize> core::fmt::Debug for Blob<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Blob")
+            .field("data", &self.as_slice())
+            .field("len", &self.len)
+            .finish()
+    }
+}
+
+impl<const N: usize> PartialEq for Blob<N> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+
+impl<const N: usize> Eq for Blob<N> {}
+
+impl<const N: usize> Clone for Blob<N> {
+    fn clone(&self) -> Self {
+        Self::from_slice(self.as_slice())
+    }
+}
+
+impl<const N: usize> core::ops::Deref for Blob<N> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
 }
 
 impl<const N: usize> Blob<N> {
@@ -216,42 +245,6 @@ impl<const N: usize> LedgerObjectFieldGetter for Blob<N> {
     }
 }
 
-/// Implementation of `CurrentTxFieldGetter` for variable-length binary data.
-///
-/// This implementation handles blob fields in XRPL transactions, which can contain
-/// arbitrary binary data such as transaction signatures, memos, fulfillment data,
-/// and other variable-length content that doesn't fit into fixed-size types.
-///
-/// # Buffer Management
-///
-/// Uses a buffer of size `N` to accommodate blob field data. The actual
-/// length of the data is determined by the return value from the host function
-/// and stored in the Blob's `len` field. No strict byte count validation is
-/// performed since blobs can vary significantly in size.
-///
-/// # Type Parameters
-///
-/// * `N` - The maximum capacity of the blob buffer in bytes
-impl<const N: usize> CurrentTxFieldGetter for Blob<N> {
-    #[inline]
-    fn get_from_current_tx<const CODE: i32>(field: SField<Self, CODE>) -> Result<Self> {
-        get_variable_size_field::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|(data, len)| Blob { data, len })
-    }
-
-    #[inline]
-    fn get_from_current_tx_optional<const CODE: i32>(
-        field: SField<Self, CODE>,
-    ) -> Result<Option<Self>> {
-        get_variable_size_field_optional::<N, _>(i32::from(field), |fc, buf, size| unsafe {
-            get_tx_field(fc, buf, size)
-        })
-        .map(|opt| opt.map(|(data, len)| Blob { data, len }))
-    }
-}
-
 /// `FieldDecoder` for any `Blob<N>`: copies whatever bytes the host wrote (at most `N`) into a
 /// `Blob<N>`, recording the actual length. Unlike fixed-size types, this never fails — blobs are
 /// variable-length by design.
@@ -264,8 +257,11 @@ impl<const N: usize> FieldDecoder for Blob<N> {
     }
 
     #[inline]
-    fn decode(bytes: &[u8]) -> core::result::Result<Self, DecodeError> {
-        Ok(Blob::from_slice(bytes))
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        Ok(Blob {
+            data: buf,
+            len: bytes_written,
+        })
     }
 }
 
@@ -360,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn test_equality_compares_full_struct() {
+    fn test_equality_compares_data_and_len() {
         let blob1: Blob<5> = Blob::from_slice(&[1, 2, 3]);
         let blob2: Blob<5> = Blob::from_slice(&[1, 2, 3]);
         let blob3: Blob<5> = Blob::from_slice(&[1, 2, 3, 4]);
@@ -370,16 +366,50 @@ mod tests {
     }
 
     #[test]
-    fn test_clone_creates_independent_copy() {
-        let blob1: Blob<5> = Blob::from_slice(&[1, 2, 3]);
-        let mut blob2 = blob1;
+    fn test_equality_ignores_bytes_beyond_len() {
+        // Same len, same logical content, but differing bytes past `len` in the backing array.
+        let blob1: Blob<5> = Blob {
+            data: [1, 2, 3, 0, 0],
+            len: 3,
+        };
+        let blob2: Blob<5> = Blob {
+            data: [1, 2, 3, 0xAA, 0xBB],
+            len: 3,
+        };
 
-        // Modify blob2
-        blob2.data[0] = 99;
+        assert_eq!(blob1, blob2);
+    }
 
-        // blob1 should be unchanged (Copy trait means independent copy)
-        assert_eq!(blob1.data[0], 1);
-        assert_eq!(blob2.data[0], 99);
+    #[test]
+    fn test_clone_does_not_carry_over_bytes_beyond_len() {
+        let original: Blob<5> = Blob {
+            data: [1, 2, 0xFF, 0xFF, 0xFF],
+            len: 2,
+        };
+
+        let cloned = original.clone();
+
+        assert_eq!(cloned, original);
+        assert_eq!(cloned.data, [1, 2, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_debug_output_excludes_bytes_beyond_len() {
+        let blob: Blob<5> = Blob {
+            data: [1, 2, 0xFF, 0xFF, 0xFF],
+            len: 2,
+        };
+
+        let debug_str = format!("{:?}", blob);
+        assert!(!debug_str.contains("255"));
+    }
+
+    #[test]
+    fn test_deref_returns_slice_up_to_len() {
+        let blob: Blob<5> = Blob::from_slice(&[9, 8, 7]);
+        let slice: &[u8] = &blob;
+
+        assert_eq!(slice, &[9, 8, 7]);
     }
 
     #[test]
