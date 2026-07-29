@@ -77,14 +77,14 @@ impl<const N: usize> FieldDecoder for UInt<N> {
     }
 }
 
-// Readability markers are added per width only where a field of that type is actually read:
-// `Hash256` for the many 32-byte hash fields (transaction IDs, ledger indexes, ...) and `Hash128`
-// for the 16-byte `EmailHash` ledger field. All widths already share the generic `FieldDecoder`
-// impl above; the remaining widths (`Hash160`/`Hash192`) gain markers if and when a field typed
-// to them needs to be read.
+impl FromCurrentTx for Hash128 {}
+impl FromCurrentTx for Hash160 {}
+impl FromCurrentTx for Hash192 {}
 impl FromCurrentTx for Hash256 {}
-impl FromLedger for Hash256 {}
 impl FromLedger for Hash128 {}
+impl FromLedger for Hash160 {}
+impl FromLedger for Hash192 {}
+impl FromLedger for Hash256 {}
 
 #[cfg(test)]
 mod tests {
