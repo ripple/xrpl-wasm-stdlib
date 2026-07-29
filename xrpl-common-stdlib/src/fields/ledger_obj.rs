@@ -5,8 +5,7 @@
 //! implementing [`crate::fields::decoder::FromLedger`] — see [`crate::fields::decoder`] for
 //! how a type opts into that.
 
-use crate::fields::decoder::{FromLedger, decode_result};
-use crate::host::error_codes::FIELD_NOT_FOUND;
+use crate::fields::decoder::{FromLedger, decode_host_result};
 use crate::host::{Error, Result, get_ledger_obj_field};
 use crate::sfield::SField;
 use crate::types::blob::Blob;
@@ -26,7 +25,7 @@ pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) 
         let slice = buf.as_mut();
         unsafe { get_ledger_obj_field(slot, CODE, slice.as_mut_ptr(), slice.len()) }
     };
-    decode_result::<T>(buf, n)
+    decode_host_result::<T>(buf, n)
 }
 
 /// Retrieves an optionally present field from the ledger object cached in `slot`.
@@ -40,17 +39,13 @@ pub fn get_field<T: FromLedger, const CODE: i32>(slot: i32, _: SField<T, CODE>) 
 #[inline]
 pub fn get_field_optional<T: FromLedger, const CODE: i32>(
     slot: i32,
-    _: SField<T, CODE>,
+    field: SField<T, CODE>,
 ) -> Result<Option<T>> {
-    let mut buf = T::empty_buffer();
-    let n = {
-        let slice = buf.as_mut();
-        unsafe { get_ledger_obj_field(slot, CODE, slice.as_mut_ptr(), slice.len()) }
-    };
-    if n == FIELD_NOT_FOUND {
-        return Result::Ok(None);
+    match get_field(slot, field) {
+        Result::Ok(value) => Result::Ok(Some(value)),
+        Result::Err(Error::FieldNotFound) => Result::Ok(None),
+        Result::Err(e) => Result::Err(e),
     }
-    decode_result::<T>(buf, n).map(Some)
 }
 
 // --- `Blob<N>`-specific accessors ------------------------------------------------------------
