@@ -1,9 +1,7 @@
-use crate::host::error_codes::match_result_code;
 
 use crate::core::types::account_id::AccountID;
 use crate::core::types::amount::Amount;
 use crate::host;
-use crate::host::Result;
 
 /// Data representation
 #[derive(Clone, Copy)]
@@ -25,12 +23,12 @@ pub enum DataRepr {
 /// the number of message bytes that were written to the trace function. Non-zero values indicate
 /// an error (e.g., incorrect buffer sizes).
 #[inline(always)] // <-- Inline because this function is very small
-pub fn trace(msg: &str) -> Result<i32> {
+pub fn trace(msg: &str) {
     // Use an empty slice's pointer instead of null to satisfy Rust's safety requirements
     // Even for zero-length slices, `slice::from_raw_parts` requires a non-null, aligned pointer
     let empty_data: &[u8] = &[];
 
-    let result_code = unsafe {
+    unsafe {
         host::trace(
             msg.as_ptr(),
             msg.len(),
@@ -38,9 +36,7 @@ pub fn trace(msg: &str) -> Result<i32> {
             0usize,
             DataRepr::AsUTF8 as _,
         )
-    };
-
-    match_result_code(result_code, || result_code)
+    }
 }
 
 /// Write the contents of a message to the xrpld trace log.
@@ -54,14 +50,12 @@ pub fn trace(msg: &str) -> Result<i32> {
 /// the number of message bytes that were written to the trace function. Non-zero values indicate
 /// an error (e.g., incorrect buffer sizes).
 #[inline(always)] // <-- Inline because this function is very small
-pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) -> Result<i32> {
-    let result_code = unsafe {
+pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) {
+    unsafe {
         let data_ptr = data.as_ptr();
         let data_len = data.len();
         host::trace(msg.as_ptr(), msg.len(), data_ptr, data_len, data_repr as _)
     };
-
-    match_result_code(result_code, || result_code)
 }
 
 /// Write the contents of a message, and a number, to the xrpld trace log.
@@ -76,53 +70,46 @@ pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) -> Result<i32> {
 /// the number of message bytes that were written to the trace function. Non-zero values indicate
 /// an error (e.g., incorrect buffer sizes).
 #[inline(always)]
-pub fn trace_num(msg: &str, number: i64) -> Result<i32> {
-    let result_code = unsafe { host::trace_num(msg.as_ptr(), msg.len(), number) };
-    match_result_code(result_code, || result_code)
+pub fn trace_num(msg: &str, number: i64) {
+    unsafe { host::trace_num(msg.as_ptr(), msg.len(), number) };
 }
 
 #[inline(always)]
-pub fn trace_account_buf(msg: &str, account_id: &[u8; 20]) -> Result<i32> {
-    let result_code = unsafe {
+pub fn trace_account_buf(msg: &str, account_id: &[u8; 20]) {
+    unsafe {
         host::trace_acct(
             msg.as_ptr(),
             msg.len(),
             account_id.as_ptr(),
             account_id.len(),
         )
-    };
-    match_result_code(result_code, || result_code)
+    }
 }
 
 #[inline(always)]
-pub fn trace_acct(msg: &str, account_id: &AccountID) -> Result<i32> {
-    let result_code = unsafe {
+pub fn trace_acct(msg: &str, account_id: &AccountID) {
+    unsafe {
         host::trace_acct(
             msg.as_ptr(),
             msg.len(),
             account_id.0.as_ptr(),
             account_id.0.len(),
         )
-    };
-    match_result_code(result_code, || result_code)
+    }
 }
 
 #[inline(always)]
-pub fn trace_amt(msg: &str, amount: &Amount) -> Result<i32> {
+pub fn trace_amt(msg: &str, amount: &Amount) {
     // Convert Amount to the STAmount format expected by the host trace function
     let (amount_bytes, len) = amount.to_stamount_bytes();
 
-    let result_code =
-        unsafe { host::trace_amt(msg.as_ptr(), msg.len(), amount_bytes.as_ptr(), len) };
-
-    match_result_code(result_code, || result_code)
+    unsafe { host::trace_amt(msg.as_ptr(), msg.len(), amount_bytes.as_ptr(), len) };
 }
 
 /// Write a float to the XRPLD trace log
 #[inline(always)]
-pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32> {
-    let result_code = unsafe { host::trace_xfloat(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
-    match_result_code(result_code, || result_code)
+pub fn trace_float(msg: &str, f: &[u8; 8]) {
+    unsafe { host::trace_xfloat(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
 }
 
 #[cfg(test)]

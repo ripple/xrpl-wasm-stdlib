@@ -235,7 +235,7 @@ pub fn transpose_option<T>(opt: Option<Result<T>>) -> Result<Option<T>> {
 pub enum Error {
     /// Reserved for internal invariant trips, generally unrelated to inputs.
     /// These should be reported with an issue.
-    InternalError = error_codes::INTERNAL_ERROR,
+    Unimplemented = error_codes::UNIMPLEMENTED,
 
     /// The requested serialized field could not be found in the specified object.
     /// This error is returned when attempting to access a field that doesn't exist
@@ -277,7 +277,7 @@ pub enum Error {
 
     /// An error occurred while decoding serialized data.
     /// This typically indicates corrupted or invalidly formatted data.
-    InvalidDecoding = error_codes::INVALID_DECODING,
+    OutOfTransferLimit = error_codes::OUT_OF_TRANSFER_LIMIT,
 
     /// The data field is too large to be processed.
     /// Consider reducing the size of the data or splitting it into smaller chunks.
@@ -314,6 +314,11 @@ pub enum Error {
     /// An error occurred during floating-point computation.
     /// This may indicate overflow, underflow, or other arithmetic errors.
     InvalidFloatComputation = error_codes::INVALID_FLOAT_COMPUTATION,
+
+    /// Library-owned, not a host ABI code.
+    InternalError = error_codes::INTERNAL_ERROR,
+    /// Library-owned, not a host ABI code.
+    InvalidDecoding = error_codes::INVALID_DECODING,
 }
 
 impl Error {

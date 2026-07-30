@@ -1531,7 +1531,7 @@ pub trait HostBindings {
         data_read_ptr: *const u8,
         data_read_len: usize,
         as_hex: i32,
-    ) -> i32;
+    );
 
     /// Print a number to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1550,7 +1550,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
+    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64);
 
     /// Print an account to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1576,7 +1576,7 @@ pub trait HostBindings {
         msg_read_len: usize,
         account_ptr: *const u8,
         account_len: usize,
-    ) -> i32;
+    );
 
     /// Print an OpaqueFloat number to the trace log on XRPLd. Any XRPLd instance set to \"trace\"
     /// log level will see this.
@@ -1602,7 +1602,7 @@ pub trait HostBindings {
         msg_read_len: usize,
         opaque_float_ptr: *const u8,
         opaque_float_len: usize,
-    ) -> i32;
+    );
 
     /// Print an amount to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
     /// see this.
@@ -1628,5 +1628,5 @@ pub trait HostBindings {
         msg_read_len: usize,
         amount_ptr: *const u8,
         amount_len: usize,
-    ) -> i32;
+    );
 }

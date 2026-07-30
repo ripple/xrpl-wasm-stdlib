@@ -3,7 +3,7 @@ use crate::host::trace::trace_num;
 use crate::host::{Error, Result, Result::Err, Result::Ok};
 
 /// Reserved for internal invariant trips, generally unrelated to inputs.
-pub const INTERNAL_ERROR: i32 = -1;
+pub const UNIMPLEMENTED: i32 = -1;
 /// The requested serialized field could not be found in the specified object.
 pub const FIELD_NOT_FOUND: i32 = -2;
 /// The provided buffer is too small to hold the requested data.
@@ -23,7 +23,7 @@ pub const EMPTY_SLOT: i32 = -9;
 /// The requested ledger object could not be found.
 pub const LEDGER_OBJ_NOT_FOUND: i32 = -10;
 /// An error occurred while decoding serialized data.
-pub const INVALID_DECODING: i32 = -11;
+pub const OUT_OF_TRANSFER_LIMIT: i32 = -11;
 /// The data field is too large to be processed.
 pub const DATA_FIELD_TOO_LARGE: i32 = -12;
 /// A pointer or buffer length provided as a parameter described memory outside the allowed memory region.
@@ -42,6 +42,10 @@ pub const INDEX_OUT_OF_BOUNDS: i32 = -18;
 pub const INVALID_FLOAT_INPUT: i32 = -19;
 /// An error occurred during floating-point computation.
 pub const INVALID_FLOAT_COMPUTATION: i32 = -20;
+
+// Library-owned codes (not part of the host ABI), reserved upward from i32::MIN.
+pub const INTERNAL_ERROR: i32 = i32::MIN;
+pub const INVALID_DECODING: i32 = i32::MIN + 1;
 
 /// Evaluates a result code and executes a closure on success (result_code > 0).
 ///
