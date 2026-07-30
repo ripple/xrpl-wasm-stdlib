@@ -35,7 +35,7 @@
 //!   # let _ = (l.len() >= 3);
 //!   ```
 
-use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger, decode_host_result};
+use crate::fields::decoder::{FromCurrentTx, FromLedger, decode_host_result};
 use crate::host::{
     self, Result, get_current_ledger_obj_nested_array_len, get_current_ledger_obj_nested_field,
     get_ledger_obj_nested_array_len, get_ledger_obj_nested_field, get_tx_nested_field,
@@ -281,92 +281,6 @@ impl LedgerSource {
     }
 }
 
-/// Path-building core shared by the two ledger sources: the packed [`Locator`] buffer, the sticky
-/// overflow flag, and the [`LedgerSource`] to read from. Two sources times two terminals
-/// (`get_field` / `array_len`) is what makes this worth factoring out; the public
-/// [`LedgerPathBuilder`] adds the [`FromLedger`] bound at its signatures, so `get` here is bounded
-/// only on [`FieldDecoder`].
-#[derive(Clone, PartialEq, Eq, Debug)]
-struct LedgerPath {
-    locator: Locator,
-    /// Set once a segment could not be encoded — either it did not fit in the buffer, or an
-    /// `index` exceeded [`i32::MAX`]. Sticky: further calls stay malformed so the terminals report
-    /// the bad path instead of reading a truncated or misencoded one.
-    overflowed: bool,
-    source: LedgerSource,
-}
-
-impl LedgerPath {
-    fn new(source: LedgerSource) -> Self {
-        Self {
-            locator: Locator::new(),
-            overflowed: false,
-            source,
-        }
-    }
-
-    /// Append one 4-byte segment, recording overflow so the terminals can reject a truncated path.
-    fn push(mut self, value: i32) -> Self {
-        if !self.locator.pack(value) {
-            self.overflowed = true;
-        }
-        self
-    }
-
-    /// Mark the path unusable without appending anything, for a segment that cannot be encoded.
-    fn mark_malformed(mut self) -> Self {
-        self.overflowed = true;
-        self
-    }
-
-    fn get<T: FieldDecoder>(&self) -> Result<T> {
-        if self.overflowed {
-            return Result::Err(host::Error::LocatorMalformed);
-        }
-        let (buf, n) = self.read::<T>();
-        decode_host_result::<T>(buf, n)
-    }
-
-    fn get_optional<T: FieldDecoder>(&self) -> Result<Option<T>> {
-        match self.get::<T>() {
-            Result::Ok(value) => Result::Ok(Some(value)),
-            Result::Err(host::Error::FieldNotFound) => Result::Ok(None),
-            Result::Err(e) => Result::Err(e),
-        }
-    }
-
-    /// Ask the host how many entries the array at this path holds.
-    fn array_len(&self) -> Result<u32> {
-        if self.overflowed {
-            return Result::Err(host::Error::LocatorMalformed);
-        }
-        let n = self
-            .source
-            .read_array_len(self.locator.as_ptr(), self.locator.num_packed_bytes());
-        if n < 0 {
-            return Result::Err(host::Error::from_code(n));
-        }
-        // A zero-length array is a legitimate answer, not an error.
-        Result::Ok(n as u32)
-    }
-
-    /// Run the built path through the source's host call into a fresh `T` buffer, returning that
-    /// buffer and the raw byte count the host reported (negative on error).
-    fn read<T: FieldDecoder>(&self) -> (T::Buffer, i32) {
-        let mut buf = T::empty_buffer();
-        let n = {
-            let slice = buf.as_mut();
-            self.source.read_field(
-                self.locator.as_ptr(),
-                self.locator.num_packed_bytes(),
-                slice.as_mut_ptr(),
-                slice.len(),
-            )
-        };
-        (buf, n)
-    }
-}
-
 /// Fluent builder for reading a nested field from a ledger object — either the object the contract
 /// is attached to, or one cached into a slot.
 ///
@@ -374,11 +288,13 @@ impl LedgerPath {
 /// [`obj.path()`](crate::objects::traits::LedgerObjectCommonFields::path) for a slot-cached object
 /// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for the
 /// current one. Any object type works, including ones with no bespoke wrapper: reach for
-/// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle
-/// around a raw slot from `cache_ledger_obj`.
+/// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle around a raw slot
+/// from `cache_ledger_obj`.
 ///
-/// Terminal reads are bounded on [`FromLedger`]; behavior otherwise matches [`TxPathBuilder`],
-/// including the overflow → [`host::Error::LocatorMalformed`] guard.
+/// Mirrors [`TxPathBuilder`] — same [`Locator`] buffer, same overflow →
+/// [`host::Error::LocatorMalformed`] guard — with two differences: terminal reads are bounded on
+/// [`FromLedger`] instead of [`FromCurrentTx`], and a [`LedgerSource`] picks which of the two
+/// ledger-object host functions to call.
 ///
 /// ```no_run
 /// use xrpl_common_stdlib::host::Result;
@@ -400,24 +316,39 @@ impl LedgerPath {
 /// # }
 /// ```
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct LedgerPathBuilder(LedgerPath);
+pub struct LedgerPathBuilder {
+    locator: Locator,
+    /// Set once a segment could not be encoded — either it did not fit in the buffer, or an
+    /// `index` exceeded [`i32::MAX`]. Sticky: further calls stay malformed so the terminals report
+    /// the bad path instead of reading a truncated or misencoded one.
+    overflowed: bool,
+    source: LedgerSource,
+}
 
 impl LedgerPathBuilder {
     /// Root a new builder at the current ledger object (no slot). Callers reach this through
     /// [`CurrentLedgerObjectCommonFields::path`](crate::objects::traits::CurrentLedgerObjectCommonFields::path).
     pub(crate) fn for_current_ledger_obj() -> Self {
-        Self(LedgerPath::new(LedgerSource::Current))
+        Self::new(LedgerSource::Current)
     }
 
     /// Root a new builder at the ledger object cached in `slot`. Callers reach this through
     /// [`LedgerObjectCommonFields::path`](crate::objects::traits::LedgerObjectCommonFields::path).
     pub(crate) fn for_ledger_obj(slot: i32) -> Self {
-        Self(LedgerPath::new(LedgerSource::Slot(slot)))
+        Self::new(LedgerSource::Slot(slot))
+    }
+
+    fn new(source: LedgerSource) -> Self {
+        Self {
+            locator: Locator::new(),
+            overflowed: false,
+            source,
+        }
     }
 
     /// Append a field code to the path. See [`TxPathBuilder::field`].
     pub fn field<T, const CODE: i32>(self, _field: SField<T, CODE>) -> Self {
-        Self(self.0.push(CODE))
+        self.push(CODE)
     }
 
     /// Append an array slot index to the path (e.g. the `0` in `SignerEntries[0]`).
@@ -425,11 +356,22 @@ impl LedgerPathBuilder {
     /// Locator segments are `i32`, so an index above [`i32::MAX`] would pack as a negative value the
     /// host would read back as a field code. Rather than encode that, the path is marked malformed
     /// and the terminals report [`host::Error::LocatorMalformed`].
-    pub fn index(self, index: u32) -> Self {
+    pub fn index(mut self, index: u32) -> Self {
         match i32::try_from(index) {
-            Ok(index) => Self(self.0.push(index)),
-            Err(_) => Self(self.0.mark_malformed()),
+            Ok(index) => self.push(index),
+            Err(_) => {
+                self.overflowed = true;
+                self
+            }
         }
+    }
+
+    /// Append one 4-byte segment, recording overflow so the terminals can reject a truncated path.
+    fn push(mut self, value: i32) -> Self {
+        if !self.locator.pack(value) {
+            self.overflowed = true;
+        }
+        self
     }
 
     /// Execute the ledger-object nested-field host call for the built path and decode as `T`.
@@ -437,7 +379,11 @@ impl LedgerPathBuilder {
     /// `T` must be readable from a ledger object, hence the [`FromLedger`] bound. Returns
     /// [`host::Error::LocatorMalformed`] without calling the host if the path is malformed.
     pub fn get<T: FromLedger>(&self) -> Result<T> {
-        self.0.get::<T>()
+        if self.overflowed {
+            return Result::Err(host::Error::LocatorMalformed);
+        }
+        let (buf, n) = self.read::<T>();
+        decode_host_result::<T>(buf, n)
     }
 
     /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
@@ -450,7 +396,11 @@ impl LedgerPathBuilder {
     /// [`ledger_obj::get_blob_field_optional`](crate::fields::ledger_obj::get_blob_field_optional)
     /// exists to handle for flat fields.
     pub fn get_optional<T: FromLedger>(&self) -> Result<Option<T>> {
-        self.0.get_optional::<T>()
+        match self.get::<T>() {
+            Result::Ok(value) => Result::Ok(Some(value)),
+            Result::Err(host::Error::FieldNotFound) => Result::Ok(None),
+            Result::Err(e) => Result::Err(e),
+        }
     }
 
     /// Ask the host how many entries the array at this path holds, so it can be iterated.
@@ -460,7 +410,33 @@ impl LedgerPathBuilder {
     /// present-but-empty array, and [`host::Error::LocatorMalformed`] without calling the host if
     /// the path is malformed.
     pub fn array_len(&self) -> Result<u32> {
-        self.0.array_len()
+        if self.overflowed {
+            return Result::Err(host::Error::LocatorMalformed);
+        }
+        let n = self
+            .source
+            .read_array_len(self.locator.as_ptr(), self.locator.num_packed_bytes());
+        if n < 0 {
+            return Result::Err(host::Error::from_code(n));
+        }
+        // A zero-length array is a legitimate answer, not an error.
+        Result::Ok(n as u32)
+    }
+
+    /// Run the built path through the source's host call into a fresh `T` buffer, returning that
+    /// buffer and the raw byte count the host reported (negative on error).
+    fn read<T: FromLedger>(&self) -> (T::Buffer, i32) {
+        let mut buf = T::empty_buffer();
+        let n = {
+            let slice = buf.as_mut();
+            self.source.read_field(
+                self.locator.as_ptr(),
+                self.locator.num_packed_bytes(),
+                slice.as_mut_ptr(),
+                slice.len(),
+            )
+        };
+        (buf, n)
     }
 }
 
@@ -769,14 +745,14 @@ mod tests {
 
     /// The bytes a `LedgerPathBuilder` has packed so far, for asserting on the encoded path.
     fn ledger_packed(builder: &LedgerPathBuilder) -> &[u8] {
-        &builder.0.locator.buffer[..builder.0.locator.cur_buffer_index]
+        &builder.locator.buffer[..builder.locator.cur_buffer_index]
     }
 
     #[test]
     fn test_ledger_field_encodes_single_field_code() {
         let builder = LedgerPathBuilder::for_current_ledger_obj().field(sfield::Flags);
 
-        assert!(!builder.0.overflowed);
+        assert!(!builder.overflowed);
         assert_eq!(
             ledger_packed(&builder),
             &i32::from(sfield::Flags).to_le_bytes()
@@ -791,7 +767,7 @@ mod tests {
             .index(2)
             .field(sfield::Account);
 
-        assert!(!builder.0.overflowed);
+        assert!(!builder.overflowed);
         let bytes = ledger_packed(&builder);
         assert_eq!(bytes.len(), 12);
         assert_eq!(
@@ -809,13 +785,13 @@ mod tests {
         for i in 0..16 {
             builder = builder.index(i);
         }
-        assert!(!builder.0.overflowed);
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert!(!builder.overflowed);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
 
         let builder = builder.field(sfield::Flags);
-        assert!(builder.0.overflowed);
+        assert!(builder.overflowed);
         // The buffer is not grown or partially overwritten past its capacity.
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
     }
 
     #[test]
@@ -867,7 +843,7 @@ mod tests {
         for i in 0..17 {
             builder = builder.index(i);
         }
-        assert!(builder.0.overflowed);
+        assert!(builder.overflowed);
 
         let result = builder.get::<u32>();
         assert!(result.is_err());
@@ -943,9 +919,9 @@ mod tests {
             .field(sfield::SignerEntries)
             .index(u32::MAX);
 
-        assert!(builder.0.overflowed);
+        assert!(builder.overflowed);
         // The out-of-range segment is not encoded at all, so only `SignerEntries` is packed.
-        assert_eq!(builder.0.locator.num_packed_bytes(), 4);
+        assert_eq!(builder.locator.num_packed_bytes(), 4);
         assert_eq!(
             builder.get::<u32>().err().unwrap().code(),
             host::Error::LocatorMalformed.code()
