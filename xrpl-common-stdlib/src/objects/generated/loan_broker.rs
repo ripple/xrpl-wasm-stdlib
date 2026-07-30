@@ -20,68 +20,68 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to LoanBroker objects in any ledger.
 pub trait LoanBrokerFields: LedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// The transaction sequence number that created the LoanBroker.
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's directory.
-    fn get_vault_node(&self) -> Result<u64> {
+    fn vault_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::VaultNode)
     }
 
     /// The ID of the vault that provides the loaned assets.
-    fn get_vault_id(&self) -> Result<Hash256> {
+    fn vault_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::VaultID)
     }
 
     /// The address of the `LoanBroker` pseudo-account.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The account address of the vault owner.
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
 
     /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is created by this `LoanBroker`.
-    fn get_loan_sequence(&self) -> Result<u32> {
+    fn loan_sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanSequence)
     }
 
     /// Arbitrary metadata about the vault. Limited to 256 bytes.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
     /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
-    fn get_management_fee_rate(&self) -> Result<Option<u16>> {
+    fn management_fee_rate(&self) -> Result<Option<u16>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ManagementFeeRate)
     }
 
     /// The number of active loans issued by the LoanBroker.
-    fn get_owner_count(&self) -> Result<Option<u32>> {
+    fn owner_count(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OwnerCount)
     }
 
     /// The total asset amount the protocol owes the vault, including interest.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -96,7 +96,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
 
     /// The maximum amount the protocol can owe the vault. The default value of `0` means there is no limit to the debt.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -111,7 +111,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
 
     /// The total amount of first-loss capital deposited into the lending protocol.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -125,12 +125,12 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     }
 
     /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_cover_rate_minimum(&self) -> Result<Option<u32>> {
+    fn cover_rate_minimum(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverRateMinimum)
     }
 
     /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_cover_rate_liquidation(&self) -> Result<Option<u32>> {
+    fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverRateLiquidation)
     }
 }
@@ -138,68 +138,68 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current LoanBroker object.
 pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// The transaction sequence number that created the LoanBroker.
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::Sequence)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's directory.
-    fn get_vault_node(&self) -> Result<u64> {
+    fn vault_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::VaultNode)
     }
 
     /// The ID of the vault that provides the loaned assets.
-    fn get_vault_id(&self) -> Result<Hash256> {
+    fn vault_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::VaultID)
     }
 
     /// The address of the `LoanBroker` pseudo-account.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The account address of the vault owner.
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Owner)
     }
 
     /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is created by this `LoanBroker`.
-    fn get_loan_sequence(&self) -> Result<u32> {
+    fn loan_sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LoanSequence)
     }
 
     /// Arbitrary metadata about the vault. Limited to 256 bytes.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::Data)
     }
 
     /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
-    fn get_management_fee_rate(&self) -> Result<Option<u16>> {
+    fn management_fee_rate(&self) -> Result<Option<u16>> {
         current_ledger_object::get_field_optional(sfield::ManagementFeeRate)
     }
 
     /// The number of active loans issued by the LoanBroker.
-    fn get_owner_count(&self) -> Result<Option<u32>> {
+    fn owner_count(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OwnerCount)
     }
 
     /// The total asset amount the protocol owes the vault, including interest.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -213,7 +213,7 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
 
     /// The maximum amount the protocol can owe the vault. The default value of `0` means there is no limit to the debt.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -227,7 +227,7 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
 
     /// The total amount of first-loss capital deposited into the lending protocol.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -240,12 +240,12 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_cover_rate_minimum(&self) -> Result<Option<u32>> {
+    fn cover_rate_minimum(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CoverRateMinimum)
     }
 
     /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_cover_rate_liquidation(&self) -> Result<Option<u32>> {
+    fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CoverRateLiquidation)
     }
 }
@@ -285,23 +285,23 @@ mod tests {
 
         let obj = LoanBroker::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_sequence().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_vault_node().is_ok());
-        assert!(obj.get_vault_id().is_ok());
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_owner().is_ok());
-        assert!(obj.get_loan_sequence().is_ok());
-        assert!(obj.get_data().is_ok());
-        assert!(obj.get_management_fee_rate().is_ok());
-        assert!(obj.get_owner_count().is_ok());
-        assert!(obj.get_debt_total().is_ok());
-        assert!(obj.get_debt_maximum().is_ok());
-        assert!(obj.get_cover_available().is_ok());
-        assert!(obj.get_cover_rate_minimum().is_ok());
-        assert!(obj.get_cover_rate_liquidation().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.sequence().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.vault_node().is_ok());
+        assert!(obj.vault_id().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.owner().is_ok());
+        assert!(obj.loan_sequence().is_ok());
+        assert!(obj.data().is_ok());
+        assert!(obj.management_fee_rate().is_ok());
+        assert!(obj.owner_count().is_ok());
+        assert!(obj.debt_total().is_ok());
+        assert!(obj.debt_maximum().is_ok());
+        assert!(obj.cover_available().is_ok());
+        assert!(obj.cover_rate_minimum().is_ok());
+        assert!(obj.cover_rate_liquidation().is_ok());
     }
 
     #[test]
@@ -312,9 +312,9 @@ mod tests {
 
         let obj = LoanBroker::new(0);
 
-        assert!(obj.get_management_fee_rate().unwrap().is_none());
-        assert!(obj.get_owner_count().unwrap().is_none());
-        assert!(obj.get_cover_rate_minimum().unwrap().is_none());
-        assert!(obj.get_cover_rate_liquidation().unwrap().is_none());
+        assert!(obj.management_fee_rate().unwrap().is_none());
+        assert!(obj.owner_count().unwrap().is_none());
+        assert!(obj.cover_rate_minimum().unwrap().is_none());
+        assert!(obj.cover_rate_liquidation().unwrap().is_none());
     }
 }

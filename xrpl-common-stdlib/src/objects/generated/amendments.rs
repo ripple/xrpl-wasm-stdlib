@@ -20,7 +20,7 @@ use crate::types::uint::Hash256;
 pub trait AmendmentsFields: LedgerObjectCommonFields {
     /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are no enabled amendments.
     /// Raw bytes; VECTOR256 is not yet typed in Rust.
-    fn get_amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -34,17 +34,17 @@ pub trait AmendmentsFields: LedgerObjectCommonFields {
     }
 
     /// Array of objects describing the status of amendments that have majority support but are not yet enabled. If omitted, there are no pending amendments with majority support.
-    fn get_majorities(&self) -> Result<Option<Array>> {
+    fn majorities(&self) -> Result<Option<Array>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Majorities)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Option<Hash256>> {
+    fn previous_txn_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
+    fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -53,7 +53,7 @@ pub trait AmendmentsFields: LedgerObjectCommonFields {
 pub trait CurrentAmendmentsFields: CurrentLedgerObjectCommonFields {
     /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are no enabled amendments.
     /// Raw bytes; VECTOR256 is not yet typed in Rust.
-    fn get_amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -66,17 +66,17 @@ pub trait CurrentAmendmentsFields: CurrentLedgerObjectCommonFields {
     }
 
     /// Array of objects describing the status of amendments that have majority support but are not yet enabled. If omitted, there are no pending amendments with majority support.
-    fn get_majorities(&self) -> Result<Option<Array>> {
+    fn majorities(&self) -> Result<Option<Array>> {
         current_ledger_object::get_field_optional(sfield::Majorities)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Option<Hash256>> {
+    fn previous_txn_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
+    fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -116,9 +116,9 @@ mod tests {
 
         let obj = Amendments::new(0);
 
-        assert!(obj.get_amendments().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.amendments().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
     }
 
     #[test]
@@ -129,7 +129,7 @@ mod tests {
 
         let obj = Amendments::new(0);
 
-        assert!(obj.get_previous_txn_id().unwrap().is_none());
-        assert!(obj.get_previous_txn_lgr_seq().unwrap().is_none());
+        assert!(obj.previous_txn_id().unwrap().is_none());
+        assert!(obj.previous_txn_lgr_seq().unwrap().is_none());
     }
 }

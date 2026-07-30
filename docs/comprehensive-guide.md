@@ -127,7 +127,7 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
         if slot < 0 {
             Err(Error::from_code(slot))
         } else {
-            AccountRoot::new(slot).get_balance()
+            AccountRoot::new(slot).balance()
         }
     });
     match balance {
@@ -279,7 +279,7 @@ let balance = account_keylet(&account).and_then(|keylet| {
     if slot < 0 {
         Result::Err(Error::from_code(slot))
     } else {
-        AccountRoot::new(slot).get_balance()
+        AccountRoot::new(slot).balance()
     }
 });
 let _ = balance;
@@ -400,8 +400,8 @@ fn main() {
     }
 
     let account_root = AccountRoot::new(slot);
-    let balance = account_root.get_balance();  // Returns Amount
-    let sequence = account_root.get_sequence(); // Returns u32
+    let balance = account_root.balance();  // Returns Amount
+    let sequence = account_root.sequence(); // Returns u32
 }
 ```
 
@@ -465,7 +465,7 @@ fn process_escrow() -> Result<i32> {
     }
 
     let account_root = AccountRoot::new(slot);
-    match account_root.get_sequence() {
+    match account_root.sequence() {
         Ok(sequence) => {
             // Use sequence
         },
@@ -704,13 +704,13 @@ let account = tx.get_account();
 let account_keylet = account_keylet(&account);
 let slot = cache_ledger_obj(&account_keylet);
 let account_root = AccountRoot::new(slot);
-let sequence = account_root.get_sequence();
+let sequence = account_root.sequence();
 
 // Bad: Multiple calls - should cache the account and keylet
 let account_keylet = account_keylet(&tx.get_account());
 let slot = cache_ledger_obj(&account_keylet);
 let account_root = AccountRoot::new(slot);
-let sequence = account_root.get_sequence();
+let sequence = account_root.sequence();
 ```
 
 **Efficient ledger object access:**
@@ -723,9 +723,9 @@ let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len
 let account_root = AccountRoot::new(slot);
 
 // Use trait methods to access fields efficiently
-let balance = account_root.get_balance();        // Amount
-let sequence = account_root.get_sequence();      // u32
-let owner_count = account_root.get_owner_count(); // u32
+let balance = account_root.balance();        // Amount
+let sequence = account_root.sequence();      // u32
+let owner_count = account_root.owner_count(); // u32
 ```
 
 **Memory usage optimization:**

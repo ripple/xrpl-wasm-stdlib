@@ -12,32 +12,32 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to DepositPreauth objects in any ledger.
 pub trait DepositPreauthFields: LedgerObjectCommonFields {
     /// The account that granted the preauthorization. (The destination of the preauthorized payments.)
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The account that received the preauthorization. (The sender of the preauthorized payments.)
-    fn get_authorize(&self) -> Result<Option<AccountID>> {
+    fn authorize(&self) -> Result<Option<AccountID>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Authorize)
     }
 
     /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages. **Note:** The object does not contain a direct link to the owner directory containing it, since that value can be derived from the `Account`.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// The set of credentials that received preauthorization. (Any account with these credentials is preauthorized.) This array has a minimum length of 1 and a maximum length of 8 credentials.
-    fn get_authorize_credentials(&self) -> Result<Option<Array>> {
+    fn authorize_credentials(&self) -> Result<Option<Array>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AuthorizeCredentials)
     }
 }
@@ -45,32 +45,32 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current DepositPreauth object.
 pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
     /// The account that granted the preauthorization. (The destination of the preauthorized payments.)
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The account that received the preauthorization. (The sender of the preauthorized payments.)
-    fn get_authorize(&self) -> Result<Option<AccountID>> {
+    fn authorize(&self) -> Result<Option<AccountID>> {
         current_ledger_object::get_field_optional(sfield::Authorize)
     }
 
     /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages. **Note:** The object does not contain a direct link to the owner directory containing it, since that value can be derived from the `Account`.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// The set of credentials that received preauthorization. (Any account with these credentials is preauthorized.) This array has a minimum length of 1 and a maximum length of 8 credentials.
-    fn get_authorize_credentials(&self) -> Result<Option<Array>> {
+    fn authorize_credentials(&self) -> Result<Option<Array>> {
         current_ledger_object::get_field_optional(sfield::AuthorizeCredentials)
     }
 }
@@ -110,11 +110,11 @@ mod tests {
 
         let obj = DepositPreauth::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_authorize().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.authorize().is_ok());
     }
 
     #[test]
@@ -125,6 +125,6 @@ mod tests {
 
         let obj = DepositPreauth::new(0);
 
-        assert!(obj.get_authorize().unwrap().is_none());
+        assert!(obj.authorize().unwrap().is_none());
     }
 }

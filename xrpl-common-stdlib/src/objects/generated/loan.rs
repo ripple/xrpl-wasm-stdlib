@@ -19,43 +19,43 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to Loan objects in any ledger.
 pub trait LoanFields: LedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// Identifies the page where this item is referenced in the `LoanBroker` owner directory.
-    fn get_loan_broker_node(&self) -> Result<u64> {
+    fn loan_broker_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanBrokerNode)
     }
 
     /// The ID of the _Loan Broker_ associated with this loan.
-    fn get_loan_broker_id(&self) -> Result<Hash256> {
+    fn loan_broker_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanBrokerID)
     }
 
     /// The sequence number of the loan.
-    fn get_loan_sequence(&self) -> Result<u32> {
+    fn loan_sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanSequence)
     }
 
     /// The account address of the _Borrower_.
-    fn get_borrower(&self) -> Result<AccountID> {
+    fn borrower(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Borrower)
     }
 
     /// The amount paid to the _Loan Broker_, taken from the principal loan at creation.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -70,7 +70,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ with each loan payment.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -85,7 +85,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ for each late payment.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -100,7 +100,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ when a full early payment is made.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -114,63 +114,63 @@ pub trait LoanFields: LedgerObjectCommonFields {
     }
 
     /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_overpayment_fee(&self) -> Result<Option<u32>> {
+    fn overpayment_fee(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OverpaymentFee)
     }
 
     /// The annualized interest rate of the loan, in 1/10th basis points.
-    fn get_interest_rate(&self) -> Result<Option<u32>> {
+    fn interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::InterestRate)
     }
 
     /// The premium added to the interest rate for late payments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_late_interest_rate(&self) -> Result<Option<u32>> {
+    fn late_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LateInterestRate)
     }
 
     /// The interest rate charged for repaying the loan early, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_close_interest_rate(&self) -> Result<Option<u32>> {
+    fn close_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CloseInterestRate)
     }
 
     /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_overpayment_interest_rate(&self) -> Result<Option<u32>> {
+    fn overpayment_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OverpaymentInterestRate)
     }
 
     /// The timestamp of when the loan started, in [seconds since the Ripple Epoch][].
-    fn get_start_date(&self) -> Result<u32> {
+    fn start_date(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::StartDate)
     }
 
     /// The number of seconds between loan payments.
-    fn get_payment_interval(&self) -> Result<u32> {
+    fn payment_interval(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PaymentInterval)
     }
 
     /// The number of seconds after a loan payment is due before the loan defaults.
-    fn get_grace_period(&self) -> Result<Option<u32>> {
+    fn grace_period(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::GracePeriod)
     }
 
     /// The timestamp of when the previous payment was made, in [seconds since the Ripple Epoch][].
-    fn get_previous_payment_due_date(&self) -> Result<Option<u32>> {
+    fn previous_payment_due_date(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousPaymentDueDate)
     }
 
     /// The timestamp of when the next payment is due, in [seconds since the Ripple Epoch][].
-    fn get_next_payment_due_date(&self) -> Result<Option<u32>> {
+    fn next_payment_due_date(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::NextPaymentDueDate)
     }
 
     /// The number of payments remaining on the loan.
-    fn get_payment_remaining(&self) -> Result<Option<u32>> {
+    fn payment_remaining(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PaymentRemaining)
     }
 
     /// The amount due for each payment interval.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -185,7 +185,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The principal amount still owed on the loan.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -200,7 +200,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The total amount owed on the loan, including remaining principal and fees.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -215,7 +215,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The remaining management fee owed to the loan broker.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -230,7 +230,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal places. It is based on the total loan value at creation time.
     /// Raw bytes; INT32 is not yet typed in Rust.
-    fn get_loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -247,43 +247,43 @@ pub trait LoanFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Loan object.
 pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// Identifies the page where this item is referenced in the `LoanBroker` owner directory.
-    fn get_loan_broker_node(&self) -> Result<u64> {
+    fn loan_broker_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::LoanBrokerNode)
     }
 
     /// The ID of the _Loan Broker_ associated with this loan.
-    fn get_loan_broker_id(&self) -> Result<Hash256> {
+    fn loan_broker_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::LoanBrokerID)
     }
 
     /// The sequence number of the loan.
-    fn get_loan_sequence(&self) -> Result<u32> {
+    fn loan_sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LoanSequence)
     }
 
     /// The account address of the _Borrower_.
-    fn get_borrower(&self) -> Result<AccountID> {
+    fn borrower(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Borrower)
     }
 
     /// The amount paid to the _Loan Broker_, taken from the principal loan at creation.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -297,7 +297,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ with each loan payment.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -311,7 +311,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ for each late payment.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -325,7 +325,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The amount paid to the _Loan Broker_ when a full early payment is made.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -338,63 +338,63 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_overpayment_fee(&self) -> Result<Option<u32>> {
+    fn overpayment_fee(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OverpaymentFee)
     }
 
     /// The annualized interest rate of the loan, in 1/10th basis points.
-    fn get_interest_rate(&self) -> Result<Option<u32>> {
+    fn interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::InterestRate)
     }
 
     /// The premium added to the interest rate for late payments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_late_interest_rate(&self) -> Result<Option<u32>> {
+    fn late_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::LateInterestRate)
     }
 
     /// The interest rate charged for repaying the loan early, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_close_interest_rate(&self) -> Result<Option<u32>> {
+    fn close_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CloseInterestRate)
     }
 
     /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
-    fn get_overpayment_interest_rate(&self) -> Result<Option<u32>> {
+    fn overpayment_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OverpaymentInterestRate)
     }
 
     /// The timestamp of when the loan started, in [seconds since the Ripple Epoch][].
-    fn get_start_date(&self) -> Result<u32> {
+    fn start_date(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::StartDate)
     }
 
     /// The number of seconds between loan payments.
-    fn get_payment_interval(&self) -> Result<u32> {
+    fn payment_interval(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PaymentInterval)
     }
 
     /// The number of seconds after a loan payment is due before the loan defaults.
-    fn get_grace_period(&self) -> Result<Option<u32>> {
+    fn grace_period(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::GracePeriod)
     }
 
     /// The timestamp of when the previous payment was made, in [seconds since the Ripple Epoch][].
-    fn get_previous_payment_due_date(&self) -> Result<Option<u32>> {
+    fn previous_payment_due_date(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousPaymentDueDate)
     }
 
     /// The timestamp of when the next payment is due, in [seconds since the Ripple Epoch][].
-    fn get_next_payment_due_date(&self) -> Result<Option<u32>> {
+    fn next_payment_due_date(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::NextPaymentDueDate)
     }
 
     /// The number of payments remaining on the loan.
-    fn get_payment_remaining(&self) -> Result<Option<u32>> {
+    fn payment_remaining(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PaymentRemaining)
     }
 
     /// The amount due for each payment interval.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -408,7 +408,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The principal amount still owed on the loan.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -422,7 +422,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The total amount owed on the loan, including remaining principal and fees.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -436,7 +436,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The remaining management fee owed to the loan broker.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -450,7 +450,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal places. It is based on the total loan value at creation time.
     /// Raw bytes; INT32 is not yet typed in Rust.
-    fn get_loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -498,33 +498,33 @@ mod tests {
 
         let obj = Loan::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_loan_broker_node().is_ok());
-        assert!(obj.get_loan_broker_id().is_ok());
-        assert!(obj.get_loan_sequence().is_ok());
-        assert!(obj.get_borrower().is_ok());
-        assert!(obj.get_start_date().is_ok());
-        assert!(obj.get_payment_interval().is_ok());
-        assert!(obj.get_periodic_payment().is_ok());
-        assert!(obj.get_loan_origination_fee().is_ok());
-        assert!(obj.get_loan_service_fee().is_ok());
-        assert!(obj.get_late_payment_fee().is_ok());
-        assert!(obj.get_close_payment_fee().is_ok());
-        assert!(obj.get_overpayment_fee().is_ok());
-        assert!(obj.get_interest_rate().is_ok());
-        assert!(obj.get_late_interest_rate().is_ok());
-        assert!(obj.get_close_interest_rate().is_ok());
-        assert!(obj.get_overpayment_interest_rate().is_ok());
-        assert!(obj.get_grace_period().is_ok());
-        assert!(obj.get_previous_payment_due_date().is_ok());
-        assert!(obj.get_next_payment_due_date().is_ok());
-        assert!(obj.get_payment_remaining().is_ok());
-        assert!(obj.get_principal_outstanding().is_ok());
-        assert!(obj.get_total_value_outstanding().is_ok());
-        assert!(obj.get_management_fee_outstanding().is_ok());
-        assert!(obj.get_loan_scale().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.loan_broker_node().is_ok());
+        assert!(obj.loan_broker_id().is_ok());
+        assert!(obj.loan_sequence().is_ok());
+        assert!(obj.borrower().is_ok());
+        assert!(obj.start_date().is_ok());
+        assert!(obj.payment_interval().is_ok());
+        assert!(obj.periodic_payment().is_ok());
+        assert!(obj.loan_origination_fee().is_ok());
+        assert!(obj.loan_service_fee().is_ok());
+        assert!(obj.late_payment_fee().is_ok());
+        assert!(obj.close_payment_fee().is_ok());
+        assert!(obj.overpayment_fee().is_ok());
+        assert!(obj.interest_rate().is_ok());
+        assert!(obj.late_interest_rate().is_ok());
+        assert!(obj.close_interest_rate().is_ok());
+        assert!(obj.overpayment_interest_rate().is_ok());
+        assert!(obj.grace_period().is_ok());
+        assert!(obj.previous_payment_due_date().is_ok());
+        assert!(obj.next_payment_due_date().is_ok());
+        assert!(obj.payment_remaining().is_ok());
+        assert!(obj.principal_outstanding().is_ok());
+        assert!(obj.total_value_outstanding().is_ok());
+        assert!(obj.management_fee_outstanding().is_ok());
+        assert!(obj.loan_scale().is_ok());
     }
 
     #[test]
@@ -535,14 +535,14 @@ mod tests {
 
         let obj = Loan::new(0);
 
-        assert!(obj.get_overpayment_fee().unwrap().is_none());
-        assert!(obj.get_interest_rate().unwrap().is_none());
-        assert!(obj.get_late_interest_rate().unwrap().is_none());
-        assert!(obj.get_close_interest_rate().unwrap().is_none());
-        assert!(obj.get_overpayment_interest_rate().unwrap().is_none());
-        assert!(obj.get_grace_period().unwrap().is_none());
-        assert!(obj.get_previous_payment_due_date().unwrap().is_none());
-        assert!(obj.get_next_payment_due_date().unwrap().is_none());
-        assert!(obj.get_payment_remaining().unwrap().is_none());
+        assert!(obj.overpayment_fee().unwrap().is_none());
+        assert!(obj.interest_rate().unwrap().is_none());
+        assert!(obj.late_interest_rate().unwrap().is_none());
+        assert!(obj.close_interest_rate().unwrap().is_none());
+        assert!(obj.overpayment_interest_rate().unwrap().is_none());
+        assert!(obj.grace_period().unwrap().is_none());
+        assert!(obj.previous_payment_due_date().unwrap().is_none());
+        assert!(obj.next_payment_due_date().unwrap().is_none());
+        assert!(obj.payment_remaining().unwrap().is_none());
     }
 }

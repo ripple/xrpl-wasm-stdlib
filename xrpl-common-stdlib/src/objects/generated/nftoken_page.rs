@@ -11,27 +11,27 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to NFTokenPage objects in any ledger.
 pub trait NFTokenPageFields: LedgerObjectCommonFields {
     /// The locator of the previous page, if any. Details about this field and how it should be used are outlined below.
-    fn get_previous_page_min(&self) -> Result<Option<Hash256>> {
+    fn previous_page_min(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousPageMin)
     }
 
     /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
-    fn get_next_page_min(&self) -> Result<Option<Hash256>> {
+    fn next_page_min(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::NextPageMin)
     }
 
     /// The collection of `NFToken` objects contained in this NFTokenPage object. This specification places an upper bound of 32 NFToken objects per page. Objects are sorted from low to high with the `NFTokenID` used as the sorting parameter.
-    fn get_nftokens(&self) -> Result<Array> {
+    fn nftokens(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::NFTokens)
     }
 
     /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this NFTokenPage object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -39,27 +39,27 @@ pub trait NFTokenPageFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current NFTokenPage object.
 pub trait CurrentNFTokenPageFields: CurrentLedgerObjectCommonFields {
     /// The locator of the previous page, if any. Details about this field and how it should be used are outlined below.
-    fn get_previous_page_min(&self) -> Result<Option<Hash256>> {
+    fn previous_page_min(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::PreviousPageMin)
     }
 
     /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
-    fn get_next_page_min(&self) -> Result<Option<Hash256>> {
+    fn next_page_min(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::NextPageMin)
     }
 
     /// The collection of `NFToken` objects contained in this NFTokenPage object. This specification places an upper bound of 32 NFToken objects per page. Objects are sorted from low to high with the `NFTokenID` used as the sorting parameter.
-    fn get_nftokens(&self) -> Result<Array> {
+    fn nftokens(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::NFTokens)
     }
 
     /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this NFTokenPage object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -99,10 +99,10 @@ mod tests {
 
         let obj = NFTokenPage::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_previous_page_min().is_ok());
-        assert!(obj.get_next_page_min().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.previous_page_min().is_ok());
+        assert!(obj.next_page_min().is_ok());
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod tests {
 
         let obj = NFTokenPage::new(0);
 
-        assert!(obj.get_previous_page_min().unwrap().is_none());
-        assert!(obj.get_next_page_min().unwrap().is_none());
+        assert!(obj.previous_page_min().unwrap().is_none());
+        assert!(obj.next_page_min().unwrap().is_none());
     }
 }

@@ -12,32 +12,32 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to Delegate objects in any ledger.
 pub trait DelegateFields: LedgerObjectCommonFields {
     /// The account delegating permissions to another, also called the _delegating account_.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The account receiving permissions, also called the _delegate_.
-    fn get_authorize(&self) -> Result<AccountID> {
+    fn authorize(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Authorize)
     }
 
     /// A list of permissions granted, with at least 1 and at most 10 items. Each item in the list is a Permission Object.
-    fn get_permissions(&self) -> Result<Array> {
+    fn permissions(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::Permissions)
     }
 
     /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -45,32 +45,32 @@ pub trait DelegateFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Delegate object.
 pub trait CurrentDelegateFields: CurrentLedgerObjectCommonFields {
     /// The account delegating permissions to another, also called the _delegating account_.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The account receiving permissions, also called the _delegate_.
-    fn get_authorize(&self) -> Result<AccountID> {
+    fn authorize(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Authorize)
     }
 
     /// A list of permissions granted, with at least 1 and at most 10 items. Each item in the list is a Permission Object.
-    fn get_permissions(&self) -> Result<Array> {
+    fn permissions(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::Permissions)
     }
 
     /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -110,10 +110,10 @@ mod tests {
 
         let obj = Delegate::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_authorize().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.authorize().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
     }
 }

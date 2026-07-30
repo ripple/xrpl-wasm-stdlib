@@ -21,48 +21,48 @@ use crate::types::uint::{Hash192, Hash256};
 /// Trait providing access to fields specific to Vault objects in any ledger.
 pub trait VaultFields: LedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// The transaction sequence number that created the vault.
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The account address of the Vault Owner.
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
 
     /// The address of the vault's pseudo-account.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// Arbitrary metadata, in hex format, about the vault. Limited to 256 bytes. See Data Field Format for more information.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
     /// The asset of the vault. The vault supports XRP, trust line tokens, and MPTs.
-    fn get_asset(&self) -> Result<Issue> {
+    fn asset(&self) -> Result<Issue> {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset)
     }
 
     /// The total value of the vault.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -77,7 +77,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
 
     /// The asset amount that is available in the vault.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -92,7 +92,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
 
     /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is no cap.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -107,7 +107,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a protocol connected to the vault can modify this attribute.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -121,17 +121,17 @@ pub trait VaultFields: LedgerObjectCommonFields {
     }
 
     /// The identifier of the share `MPTokenIssuance` object.
-    fn get_share_mpt_id(&self) -> Result<Hash192> {
+    fn share_mpt_id(&self) -> Result<Hash192> {
         ledger_object::get_field(self.get_slot_num(), sfield::ShareMPTID)
     }
 
     /// Indicates the withdrawal strategy used by the vault.
-    fn get_withdrawal_policy(&self) -> Result<u8> {
+    fn withdrawal_policy(&self) -> Result<u8> {
         ledger_object::get_field(self.get_slot_num(), sfield::WithdrawalPolicy)
     }
 
     /// Specifies decimal precision for share calculations. Assets are multiplied by 10<sup>Scale</sup > to convert fractional amounts into whole number shares. For example, with a `Scale` of `6`, depositing 20.3 units creates 20,300,000 shares (20.3 × 10<sup>Scale</sup >). For **trust line tokens** this can be configured at vault creation, and valid values are between 0-18, with the default being `6`. For **XRP** and **MPTs**, this is fixed at `0`. See Scaling Factor for more information.
-    fn get_scale(&self) -> Result<Option<u8>> {
+    fn scale(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Scale)
     }
 }
@@ -139,48 +139,48 @@ pub trait VaultFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Vault object.
 pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     /// Identifies the transaction ID that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// The transaction sequence number that created the vault.
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::Sequence)
     }
 
     /// Identifies the page where this item is referenced in the owner's directory.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The account address of the Vault Owner.
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Owner)
     }
 
     /// The address of the vault's pseudo-account.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// Arbitrary metadata, in hex format, about the vault. Limited to 256 bytes. See Data Field Format for more information.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::Data)
     }
 
     /// The asset of the vault. The vault supports XRP, trust line tokens, and MPTs.
-    fn get_asset(&self) -> Result<Issue> {
+    fn asset(&self) -> Result<Issue> {
         current_ledger_object::get_field(sfield::Asset)
     }
 
     /// The total value of the vault.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -194,7 +194,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
 
     /// The asset amount that is available in the vault.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -208,7 +208,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
 
     /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is no cap.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -222,7 +222,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a protocol connected to the vault can modify this attribute.
     /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn get_loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
+    fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -235,17 +235,17 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The identifier of the share `MPTokenIssuance` object.
-    fn get_share_mpt_id(&self) -> Result<Hash192> {
+    fn share_mpt_id(&self) -> Result<Hash192> {
         current_ledger_object::get_field(sfield::ShareMPTID)
     }
 
     /// Indicates the withdrawal strategy used by the vault.
-    fn get_withdrawal_policy(&self) -> Result<u8> {
+    fn withdrawal_policy(&self) -> Result<u8> {
         current_ledger_object::get_field(sfield::WithdrawalPolicy)
     }
 
     /// Specifies decimal precision for share calculations. Assets are multiplied by 10<sup>Scale</sup > to convert fractional amounts into whole number shares. For example, with a `Scale` of `6`, depositing 20.3 units creates 20,300,000 shares (20.3 × 10<sup>Scale</sup >). For **trust line tokens** this can be configured at vault creation, and valid values are between 0-18, with the default being `6`. For **XRP** and **MPTs**, this is fixed at `0`. See Scaling Factor for more information.
-    fn get_scale(&self) -> Result<Option<u8>> {
+    fn scale(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::Scale)
     }
 }
@@ -285,21 +285,21 @@ mod tests {
 
         let obj = Vault::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_sequence().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_owner().is_ok());
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_asset().is_ok());
-        assert!(obj.get_share_mpt_id().is_ok());
-        assert!(obj.get_withdrawal_policy().is_ok());
-        assert!(obj.get_data().is_ok());
-        assert!(obj.get_assets_total().is_ok());
-        assert!(obj.get_assets_available().is_ok());
-        assert!(obj.get_assets_maximum().is_ok());
-        assert!(obj.get_loss_unrealized().is_ok());
-        assert!(obj.get_scale().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.sequence().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.owner().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.asset().is_ok());
+        assert!(obj.share_mpt_id().is_ok());
+        assert!(obj.withdrawal_policy().is_ok());
+        assert!(obj.data().is_ok());
+        assert!(obj.assets_total().is_ok());
+        assert!(obj.assets_available().is_ok());
+        assert!(obj.assets_maximum().is_ok());
+        assert!(obj.loss_unrealized().is_ok());
+        assert!(obj.scale().is_ok());
     }
 
     #[test]
@@ -310,6 +310,6 @@ mod tests {
 
         let obj = Vault::new(0);
 
-        assert!(obj.get_scale().unwrap().is_none());
+        assert!(obj.scale().unwrap().is_none());
     }
 }

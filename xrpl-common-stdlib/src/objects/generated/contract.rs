@@ -13,47 +13,47 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to Contract objects in any ledger.
 pub trait ContractFields: LedgerObjectCommonFields {
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// The Sequence field (Required).
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The Owner field (Required).
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
 
     /// The ContractAccount field (Required).
-    fn get_contract_account(&self) -> Result<AccountID> {
+    fn contract_account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractAccount)
     }
 
     /// The ContractHash field (Required).
-    fn get_contract_hash(&self) -> Result<Hash256> {
+    fn contract_hash(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractHash)
     }
 
     /// The InstanceParameterValues field (Optional).
-    fn get_instance_parameter_values(&self) -> Result<Option<Array>> {
+    fn instance_parameter_values(&self) -> Result<Option<Array>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::InstanceParameterValues)
     }
 
     /// The URI field (Optional).
-    fn get_uri(&self) -> Result<Option<UriBlob>> {
+    fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
     }
 }
@@ -61,47 +61,47 @@ pub trait ContractFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Contract object.
 pub trait CurrentContractFields: CurrentLedgerObjectCommonFields {
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// The Sequence field (Required).
-    fn get_sequence(&self) -> Result<u32> {
+    fn sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::Sequence)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The Owner field (Required).
-    fn get_owner(&self) -> Result<AccountID> {
+    fn owner(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Owner)
     }
 
     /// The ContractAccount field (Required).
-    fn get_contract_account(&self) -> Result<AccountID> {
+    fn contract_account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::ContractAccount)
     }
 
     /// The ContractHash field (Required).
-    fn get_contract_hash(&self) -> Result<Hash256> {
+    fn contract_hash(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::ContractHash)
     }
 
     /// The InstanceParameterValues field (Optional).
-    fn get_instance_parameter_values(&self) -> Result<Option<Array>> {
+    fn instance_parameter_values(&self) -> Result<Option<Array>> {
         current_ledger_object::get_field_optional(sfield::InstanceParameterValues)
     }
 
     /// The URI field (Optional).
-    fn get_uri(&self) -> Result<Option<UriBlob>> {
+    fn uri(&self) -> Result<Option<UriBlob>> {
         current_ledger_object::get_field_optional(sfield::URI)
     }
 }
@@ -141,13 +141,13 @@ mod tests {
 
         let obj = Contract::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_sequence().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_owner().is_ok());
-        assert!(obj.get_contract_account().is_ok());
-        assert!(obj.get_contract_hash().is_ok());
-        assert!(obj.get_uri().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.sequence().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.owner().is_ok());
+        assert!(obj.contract_account().is_ok());
+        assert!(obj.contract_hash().is_ok());
+        assert!(obj.uri().is_ok());
     }
 }

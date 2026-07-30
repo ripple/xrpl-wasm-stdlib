@@ -11,37 +11,37 @@ use crate::types::uint::{Hash192, Hash256};
 /// Trait providing access to fields specific to MPToken objects in any ledger.
 pub trait MPTokenFields: LedgerObjectCommonFields {
     /// The owner (holder) of these MPTs.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The `MPTokenIssuance` identifier.
-    fn get_mptoken_issuance_id(&self) -> Result<Hash192> {
+    fn mptoken_issuance_id(&self) -> Result<Hash192> {
         ledger_object::get_field(self.get_slot_num(), sfield::MPTokenIssuanceID)
     }
 
     /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
-    fn get_mpt_amount(&self) -> Result<Option<u64>> {
+    fn mpt_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MPTAmount)
     }
 
     /// The amount of tokens currently locked up (for example, in escrow).
-    fn get_locked_amount(&self) -> Result<Option<u64>> {
+    fn locked_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LockedAmount)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -49,37 +49,37 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current MPToken object.
 pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
     /// The owner (holder) of these MPTs.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The `MPTokenIssuance` identifier.
-    fn get_mptoken_issuance_id(&self) -> Result<Hash192> {
+    fn mptoken_issuance_id(&self) -> Result<Hash192> {
         current_ledger_object::get_field(sfield::MPTokenIssuanceID)
     }
 
     /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
-    fn get_mpt_amount(&self) -> Result<Option<u64>> {
+    fn mpt_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::MPTAmount)
     }
 
     /// The amount of tokens currently locked up (for example, in escrow).
-    fn get_locked_amount(&self) -> Result<Option<u64>> {
+    fn locked_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::LockedAmount)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The sequence of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -119,13 +119,13 @@ mod tests {
 
         let obj = MPToken::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_mptoken_issuance_id().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_mpt_amount().is_ok());
-        assert!(obj.get_locked_amount().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.mptoken_issuance_id().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.mpt_amount().is_ok());
+        assert!(obj.locked_amount().is_ok());
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
 
         let obj = MPToken::new(0);
 
-        assert!(obj.get_mpt_amount().unwrap().is_none());
-        assert!(obj.get_locked_amount().unwrap().is_none());
+        assert!(obj.mpt_amount().unwrap().is_none());
+        assert!(obj.locked_amount().unwrap().is_none());
     }
 }

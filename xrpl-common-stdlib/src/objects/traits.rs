@@ -258,13 +258,13 @@ mod tests {
             let account = AccountRoot::new(1);
 
             // All mandatory fields should return Ok
-            assert!(account.get_account().is_ok());
-            assert!(account.get_owner_count().is_ok());
-            assert!(account.get_previous_txn_id().is_ok());
-            assert!(account.get_previous_txn_lgr_seq().is_ok());
-            assert!(account.get_sequence().is_ok());
+            assert!(account.account().is_ok());
+            assert!(account.owner_count().is_ok());
+            assert!(account.previous_txn_id().is_ok());
+            assert!(account.previous_txn_lgr_seq().is_ok());
+            assert!(account.sequence().is_ok());
             assert!(account.get_ledger_entry_type().is_ok());
-            assert!(account.get_balance().is_ok());
+            assert!(account.balance().is_ok());
         }
 
         #[test]
@@ -305,20 +305,20 @@ mod tests {
             let account = AccountRoot::new(1);
 
             // All optional fields should return Ok(Some(...))
-            assert!(account.get_account_txn_id().unwrap().is_some());
-            assert!(account.get_amm_id().unwrap().is_some());
-            assert!(account.get_burned_nftokens().unwrap().is_some());
-            assert!(account.get_domain().unwrap().is_some());
-            assert!(account.get_email_hash().unwrap().is_some());
-            assert!(account.get_first_nftoken_sequence().unwrap().is_some());
-            assert!(account.get_message_key().unwrap().is_some());
-            assert!(account.get_minted_nftokens().unwrap().is_some());
-            assert!(account.get_nftoken_minter().unwrap().is_some());
-            assert!(account.get_regular_key().unwrap().is_some());
-            assert!(account.get_ticket_count().unwrap().is_some());
-            assert!(account.get_tick_size().unwrap().is_some());
-            assert!(account.get_transfer_rate().unwrap().is_some());
-            assert!(account.get_wallet_locator().unwrap().is_some());
+            assert!(account.account_txn_id().unwrap().is_some());
+            assert!(account.amm_id().unwrap().is_some());
+            assert!(account.burned_nftokens().unwrap().is_some());
+            assert!(account.domain().unwrap().is_some());
+            assert!(account.email_hash().unwrap().is_some());
+            assert!(account.first_nftoken_sequence().unwrap().is_some());
+            assert!(account.message_key().unwrap().is_some());
+            assert!(account.minted_nftokens().unwrap().is_some());
+            assert!(account.nftoken_minter().unwrap().is_some());
+            assert!(account.regular_key().unwrap().is_some());
+            assert!(account.ticket_count().unwrap().is_some());
+            assert!(account.tick_size().unwrap().is_some());
+            assert!(account.transfer_rate().unwrap().is_some());
+            assert!(account.wallet_locator().unwrap().is_some());
         }
 
         #[test]
@@ -406,25 +406,25 @@ mod tests {
             let account = AccountRoot::new(1);
 
             // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
-            assert!(account.get_account_txn_id().unwrap().is_none());
-            assert!(account.get_amm_id().unwrap().is_none());
-            assert!(account.get_burned_nftokens().unwrap().is_none());
-            assert!(account.get_email_hash().unwrap().is_none());
-            assert!(account.get_first_nftoken_sequence().unwrap().is_none());
-            assert!(account.get_minted_nftokens().unwrap().is_none());
-            assert!(account.get_nftoken_minter().unwrap().is_none());
-            assert!(account.get_regular_key().unwrap().is_none());
-            assert!(account.get_ticket_count().unwrap().is_none());
-            assert!(account.get_tick_size().unwrap().is_none());
-            assert!(account.get_transfer_rate().unwrap().is_none());
-            assert!(account.get_wallet_locator().unwrap().is_none());
+            assert!(account.account_txn_id().unwrap().is_none());
+            assert!(account.amm_id().unwrap().is_none());
+            assert!(account.burned_nftokens().unwrap().is_none());
+            assert!(account.email_hash().unwrap().is_none());
+            assert!(account.first_nftoken_sequence().unwrap().is_none());
+            assert!(account.minted_nftokens().unwrap().is_none());
+            assert!(account.nftoken_minter().unwrap().is_none());
+            assert!(account.regular_key().unwrap().is_none());
+            assert!(account.ticket_count().unwrap().is_none());
+            assert!(account.tick_size().unwrap().is_none());
+            assert!(account.transfer_rate().unwrap().is_none());
+            assert!(account.wallet_locator().unwrap().is_none());
 
             // Variable-size optional fields return Some with len=0 when not found
             // (they cannot distinguish between "not present" and "present with 0 bytes")
-            let domain = account.get_domain().unwrap();
+            let domain = account.domain().unwrap();
             assert!(domain.is_some());
             assert_eq!(domain.unwrap().len, 0);
-            let message_key = account.get_message_key().unwrap();
+            let message_key = account.message_key().unwrap();
             assert!(message_key.is_some());
             assert_eq!(message_key.unwrap().len, 0);
         }
@@ -442,7 +442,7 @@ mod tests {
             let _guard = setup_mock(mock);
 
             let account = AccountRoot::new(1);
-            let result = account.get_account();
+            let result = account.account();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
@@ -461,7 +461,7 @@ mod tests {
             let _guard = setup_mock(mock);
 
             let account = AccountRoot::new(1);
-            let result = account.get_account();
+            let result = account.account();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);

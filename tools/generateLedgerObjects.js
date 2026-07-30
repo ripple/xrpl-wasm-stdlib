@@ -162,8 +162,9 @@ function pyCapitalize(s) {
 }
 
 // Converts an sfield name (PascalCase, e.g. "NFTokenID", "AMMID") into the
-// snake_case getter name used throughout the generated traits (e.g.
-// "get_nftoken_id", "get_amm_id").
+// snake_case accessor name used throughout the generated traits (e.g.
+// "nftoken_id", "amm_id"). No `get_` prefix -- per the Rust API Guidelines
+// (C-GETTER), idiomatic getters are named for the field, not `get_<field>`.
 function toGetterName(sfName) {
   let field = sfName
   for (const abbreviation of ABBREVIATIONS) {
@@ -174,7 +175,7 @@ function toGetterName(sfName) {
   const words = [...field.matchAll(CAMEL_TO_SNAKE_CASE_REGEX)].map((m) =>
     m[0].toLowerCase(),
   )
-  return "get_" + words.join("_")
+  return words.join("_")
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -674,7 +675,7 @@ function renderModFile(entries, unmapped) {
 }
 
 function snakeCase(className) {
-  return toGetterName(className).slice("get_".length)
+  return toGetterName(className)
 }
 
 ////////////////////////////////////////////////////////////////////////

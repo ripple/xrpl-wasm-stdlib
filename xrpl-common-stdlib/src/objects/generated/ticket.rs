@@ -11,27 +11,27 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to Ticket objects in any ledger.
 pub trait TicketFields: LedgerObjectCommonFields {
     /// The account that owns this Ticket.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The [Sequence Number][] this Ticket sets aside.
-    fn get_ticket_sequence(&self) -> Result<u32> {
+    fn ticket_sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::TicketSequence)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -39,27 +39,27 @@ pub trait TicketFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Ticket object.
 pub trait CurrentTicketFields: CurrentLedgerObjectCommonFields {
     /// The account that owns this Ticket.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The [Sequence Number][] this Ticket sets aside.
-    fn get_ticket_sequence(&self) -> Result<u32> {
+    fn ticket_sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::TicketSequence)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -99,10 +99,10 @@ mod tests {
 
         let obj = Ticket::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_ticket_sequence().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.ticket_sequence().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
     }
 }

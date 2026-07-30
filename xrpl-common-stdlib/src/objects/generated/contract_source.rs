@@ -12,37 +12,37 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to ContractSource objects in any ledger.
 pub trait ContractSourceFields: LedgerObjectCommonFields {
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
     /// The ContractHash field (Required).
-    fn get_contract_hash(&self) -> Result<Hash256> {
+    fn contract_hash(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractHash)
     }
 
     /// The ContractCode field (Required).
-    fn get_contract_code(&self) -> Result<StandardBlob> {
+    fn contract_code(&self) -> Result<StandardBlob> {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractCode)
     }
 
     /// The Functions field (Required).
-    fn get_functions(&self) -> Result<Array> {
+    fn functions(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::Functions)
     }
 
     /// The InstanceParameters field (Optional).
-    fn get_instance_parameters(&self) -> Result<Option<Array>> {
+    fn instance_parameters(&self) -> Result<Option<Array>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::InstanceParameters)
     }
 
     /// The ReferenceCount field (Required).
-    fn get_reference_count(&self) -> Result<u64> {
+    fn reference_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::ReferenceCount)
     }
 }
@@ -50,37 +50,37 @@ pub trait ContractSourceFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current ContractSource object.
 pub trait CurrentContractSourceFields: CurrentLedgerObjectCommonFields {
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
     /// The ContractHash field (Required).
-    fn get_contract_hash(&self) -> Result<Hash256> {
+    fn contract_hash(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::ContractHash)
     }
 
     /// The ContractCode field (Required).
-    fn get_contract_code(&self) -> Result<StandardBlob> {
+    fn contract_code(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::ContractCode)
     }
 
     /// The Functions field (Required).
-    fn get_functions(&self) -> Result<Array> {
+    fn functions(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::Functions)
     }
 
     /// The InstanceParameters field (Optional).
-    fn get_instance_parameters(&self) -> Result<Option<Array>> {
+    fn instance_parameters(&self) -> Result<Option<Array>> {
         current_ledger_object::get_field_optional(sfield::InstanceParameters)
     }
 
     /// The ReferenceCount field (Required).
-    fn get_reference_count(&self) -> Result<u64> {
+    fn reference_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::ReferenceCount)
     }
 }
@@ -120,10 +120,10 @@ mod tests {
 
         let obj = ContractSource::new(0);
 
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_contract_hash().is_ok());
-        assert!(obj.get_contract_code().is_ok());
-        assert!(obj.get_reference_count().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.contract_hash().is_ok());
+        assert!(obj.contract_code().is_ok());
+        assert!(obj.reference_count().is_ok());
     }
 }

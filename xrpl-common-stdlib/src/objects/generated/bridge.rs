@@ -20,23 +20,23 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to Bridge objects in any ledger.
 pub trait BridgeFields: LedgerObjectCommonFields {
     /// The account that submitted the `XChainCreateBridge` transaction on the blockchain.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer or for signing for the cross-chain reward. This amount will be split among the signers.
-    fn get_signature_reward(&self) -> Result<Amount> {
+    fn signature_reward(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignatureReward)
     }
 
     /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be present on XRP-XRP bridges.
-    fn get_min_account_create_amount(&self) -> Result<Option<Amount>> {
+    fn min_account_create_amount(&self) -> Result<Option<Amount>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MinAccountCreateAmount)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -50,32 +50,32 @@ pub trait BridgeFields: LedgerObjectCommonFields {
     }
 
     /// The value of the next `XChainClaimID` to be created.
-    fn get_xchain_claim_id(&self) -> Result<u64> {
+    fn xchain_claim_id(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimID)
     }
 
     /// A counter used to order the execution of account create transactions. It is incremented every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
-    fn get_xchain_account_create_count(&self) -> Result<u64> {
+    fn xchain_account_create_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountCreateCount)
     }
 
     /// A counter used to order the execution of account create transactions. It is incremented every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain. When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount` must match the value that the `XChainAccountCreateCount` had at the time the `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they run in the same order that the `XChainAccountCreateCommit` transactions ran on the source chain, to prevent transaction replay.
-    fn get_xchain_account_claim_count(&self) -> Result<u64> {
+    fn xchain_account_claim_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountClaimCount)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -83,23 +83,23 @@ pub trait BridgeFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current Bridge object.
 pub trait CurrentBridgeFields: CurrentLedgerObjectCommonFields {
     /// The account that submitted the `XChainCreateBridge` transaction on the blockchain.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer or for signing for the cross-chain reward. This amount will be split among the signers.
-    fn get_signature_reward(&self) -> Result<Amount> {
+    fn signature_reward(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::SignatureReward)
     }
 
     /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be present on XRP-XRP bridges.
-    fn get_min_account_create_amount(&self) -> Result<Option<Amount>> {
+    fn min_account_create_amount(&self) -> Result<Option<Amount>> {
         current_ledger_object::get_field_optional(sfield::MinAccountCreateAmount)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -112,32 +112,32 @@ pub trait CurrentBridgeFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The value of the next `XChainClaimID` to be created.
-    fn get_xchain_claim_id(&self) -> Result<u64> {
+    fn xchain_claim_id(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainClaimID)
     }
 
     /// A counter used to order the execution of account create transactions. It is incremented every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
-    fn get_xchain_account_create_count(&self) -> Result<u64> {
+    fn xchain_account_create_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountCreateCount)
     }
 
     /// A counter used to order the execution of account create transactions. It is incremented every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain. When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount` must match the value that the `XChainAccountCreateCount` had at the time the `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they run in the same order that the `XChainAccountCreateCommit` transactions ran on the source chain, to prevent transaction replay.
-    fn get_xchain_account_claim_count(&self) -> Result<u64> {
+    fn xchain_account_claim_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountClaimCount)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -177,15 +177,15 @@ mod tests {
 
         let obj = Bridge::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_signature_reward().is_ok());
-        assert!(obj.get_xchain_bridge().is_ok());
-        assert!(obj.get_xchain_claim_id().is_ok());
-        assert!(obj.get_xchain_account_create_count().is_ok());
-        assert!(obj.get_xchain_account_claim_count().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_min_account_create_amount().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.signature_reward().is_ok());
+        assert!(obj.xchain_bridge().is_ok());
+        assert!(obj.xchain_claim_id().is_ok());
+        assert!(obj.xchain_account_create_count().is_ok());
+        assert!(obj.xchain_account_claim_count().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.min_account_create_amount().is_ok());
     }
 }

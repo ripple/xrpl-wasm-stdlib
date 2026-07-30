@@ -12,37 +12,37 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to SignerList objects in any ledger.
 pub trait SignerListFields: LedgerObjectCommonFields {
     /// The Owner field (Optional).
-    fn get_owner(&self) -> Result<Option<AccountID>> {
+    fn owner(&self) -> Result<Option<AccountID>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Owner)
     }
 
     /// A hint indicating which page of the owner directory links to this object, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
-    fn get_signer_quorum(&self) -> Result<u32> {
+    fn signer_quorum(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerQuorum)
     }
 
     /// An array of Signer Entry objects representing the parties who are part of this signer list.
-    fn get_signer_entries(&self) -> Result<Array> {
+    fn signer_entries(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerEntries)
     }
 
     /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
-    fn get_signer_list_id(&self) -> Result<u32> {
+    fn signer_list_id(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerListID)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -50,37 +50,37 @@ pub trait SignerListFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current SignerList object.
 pub trait CurrentSignerListFields: CurrentLedgerObjectCommonFields {
     /// The Owner field (Optional).
-    fn get_owner(&self) -> Result<Option<AccountID>> {
+    fn owner(&self) -> Result<Option<AccountID>> {
         current_ledger_object::get_field_optional(sfield::Owner)
     }
 
     /// A hint indicating which page of the owner directory links to this object, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
-    fn get_signer_quorum(&self) -> Result<u32> {
+    fn signer_quorum(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::SignerQuorum)
     }
 
     /// An array of Signer Entry objects representing the parties who are part of this signer list.
-    fn get_signer_entries(&self) -> Result<Array> {
+    fn signer_entries(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::SignerEntries)
     }
 
     /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
-    fn get_signer_list_id(&self) -> Result<u32> {
+    fn signer_list_id(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::SignerListID)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -120,12 +120,12 @@ mod tests {
 
         let obj = SignerList::new(0);
 
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_signer_quorum().is_ok());
-        assert!(obj.get_signer_list_id().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_owner().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.signer_quorum().is_ok());
+        assert!(obj.signer_list_id().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.owner().is_ok());
     }
 
     #[test]
@@ -136,6 +136,6 @@ mod tests {
 
         let obj = SignerList::new(0);
 
-        assert!(obj.get_owner().unwrap().is_none());
+        assert!(obj.owner().unwrap().is_none());
     }
 }

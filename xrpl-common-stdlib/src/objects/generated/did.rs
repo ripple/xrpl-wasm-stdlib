@@ -12,37 +12,37 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to DID objects in any ledger.
 pub trait DIDFields: LedgerObjectCommonFields {
     /// The account that controls the DID.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_did_document(&self) -> Result<Option<StandardBlob>> {
+    fn did_document(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DIDDocument)
     }
 
     /// The Universal Resource Identifier that points to the corresponding DID document or the data associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_uri(&self) -> Result<Option<UriBlob>> {
+    fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
     }
 
     /// The public attestations of identity credentials associated with the DID. The `Data` field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
     /// A hint indicating which page of the sender's owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The index of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -50,37 +50,37 @@ pub trait DIDFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current DID object.
 pub trait CurrentDIDFields: CurrentLedgerObjectCommonFields {
     /// The account that controls the DID.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_did_document(&self) -> Result<Option<StandardBlob>> {
+    fn did_document(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::DIDDocument)
     }
 
     /// The Universal Resource Identifier that points to the corresponding DID document or the data associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_uri(&self) -> Result<Option<UriBlob>> {
+    fn uri(&self) -> Result<Option<UriBlob>> {
         current_ledger_object::get_field_optional(sfield::URI)
     }
 
     /// The public attestations of identity credentials associated with the DID. The `Data` field isn't checked for validity and is limited to a maximum length of 256 bytes.
-    fn get_data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::Data)
     }
 
     /// A hint indicating which page of the sender's owner directory links to this entry, in case the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The index of the ledger that contains the transaction that most recently modified this object.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -120,12 +120,12 @@ mod tests {
 
         let obj = DID::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
-        assert!(obj.get_did_document().is_ok());
-        assert!(obj.get_uri().is_ok());
-        assert!(obj.get_data().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.did_document().is_ok());
+        assert!(obj.uri().is_ok());
+        assert!(obj.data().is_ok());
     }
 }

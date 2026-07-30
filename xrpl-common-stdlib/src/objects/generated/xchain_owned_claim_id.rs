@@ -21,13 +21,13 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to XChainOwnedClaimID objects in any ledger.
 pub trait XChainOwnedClaimIDFields: LedgerObjectCommonFields {
     /// The account that owns this object.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -41,37 +41,37 @@ pub trait XChainOwnedClaimIDFields: LedgerObjectCommonFields {
     }
 
     /// The unique sequence number for a cross-chain transfer.
-    fn get_xchain_claim_id(&self) -> Result<u64> {
+    fn xchain_claim_id(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimID)
     }
 
     /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
-    fn get_other_chain_source(&self) -> Result<AccountID> {
+    fn other_chain_source(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::OtherChainSource)
     }
 
     /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, which chain (locking or issuing), optional destination, and reward account for that signature.
-    fn get_xchain_claim_attestations(&self) -> Result<Array> {
+    fn xchain_claim_attestations(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimAttestations)
     }
 
     /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.
-    fn get_signature_reward(&self) -> Result<Amount> {
+    fn signature_reward(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignatureReward)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -79,13 +79,13 @@ pub trait XChainOwnedClaimIDFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current XChainOwnedClaimID object.
 pub trait CurrentXChainOwnedClaimIDFields: CurrentLedgerObjectCommonFields {
     /// The account that owns this object.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -98,37 +98,37 @@ pub trait CurrentXChainOwnedClaimIDFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The unique sequence number for a cross-chain transfer.
-    fn get_xchain_claim_id(&self) -> Result<u64> {
+    fn xchain_claim_id(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainClaimID)
     }
 
     /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
-    fn get_other_chain_source(&self) -> Result<AccountID> {
+    fn other_chain_source(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::OtherChainSource)
     }
 
     /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, which chain (locking or issuing), optional destination, and reward account for that signature.
-    fn get_xchain_claim_attestations(&self) -> Result<Array> {
+    fn xchain_claim_attestations(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::XChainClaimAttestations)
     }
 
     /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.
-    fn get_signature_reward(&self) -> Result<Amount> {
+    fn signature_reward(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::SignatureReward)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -168,13 +168,13 @@ mod tests {
 
         let obj = XChainOwnedClaimID::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_xchain_bridge().is_ok());
-        assert!(obj.get_xchain_claim_id().is_ok());
-        assert!(obj.get_other_chain_source().is_ok());
-        assert!(obj.get_signature_reward().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.xchain_bridge().is_ok());
+        assert!(obj.xchain_claim_id().is_ok());
+        assert!(obj.other_chain_source().is_ok());
+        assert!(obj.signature_reward().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
     }
 }

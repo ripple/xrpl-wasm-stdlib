@@ -193,7 +193,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     };
 
     // Get counterpart escrow's account and destination fields
-    let counterpart_account = match counterpart_escrow.get_account() {
+    let counterpart_account = match counterpart_escrow.account() {
         Ok(account) => account,
         Err(e) => {
             let _ = trace_num("Error getting counterpart escrow account:", e.code() as i64);
@@ -201,7 +201,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         }
     };
 
-    let counterpart_destination = match counterpart_escrow.get_destination() {
+    let counterpart_destination = match counterpart_escrow.destination() {
         Ok(destination) => destination,
         Err(e) => {
             let _ = trace_num(

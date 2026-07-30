@@ -20,13 +20,13 @@ use crate::types::uint::Hash256;
 /// Trait providing access to fields specific to XChainOwnedCreateAccountClaimID objects in any ledger.
 pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
     /// The account that owns this object.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_ledger_obj_field(
@@ -40,27 +40,27 @@ pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
     }
 
     /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
-    fn get_xchain_account_create_count(&self) -> Result<u64> {
+    fn xchain_account_create_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountCreateCount)
     }
 
     /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, destination, signature reward amount, and reward account for that signature. With the exception of the reward account, all signatures must sign the message created with common parameters.
-    fn get_xchain_create_account_attestations(&self) -> Result<Array> {
+    fn xchain_create_account_attestations(&self) -> Result<Array> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainCreateAccountAttestations)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 }
@@ -68,13 +68,13 @@ pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
 /// Trait providing access to fields specific to the current XChainOwnedCreateAccountClaimID object.
 pub trait CurrentXChainOwnedCreateAccountClaimIDFields: CurrentLedgerObjectCommonFields {
     /// The account that owns this object.
-    fn get_account(&self) -> Result<AccountID> {
+    fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
 
     /// The door accounts and assets of the bridge this object correlates to.
     /// Raw bytes; XCHAIN_BRIDGE is not yet typed in Rust.
-    fn get_xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
+    fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
             get_current_ledger_obj_field(
@@ -87,27 +87,27 @@ pub trait CurrentXChainOwnedCreateAccountClaimIDFields: CurrentLedgerObjectCommo
     }
 
     /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
-    fn get_xchain_account_create_count(&self) -> Result<u64> {
+    fn xchain_account_create_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountCreateCount)
     }
 
     /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, destination, signature reward amount, and reward account for that signature. With the exception of the reward account, all signatures must sign the message created with common parameters.
-    fn get_xchain_create_account_attestations(&self) -> Result<Array> {
+    fn xchain_create_account_attestations(&self) -> Result<Array> {
         current_ledger_object::get_field(sfield::XChainCreateAccountAttestations)
     }
 
     /// The OwnerNode field (Required).
-    fn get_owner_node(&self) -> Result<u64> {
+    fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
     /// The PreviousTxnID field (Required).
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
+    fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
     /// The PreviousTxnLgrSeq field (Required).
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
+    fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 }
@@ -147,11 +147,11 @@ mod tests {
 
         let obj = XChainOwnedCreateAccountClaimID::new(0);
 
-        assert!(obj.get_account().is_ok());
-        assert!(obj.get_xchain_bridge().is_ok());
-        assert!(obj.get_xchain_account_create_count().is_ok());
-        assert!(obj.get_owner_node().is_ok());
-        assert!(obj.get_previous_txn_id().is_ok());
-        assert!(obj.get_previous_txn_lgr_seq().is_ok());
+        assert!(obj.account().is_ok());
+        assert!(obj.xchain_bridge().is_ok());
+        assert!(obj.xchain_account_create_count().is_ok());
+        assert!(obj.owner_node().is_ok());
+        assert!(obj.previous_txn_id().is_ok());
+        assert!(obj.previous_txn_lgr_seq().is_ok());
     }
 }
