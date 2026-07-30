@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -35,11 +34,6 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
-
-    /// The set of credentials that received preauthorization. (Any account with these credentials is preauthorized.) This array has a minimum length of 1 and a maximum length of 8 credentials.
-    fn authorize_credentials(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuthorizeCredentials)
-    }
 }
 
 /// Trait providing access to fields specific to the current DepositPreauth object.
@@ -67,11 +61,6 @@ pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
     /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
-    }
-
-    /// The set of credentials that received preauthorization. (Any account with these credentials is preauthorized.) This array has a minimum length of 1 and a maximum length of 8 credentials.
-    fn authorize_credentials(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::AuthorizeCredentials)
     }
 }
 

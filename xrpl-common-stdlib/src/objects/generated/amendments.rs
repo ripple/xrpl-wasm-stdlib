@@ -9,7 +9,6 @@ use crate::host::Result;
 use crate::host::error_codes::match_result_code_optional;
 use crate::host::get_current_ledger_obj_field;
 use crate::host::get_ledger_obj_field;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -31,11 +30,6 @@ pub trait AmendmentsFields: LedgerObjectCommonFields {
             )
         };
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
-    }
-
-    /// Array of objects describing the status of amendments that have majority support but are not yet enabled. If omitted, there are no pending amendments with majority support.
-    fn majorities(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::Majorities)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.
@@ -63,11 +57,6 @@ pub trait CurrentAmendmentsFields: CurrentLedgerObjectCommonFields {
             )
         };
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
-    }
-
-    /// Array of objects describing the status of amendments that have majority support but are not yet enabled. If omitted, there are no pending amendments with majority support.
-    fn majorities(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::Majorities)
     }
 
     /// The identifying hash of the transaction that most recently modified this entry.

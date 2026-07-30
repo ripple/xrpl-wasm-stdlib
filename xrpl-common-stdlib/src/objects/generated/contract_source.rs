@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -31,16 +30,6 @@ pub trait ContractSourceFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractCode)
     }
 
-    /// The Functions field (Required).
-    fn functions(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Functions)
-    }
-
-    /// The InstanceParameters field (Optional).
-    fn instance_parameters(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::InstanceParameters)
-    }
-
     /// The ReferenceCount field (Required).
     fn reference_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::ReferenceCount)
@@ -67,16 +56,6 @@ pub trait CurrentContractSourceFields: CurrentLedgerObjectCommonFields {
     /// The ContractCode field (Required).
     fn contract_code(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::ContractCode)
-    }
-
-    /// The Functions field (Required).
-    fn functions(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::Functions)
-    }
-
-    /// The InstanceParameters field (Optional).
-    fn instance_parameters(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::InstanceParameters)
     }
 
     /// The ReferenceCount field (Required).

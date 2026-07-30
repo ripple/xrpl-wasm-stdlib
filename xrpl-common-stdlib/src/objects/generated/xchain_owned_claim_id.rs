@@ -9,7 +9,6 @@ use crate::host::Result;
 use crate::host::error_codes::match_result_code;
 use crate::host::get_current_ledger_obj_field;
 use crate::host::get_ledger_obj_field;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -48,11 +47,6 @@ pub trait XChainOwnedClaimIDFields: LedgerObjectCommonFields {
     /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
     fn other_chain_source(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::OtherChainSource)
-    }
-
-    /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, which chain (locking or issuing), optional destination, and reward account for that signature.
-    fn xchain_claim_attestations(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimAttestations)
     }
 
     /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.
@@ -105,11 +99,6 @@ pub trait CurrentXChainOwnedClaimIDFields: CurrentLedgerObjectCommonFields {
     /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
     fn other_chain_source(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::OtherChainSource)
-    }
-
-    /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, which chain (locking or issuing), optional destination, and reward account for that signature.
-    fn xchain_claim_attestations(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::XChainClaimAttestations)
     }
 
     /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.

@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -18,11 +17,6 @@ pub trait NFTokenPageFields: LedgerObjectCommonFields {
     /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
     fn next_page_min(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::NextPageMin)
-    }
-
-    /// The collection of `NFToken` objects contained in this NFTokenPage object. This specification places an upper bound of 32 NFToken objects per page. Objects are sorted from low to high with the `NFTokenID` used as the sorting parameter.
-    fn nftokens(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::NFTokens)
     }
 
     /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.
@@ -46,11 +40,6 @@ pub trait CurrentNFTokenPageFields: CurrentLedgerObjectCommonFields {
     /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
     fn next_page_min(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::NextPageMin)
-    }
-
-    /// The collection of `NFToken` objects contained in this NFTokenPage object. This specification places an upper bound of 32 NFToken objects per page. Objects are sorted from low to high with the `NFTokenID` used as the sorting parameter.
-    fn nftokens(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::NFTokens)
     }
 
     /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.

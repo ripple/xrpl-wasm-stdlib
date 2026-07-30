@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -19,11 +18,6 @@ pub trait PermissionedDomainFields: LedgerObjectCommonFields {
     /// The `Sequence` value of the transaction that created this entry.
     fn sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
-    }
-
-    /// A list of 1 to 10 Credential objects that grant access to this domain. The array is stored sorted by issuer.
-    fn accepted_credentials(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::AcceptedCredentials)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
@@ -52,11 +46,6 @@ pub trait CurrentPermissionedDomainFields: CurrentLedgerObjectCommonFields {
     /// The `Sequence` value of the transaction that created this entry.
     fn sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::Sequence)
-    }
-
-    /// A list of 1 to 10 Credential objects that grant access to this domain. The array is stored sorted by issuer.
-    fn accepted_credentials(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::AcceptedCredentials)
     }
 
     /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.

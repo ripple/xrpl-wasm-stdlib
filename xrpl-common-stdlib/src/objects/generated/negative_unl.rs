@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -11,11 +10,6 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to NegativeUNL objects in any ledger.
 pub trait NegativeUNLFields: LedgerObjectCommonFields {
-    /// A list of `DisabledValidator` objects (see below), each representing a trusted validator that is currently disabled.
-    fn disabled_validators(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::DisabledValidators)
-    }
-
     /// The public key of a trusted validator that is scheduled to be disabled in the next flag ledger.
     fn validator_to_disable(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ValidatorToDisable)
@@ -39,11 +33,6 @@ pub trait NegativeUNLFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current NegativeUNL object.
 pub trait CurrentNegativeUNLFields: CurrentLedgerObjectCommonFields {
-    /// A list of `DisabledValidator` objects (see below), each representing a trusted validator that is currently disabled.
-    fn disabled_validators(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::DisabledValidators)
-    }
-
     /// The public key of a trusted validator that is scheduled to be disabled in the next flag ledger.
     fn validator_to_disable(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::ValidatorToDisable)

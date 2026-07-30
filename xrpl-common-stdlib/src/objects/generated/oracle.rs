@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -25,11 +24,6 @@ pub trait OracleFields: LedgerObjectCommonFields {
     /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
     fn provider(&self) -> Result<StandardBlob> {
         ledger_object::get_field(self.get_slot_num(), sfield::Provider)
-    }
-
-    /// An array of up to 10 `PriceData` objects, each representing the price information for an asset pair. More than five `PriceData` objects require two owner reserves.
-    fn price_data_series(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PriceDataSeries)
     }
 
     /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_. Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16 bytes.
@@ -78,11 +72,6 @@ pub trait CurrentOracleFields: CurrentLedgerObjectCommonFields {
     /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
     fn provider(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::Provider)
-    }
-
-    /// An array of up to 10 `PriceData` objects, each representing the price information for an asset pair. More than five `PriceData` objects require two owner reserves.
-    fn price_data_series(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::PriceDataSeries)
     }
 
     /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_. Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16 bytes.

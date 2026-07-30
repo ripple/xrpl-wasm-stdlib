@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -66,11 +65,6 @@ pub trait OfferFields: LedgerObjectCommonFields {
     fn domain_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DomainID)
     }
-
-    /// A list of additional offer directories that link to this offer. This field is only present if this is a hybrid offer in a permissioned DEX. The array always contains exactly 1 entry.
-    fn additional_books(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::AdditionalBooks)
-    }
 }
 
 /// Trait providing access to fields specific to the current Offer object.
@@ -128,11 +122,6 @@ pub trait CurrentOfferFields: CurrentLedgerObjectCommonFields {
     /// The ledger entry ID of a permissioned domain. If present, this offer belongs to the corresponding Permissioned DEX.
     fn domain_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::DomainID)
-    }
-
-    /// A list of additional offer directories that link to this offer. This field is only present if this is a hybrid offer in a permissioned DEX. The array always contains exactly 1 entry.
-    fn additional_books(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::AdditionalBooks)
     }
 }
 

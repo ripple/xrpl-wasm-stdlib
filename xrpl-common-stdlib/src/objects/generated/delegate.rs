@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -19,11 +18,6 @@ pub trait DelegateFields: LedgerObjectCommonFields {
     /// The account receiving permissions, also called the _delegate_.
     fn authorize(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Authorize)
-    }
-
-    /// A list of permissions granted, with at least 1 and at most 10 items. Each item in the list is a Permission Object.
-    fn permissions(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Permissions)
     }
 
     /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.
@@ -52,11 +46,6 @@ pub trait CurrentDelegateFields: CurrentLedgerObjectCommonFields {
     /// The account receiving permissions, also called the _delegate_.
     fn authorize(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Authorize)
-    }
-
-    /// A list of permissions granted, with at least 1 and at most 10 items. Each item in the list is a Permission Object.
-    fn permissions(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::Permissions)
     }
 
     /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.

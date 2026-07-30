@@ -9,7 +9,6 @@ use crate::host::Result;
 use crate::host::error_codes::match_result_code;
 use crate::host::get_current_ledger_obj_field;
 use crate::host::get_ledger_obj_field;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -42,11 +41,6 @@ pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
     /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
     fn xchain_account_create_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountCreateCount)
-    }
-
-    /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, destination, signature reward amount, and reward account for that signature. With the exception of the reward account, all signatures must sign the message created with common parameters.
-    fn xchain_create_account_attestations(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::XChainCreateAccountAttestations)
     }
 
     /// The OwnerNode field (Required).
@@ -89,11 +83,6 @@ pub trait CurrentXChainOwnedCreateAccountClaimIDFields: CurrentLedgerObjectCommo
     /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
     fn xchain_account_create_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountCreateCount)
-    }
-
-    /// Attestations collected from the witness servers. This includes the parameters needed to recreate the message that was signed, including the amount, destination, signature reward amount, and reward account for that signature. With the exception of the reward account, all signatures must sign the message created with common parameters.
-    fn xchain_create_account_attestations(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::XChainCreateAccountAttestations)
     }
 
     /// The OwnerNode field (Required).

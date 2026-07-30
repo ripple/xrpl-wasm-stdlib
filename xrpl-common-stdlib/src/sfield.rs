@@ -19,7 +19,7 @@ use core::marker::PhantomData;
 /// allowing the compiler to automatically infer the correct type when calling `get_field`.
 ///
 /// The type parameter `T` represents the expected Rust type for this field, which can be
-/// used with various field getter traits like `LedgerObjectFieldGetter` or `FromCurrentTx`.
+/// used with the field-decoder marker traits `FromCurrentTx` and `FromLedger`.
 ///
 /// # Example
 ///

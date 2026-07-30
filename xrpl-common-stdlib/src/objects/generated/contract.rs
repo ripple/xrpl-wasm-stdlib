@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -47,11 +46,6 @@ pub trait ContractFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::ContractHash)
     }
 
-    /// The InstanceParameterValues field (Optional).
-    fn instance_parameter_values(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::InstanceParameterValues)
-    }
-
     /// The URI field (Optional).
     fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
@@ -93,11 +87,6 @@ pub trait CurrentContractFields: CurrentLedgerObjectCommonFields {
     /// The ContractHash field (Required).
     fn contract_hash(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::ContractHash)
-    }
-
-    /// The InstanceParameterValues field (Optional).
-    fn instance_parameter_values(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::InstanceParameterValues)
     }
 
     /// The URI field (Optional).

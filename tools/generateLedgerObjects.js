@@ -264,6 +264,13 @@ function resolveEntryFields(entry, sfieldTypes, unmapped) {
       continue
     }
 
+    // ARRAY/OBJECT fields can't be decoded into a value whole (they don't implement
+    // `FromLedger`); they're reached element-by-element via the `path()` nested-field
+    // builder on the common base trait. Emit no flat getter for them.
+    if (rustType === "Array" || rustType === "Object") {
+      continue
+    }
+
     out.push({ kind: "field", field, rustType })
   }
   return out

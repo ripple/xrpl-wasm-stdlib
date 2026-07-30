@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::{Array, Object};
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -21,16 +20,6 @@ pub trait AMMFields: LedgerObjectCommonFields {
     /// The percentage fee to be charged for trades against this AMM instance, in units of 1/100,000. The maximum value is 1000, for a 1% fee.
     fn trading_fee(&self) -> Result<Option<u16>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TradingFee)
-    }
-
-    /// A list of vote objects, representing votes on the pool's trading fee.
-    fn vote_slots(&self) -> Result<Option<Array>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::VoteSlots)
-    }
-
-    /// Details of the current owner of the auction slot, as an Auction Slot object.
-    fn auction_slot(&self) -> Result<Option<Object>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuctionSlot)
     }
 
     /// The total outstanding balance of liquidity provider tokens from this AMM instance. The holders of these tokens can vote on the AMM's trading fee in proportion to their holdings, or redeem the tokens for a share of the AMM's assets which grows with the trading fees collected.
@@ -74,16 +63,6 @@ pub trait CurrentAMMFields: CurrentLedgerObjectCommonFields {
     /// The percentage fee to be charged for trades against this AMM instance, in units of 1/100,000. The maximum value is 1000, for a 1% fee.
     fn trading_fee(&self) -> Result<Option<u16>> {
         current_ledger_object::get_field_optional(sfield::TradingFee)
-    }
-
-    /// A list of vote objects, representing votes on the pool's trading fee.
-    fn vote_slots(&self) -> Result<Option<Array>> {
-        current_ledger_object::get_field_optional(sfield::VoteSlots)
-    }
-
-    /// Details of the current owner of the auction slot, as an Auction Slot object.
-    fn auction_slot(&self) -> Result<Option<Object>> {
-        current_ledger_object::get_field_optional(sfield::AuctionSlot)
     }
 
     /// The total outstanding balance of liquidity provider tokens from this AMM instance. The holders of these tokens can vote on the AMM's trading fee in proportion to their holdings, or redeem the tokens for a share of the AMM's assets which grows with the trading fees collected.

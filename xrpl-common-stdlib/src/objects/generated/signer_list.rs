@@ -1,7 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 use crate::host::Result;
-use crate::objects::array_object::Array;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -24,11 +23,6 @@ pub trait SignerListFields: LedgerObjectCommonFields {
     /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
     fn signer_quorum(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerQuorum)
-    }
-
-    /// An array of Signer Entry objects representing the parties who are part of this signer list.
-    fn signer_entries(&self) -> Result<Array> {
-        ledger_object::get_field(self.get_slot_num(), sfield::SignerEntries)
     }
 
     /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
@@ -62,11 +56,6 @@ pub trait CurrentSignerListFields: CurrentLedgerObjectCommonFields {
     /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
     fn signer_quorum(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::SignerQuorum)
-    }
-
-    /// An array of Signer Entry objects representing the parties who are part of this signer list.
-    fn signer_entries(&self) -> Result<Array> {
-        current_ledger_object::get_field(sfield::SignerEntries)
     }
 
     /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
