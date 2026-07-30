@@ -37,8 +37,8 @@
 
 use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger, decode_host_result};
 use crate::host::{
-    self, Result, get_current_ledger_obj_nested_field, get_ledger_obj_nested_field,
-    get_tx_nested_field,
+    self, Result, get_current_ledger_obj_nested_array_len, get_current_ledger_obj_nested_field,
+    get_ledger_obj_nested_array_len, get_ledger_obj_nested_field, get_tx_nested_field,
 };
 use crate::sfield::SField;
 
@@ -133,48 +133,171 @@ impl Locator {
     }
 }
 
-/// The retrieval context a [`PathBuf`] reads from: selects which nested-field host function the
-/// terminal `get` calls, and for a slot-cached object carries the slot.
+/// Fluent builder for reading a nested field from the current transaction.
+///
+/// Obtained from the context via
+/// [`ctx.tx().path()`](crate::current_tx::traits::TransactionCommonFields::path); rooting
+/// it there is what guarantees the terminal [`get`](Self::get) reads through the
+/// current-transaction host function and never crosses into a ledger-object read. Each
+/// [`field`](Self::field) / [`index`](Self::index) call appends one 4-byte segment to the
+/// underlying [`Locator`] buffer.
+///
+/// A path longer than the 64-byte buffer (more than 16 segments) can hold is not silently
+/// truncated: the overflow is remembered and surfaced as [`host::Error::LocatorMalformed`] from
+/// [`get`](Self::get), rather than sending the host a shorter path than the author wrote.
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum NestedSource {
-    /// The current transaction (`get_tx_nested_field`).
-    Tx,
-    /// The ledger object the contract is attached to (`get_current_ledger_obj_nested_field`).
-    CurrentLedgerObj,
-    /// A ledger object cached in the given slot (`get_ledger_obj_nested_field`).
-    LedgerObj(i32),
+pub struct TxPathBuilder {
+    locator: Locator,
+    /// Set once a `field`/`index` segment did not fit in the buffer. Sticky: further calls stay
+    /// overflowed so `get` reports the malformed path instead of reading a truncated one.
+    overflowed: bool,
 }
 
-impl NestedSource {
-    /// Issue this context's nested-field host call for the packed `locator` bytes.
-    fn call(&self, loc_ptr: *const u8, loc_len: usize, out_ptr: *mut u8, out_len: usize) -> i32 {
-        match self {
-            NestedSource::Tx => unsafe { get_tx_nested_field(loc_ptr, loc_len, out_ptr, out_len) },
-            NestedSource::CurrentLedgerObj => unsafe {
+impl TxPathBuilder {
+    /// Root a new builder at the current transaction. Callers reach this through
+    /// [`TransactionCommonFields::path`](crate::current_tx::traits::TransactionCommonFields::path).
+    pub(crate) fn for_current_tx() -> Self {
+        Self {
+            locator: Locator::new(),
+            overflowed: false,
+        }
+    }
+
+    /// Append a field code to the path.
+    ///
+    /// Takes a typed [`SField<T, CODE>`] constant (e.g. `sfield::Memos`) so the field code is a
+    /// compile-time constant; only the code is encoded — the field's declared type `T` is
+    /// irrelevant to the path and is chosen instead at [`get`](Self::get).
+    pub fn field<T, const CODE: i32>(self, _field: SField<T, CODE>) -> Self {
+        self.push(CODE)
+    }
+
+    /// Append an array slot index to the path (e.g. the `0` in `Memos[0]`).
+    pub fn index(self, index: u32) -> Self {
+        // A u32 and its i32 bit-pattern pack to identical bytes, which is what the host reads back.
+        self.push(index as i32)
+    }
+
+    /// Append one 4-byte segment, recording buffer overflow so [`get`](Self::get) can reject a
+    /// truncated path.
+    fn push(mut self, value: i32) -> Self {
+        if !self.locator.pack(value) {
+            self.overflowed = true;
+        }
+        self
+    }
+
+    /// Execute the `get_tx_nested_field` host call for the built path and decode the result as `T`.
+    ///
+    /// `T` picks the terminal type (and therefore the read buffer size and decoder); it must be
+    /// readable from a transaction, hence the [`FromCurrentTx`] bound.
+    ///
+    /// Returns [`host::Error::LocatorMalformed`] without calling the host if the path overflowed
+    /// the buffer while being built.
+    pub fn get<T: FromCurrentTx>(&self) -> Result<T> {
+        if self.overflowed {
+            return Result::Err(host::Error::LocatorMalformed);
+        }
+        let (buf, n) = self.read::<T>();
+        decode_host_result::<T>(buf, n)
+    }
+
+    /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
+    /// the nested-path counterpart to
+    /// [`get_field_optional`](crate::current_tx::get_field_optional).
+    ///
+    /// Returns [`host::Error::LocatorMalformed`] without calling the host if the path overflowed.
+    pub fn get_optional<T: FromCurrentTx>(&self) -> Result<Option<T>> {
+        match self.get::<T>() {
+            Result::Ok(value) => Result::Ok(Some(value)),
+            Result::Err(host::Error::FieldNotFound) => Result::Ok(None),
+            Result::Err(e) => Result::Err(e),
+        }
+    }
+
+    /// Run the built path through `get_tx_nested_field` into a fresh `T` buffer, returning that
+    /// buffer and the raw byte count the host reported (negative on error).
+    fn read<T: FromCurrentTx>(&self) -> (T::Buffer, i32) {
+        let mut buf = T::empty_buffer();
+        let n = {
+            let slice = buf.as_mut();
+            unsafe {
+                get_tx_nested_field(
+                    self.locator.as_ptr(),
+                    self.locator.num_packed_bytes(),
+                    slice.as_mut_ptr(),
+                    slice.len(),
+                )
+            }
+        };
+        (buf, n)
+    }
+}
+
+/// Which ledger object a [`LedgerPath`] reads from: selects the host function the terminals call,
+/// and for a slot-cached object carries the slot.
+///
+/// Deliberately holds only the two *ledger* sources. There is no transaction variant to select, so
+/// "a [`LedgerPathBuilder`] cannot read a transaction field" holds by construction rather than by
+/// convention — the [`FromLedger`] bound on the public terminals is a second line of defense, not
+/// the only one.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum LedgerSource {
+    /// The ledger object the contract is attached to (`get_current_ledger_obj_nested_field`).
+    Current,
+    /// A ledger object cached in the given slot (`get_ledger_obj_nested_field`).
+    Slot(i32),
+}
+
+impl LedgerSource {
+    /// Issue this source's nested-field host call for the packed `locator` bytes.
+    fn read_field(
+        &self,
+        loc_ptr: *const u8,
+        loc_len: usize,
+        out_ptr: *mut u8,
+        out_len: usize,
+    ) -> i32 {
+        match *self {
+            LedgerSource::Current => unsafe {
                 get_current_ledger_obj_nested_field(loc_ptr, loc_len, out_ptr, out_len)
             },
-            NestedSource::LedgerObj(slot) => unsafe {
-                get_ledger_obj_nested_field(*slot, loc_ptr, loc_len, out_ptr, out_len)
+            LedgerSource::Slot(slot) => unsafe {
+                get_ledger_obj_nested_field(slot, loc_ptr, loc_len, out_ptr, out_len)
+            },
+        }
+    }
+
+    /// Issue this source's nested-array-length host call for the packed `locator` bytes.
+    fn read_array_len(&self, loc_ptr: *const u8, loc_len: usize) -> i32 {
+        match *self {
+            LedgerSource::Current => unsafe {
+                get_current_ledger_obj_nested_array_len(loc_ptr, loc_len)
+            },
+            LedgerSource::Slot(slot) => unsafe {
+                get_ledger_obj_nested_array_len(slot, loc_ptr, loc_len)
             },
         }
     }
 }
 
-/// Shared path-building core behind the public builders: the packed [`Locator`] buffer, the sticky
-/// overflow flag, and the [`NestedSource`] to read from. The public wrappers add the context-marker
-/// bound (`FromCurrentTx` vs `FromLedger`) at their signatures; `get` / `get_optional` here are
-/// bounded on [`FieldDecoder`] because that marker is enforced one level up.
+/// Path-building core shared by the two ledger sources: the packed [`Locator`] buffer, the sticky
+/// overflow flag, and the [`LedgerSource`] to read from. Two sources times two terminals
+/// (`get_field` / `array_len`) is what makes this worth factoring out; the public
+/// [`LedgerPathBuilder`] adds the [`FromLedger`] bound at its signatures, so `get` here is bounded
+/// only on [`FieldDecoder`].
 #[derive(Clone, PartialEq, Eq, Debug)]
-struct PathBuf {
+struct LedgerPath {
     locator: Locator,
-    /// Set once a `field`/`index` segment did not fit in the buffer. Sticky: further calls stay
-    /// overflowed so `get` reports the malformed path instead of reading a truncated one.
+    /// Set once a segment could not be encoded — either it did not fit in the buffer, or an
+    /// `index` exceeded [`i32::MAX`]. Sticky: further calls stay malformed so the terminals report
+    /// the bad path instead of reading a truncated or misencoded one.
     overflowed: bool,
-    source: NestedSource,
+    source: LedgerSource,
 }
 
-impl PathBuf {
-    fn new(source: NestedSource) -> Self {
+impl LedgerPath {
+    fn new(source: LedgerSource) -> Self {
         Self {
             locator: Locator::new(),
             overflowed: false,
@@ -182,11 +305,17 @@ impl PathBuf {
         }
     }
 
-    /// Append one 4-byte segment, recording buffer overflow so `get` can reject a truncated path.
+    /// Append one 4-byte segment, recording overflow so the terminals can reject a truncated path.
     fn push(mut self, value: i32) -> Self {
         if !self.locator.pack(value) {
             self.overflowed = true;
         }
+        self
+    }
+
+    /// Mark the path unusable without appending anything, for a segment that cannot be encoded.
+    fn mark_malformed(mut self) -> Self {
+        self.overflowed = true;
         self
     }
 
@@ -206,13 +335,28 @@ impl PathBuf {
         }
     }
 
+    /// Ask the host how many entries the array at this path holds.
+    fn array_len(&self) -> Result<u32> {
+        if self.overflowed {
+            return Result::Err(host::Error::LocatorMalformed);
+        }
+        let n = self
+            .source
+            .read_array_len(self.locator.as_ptr(), self.locator.num_packed_bytes());
+        if n < 0 {
+            return Result::Err(host::Error::from_code(n));
+        }
+        // A zero-length array is a legitimate answer, not an error.
+        Result::Ok(n as u32)
+    }
+
     /// Run the built path through the source's host call into a fresh `T` buffer, returning that
     /// buffer and the raw byte count the host reported (negative on error).
     fn read<T: FieldDecoder>(&self) -> (T::Buffer, i32) {
         let mut buf = T::empty_buffer();
         let n = {
             let slice = buf.as_mut();
-            self.source.call(
+            self.source.read_field(
                 self.locator.as_ptr(),
                 self.locator.num_packed_bytes(),
                 slice.as_mut_ptr(),
@@ -223,86 +367,52 @@ impl PathBuf {
     }
 }
 
-/// Fluent builder for reading a nested field from the **current transaction**.
-///
-/// Obtained from the context via
-/// [`ctx.tx().path()`](crate::current_tx::traits::TransactionCommonFields::path); rooting
-/// it there is what guarantees the terminal [`get`](Self::get) reads through the
-/// current-transaction host function and never crosses into a ledger-object read. Each
-/// [`field`](Self::field) / [`index`](Self::index) call appends one 4-byte segment to the
-/// underlying [`Locator`] buffer.
-///
-/// A path longer than the 64-byte buffer (more than 16 segments) can hold is not silently
-/// truncated: the overflow is remembered and surfaced as [`host::Error::LocatorMalformed`] from
-/// [`get`](Self::get), rather than sending the host a shorter path than the author wrote.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct TxPathBuilder(PathBuf);
-
-impl TxPathBuilder {
-    /// Root a new builder at the current transaction. Callers reach this through
-    /// [`TransactionCommonFields::path`](crate::current_tx::traits::TransactionCommonFields::path).
-    pub(crate) fn for_current_tx() -> Self {
-        Self(PathBuf::new(NestedSource::Tx))
-    }
-
-    /// Append a field code to the path.
-    ///
-    /// Takes a typed [`SField<T, CODE>`] constant (e.g. `sfield::Memos`) so the field code is a
-    /// compile-time constant; only the code is encoded — the field's declared type `T` is
-    /// irrelevant to the path and is chosen instead at [`get`](Self::get).
-    pub fn field<T, const CODE: i32>(self, _field: SField<T, CODE>) -> Self {
-        Self(self.0.push(CODE))
-    }
-
-    /// Append an array slot index to the path (e.g. the `0` in `Memos[0]`).
-    pub fn index(self, index: u32) -> Self {
-        // A u32 and its i32 bit-pattern pack to identical bytes, which is what the host reads back.
-        Self(self.0.push(index as i32))
-    }
-
-    /// Execute the `get_tx_nested_field` host call for the built path and decode the result as `T`.
-    ///
-    /// `T` picks the terminal type (and therefore the read buffer size and decoder); it must be
-    /// readable from a transaction, hence the [`FromCurrentTx`] bound.
-    ///
-    /// Returns [`host::Error::LocatorMalformed`] without calling the host if the path overflowed
-    /// the buffer while being built.
-    pub fn get<T: FromCurrentTx>(&self) -> Result<T> {
-        self.0.get::<T>()
-    }
-
-    /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
-    /// the nested-path counterpart to
-    /// [`get_field_optional`](crate::current_tx::get_field_optional).
-    ///
-    /// Returns [`host::Error::LocatorMalformed`] without calling the host if the path overflowed.
-    pub fn get_optional<T: FromCurrentTx>(&self) -> Result<Option<T>> {
-        self.0.get_optional::<T>()
-    }
-}
-
-/// Fluent builder for reading a nested field from a **ledger object** — either the object the
-/// contract is attached to, or one cached into a slot.
+/// Fluent builder for reading a nested field from a ledger object — either the object the contract
+/// is attached to, or one cached into a slot.
 ///
 /// Obtained from the context via
 /// [`obj.path()`](crate::objects::traits::LedgerObjectCommonFields::path) for a slot-cached object
-/// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for
-/// the current one. Terminal reads are bounded on [`FromLedger`]; behavior otherwise matches
-/// [`TxPathBuilder`], including the overflow → [`host::Error::LocatorMalformed`] guard.
+/// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for the
+/// current one. Any object type works, including ones with no bespoke wrapper: reach for
+/// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle
+/// around a raw slot from `cache_ledger_obj`.
+///
+/// Terminal reads are bounded on [`FromLedger`]; behavior otherwise matches [`TxPathBuilder`],
+/// including the overflow → [`host::Error::LocatorMalformed`] guard.
+///
+/// ```no_run
+/// use xrpl_common_stdlib::host::Result;
+/// use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
+/// use xrpl_common_stdlib::sfield;
+/// # fn demo(obj: &impl LedgerObjectCommonFields) {
+/// // Walk every entry of an array field.
+/// if let Result::Ok(count) = obj.path().field(sfield::PriceDataSeries).array_len() {
+///     for i in 0..count {
+///         let price = obj
+///             .path()
+///             .field(sfield::PriceDataSeries)
+///             .index(i)
+///             .field(sfield::AssetPrice)
+///             .get::<u64>();
+///         # let _ = price;
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct LedgerPathBuilder(PathBuf);
+pub struct LedgerPathBuilder(LedgerPath);
 
 impl LedgerPathBuilder {
     /// Root a new builder at the current ledger object (no slot). Callers reach this through
     /// [`CurrentLedgerObjectCommonFields::path`](crate::objects::traits::CurrentLedgerObjectCommonFields::path).
     pub(crate) fn for_current_ledger_obj() -> Self {
-        Self(PathBuf::new(NestedSource::CurrentLedgerObj))
+        Self(LedgerPath::new(LedgerSource::Current))
     }
 
     /// Root a new builder at the ledger object cached in `slot`. Callers reach this through
     /// [`LedgerObjectCommonFields::path`](crate::objects::traits::LedgerObjectCommonFields::path).
     pub(crate) fn for_ledger_obj(slot: i32) -> Self {
-        Self(PathBuf::new(NestedSource::LedgerObj(slot)))
+        Self(LedgerPath::new(LedgerSource::Slot(slot)))
     }
 
     /// Append a field code to the path. See [`TxPathBuilder::field`].
@@ -311,14 +421,21 @@ impl LedgerPathBuilder {
     }
 
     /// Append an array slot index to the path (e.g. the `0` in `SignerEntries[0]`).
+    ///
+    /// Locator segments are `i32`, so an index above [`i32::MAX`] would pack as a negative value the
+    /// host would read back as a field code. Rather than encode that, the path is marked malformed
+    /// and the terminals report [`host::Error::LocatorMalformed`].
     pub fn index(self, index: u32) -> Self {
-        Self(self.0.push(index as i32))
+        match i32::try_from(index) {
+            Ok(index) => Self(self.0.push(index)),
+            Err(_) => Self(self.0.mark_malformed()),
+        }
     }
 
     /// Execute the ledger-object nested-field host call for the built path and decode as `T`.
     ///
     /// `T` must be readable from a ledger object, hence the [`FromLedger`] bound. Returns
-    /// [`host::Error::LocatorMalformed`] without calling the host if the path overflowed.
+    /// [`host::Error::LocatorMalformed`] without calling the host if the path is malformed.
     pub fn get<T: FromLedger>(&self) -> Result<T> {
         self.0.get::<T>()
     }
@@ -326,8 +443,24 @@ impl LedgerPathBuilder {
     /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
     /// the nested-path counterpart to
     /// [`get_field_optional`](crate::fields::ledger_obj::get_field_optional).
+    ///
+    /// Only reports absence for fields the host signals with `FieldNotFound`. Variable-length
+    /// fields (the `Blob<N>` family) are instead reported as a zero-byte write, so an absent one
+    /// yields `Ok(Some(blob))` with `blob.len == 0` rather than `Ok(None)` — the same distinction
+    /// [`ledger_obj::get_blob_field_optional`](crate::fields::ledger_obj::get_blob_field_optional)
+    /// exists to handle for flat fields.
     pub fn get_optional<T: FromLedger>(&self) -> Result<Option<T>> {
         self.0.get_optional::<T>()
+    }
+
+    /// Ask the host how many entries the array at this path holds, so it can be iterated.
+    ///
+    /// Named `array_len` rather than `len` because [`Locator::len`] already means "bytes packed into
+    /// the path"; this is the length of the array the path points *at*. Returns `Ok(0)` for a
+    /// present-but-empty array, and [`host::Error::LocatorMalformed`] without calling the host if
+    /// the path is malformed.
+    pub fn array_len(&self) -> Result<u32> {
+        self.0.array_len()
     }
 }
 
@@ -467,14 +600,14 @@ mod tests {
 
     /// The bytes a `TxPathBuilder` has packed so far, for asserting on the encoded path.
     fn packed(builder: &TxPathBuilder) -> &[u8] {
-        &builder.0.locator.buffer[..builder.0.locator.cur_buffer_index]
+        &builder.locator.buffer[..builder.locator.cur_buffer_index]
     }
 
     #[test]
     fn test_tx_field_encodes_single_field_code() {
         let builder = TxPathBuilder::for_current_tx().field(sfield::Sequence);
 
-        assert!(!builder.0.overflowed);
+        assert!(!builder.overflowed);
         assert_eq!(packed(&builder), &i32::from(sfield::Sequence).to_le_bytes());
     }
 
@@ -484,7 +617,7 @@ mod tests {
             .field(sfield::Memos)
             .field(sfield::MemoData);
 
-        assert!(!builder.0.overflowed);
+        assert!(!builder.overflowed);
         let bytes = packed(&builder);
         assert_eq!(bytes.len(), 8);
         assert_eq!(&bytes[0..4], &i32::from(sfield::Memos).to_le_bytes());
@@ -499,7 +632,7 @@ mod tests {
             .index(2)
             .field(sfield::MemoType);
 
-        assert!(!builder.0.overflowed);
+        assert!(!builder.overflowed);
         let bytes = packed(&builder);
         assert_eq!(bytes.len(), 12);
         assert_eq!(&bytes[0..4], &i32::from(sfield::Memos).to_le_bytes());
@@ -514,13 +647,13 @@ mod tests {
         for i in 0..16 {
             builder = builder.index(i);
         }
-        assert!(!builder.0.overflowed);
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert!(!builder.overflowed);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
 
         let builder = builder.field(sfield::Sequence);
-        assert!(builder.0.overflowed);
+        assert!(builder.overflowed);
         // The buffer is not grown or partially overwritten past its capacity.
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
     }
 
     #[test]
@@ -530,12 +663,12 @@ mod tests {
         for _ in 0..16 {
             builder = builder.field(sfield::Sequence);
         }
-        assert!(!builder.0.overflowed);
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert!(!builder.overflowed);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
 
         let builder = builder.index(99);
-        assert!(builder.0.overflowed);
-        assert_eq!(builder.0.locator.num_packed_bytes(), 64);
+        assert!(builder.overflowed);
+        assert_eq!(builder.locator.num_packed_bytes(), 64);
     }
 
     #[test]
@@ -568,7 +701,7 @@ mod tests {
         for i in 0..17 {
             builder = builder.index(i);
         }
-        assert!(builder.0.overflowed);
+        assert!(builder.overflowed);
 
         let result = builder.get::<u32>();
         assert!(result.is_err());
@@ -795,5 +928,151 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_ledger_index_past_i32_max_marks_path_malformed_without_calling_host() {
+        // Packing `u32::MAX as i32` would encode -1, which the host would read back as a field
+        // code. The path must be rejected instead of quietly pointing somewhere else.
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_ledger_obj_nested_field().times(0);
+        mock.expect_get_ledger_obj_nested_array_len().times(0);
+        let _guard = setup_mock(mock);
+
+        let builder = LedgerPathBuilder::for_ledger_obj(1)
+            .field(sfield::SignerEntries)
+            .index(u32::MAX);
+
+        assert!(builder.0.overflowed);
+        // The out-of-range segment is not encoded at all, so only `SignerEntries` is packed.
+        assert_eq!(builder.0.locator.num_packed_bytes(), 4);
+        assert_eq!(
+            builder.get::<u32>().err().unwrap().code(),
+            host::Error::LocatorMalformed.code()
+        );
+        assert_eq!(
+            builder.array_len().err().unwrap().code(),
+            host::Error::LocatorMalformed.code()
+        );
+    }
+
+    // ---- `array_len()` terminal ----
+
+    #[test]
+    fn test_array_len_current_obj_returns_count() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_current_ledger_obj_nested_array_len()
+            .with(always(), eq(4usize))
+            .times(1)
+            .returning(|_, _| 3);
+        let _guard = setup_mock(mock);
+
+        let result = LedgerPathBuilder::for_current_ledger_obj()
+            .field(sfield::SignerEntries)
+            .array_len();
+
+        assert_eq!(result.unwrap(), 3);
+    }
+
+    #[test]
+    fn test_array_len_by_slot_passes_slot_and_returns_count() {
+        const SLOT: i32 = 4;
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_ledger_obj_nested_array_len()
+            .with(eq(SLOT), always(), eq(4usize))
+            .times(1)
+            .returning(|_, _, _| 2);
+        mock.expect_get_current_ledger_obj_nested_array_len()
+            .times(0);
+        let _guard = setup_mock(mock);
+
+        let result = LedgerPathBuilder::for_ledger_obj(SLOT)
+            .field(sfield::PriceDataSeries)
+            .array_len();
+
+        assert_eq!(result.unwrap(), 2);
+    }
+
+    #[test]
+    fn test_array_len_zero_is_ok_not_an_error() {
+        // An array that is present but empty is a legitimate answer.
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_current_ledger_obj_nested_array_len()
+            .times(1)
+            .returning(|_, _| 0);
+        let _guard = setup_mock(mock);
+
+        let result = LedgerPathBuilder::for_current_ledger_obj()
+            .field(sfield::SignerEntries)
+            .array_len();
+
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[test]
+    fn test_array_len_propagates_host_error() {
+        use crate::host::error_codes::INTERNAL_ERROR;
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_current_ledger_obj_nested_array_len()
+            .times(1)
+            .returning(|_, _| INTERNAL_ERROR);
+        let _guard = setup_mock(mock);
+
+        let result = LedgerPathBuilder::for_current_ledger_obj()
+            .field(sfield::SignerEntries)
+            .array_len();
+
+        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+    }
+
+    #[test]
+    fn test_array_len_returns_locator_malformed_when_overflowed_without_calling_host() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_ledger_obj_nested_array_len().times(0);
+        let _guard = setup_mock(mock);
+
+        let mut builder = LedgerPathBuilder::for_ledger_obj(1);
+        for i in 0..17 {
+            builder = builder.index(i);
+        }
+
+        assert_eq!(
+            builder.array_len().err().unwrap().code(),
+            host::Error::LocatorMalformed.code()
+        );
+    }
+
+    #[test]
+    fn test_array_len_then_index_walks_every_entry() {
+        // The pattern `array_len()` exists for: count, then read each element.
+        const SLOT: i32 = 6;
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_ledger_obj_nested_array_len()
+            .with(eq(SLOT), always(), eq(4usize))
+            .times(1)
+            .returning(|_, _, _| 2);
+        // Two reads of PriceDataSeries[i].AssetPrice -> 12 bytes of path, 8-byte u64 buffer.
+        mock.expect_get_ledger_obj_nested_field()
+            .with(eq(SLOT), always(), eq(12usize), always(), eq(8usize))
+            .times(2)
+            .returning(|_, _, _, _, _| 8);
+        let _guard = setup_mock(mock);
+
+        let obj = LedgerPathBuilder::for_ledger_obj(SLOT);
+        let count = obj
+            .clone()
+            .field(sfield::PriceDataSeries)
+            .array_len()
+            .unwrap();
+        assert_eq!(count, 2);
+        for i in 0..count {
+            let price = obj
+                .clone()
+                .field(sfield::PriceDataSeries)
+                .index(i)
+                .field(sfield::AssetPrice)
+                .get::<u64>();
+            assert!(price.is_ok());
+        }
     }
 }

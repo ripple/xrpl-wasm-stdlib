@@ -30,6 +30,7 @@
 //! ```
 
 pub mod account_root;
+pub mod any_object;
 pub mod array_object;
 pub mod traits;
 
@@ -38,3 +39,5 @@ pub mod traits;
 pub use crate::fields::current_ledger_obj as current_ledger_object;
 /// Typed field accessors for a ledger object cached into a slot. See [`crate::fields::ledger_obj`].
 pub use crate::fields::ledger_obj as ledger_object;
+/// Untyped handle to a slot-cached ledger object, for object types with no typed wrapper.
+pub use any_object::LedgerObject;
