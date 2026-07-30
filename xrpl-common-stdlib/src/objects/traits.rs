@@ -2,6 +2,7 @@
 //!
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
+use crate::fields::locator::LedgerPathBuilder;
 use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
@@ -29,6 +30,28 @@ pub trait LedgerObjectCommonFields {
     ///
     /// The slot number as an i32 value
     fn get_slot_num(&self) -> i32;
+
+    /// Starts a nested-field path rooted at this ledger object, read through its slot.
+    ///
+    /// Use this to reach into arrays and inner objects that the flat getters below can't return
+    /// whole (e.g. `SignerEntries[0].Account`). Chain [`field`](LedgerPathBuilder::field) /
+    /// [`index`](LedgerPathBuilder::index), then [`get::<T>()`](LedgerPathBuilder::get).
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
+    /// use xrpl_common_stdlib::sfield;
+    /// use xrpl_common_stdlib::types::account_id::AccountID;
+    /// # fn demo(obj: &impl LedgerObjectCommonFields) {
+    /// let signer = obj.path()
+    ///     .field(sfield::SignerEntries)
+    ///     .index(0)
+    ///     .field(sfield::Account)
+    ///     .get::<AccountID>();
+    /// # let _ = signer; }
+    /// ```
+    fn path(&self) -> LedgerPathBuilder {
+        LedgerPathBuilder::for_ledger_obj(self.get_slot_num())
+    }
 
     /// Retrieves the flags field of the ledger object.
     ///
@@ -64,6 +87,24 @@ pub trait CurrentLedgerObjectCommonFields {
     // NOTE: `get_ledger_index()` is not in this trait because `sfLedgerIndex` is not actually a field on a ledger
     // object (it's a synthetic field that maps to the `index` field, which is the unique ID of an object in the
     // ledger's state tree). See https://github.com/XRPLF/rippled/issues/3649 for more context.
+
+    /// Starts a nested-field path rooted at the current ledger object (no slot).
+    ///
+    /// Use this to reach into arrays and inner objects that the flat getters below can't return
+    /// whole. Chain [`field`](LedgerPathBuilder::field) / [`index`](LedgerPathBuilder::index), then
+    /// [`get::<T>()`](LedgerPathBuilder::get).
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
+    /// use xrpl_common_stdlib::sfield;
+    /// use xrpl_common_stdlib::types::amount::Amount;
+    /// # fn demo(obj: &impl CurrentLedgerObjectCommonFields) {
+    /// let amount = obj.path().field(sfield::Amount).get::<Amount>();
+    /// # let _ = amount; }
+    /// ```
+    fn path(&self) -> LedgerPathBuilder {
+        LedgerPathBuilder::for_current_ledger_obj()
+    }
 
     /// Retrieves the flags field of the current ledger object.
     ///
@@ -469,6 +510,28 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_path_roots_a_by_slot_builder() {
+            // `obj.path()` must build against the object's own slot and read through
+            // `get_ledger_obj_nested_field`. SignerEntries[0] is two 4-byte segments = 8 bytes;
+            // the u32 read buffer is 4.
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_ledger_obj_nested_field()
+                .with(eq(1), always(), eq(8usize), always(), eq(4usize))
+                .times(1)
+                .returning(|_, _, _, _, _| 4);
+            let _guard = setup_mock(mock);
+
+            let account = AccountRoot { slot_num: 1 };
+            let result = account
+                .path()
+                .field(sfield::SignerEntries)
+                .index(0)
+                .get::<u32>();
+
+            assert!(result.is_ok());
         }
     }
 
@@ -1016,6 +1079,23 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
+        }
+
+        #[test]
+        fn test_path_roots_a_current_obj_builder() {
+            // `ctx.escrow().path()` must read through the slot-less
+            // `get_current_ledger_obj_nested_field`.
+            let mut mock = MockHostBindings::new();
+            mock.expect_get_current_ledger_obj_nested_field()
+                .with(always(), eq(4usize), always(), eq(4usize))
+                .times(1)
+                .returning(|_, _, _, _| 4);
+            let _guard = setup_mock(mock);
+
+            let escrow = TestCurrentLedgerObject;
+            let result = escrow.path().field(sfield::Flags).get::<u32>();
+
+            assert!(result.is_ok());
         }
     }
 }
