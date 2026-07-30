@@ -23,6 +23,8 @@ const EXPECTED_CONDITION: [u8; 39] = [
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
+use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
@@ -182,6 +184,87 @@ pub extern "C" fn finish() -> i32 {
         }
 
         let _ = trace("}");
+        let _ = trace("");
+    }
+
+    // ########################################
+    // Read the same fields through the nested-field path builder
+    // ########################################
+    //
+    // `current_escrow.path()` reaches the slot-less `get_current_ledger_obj_nested_field`. A
+    // single-segment path targets a top-level field, so each read below must agree with the flat
+    // getter above — that equality is what proves the locator encoding and the host dispatch are
+    // both correct against a real ledger object, not just against mocks.
+    {
+        let _ = trace("### Current Escrow Ledger Object Fields via path()");
+
+        // Path Read: Account
+        let path_account = current_escrow
+            .path()
+            .field(sfield::Account)
+            .get::<AccountID>()
+            .unwrap();
+        test_utils::assert_eq!(path_account.0, current_escrow.get_account().unwrap().0);
+        let _ = trace_data("  Account (via path):", &path_account.0, DataRepr::AsHex);
+
+        // Path Read: OwnerNode
+        let path_owner_node = current_escrow
+            .path()
+            .field(sfield::OwnerNode)
+            .get::<u64>()
+            .unwrap();
+        test_utils::assert_eq!(path_owner_node, current_escrow.get_owner_node().unwrap());
+        let _ = trace_num("  OwnerNode (via path):", path_owner_node as i64);
+
+        // Path Read: PreviousTxnLgrSeq
+        let path_prev_lgr_seq = current_escrow
+            .path()
+            .field(sfield::PreviousTxnLgrSeq)
+            .get::<u32>()
+            .unwrap();
+        test_utils::assert_eq!(
+            path_prev_lgr_seq,
+            current_escrow.get_previous_txn_lgr_seq().unwrap()
+        );
+        let _ = trace_num("  PreviousTxnLgrSeq (via path):", path_prev_lgr_seq as i64);
+
+        // Path Read: DestinationTag, an optional field that runTest.js does set. Both routes must
+        // agree it is present, and agree on the value.
+        let path_dest_tag = current_escrow
+            .path()
+            .field(sfield::DestinationTag)
+            .get_optional::<u32>()
+            .unwrap();
+        let flat_dest_tag = current_escrow.get_destination_tag().unwrap();
+        test_utils::assert!(path_dest_tag.is_some());
+        test_utils::assert!(flat_dest_tag.is_some());
+        test_utils::assert_eq!(path_dest_tag.unwrap(), flat_dest_tag.unwrap());
+        let _ = trace_num(
+            "  DestinationTag (via path):",
+            path_dest_tag.unwrap() as i64,
+        );
+
+        // A path whose segments overflow the 64-byte locator must be rejected locally, without
+        // ever reaching the host.
+        let mut overflowed = current_escrow.path();
+        for i in 0..17 {
+            overflowed = overflowed.index(i);
+        }
+        test_utils::assert!(overflowed.get::<u32>().is_err());
+
+        // `array_len()` against the current object. An Escrow has no array field, so this asks the
+        // host about a non-array and must surface an error rather than a bogus count.
+        let non_array_len = current_escrow.path().field(sfield::Account).array_len();
+        match non_array_len {
+            Ok(len) => {
+                let _ = trace_num("  array_len on non-array returned:", len as i64);
+            }
+            Err(error) => {
+                let _ = trace_num("  array_len on non-array errored:", error.code() as i64);
+            }
+        }
+        test_utils::assert!(non_array_len.is_err());
+
         let _ = trace("");
     }
 
