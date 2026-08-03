@@ -16,7 +16,7 @@ use xrpl_common_stdlib::host::{
     trace_opaque_float,
 };
 use xrpl_common_stdlib::sfield;
-use xrpl_common_stdlib::types::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
+use xrpl_common_stdlib::types::iou_number::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
 
 fn test_float_from_host() {
     let _ = trace("\n$$$ test_float_from_host $$$");
