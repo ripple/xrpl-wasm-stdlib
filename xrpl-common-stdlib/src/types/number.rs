@@ -25,7 +25,7 @@ const TO_NEAREST: i32 = host::FLOAT_ROUNDING_MODES_TO_NEAREST;
 /// are only ever produced by the host, so callers cannot construct an out-of-range value.
 ///
 /// `PartialEq`/`Eq` compare the raw bytes. The host canonicalizes every value it emits, so bytewise
-/// equality matches semantic equality for host-produced values; use [`Number::compare`] when in
+/// equality matches semantic equality for host-produced values; use [`Number::float_compare`] when in
 /// doubt (e.g. comparing against a value from another source).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
@@ -156,7 +156,7 @@ impl Number {
     }
 
     /// Compares this `Number` to another, returning their [`Ordering`](core::cmp::Ordering).
-    pub fn compare(&self, other: &Number) -> Result<core::cmp::Ordering> {
+    pub fn float_compare(&self, other: &Number) -> Result<core::cmp::Ordering> {
         let rescode = unsafe {
             host::float_compare(
                 self.0.as_ptr(),
@@ -325,7 +325,10 @@ mod tests {
                 .returning(move |_, _, _, _| code);
             let _guard = setup_mock(mock);
 
-            assert_eq!(Number(SAMPLE).compare(&Number(SAMPLE)).unwrap(), expected);
+            assert_eq!(
+                Number(SAMPLE).float_compare(&Number(SAMPLE)).unwrap(),
+                expected
+            );
         }
     }
 
@@ -337,7 +340,7 @@ mod tests {
             .returning(|_, _, _, _| -19);
         let _guard = setup_mock(mock);
 
-        assert!(Number(SAMPLE).compare(&Number(SAMPLE)).is_err());
+        assert!(Number(SAMPLE).float_compare(&Number(SAMPLE)).is_err());
     }
 
     #[test]
