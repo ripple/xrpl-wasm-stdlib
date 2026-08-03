@@ -1,7 +1,6 @@
 use crate::host;
-use crate::host::Result;
-use crate::host::RoundingMode;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
+use crate::host::{Error, Result, RoundingMode};
 
 /// The number of bytes in the serialized STNumber (float) representation.
 const NUMBER_SIZE: usize = 12;
@@ -23,7 +22,7 @@ const NUMBER_SIZE: usize = 12;
 /// equality matches semantic equality for host-produced values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
-pub struct Number(pub [u8; NUMBER_SIZE]);
+pub struct Number([u8; NUMBER_SIZE]);
 
 impl Number {
     /// The value `0`.
@@ -154,11 +153,143 @@ impl Number {
             )
         })
     }
+
+    /// Compares this `Number` to another via the host, backing the [`Ord`]/[`PartialOrd`] impls.
+    fn compare_via_host(&self, other: &Number) -> Result<core::cmp::Ordering> {
+        let rescode = unsafe {
+            host::float_cmp(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+            )
+        };
+        match rescode {
+            0 => Result::Ok(core::cmp::Ordering::Equal),
+            1 => Result::Ok(core::cmp::Ordering::Greater),
+            2 => Result::Ok(core::cmp::Ordering::Less),
+            _ => Result::Err(Error::from_code(rescode)),
+        }
+    }
+
+    /// Returns `self + other`, rounding per `rounding`.
+    pub fn add(&self, other: &Number, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_add(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
+
+    /// Returns `self - other`, rounding per `rounding`.
+    pub fn subtract(&self, other: &Number, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_sub(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
+
+    /// Returns `self * other`, rounding per `rounding`.
+    pub fn multiply(&self, other: &Number, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_mult(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
+
+    /// Returns `self / other`, rounding per `rounding`.
+    pub fn divide(&self, other: &Number, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_div(
+                self.0.as_ptr(),
+                self.0.len(),
+                other.0.as_ptr(),
+                other.0.len(),
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
+
+    /// Returns `self` raised to the integer power `n`, rounding per `rounding`.
+    pub fn pow(&self, n: i32, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_pow(
+                self.0.as_ptr(),
+                self.0.len(),
+                n,
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
+
+    /// Returns the `n`th root of `self` (e.g. `n = 2` for the square root), rounding per `rounding`.
+    pub fn root(&self, n: i32, rounding: RoundingMode) -> Result<Number> {
+        let mut out = [0u8; NUMBER_SIZE];
+        let rescode = unsafe {
+            host::float_root(
+                self.0.as_ptr(),
+                self.0.len(),
+                n,
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                rounding.into(),
+            )
+        };
+        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
+    }
 }
 
 impl From<[u8; NUMBER_SIZE]> for Number {
     fn from(value: [u8; NUMBER_SIZE]) -> Self {
         Number(value)
+    }
+}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Number {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        // Comparison delegates to rippled's `Number` via the host. A well-formed `Number` (the only
+        // kind the host produces) always compares cleanly, so this cannot fail in practice.
+        self.compare_via_host(other).unwrap()
     }
 }
 
@@ -292,7 +423,163 @@ mod tests {
     }
 
     #[test]
+    fn test_compare_orderings() {
+        for (code, expected) in [
+            (0, core::cmp::Ordering::Equal),
+            (1, core::cmp::Ordering::Greater),
+            (2, core::cmp::Ordering::Less),
+        ] {
+            let mut mock = MockHostBindings::new();
+            mock.expect_float_cmp()
+                .times(1)
+                .returning(move |_, _, _, _| code);
+            let _guard = setup_mock(mock);
+
+            assert_eq!(Number(SAMPLE).cmp(&Number(SAMPLE)), expected);
+        }
+    }
+
+    #[test]
+    fn test_compare_via_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_cmp().times(1).returning(|_, _, _, _| -19);
+        let _guard = setup_mock(mock);
+
+        assert!(Number(SAMPLE).compare_via_host(&Number(SAMPLE)).is_err());
+    }
+
+    #[test]
     fn test_zero_is_all_zeros() {
         assert_eq!(Number::ZERO, Number([0u8; NUMBER_SIZE]));
+    }
+
+    // A second distinct 12-byte value, for the two-operand arithmetic mocks.
+    const OTHER: [u8; NUMBER_SIZE] = [
+        0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+
+    #[test]
+    fn test_float_add_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_add()
+            .times(1)
+            .returning(|_, _, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE)
+                .add(&Number(OTHER), RoundingMode::ToNearest)
+                .unwrap(),
+            Number(SAMPLE)
+        );
+    }
+
+    #[test]
+    fn test_float_sub_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_sub()
+            .times(1)
+            .returning(|_, _, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE)
+                .subtract(&Number(OTHER), RoundingMode::ToNearest)
+                .unwrap(),
+            Number(SAMPLE)
+        );
+    }
+
+    #[test]
+    fn test_float_mult_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_mult()
+            .times(1)
+            .returning(|_, _, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE)
+                .multiply(&Number(OTHER), RoundingMode::ToNearest)
+                .unwrap(),
+            Number(SAMPLE)
+        );
+    }
+
+    #[test]
+    fn test_float_div_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_div()
+            .times(1)
+            .returning(|_, _, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE)
+                .divide(&Number(OTHER), RoundingMode::ToNearest)
+                .unwrap(),
+            Number(SAMPLE)
+        );
+    }
+
+    #[test]
+    fn test_float_div_host_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_div()
+            .times(1)
+            .returning(|_, _, _, _, _, _, _| -20); // INVALID_FLOAT_COMPUTATION (e.g. divide by zero)
+        let _guard = setup_mock(mock);
+
+        assert!(
+            Number(SAMPLE)
+                .divide(&Number(OTHER), RoundingMode::ToNearest)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn test_float_pow_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_pow()
+            .times(1)
+            .returning(|_, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE).pow(2, RoundingMode::ToNearest).unwrap(),
+            Number(SAMPLE)
+        );
+    }
+
+    #[test]
+    fn test_float_root_success() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_float_root()
+            .times(1)
+            .returning(|_, _, _, out, out_len, _| {
+                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            Number(SAMPLE).root(2, RoundingMode::ToNearest).unwrap(),
+            Number(SAMPLE)
+        );
     }
 }
