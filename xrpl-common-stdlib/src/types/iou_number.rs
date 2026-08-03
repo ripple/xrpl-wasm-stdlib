@@ -1,6 +1,3 @@
-use crate::host::Result;
-use crate::types::number::Number;
-
 /// The 8-byte value field of an XRPL fungible token (IOU) amount.
 ///
 /// This is the leading 8 bytes of a serialized IOU `STAmount` (the value, without the trailing
@@ -13,7 +10,7 @@ use crate::types::number::Number;
 ///
 /// This type is a read-only wire representation. Arithmetic MUST be performed through the host's
 /// `Number` (STNumber) type, which uses rippled's `Number` class to stay consensus-exact. The
-/// accessors below expose the raw encoded fields for inspection and for bridging into `Number`.
+/// accessors below expose the raw encoded fields for inspection only.
 ///
 /// # Format Details
 ///
@@ -81,23 +78,6 @@ impl IOUNumber {
             | ((self.0[5] as u64) << 16)
             | ((self.0[6] as u64) << 8)
             | (self.0[7] as u64)
-    }
-
-    /// Converts this IOU value into an arithmetic [`Number`].
-    ///
-    /// The host has no function that reads the bare 8-byte IOU value directly (its `float_from_*`
-    /// conversions take a full `STAmount` or an `STNumber`), so this decomposes the value in pure
-    /// Rust and re-enters the host via [`Number::float_from_mant_exp`], which normalizes the result to a
-    /// consensus-canonical `Number`.
-    pub fn to_number(&self) -> Result<Number> {
-        // The 54-bit mantissa always fits in a positive `i64`; apply the sign bit.
-        let mantissa = self.mantissa() as i64;
-        let signed = if self.is_positive() {
-            mantissa
-        } else {
-            -mantissa
-        };
-        Number::float_from_mant_exp(signed, self.exponent())
     }
 }
 
