@@ -80,15 +80,17 @@ mod tests {
             .returning(move |_, _, _| slot);
 
         // Mock get_ledger_obj_field for Balance. Zero-fill the buffer: the
-        // Amount getter allocates via `MaybeUninit` and calls `assume_init`,
-        // so leaving it uninitialized would be UB. Zero bytes route through
-        // the XRP variant of `Amount::from_bytes`.
+        // Amount getter allocates via `empty_buffer()`, so the padding must be
+        // deterministic. Zero bytes route through the XRP variant of
+        // `Amount::from_bytes`, whose wire length is 8 — and `Amount::decode`
+        // validates the reported length against the parsed variant, so the host
+        // must report 8, not the full buffer size.
         mock.expect_get_ledger_obj_field()
             .with(eq(slot), eq(balance_field_code), always(), eq(AMOUNT_SIZE))
             .times(1)
             .returning(move |_, _, buf, buf_size| {
                 unsafe { core::ptr::write_bytes(buf, 0, buf_size) };
-                AMOUNT_SIZE as i32
+                8
             });
 
         let _guard = setup_mock(mock);
