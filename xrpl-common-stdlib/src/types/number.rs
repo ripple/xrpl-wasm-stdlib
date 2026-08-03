@@ -1,6 +1,6 @@
 use crate::host;
+use crate::host::Result;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
-use crate::host::{Error, Result};
 
 /// The number of bytes in the serialized STNumber (float) representation.
 const NUMBER_SIZE: usize = 12;
@@ -25,8 +25,7 @@ const TO_NEAREST: i32 = host::FLOAT_ROUNDING_MODES_TO_NEAREST;
 /// are only ever produced by the host, so callers cannot construct an out-of-range value.
 ///
 /// `PartialEq`/`Eq` compare the raw bytes. The host canonicalizes every value it emits, so bytewise
-/// equality matches semantic equality for host-produced values; use [`Number::float_compare`] when in
-/// doubt (e.g. comparing against a value from another source).
+/// equality matches semantic equality for host-produced values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct Number(pub [u8; NUMBER_SIZE]);
@@ -153,24 +152,6 @@ impl Number {
                 i32::from_le_bytes(exp_bytes),
             )
         })
-    }
-
-    /// Compares this `Number` to another, returning their [`Ordering`](core::cmp::Ordering).
-    pub fn float_compare(&self, other: &Number) -> Result<core::cmp::Ordering> {
-        let rescode = unsafe {
-            host::float_compare(
-                self.0.as_ptr(),
-                self.0.len(),
-                other.0.as_ptr(),
-                other.0.len(),
-            )
-        };
-        match rescode {
-            0 => Result::Ok(core::cmp::Ordering::Equal),
-            1 => Result::Ok(core::cmp::Ordering::Greater),
-            2 => Result::Ok(core::cmp::Ordering::Less),
-            _ => Result::Err(Error::from_code(rescode)),
-        }
     }
 }
 
@@ -310,37 +291,6 @@ mod tests {
         let _guard = setup_mock(mock);
 
         assert_eq!(Number(SAMPLE).float_to_mant_exp().unwrap(), (123, 5));
-    }
-
-    #[test]
-    fn test_compare_orderings() {
-        for (code, expected) in [
-            (0, core::cmp::Ordering::Equal),
-            (1, core::cmp::Ordering::Greater),
-            (2, core::cmp::Ordering::Less),
-        ] {
-            let mut mock = MockHostBindings::new();
-            mock.expect_float_compare()
-                .times(1)
-                .returning(move |_, _, _, _| code);
-            let _guard = setup_mock(mock);
-
-            assert_eq!(
-                Number(SAMPLE).float_compare(&Number(SAMPLE)).unwrap(),
-                expected
-            );
-        }
-    }
-
-    #[test]
-    fn test_compare_host_error() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_float_compare()
-            .times(1)
-            .returning(|_, _, _, _| -19);
-        let _guard = setup_mock(mock);
-
-        assert!(Number(SAMPLE).float_compare(&Number(SAMPLE)).is_err());
     }
 
     #[test]
