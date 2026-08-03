@@ -5,8 +5,8 @@ use crate::host::Result::{Err, Ok};
 use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
 use crate::types::decode_error::DecodeError;
+use crate::types::iou_number::IOUNumber;
 use crate::types::mpt_id::MptId;
-use crate::types::opaque_float::OpaqueFloat;
 
 pub const AMOUNT_SIZE: usize = 48;
 
@@ -95,7 +95,7 @@ pub enum Amount {
     },
     IOU {
         // amount: Amount::IOU,
-        amount: OpaqueFloat, // TODO: Make a helper to detect sign from 2nd bit (trait?)
+        amount: IOUNumber,
         issuer: AccountID,
         currency: Currency,
     },
@@ -116,7 +116,7 @@ impl Amount {
     /// The format follows the XRPL binary layout:
     /// - XRP: Raw drop amount with sign bit in first 8 bytes + 40 bytes padding
     /// - MPT: Flag byte (0b_0110_0000) in byte 0, raw amount in bytes 1-9, MptId in bytes 9-33 + 15 bytes padding
-    /// - IOU: OpaqueFloat in first 8 bytes, Currency in bytes 8-28, AccountID in bytes 28-48
+    /// - IOU: IOUNumber in first 8 bytes, Currency in bytes 8-28, AccountID in bytes 28-48
     ///
     /// Returns a tuple of (bytes, length) where length is always 48.
     pub fn to_stamount_bytes(&self) -> ([u8; AMOUNT_SIZE], usize) {
@@ -249,8 +249,8 @@ impl Amount {
             // IOU amounts are 48 bytes
 
             // IOU amount: [1/type][1/sign][8/exponent][54/mantissa]
-            let opaque_float_amount_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
-            let opaque_float: OpaqueFloat = opaque_float_amount_bytes.into();
+            let iou_number_bytes: [u8; 8] = bytes[0..8].try_into().unwrap();
+            let iou_number: IOUNumber = iou_number_bytes.into();
 
             // Parse the Currency from the next 20 bytes
             let mut currency_bytes = [0u8; 20];
@@ -263,7 +263,7 @@ impl Amount {
             let issuer = AccountID::from(issuer_bytes);
 
             let amount = Amount::IOU {
-                amount: opaque_float,
+                amount: iou_number,
                 issuer,
                 currency,
             };
@@ -313,7 +313,7 @@ impl FromLedger for Amount {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::opaque_float::OpaqueFloat;
+    use crate::types::iou_number::IOUNumber;
 
     #[test]
     fn test_parse_xrp_amount() {
@@ -442,7 +442,7 @@ mod tests {
                 issuer,
                 currency,
             } => {
-                assert_eq!(amount, OpaqueFloat(eight_input_bytes));
+                assert_eq!(amount, IOUNumber(eight_input_bytes));
                 assert_eq!(issuer, AccountID::from(ISSUER_BYTES));
                 assert_eq!(currency, Currency::from(CURRENCY_BYTES));
             }
@@ -626,27 +626,27 @@ mod tests {
 
         // Create the OpaqueFloat bytes manually
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa]
-        let mut opaque_float_bytes = [0u8; 8];
+        let mut iou_number_bytes = [0u8; 8];
 
         // First byte: IOU positive flag (0xC0) with exponent bits
-        opaque_float_bytes[0] = 0xC0 | ((EXPONENT >> 2) & 0x3F);
+        iou_number_bytes[0] = 0xC0 | ((EXPONENT >> 2) & 0x3F);
 
         // Second byte: first 2 bits for exponent, rest will be part of mantissa
-        opaque_float_bytes[1] = (EXPONENT & 0x03) << 6;
+        iou_number_bytes[1] = (EXPONENT & 0x03) << 6;
 
         let mantissa_bytes = MANTISSA.to_be_bytes();
 
-        // Copy the mantissa bytes, preserving the exponent bits in opaque_float_bytes[1]
-        opaque_float_bytes[1] |= mantissa_bytes[0] & 0x3F;
-        opaque_float_bytes[2] = mantissa_bytes[1];
-        opaque_float_bytes[3] = mantissa_bytes[2];
-        opaque_float_bytes[4] = mantissa_bytes[3];
-        opaque_float_bytes[5] = mantissa_bytes[4];
-        opaque_float_bytes[6] = mantissa_bytes[5];
-        opaque_float_bytes[7] = mantissa_bytes[6];
+        // Copy the mantissa bytes, preserving the exponent bits in iou_number_bytes[1]
+        iou_number_bytes[1] |= mantissa_bytes[0] & 0x3F;
+        iou_number_bytes[2] = mantissa_bytes[1];
+        iou_number_bytes[3] = mantissa_bytes[2];
+        iou_number_bytes[4] = mantissa_bytes[3];
+        iou_number_bytes[5] = mantissa_bytes[4];
+        iou_number_bytes[6] = mantissa_bytes[5];
+        iou_number_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat(opaque_float_bytes),
+            amount: IOUNumber(iou_number_bytes),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -654,7 +654,7 @@ mod tests {
         // Create the expected byte layout for IOU
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa][160/currency][160/issuer]
         let mut expected_bytes = [0u8; 48];
-        expected_bytes[0..8].copy_from_slice(&opaque_float_bytes);
+        expected_bytes[0..8].copy_from_slice(&iou_number_bytes);
         expected_bytes[8..28].copy_from_slice(&CURRENCY_BYTES);
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
@@ -665,7 +665,7 @@ mod tests {
         // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &opaque_float_bytes); // OpaqueFloat
+        assert_eq!(&stamount_bytes[0..8], &iou_number_bytes); // IOUNumber
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
@@ -679,29 +679,29 @@ mod tests {
         const CURRENCY_BYTES: [u8; 20] = [0x34; 20];
         const ISSUER_BYTES: [u8; 20] = [0x56; 20];
 
-        // Create the OpaqueFloat bytes manually for negative amount
+        // Create the IOUNumber bytes manually for negative amount
         // IOU format: [1/type][0/sign][8/exponent][54/mantissa]
-        let mut opaque_float_bytes = [0u8; 8];
+        let mut iou_number_bytes = [0u8; 8];
 
         // First byte: IOU negative flag (0x80) with exponent bits
-        opaque_float_bytes[0] = 0x80 | ((EXPONENT >> 2) & 0x3F);
+        iou_number_bytes[0] = 0x80 | ((EXPONENT >> 2) & 0x3F);
 
         // Second byte: first 2 bits for exponent, rest will be part of mantissa
-        opaque_float_bytes[1] = (EXPONENT & 0x03) << 6;
+        iou_number_bytes[1] = (EXPONENT & 0x03) << 6;
 
         let mantissa_bytes = MANTISSA.to_be_bytes();
 
-        // Copy the mantissa bytes, preserving the exponent bits in opaque_float_bytes[1]
-        opaque_float_bytes[1] |= mantissa_bytes[0] & 0x3F;
-        opaque_float_bytes[2] = mantissa_bytes[1];
-        opaque_float_bytes[3] = mantissa_bytes[2];
-        opaque_float_bytes[4] = mantissa_bytes[3];
-        opaque_float_bytes[5] = mantissa_bytes[4];
-        opaque_float_bytes[6] = mantissa_bytes[5];
-        opaque_float_bytes[7] = mantissa_bytes[6];
+        // Copy the mantissa bytes, preserving the exponent bits in iou_number_bytes[1]
+        iou_number_bytes[1] |= mantissa_bytes[0] & 0x3F;
+        iou_number_bytes[2] = mantissa_bytes[1];
+        iou_number_bytes[3] = mantissa_bytes[2];
+        iou_number_bytes[4] = mantissa_bytes[3];
+        iou_number_bytes[5] = mantissa_bytes[4];
+        iou_number_bytes[6] = mantissa_bytes[5];
+        iou_number_bytes[7] = mantissa_bytes[6];
 
         let original = Amount::IOU {
-            amount: OpaqueFloat(opaque_float_bytes),
+            amount: IOUNumber(iou_number_bytes),
             issuer: AccountID::from(ISSUER_BYTES),
             currency: Currency::from(CURRENCY_BYTES),
         };
@@ -709,7 +709,7 @@ mod tests {
         // Create the expected byte layout for negative IOU
         // IOU format: [1/type][0/sign][8/exponent][54/mantissa][160/currency][160/issuer]
         let mut expected_bytes = [0u8; 48];
-        expected_bytes[0..8].copy_from_slice(&opaque_float_bytes);
+        expected_bytes[0..8].copy_from_slice(&iou_number_bytes);
         expected_bytes[8..28].copy_from_slice(&CURRENCY_BYTES);
         expected_bytes[28..48].copy_from_slice(&ISSUER_BYTES);
 
@@ -720,7 +720,7 @@ mod tests {
         // Test to_stamount_bytes format
         let (stamount_bytes, len) = original.to_stamount_bytes();
         assert_eq!(len, 48);
-        assert_eq!(&stamount_bytes[0..8], &opaque_float_bytes); // OpaqueFloat
+        assert_eq!(&stamount_bytes[0..8], &iou_number_bytes); // IOUNumber
         assert_eq!(&stamount_bytes[8..28], &CURRENCY_BYTES); // Currency
         assert_eq!(&stamount_bytes[28..48], &ISSUER_BYTES); // Issuer
         // No padding for IOU - uses all 48 bytes
