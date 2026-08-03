@@ -1,7 +1,9 @@
 use crate::host;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
 use crate::host::{Error, Result};
+use crate::types::message::Message;
 use crate::types::public_key::{PUBLIC_KEY_BUFFER_SIZE, PublicKey};
+use crate::types::signature::Signature;
 
 /// SHA-512Half: SHA-512 of `data`, truncated to the first 32 bytes.
 ///
@@ -16,7 +18,9 @@ pub fn sha512_half(data: &[u8]) -> Result<[u8; 32]> {
 
 /// Verify `sig` over `msg` for public key `key`.
 ///
-/// `&PublicKey` (33 bytes) enforces the size constraint at the call site.
+/// `msg` and `sig` are wrapped in the distinct [`Message`] and [`Signature`] newtypes so the
+/// compiler rejects a caller that swaps them; `&PublicKey` (33 bytes) enforces the key size at
+/// the call site.
 /// - secp256k1 keys (0x02/0x03): the host pre-hashes `msg` with SHA-512Half before ECDSA verify.
 /// - Ed25519 keys (0xED): the host verifies the raw `msg` directly (no pre-hash), stripping the
 ///   0xED prefix; a non-canonical signature returns `Ok(false)`.
@@ -25,13 +29,13 @@ pub fn sha512_half(data: &[u8]) -> Result<[u8; 32]> {
 ///
 /// Errors: `InvalidParams` if the key is malformed (not 33 bytes / bad prefix);
 /// `DataFieldTooLarge` if any parameter exceeds 1024 bytes.
-pub fn check_sig(msg: &[u8], sig: &[u8], key: &PublicKey) -> Result<bool> {
+pub fn check_sig(msg: Message, sig: Signature, key: &PublicKey) -> Result<bool> {
     let rescode = unsafe {
         host::check_sig(
-            msg.as_ptr(),
-            msg.len(),
-            sig.as_ptr(),
-            sig.len(),
+            msg.0.as_ptr(),
+            msg.0.len(),
+            sig.0.as_ptr(),
+            sig.0.len(),
             key.0.as_ptr(),
             PUBLIC_KEY_BUFFER_SIZE,
         )
@@ -119,7 +123,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(b"message", b"signature", &key);
+        let result = check_sig(Message(b"message"), Signature(b"signature"), &key);
         assert!(result.unwrap());
     }
 
@@ -132,7 +136,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(b"message", b"signature", &key);
+        let result = check_sig(Message(b"message"), Signature(b"signature"), &key);
         assert!(!result.unwrap());
     }
 
@@ -145,7 +149,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(b"message", b"signature", &key);
+        let result = check_sig(Message(b"message"), Signature(b"signature"), &key);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), INVALID_PARAMS);
     }
@@ -159,7 +163,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let result = check_sig(&[0u8; 1025], b"signature", &key);
+        let result = check_sig(Message(&[0u8; 1025]), Signature(b"signature"), &key);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap().code(), DATA_FIELD_TOO_LARGE);
     }
@@ -174,6 +178,6 @@ mod tests {
         let _guard = setup_mock(mock);
 
         let key = PublicKey::from(PUBKEY_BYTES);
-        let _ = check_sig(b"m", b"s", &key);
+        let _ = check_sig(Message(b"m"), Signature(b"s"), &key);
     }
 }

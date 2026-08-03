@@ -6,6 +6,7 @@ extern crate std;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::keylets::credential_keylet;
+use xrpl_common_stdlib::types::account_id::Issuer;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
@@ -21,7 +22,7 @@ fn kyc_finish(ctx: EscrowFinishContext) -> FinishResult {
     };
 
     let cred_type: &[u8] = b"termsandconditions";
-    match credential_keylet(&account_id, &account_id, cred_type) {
+    match credential_keylet(&account_id, Issuer(account_id), cred_type) {
         Ok(keylet) => {
             let _ = trace_data("cred_keylet", &keylet, DataRepr::AsHex);
 

@@ -97,6 +97,28 @@ When merging without squashing, individual commits are also checked; commits tha
 - Add unit tests where applicable
 - Include performance considerations
 
+### API design: distinct types for order-sensitive parameters
+
+When a public function has **two or more adjacent parameters of the same type** and their
+order matters (the values are semantically distinct), give them **distinct types** with a
+newtype wrapper — following the existing `PublicKey` / `AccountID` / `Hash256` pattern — so a
+caller who swaps them gets a **compile error** instead of a silently wrong result at runtime.
+
+Three rules of thumb keep this from becoming "wrap everything for its own sake":
+
+1. **Two anonymous raw params → promote both to domain newtypes.** `crypto::check_sig` takes
+   its message and signature as the distinct `Message` and `Signature` newtypes (both wrap
+   `&[u8]`), so `check_sig(msg, sig, ...)` cannot be called with the two swapped.
+2. **Params that already share a meaningful base type but play different roles → wrap only the
+   secondary role(s)** so no two adjacent parameters share a type. The keylet helpers keep the
+   owner account as plain `&AccountID` and wrap the other account in a role newtype:
+   `Issuer`, `Authorize`, `Destination` (see `types/account_id.rs`). No redundant
+   `Account(AccountID)` wrapper is introduced.
+3. **Symmetric / interchangeable params → do not wrap.** Where the two arguments have no
+   distinct role and a swap is harmless (e.g. `line_keylet`'s canonically-ordered account pair,
+   `amm_keylet`'s issue pair) or a single param is unambiguous (`sha512_half(data)`), leave the
+   signature as-is.
+
 ## Testing
 
 ### Test Networks
