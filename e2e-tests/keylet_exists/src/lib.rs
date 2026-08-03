@@ -122,15 +122,15 @@ pub extern "C" fn finish() -> i32 {
     seq += 1;
 
     let cred_type: &[u8] = b"termsandconditions";
-    let credential_keylet = keylets::credential_keylet(&account, Issuer(account), cred_type);
+    let credential_keylet = keylets::credential_keylet(&account, &Issuer(account), cred_type);
     check_object_exists!(credential_keylet, "Credential", sfield::Subject);
     seq += 1;
 
-    let delegate_keylet = keylets::delegate_keylet(&account, Authorize(destination));
+    let delegate_keylet = keylets::delegate_keylet(&account, &Authorize(destination));
     check_object_exists!(delegate_keylet, "Delegate", sfield::Account);
     seq += 1;
 
-    let deposit_preauth_keylet = keylets::deposit_preauth_keylet(&account, Authorize(destination));
+    let deposit_preauth_keylet = keylets::deposit_preauth_keylet(&account, &Authorize(destination));
     check_object_exists!(deposit_preauth_keylet, "DepositPreauth", sfield::Account);
     seq += 1;
 
@@ -161,7 +161,7 @@ pub extern "C" fn finish() -> i32 {
     check_object_exists!(oracle_keylet, "Oracle", sfield::Owner);
     seq += 1;
 
-    let paychan_keylet = keylets::paychan_keylet(&account, Destination(destination), seq);
+    let paychan_keylet = keylets::paychan_keylet(&account, &Destination(destination), seq);
     check_object_exists!(paychan_keylet, "PayChannel", sfield::Account);
     seq += 1;
 

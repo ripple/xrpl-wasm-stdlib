@@ -187,7 +187,8 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// # Arguments
 ///
 /// * `subject` - The AccountID of the subject for whom the credential is issued
-/// * `issuer` - The AccountID of the entity issuing the credential
+/// * `issuer` - The entity issuing the credential, wrapped in [`Issuer`] so it cannot be
+///   accidentally swapped with `subject` (both are accounts); construct with `Issuer(account)`
 /// * `credential_type` - A byte slice representing the type of credential
 ///
 /// # Returns
@@ -212,7 +213,7 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     let issuer: Issuer =
 ///         Issuer(AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"));
 ///     let cred_type: &[u8] = b"termsandconditions";
-///     match credential_keylet(&subject, issuer, cred_type) {
+///     match credential_keylet(&subject, &issuer, cred_type) {
 ///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -225,7 +226,7 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 /// ```
 pub fn credential_keylet(
     subject: &AccountID,
-    issuer: Issuer,
+    issuer: &Issuer,
     credential_type: &[u8],
 ) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
@@ -249,7 +250,8 @@ pub fn credential_keylet(
 /// # Arguments
 ///
 /// * `account` - The AccountID of the account that is delegating permissions
-/// * `authorize` - The AccountID of the account that is delegated to
+/// * `authorize` - The account that is delegated to, wrapped in [`Authorize`] so it cannot be
+///   accidentally swapped with `account` (both are accounts); construct with `Authorize(account)`
 ///
 /// # Returns
 ///
@@ -272,7 +274,7 @@ pub fn credential_keylet(
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: Authorize =
 ///         Authorize(AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"));
-///     match delegate_keylet(&account, authorize) {
+///     match delegate_keylet(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -283,7 +285,7 @@ pub fn credential_keylet(
 ///     Ok(())
 /// }
 /// ```
-pub fn delegate_keylet(account: &AccountID, authorize: Authorize) -> Result<KeyletBytes> {
+pub fn delegate_keylet(account: &AccountID, authorize: &Authorize) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::delegate_keylet(
             account.0.as_ptr(),
@@ -303,7 +305,8 @@ pub fn delegate_keylet(account: &AccountID, authorize: Authorize) -> Result<Keyl
 /// # Arguments
 ///
 /// * `account` - The AccountID of the account that is doing the pre-authorizing
-/// * `authorize` - The AccountID of the account that is pre-authorizing
+/// * `authorize` - The pre-authorized account, wrapped in [`Authorize`] so it cannot be
+///   accidentally swapped with `account` (both are accounts); construct with `Authorize(account)`
 ///
 /// # Returns
 ///
@@ -326,7 +329,7 @@ pub fn delegate_keylet(account: &AccountID, authorize: Authorize) -> Result<Keyl
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: Authorize =
 ///         Authorize(AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"));
-///     match deposit_preauth_keylet(&account, authorize) {
+///     match deposit_preauth_keylet(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
 ///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///       }
@@ -337,7 +340,7 @@ pub fn delegate_keylet(account: &AccountID, authorize: Authorize) -> Result<Keyl
 ///     Ok(())
 /// }
 /// ```
-pub fn deposit_preauth_keylet(account: &AccountID, authorize: Authorize) -> Result<KeyletBytes> {
+pub fn deposit_preauth_keylet(account: &AccountID, authorize: &Authorize) -> Result<KeyletBytes> {
     create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
         host::deposit_preauth_keylet(
             account.0.as_ptr(),
@@ -816,7 +819,9 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 /// # Arguments
 ///
 /// * `account` - Reference to an `AccountID` representing the payment channel sender's account
-/// * `destination` - Reference to an `AccountID` representing the payment channel's destination
+/// * `destination` - The payment channel's destination, wrapped in [`Destination`] so it cannot
+///   be accidentally swapped with `account` (both are accounts); construct with
+///   `Destination(account)`
 /// * `seq` - The account sequence associated with the payment channel entry
 ///
 /// # Returns
@@ -843,7 +848,7 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 ///   let destination: Destination =
 ///       Destination(AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"));
 ///   let sequence = 12345;
-///   match paychan_keylet(&account, destination, sequence) {
+///   match paychan_keylet(&account, &destination, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
 ///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
 ///     }
@@ -856,7 +861,7 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 /// ```
 pub fn paychan_keylet(
     account: &AccountID,
-    destination: Destination,
+    destination: &Destination,
     seq: u32,
 ) -> Result<KeyletBytes> {
     let seq_bytes = seq.to_le_bytes();
@@ -1228,14 +1233,14 @@ mod tests {
     keylet_test!(delegate_keylet_tests, expect_delegate_keylet, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
         let authorize = Authorize(AccountID::from([0xBB; 20]));
-        delegate_keylet(&account, authorize)
+        delegate_keylet(&account, &authorize)
     });
 
     keylet_test!(credential_keylet_tests, expect_credential_keylet, 6, 8, {
         let subject = AccountID::from([0xBB; 20]);
         let issuer = Issuer(AccountID::from([0xBB; 20]));
         let cred_type: &[u8] = b"termsandconditions";
-        credential_keylet(&subject, issuer, cred_type)
+        credential_keylet(&subject, &issuer, cred_type)
     });
 
     keylet_test!(amm_keylet_tests, expect_amm_keylet, 4, 6, {
@@ -1253,7 +1258,7 @@ mod tests {
         {
             let account = AccountID::from([0xBB; 20]);
             let authorize = Authorize(AccountID::from([0xBB; 20]));
-            deposit_preauth_keylet(&account, authorize)
+            deposit_preauth_keylet(&account, &authorize)
         }
     );
 
@@ -1312,7 +1317,7 @@ mod tests {
     keylet_test!(paychan_keylet_tests, expect_paychan_keylet, 6, 8, {
         let account = AccountID::from([0xBB; 20]);
         let destination = Destination(AccountID::from([0xBB; 20]));
-        paychan_keylet(&account, destination, 12345)
+        paychan_keylet(&account, &destination, 12345)
     });
 
     keylet_test!(
