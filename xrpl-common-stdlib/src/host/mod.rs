@@ -34,30 +34,6 @@ pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
 #[allow(unused)]
 pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
 
-/// Rounding mode passed to the host's float operations.
-///
-/// The discriminants match the `rounding_mode` integer the host ABI expects
-/// (see the `FLOAT_ROUNDING_MODES_*` constants above).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(i32)]
-pub enum RoundingMode {
-    /// Round to the nearest representable value.
-    ToNearest = FLOAT_ROUNDING_MODES_TO_NEAREST,
-    /// Round toward zero (truncate).
-    TowardsZero = FLOAT_ROUNDING_MODES_TOWARDS_ZERO,
-    /// Round toward negative infinity.
-    Downward = FLOAT_ROUNDING_MODES_DOWNWARD,
-    /// Round toward positive infinity.
-    Upward = FLOAT_ROUNDING_MODES_UPWARD,
-}
-
-impl From<RoundingMode> for i32 {
-    #[inline(always)]
-    fn from(mode: RoundingMode) -> Self {
-        mode as i32
-    }
-}
-
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.
 // 1) `host_bindings_trait.rs` defines the trait that specifies the host functions available to WASM smart contracts.
