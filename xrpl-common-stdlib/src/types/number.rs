@@ -5,10 +5,7 @@ use crate::host::error_codes::match_result_code_with_expected_bytes;
 /// The number of bytes in the serialized STNumber (float) representation.
 const NUMBER_SIZE: usize = 12;
 
-/// Rounding mode used for all `Number` operations.
-///
-/// The first cut of this API rounds to nearest (matching rippled's default). Directed-rounding
-/// variants can be layered on later without breaking callers.
+/// Rounding mode for `Number` conversions: to nearest, matching rippled's default.
 const TO_NEAREST: i32 = host::FLOAT_ROUNDING_MODES_TO_NEAREST;
 
 /// An opaque XRPL `STNumber` value: a decimal float represented as `mantissa × 10^exponent`.
@@ -26,7 +23,7 @@ const TO_NEAREST: i32 = host::FLOAT_ROUNDING_MODES_TO_NEAREST;
 ///
 /// `PartialEq`/`Eq` compare the raw bytes. The host canonicalizes every value it emits, so bytewise
 /// equality matches semantic equality for host-produced values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Number(pub [u8; NUMBER_SIZE]);
 
@@ -45,7 +42,7 @@ impl Number {
     ]);
 
     /// Converts a signed integer to a `Number`.
-    pub fn float_from_int(value: i64) -> Result<Number> {
+    pub fn from_int(value: i64) -> Result<Number> {
         let mut out = [0u8; NUMBER_SIZE];
         let rescode =
             unsafe { host::float_from_int(value, out.as_mut_ptr(), NUMBER_SIZE, TO_NEAREST) };
@@ -53,7 +50,7 @@ impl Number {
     }
 
     /// Converts an unsigned integer to a `Number`.
-    pub fn float_from_uint(value: u64) -> Result<Number> {
+    pub fn from_uint(value: u64) -> Result<Number> {
         // The host reads the unsigned value from a little-endian byte buffer (native order on the
         // little-endian WASM target).
         let value_bytes = value.to_le_bytes();
@@ -71,7 +68,7 @@ impl Number {
     }
 
     /// Constructs a `Number` from an explicit mantissa and exponent (`mantissa × 10^exponent`).
-    pub fn float_from_mant_exp(mantissa: i64, exponent: i32) -> Result<Number> {
+    pub fn from_mant_exp(mantissa: i64, exponent: i32) -> Result<Number> {
         let mut out = [0u8; NUMBER_SIZE];
         let rescode = unsafe {
             host::float_from_mant_exp(
@@ -86,7 +83,7 @@ impl Number {
     }
 
     /// Converts a serialized `STAmount` (e.g. from an amount field) to a `Number`.
-    pub fn float_from_stamount(bytes: &[u8]) -> Result<Number> {
+    pub fn from_stamount(bytes: &[u8]) -> Result<Number> {
         let mut out = [0u8; NUMBER_SIZE];
         let rescode = unsafe {
             host::float_from_stamount(
@@ -101,7 +98,7 @@ impl Number {
     }
 
     /// Converts a serialized `STNumber` (12-byte) to a `Number`.
-    pub fn float_from_stnumber(bytes: &[u8]) -> Result<Number> {
+    pub fn from_stnumber(bytes: &[u8]) -> Result<Number> {
         let mut out = [0u8; NUMBER_SIZE];
         let rescode = unsafe {
             host::float_from_stnumber(
@@ -116,7 +113,7 @@ impl Number {
     }
 
     /// Converts this `Number` to a signed integer, rounding to nearest.
-    pub fn float_to_int(&self) -> Result<i64> {
+    pub fn to_int(&self) -> Result<i64> {
         let mut int_bytes = [0u8; 8];
         let rescode = unsafe {
             host::float_to_int(
@@ -133,7 +130,7 @@ impl Number {
     /// Decomposes this `Number` into its `(mantissa, exponent)` components.
     ///
     /// No rounding is applied — the value is already rounded/canonical.
-    pub fn float_to_mant_exp(&self) -> Result<(i64, i32)> {
+    pub fn to_mant_exp(&self) -> Result<(i64, i32)> {
         let mut mant_bytes = [0u8; 8];
         let mut exp_bytes = [0u8; 4];
         let rescode = unsafe {
@@ -183,7 +180,7 @@ mod tests {
             });
         let _guard = setup_mock(mock);
 
-        assert_eq!(Number::float_from_int(42).unwrap(), Number(SAMPLE));
+        assert_eq!(Number::from_int(42).unwrap(), Number(SAMPLE));
     }
 
     #[test]
@@ -194,7 +191,7 @@ mod tests {
             .returning(|_, _, _, _| -19); // INVALID_FLOAT_INPUT
         let _guard = setup_mock(mock);
 
-        assert!(Number::float_from_int(0).is_err());
+        assert!(Number::from_int(0).is_err());
     }
 
     #[test]
@@ -208,7 +205,7 @@ mod tests {
             });
         let _guard = setup_mock(mock);
 
-        assert_eq!(Number::float_from_uint(42).unwrap(), Number(SAMPLE));
+        assert_eq!(Number::from_uint(42).unwrap(), Number(SAMPLE));
     }
 
     #[test]
@@ -223,7 +220,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         assert_eq!(
-            Number::float_from_mant_exp(5_000_000_000_000_000, -15).unwrap(),
+            Number::from_mant_exp(5_000_000_000_000_000, -15).unwrap(),
             Number(SAMPLE)
         );
     }
@@ -239,10 +236,7 @@ mod tests {
             });
         let _guard = setup_mock(mock);
 
-        assert_eq!(
-            Number::float_from_stamount(&[0u8; 48]).unwrap(),
-            Number(SAMPLE)
-        );
+        assert_eq!(Number::from_stamount(&[0u8; 48]).unwrap(), Number(SAMPLE));
     }
 
     #[test]
@@ -257,7 +251,7 @@ mod tests {
         let _guard = setup_mock(mock);
 
         assert_eq!(
-            Number::float_from_stnumber(&[0u8; NUMBER_SIZE]).unwrap(),
+            Number::from_stnumber(&[0u8; NUMBER_SIZE]).unwrap(),
             Number(SAMPLE)
         );
     }
@@ -273,7 +267,7 @@ mod tests {
             });
         let _guard = setup_mock(mock);
 
-        assert_eq!(Number(SAMPLE).float_to_int().unwrap(), 42);
+        assert_eq!(Number(SAMPLE).to_int().unwrap(), 42);
     }
 
     #[test]
@@ -290,7 +284,7 @@ mod tests {
             });
         let _guard = setup_mock(mock);
 
-        assert_eq!(Number(SAMPLE).float_to_mant_exp().unwrap(), (123, 5));
+        assert_eq!(Number(SAMPLE).to_mant_exp().unwrap(), (123, 5));
     }
 
     #[test]
