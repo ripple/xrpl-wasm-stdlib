@@ -496,7 +496,7 @@ const FIXED_SIZE_OPTIONAL_TYPES = new Set([
 ])
 
 // Renders the `#[cfg(test)] mod tests { ... }` block appended to a generated entry file.
-// Kept thin: almost all mock-setup logic lives in `test_support.rs`; this only calls into
+// Kept thin: almost all mock-setup logic lives in `test_utils.rs`; this only calls into
 // it and asserts on the results.
 function renderTestsBlock(entry, resolved) {
   const { className } = entry
@@ -531,7 +531,7 @@ function renderTestsBlock(entry, resolved) {
     "    use super::*;",
     "    use crate::host::host_bindings_trait::MockHostBindings;",
     "    use crate::host::setup_mock;",
-    "    use crate::objects::test_support::*;",
+    "    use crate::objects::test_utils::*;",
     "",
   ]
 

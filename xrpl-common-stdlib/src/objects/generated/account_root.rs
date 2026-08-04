@@ -12,7 +12,7 @@ use crate::types::uint::{Hash128, Hash256};
 
 /// Trait providing access to fields specific to AccountRoot objects in any ledger.
 pub trait AccountRootFields: LedgerObjectCommonFields {
-    /// The identifying (classic) address of this account.
+    /// The identifying address of this account.
     fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
@@ -112,7 +112,7 @@ pub trait AccountRootFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FirstNFTokenSequence)
     }
 
-    /// The ledger entry ID of the corresponding AMM ledger entry. Set during account creation; cannot be modified. If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted on non-AMM accounts.
+    /// If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted on non-AMM accounts. Contains the ledger entry ID of the corresponding AMM ledger entry. Set during account creation; cannot be modified.
     fn amm_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AMMID)
     }
@@ -135,7 +135,7 @@ pub trait AccountRootFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current AccountRoot object.
 pub trait CurrentAccountRootFields: CurrentLedgerObjectCommonFields {
-    /// The identifying (classic) address of this account.
+    /// The identifying address of this account.
     fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
@@ -235,7 +235,7 @@ pub trait CurrentAccountRootFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::FirstNFTokenSequence)
     }
 
-    /// The ledger entry ID of the corresponding AMM ledger entry. Set during account creation; cannot be modified. If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted on non-AMM accounts.
+    /// If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted on non-AMM accounts. Contains the ledger entry ID of the corresponding AMM ledger entry. Set during account creation; cannot be modified.
     fn amm_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::AMMID)
     }
