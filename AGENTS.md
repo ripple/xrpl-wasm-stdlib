@@ -6,7 +6,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## What this repo is
 
-A Rust `no_std` standard library that lets developers write XRPL smart contracts (currently "Smart Escrows") compiled to WebAssembly. The library wraps a low-level host ABI exposed by `rippled` and offers type-safe accessors for transaction fields, ledger objects, keylets, and serialized fields.
+A Rust `no_std` standard library, split across several crates (see below), that lets developers write XRPL smart contracts (currently "Smart Escrows") compiled to WebAssembly. The library wraps a low-level host ABI exposed by `rippled` and offers type-safe accessors for transaction fields, ledger objects, keylets, and serialized fields.
 
 Smart escrow WASM modules export `extern "C" fn finish() -> i32`. Returning a positive value finishes the escrow, `0` rejects it, and a negative value is a host error code.
 
