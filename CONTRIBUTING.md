@@ -172,6 +172,7 @@ runTest().catch(console.error)
 xrpl-common-stdlib/
 ├── src/                    # Library source code
 ├── examples/smart-escrows/ # Example smart contracts
+├── skills/                 # Claude Code skills (e.g. xrpl-smart-escrows)
 ├── scripts/                # Development and CI scripts
 ├── ui/                     # Testing web interface
 ├── e2e-tests/              # Integration tests
