@@ -34,8 +34,8 @@ use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::types::currency::Currency;
+use xrpl_common_stdlib::types::iou_number::IOUNumber;
 use xrpl_common_stdlib::types::mpt_id::MptId;
-use xrpl_common_stdlib::types::opaque_float::OpaqueFloat;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 
 #[unsafe(no_mangle)]
@@ -921,7 +921,7 @@ fn test_trace_amount_functions() -> i32 {
 
     let currency = Currency::from(currency_bytes);
     let issuer = AccountID::from(issuer_bytes);
-    let amount = OpaqueFloat(amount_bytes);
+    let amount = IOUNumber(amount_bytes);
 
     let iou_amount = Amount::IOU {
         amount,

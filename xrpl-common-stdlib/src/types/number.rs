@@ -1,5 +1,3 @@
-// use crate::core::types::amount::opaque_float::OpaqueFloat;
-
 /// Represents an Number value (mantissa * 10^exponent)
 #[derive(Debug, Clone, Copy)]
 pub struct Number {
