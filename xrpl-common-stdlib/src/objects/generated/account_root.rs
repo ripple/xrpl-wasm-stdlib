@@ -281,7 +281,7 @@ mod tests {
     use super::*;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
-    use crate::objects::test_support::*;
+    use crate::objects::test_utils::*;
 
     #[test]
     fn read_all_fields() {

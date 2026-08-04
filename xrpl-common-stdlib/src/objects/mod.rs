@@ -33,7 +33,7 @@ pub mod any_object;
 pub mod array_object;
 pub mod generated;
 #[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
-pub mod test_support;
+pub mod test_utils;
 pub mod traits;
 
 /// Typed field accessors for the current ledger object (no slot). See
