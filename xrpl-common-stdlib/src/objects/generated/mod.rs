@@ -1,6 +1,5 @@
 //! Fields returned as raw bytes pending a typed Rust representation:
 //!   INT32: Loan.LoanScale
-//!   JSON: ContractData.ContractJson
 //!   NUMBER: Loan.ClosePaymentFee, Loan.LatePaymentFee, Loan.LoanOriginationFee, Loan.LoanServiceFee, Loan.ManagementFeeOutstanding, Loan.PeriodicPayment, Loan.PrincipalOutstanding, Loan.TotalValueOutstanding, LoanBroker.CoverAvailable, LoanBroker.DebtMaximum, LoanBroker.DebtTotal, Vault.AssetsAvailable, Vault.AssetsMaximum, Vault.AssetsTotal, Vault.LossUnrealized
 //!   VECTOR256: Amendments.Amendments, DirectoryNode.Indexes, LedgerHashes.Hashes
 //!   XCHAIN_BRIDGE: Bridge.XChainBridge, XChainOwnedClaimID.XChainBridge, XChainOwnedCreateAccountClaimID.XChainBridge
@@ -12,9 +11,6 @@ pub mod amendments;
 pub mod amm;
 pub mod bridge;
 pub mod check;
-pub mod contract;
-pub mod contract_data;
-pub mod contract_source;
 pub mod credential;
 pub mod delegate;
 pub mod deposit_preauth;
@@ -46,9 +42,6 @@ pub use amendments::{Amendments, AmendmentsFields, CurrentAmendmentsFields};
 pub use amm::{AMM, AMMFields, CurrentAMMFields};
 pub use bridge::{Bridge, BridgeFields, CurrentBridgeFields};
 pub use check::{Check, CheckFields, CurrentCheckFields};
-pub use contract::{Contract, ContractFields, CurrentContractFields};
-pub use contract_data::{ContractData, ContractDataFields, CurrentContractDataFields};
-pub use contract_source::{ContractSource, ContractSourceFields, CurrentContractSourceFields};
 pub use credential::{Credential, CredentialFields, CurrentCredentialFields};
 pub use delegate::{CurrentDelegateFields, Delegate, DelegateFields};
 pub use deposit_preauth::{CurrentDepositPreauthFields, DepositPreauth, DepositPreauthFields};

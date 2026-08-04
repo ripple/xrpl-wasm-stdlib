@@ -14,7 +14,7 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
-use crate::types::uint::{Hash160, Hash256};
+use crate::types::uint::{Hash160, Hash192, Hash256};
 
 /// Trait providing access to fields specific to DirectoryNode objects in any ledger.
 pub trait DirectoryNodeFields: LedgerObjectCommonFields {
@@ -23,24 +23,38 @@ pub trait DirectoryNodeFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Owner)
     }
 
-    /// (Offer directories only) The currency code of the `TakerPays` amount from the offers in this directory.
+    /// (Offer directories only) The currency code of the `TakerPays` amount from the offers in this
+    /// directory.
     fn taker_pays_currency(&self) -> Result<Option<Hash160>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerPaysCurrency)
     }
 
-    /// (Offer directories only) The issuer of the `TakerPays` amount from the offers in this directory.
+    /// (Offer directories only) The issuer of the `TakerPays` amount from the offers in this
+    /// directory.
     fn taker_pays_issuer(&self) -> Result<Option<Hash160>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerPaysIssuer)
     }
 
-    /// (Offer directories only) The currency code of the `TakerGets` amount from the offers in this directory.
+    /// The TakerPaysMPT field (Optional).
+    fn taker_pays_mpt(&self) -> Result<Option<Hash192>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerPaysMPT)
+    }
+
+    /// (Offer directories only) The currency code of the `TakerGets` amount from the offers in this
+    /// directory.
     fn taker_gets_currency(&self) -> Result<Option<Hash160>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerGetsCurrency)
     }
 
-    /// (Offer directories only) The issuer of the `TakerGets` amount from the offers in this directory.
+    /// (Offer directories only) The issuer of the `TakerGets` amount from the offers in this
+    /// directory.
     fn taker_gets_issuer(&self) -> Result<Option<Hash160>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerGetsIssuer)
+    }
+
+    /// The TakerGetsMPT field (Optional).
+    fn taker_gets_mpt(&self) -> Result<Option<Hash192>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerGetsMPT)
     }
 
     /// (Offer directories only) **DEPRECATED**. Do not use.
@@ -68,12 +82,14 @@ pub trait DirectoryNodeFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::RootIndex)
     }
 
-    /// If this directory consists of multiple pages, this ID links to the next object in the chain, wrapping around at the end.
+    /// If this directory consists of multiple pages, this ID links to the next object in the chain,
+    /// wrapping around at the end.
     fn index_next(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::IndexNext)
     }
 
-    /// If this directory consists of multiple pages, this ID links to the previous object in the chain, wrapping around at the beginning.
+    /// If this directory consists of multiple pages, this ID links to the previous object in the
+    /// chain, wrapping around at the beginning.
     fn index_previous(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::IndexPrevious)
     }
@@ -88,12 +104,15 @@ pub trait DirectoryNodeFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
-    /// (Offer directories only) The ledger entry ID of a permissioned domain. If present, this order book belongs to the corresponding Permissioned DEX. Otherwise, this order book is part of the open DEX.
+    /// (Offer directories only) The ledger entry ID of a permissioned domain. If present, this
+    /// order book belongs to the corresponding Permissioned DEX. Otherwise, this order book is part
+    /// of the open DEX.
     fn domain_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DomainID)
     }
@@ -106,24 +125,38 @@ pub trait CurrentDirectoryNodeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Owner)
     }
 
-    /// (Offer directories only) The currency code of the `TakerPays` amount from the offers in this directory.
+    /// (Offer directories only) The currency code of the `TakerPays` amount from the offers in this
+    /// directory.
     fn taker_pays_currency(&self) -> Result<Option<Hash160>> {
         current_ledger_object::get_field_optional(sfield::TakerPaysCurrency)
     }
 
-    /// (Offer directories only) The issuer of the `TakerPays` amount from the offers in this directory.
+    /// (Offer directories only) The issuer of the `TakerPays` amount from the offers in this
+    /// directory.
     fn taker_pays_issuer(&self) -> Result<Option<Hash160>> {
         current_ledger_object::get_field_optional(sfield::TakerPaysIssuer)
     }
 
-    /// (Offer directories only) The currency code of the `TakerGets` amount from the offers in this directory.
+    /// The TakerPaysMPT field (Optional).
+    fn taker_pays_mpt(&self) -> Result<Option<Hash192>> {
+        current_ledger_object::get_field_optional(sfield::TakerPaysMPT)
+    }
+
+    /// (Offer directories only) The currency code of the `TakerGets` amount from the offers in this
+    /// directory.
     fn taker_gets_currency(&self) -> Result<Option<Hash160>> {
         current_ledger_object::get_field_optional(sfield::TakerGetsCurrency)
     }
 
-    /// (Offer directories only) The issuer of the `TakerGets` amount from the offers in this directory.
+    /// (Offer directories only) The issuer of the `TakerGets` amount from the offers in this
+    /// directory.
     fn taker_gets_issuer(&self) -> Result<Option<Hash160>> {
         current_ledger_object::get_field_optional(sfield::TakerGetsIssuer)
+    }
+
+    /// The TakerGetsMPT field (Optional).
+    fn taker_gets_mpt(&self) -> Result<Option<Hash192>> {
+        current_ledger_object::get_field_optional(sfield::TakerGetsMPT)
     }
 
     /// (Offer directories only) **DEPRECATED**. Do not use.
@@ -146,12 +179,14 @@ pub trait CurrentDirectoryNodeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::RootIndex)
     }
 
-    /// If this directory consists of multiple pages, this ID links to the next object in the chain, wrapping around at the end.
+    /// If this directory consists of multiple pages, this ID links to the next object in the chain,
+    /// wrapping around at the end.
     fn index_next(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::IndexNext)
     }
 
-    /// If this directory consists of multiple pages, this ID links to the previous object in the chain, wrapping around at the beginning.
+    /// If this directory consists of multiple pages, this ID links to the previous object in the
+    /// chain, wrapping around at the beginning.
     fn index_previous(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::IndexPrevious)
     }
@@ -166,12 +201,15 @@ pub trait CurrentDirectoryNodeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }
 
-    /// (Offer directories only) The ledger entry ID of a permissioned domain. If present, this order book belongs to the corresponding Permissioned DEX. Otherwise, this order book is part of the open DEX.
+    /// (Offer directories only) The ledger entry ID of a permissioned domain. If present, this
+    /// order book belongs to the corresponding Permissioned DEX. Otherwise, this order book is part
+    /// of the open DEX.
     fn domain_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::DomainID)
     }
@@ -217,8 +255,10 @@ mod tests {
         assert!(obj.owner().is_ok());
         assert!(obj.taker_pays_currency().is_ok());
         assert!(obj.taker_pays_issuer().is_ok());
+        assert!(obj.taker_pays_mpt().is_ok());
         assert!(obj.taker_gets_currency().is_ok());
         assert!(obj.taker_gets_issuer().is_ok());
+        assert!(obj.taker_gets_mpt().is_ok());
         assert!(obj.exchange_rate().is_ok());
         assert!(obj.index_next().is_ok());
         assert!(obj.index_previous().is_ok());
@@ -239,8 +279,10 @@ mod tests {
         assert!(obj.owner().unwrap().is_none());
         assert!(obj.taker_pays_currency().unwrap().is_none());
         assert!(obj.taker_pays_issuer().unwrap().is_none());
+        assert!(obj.taker_pays_mpt().unwrap().is_none());
         assert!(obj.taker_gets_currency().unwrap().is_none());
         assert!(obj.taker_gets_issuer().unwrap().is_none());
+        assert!(obj.taker_gets_mpt().unwrap().is_none());
         assert!(obj.exchange_rate().unwrap().is_none());
         assert!(obj.index_next().unwrap().is_none());
         assert!(obj.index_previous().unwrap().is_none());

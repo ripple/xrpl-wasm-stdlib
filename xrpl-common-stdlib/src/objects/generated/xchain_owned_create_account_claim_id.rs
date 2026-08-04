@@ -16,7 +16,8 @@ use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::uint::Hash256;
 
-/// Trait providing access to fields specific to XChainOwnedCreateAccountClaimID objects in any ledger.
+/// Trait providing access to fields specific to XChainOwnedCreateAccountClaimID objects in any
+/// ledger.
 pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
     /// The account that owns this object.
     fn account(&self) -> Result<AccountID> {
@@ -38,7 +39,8 @@ pub trait XChainOwnedCreateAccountClaimIDFields: LedgerObjectCommonFields {
         match_result_code(result_code, || buffer)
     }
 
-    /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
+    /// An integer that determines the order that accounts created through cross-chain transfers
+    /// must be performed. Smaller numbers must execute before larger numbers.
     fn xchain_account_create_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountCreateCount)
     }
@@ -80,7 +82,8 @@ pub trait CurrentXChainOwnedCreateAccountClaimIDFields: CurrentLedgerObjectCommo
         match_result_code(result_code, || buffer)
     }
 
-    /// An integer that determines the order that accounts created through cross-chain transfers must be performed. Smaller numbers must execute before larger numbers.
+    /// An integer that determines the order that accounts created through cross-chain transfers
+    /// must be performed. Smaller numbers must execute before larger numbers.
     fn xchain_account_create_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountCreateCount)
     }
@@ -107,7 +110,8 @@ pub struct XChainOwnedCreateAccountClaimID {
 }
 
 impl XChainOwnedCreateAccountClaimID {
-    /// Binds this handle to a host-managed slot holding a XChainOwnedCreateAccountClaimID ledger object.
+    /// Binds this handle to a host-managed slot holding a XChainOwnedCreateAccountClaimID ledger
+    /// object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

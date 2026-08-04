@@ -9,22 +9,26 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to NFTokenPage objects in any ledger.
 pub trait NFTokenPageFields: LedgerObjectCommonFields {
-    /// The locator of the previous page, if any. Details about this field and how it should be used are outlined below.
+    /// The locator of the previous page, if any. Details about this field and how it should be used
+    /// are outlined below.
     fn previous_page_min(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousPageMin)
     }
 
-    /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
+    /// The locator of the next page, if any. Details about this field and how it should be used are
+    /// outlined below.
     fn next_page_min(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::NextPageMin)
     }
 
-    /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.
+    /// Identifies the transaction ID of the transaction that most recently modified this
+    /// NFTokenPage object.
     fn previous_txn_id(&self) -> Result<Hash256> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this NFTokenPage object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// NFTokenPage object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -32,22 +36,26 @@ pub trait NFTokenPageFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current NFTokenPage object.
 pub trait CurrentNFTokenPageFields: CurrentLedgerObjectCommonFields {
-    /// The locator of the previous page, if any. Details about this field and how it should be used are outlined below.
+    /// The locator of the previous page, if any. Details about this field and how it should be used
+    /// are outlined below.
     fn previous_page_min(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::PreviousPageMin)
     }
 
-    /// The locator of the next page, if any. Details about this field and how it should be used are outlined below.
+    /// The locator of the next page, if any. Details about this field and how it should be used are
+    /// outlined below.
     fn next_page_min(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::NextPageMin)
     }
 
-    /// Identifies the transaction ID of the transaction that most recently modified this NFTokenPage object.
+    /// Identifies the transaction ID of the transaction that most recently modified this
+    /// NFTokenPage object.
     fn previous_txn_id(&self) -> Result<Hash256> {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this NFTokenPage object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// NFTokenPage object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

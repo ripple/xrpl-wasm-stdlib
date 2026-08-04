@@ -65,7 +65,8 @@ pub trait FeeSettingsFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -128,7 +129,8 @@ pub trait CurrentFeeSettingsFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }

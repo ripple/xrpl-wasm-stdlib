@@ -24,12 +24,15 @@ pub trait BridgeFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
-    /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer or for signing for the cross-chain reward. This amount will be split among the signers.
+    /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer
+    /// or for signing for the cross-chain reward. This amount will be split among the signers.
     fn signature_reward(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignatureReward)
     }
 
-    /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be present on XRP-XRP bridges.
+    /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this
+    /// isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be
+    /// present on XRP-XRP bridges.
     fn min_account_create_amount(&self) -> Result<Option<Amount>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MinAccountCreateAmount)
     }
@@ -54,12 +57,19 @@ pub trait BridgeFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimID)
     }
 
-    /// A counter used to order the execution of account create transactions. It is incremented every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
+    /// A counter used to order the execution of account create transactions. It is incremented
+    /// every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
     fn xchain_account_create_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountCreateCount)
     }
 
-    /// A counter used to order the execution of account create transactions. It is incremented every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain. When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount` must match the value that the `XChainAccountCreateCount` had at the time the `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they run in the same order that the `XChainAccountCreateCommit` transactions ran on the source chain, to prevent transaction replay.
+    /// A counter used to order the execution of account create transactions. It is incremented
+    /// every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain.
+    /// When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount`
+    /// must match the value that the `XChainAccountCreateCount` had at the time the
+    /// `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they
+    /// run in the same order that the `XChainAccountCreateCommit` transactions ran on the source
+    /// chain, to prevent transaction replay.
     fn xchain_account_claim_count(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainAccountClaimCount)
     }
@@ -87,12 +97,15 @@ pub trait CurrentBridgeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Account)
     }
 
-    /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer or for signing for the cross-chain reward. This amount will be split among the signers.
+    /// The total amount, in XRP, to be rewarded for providing a signature for cross-chain transfer
+    /// or for signing for the cross-chain reward. This amount will be split among the signers.
     fn signature_reward(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::SignatureReward)
     }
 
-    /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be present on XRP-XRP bridges.
+    /// The minimum amount, in XRP, required for an `XChainAccountCreateCommit` transaction. If this
+    /// isn't present, the `XChainAccountCreateCommit` transaction will fail. This field can only be
+    /// present on XRP-XRP bridges.
     fn min_account_create_amount(&self) -> Result<Option<Amount>> {
         current_ledger_object::get_field_optional(sfield::MinAccountCreateAmount)
     }
@@ -116,12 +129,19 @@ pub trait CurrentBridgeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::XChainClaimID)
     }
 
-    /// A counter used to order the execution of account create transactions. It is incremented every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
+    /// A counter used to order the execution of account create transactions. It is incremented
+    /// every time a successful `XChainAccountCreateCommit` transaction is run for the source chain.
     fn xchain_account_create_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountCreateCount)
     }
 
-    /// A counter used to order the execution of account create transactions. It is incremented every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain. When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount` must match the value that the `XChainAccountCreateCount` had at the time the `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they run in the same order that the `XChainAccountCreateCommit` transactions ran on the source chain, to prevent transaction replay.
+    /// A counter used to order the execution of account create transactions. It is incremented
+    /// every time a `XChainAccountCreateCommit` transaction is "claimed" on the destination chain.
+    /// When the "claim" transaction is run on the destination chain, the `XChainAccountClaimCount`
+    /// must match the value that the `XChainAccountCreateCount` had at the time the
+    /// `XChainAccountClaimCount` was run on the source chain. This orders the claims so that they
+    /// run in the same order that the `XChainAccountCreateCommit` transactions ran on the source
+    /// chain, to prevent transaction replay.
     fn xchain_account_claim_count(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::XChainAccountClaimCount)
     }

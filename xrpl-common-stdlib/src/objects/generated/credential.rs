@@ -21,7 +21,8 @@ pub trait CredentialFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Issuer)
     }
 
-    /// Arbitrary data defining the type of credential this entry represents. The minimum length is 1 byte and the maximum length is 64 bytes.
+    /// Arbitrary data defining the type of credential this entry represents. The minimum length is
+    /// 1 byte and the maximum length is 64 bytes.
     fn credential_type(&self) -> Result<StandardBlob> {
         ledger_object::get_field(self.get_slot_num(), sfield::CredentialType)
     }
@@ -31,17 +32,20 @@ pub trait CredentialFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Expiration)
     }
 
-    /// Arbitrary additional data about the credential, for example a URL where a W3C-formatted Verifiable Credential can be retrieved.
+    /// Arbitrary additional data about the credential, for example a URL where a W3C-formatted
+    /// Verifiable Credential can be retrieved.
     fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
     }
 
-    /// A hint indicating which page of the issuer's directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the issuer's directory links to this entry, in case the
+    /// directory consists of multiple pages.
     fn issuer_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::IssuerNode)
     }
 
-    /// A hint indicating which page of the subject's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the subject's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
     fn subject_node(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SubjectNode)
     }
@@ -51,7 +55,8 @@ pub trait CredentialFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -69,7 +74,8 @@ pub trait CurrentCredentialFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Issuer)
     }
 
-    /// Arbitrary data defining the type of credential this entry represents. The minimum length is 1 byte and the maximum length is 64 bytes.
+    /// Arbitrary data defining the type of credential this entry represents. The minimum length is
+    /// 1 byte and the maximum length is 64 bytes.
     fn credential_type(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::CredentialType)
     }
@@ -79,17 +85,20 @@ pub trait CurrentCredentialFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Expiration)
     }
 
-    /// Arbitrary additional data about the credential, for example a URL where a W3C-formatted Verifiable Credential can be retrieved.
+    /// Arbitrary additional data about the credential, for example a URL where a W3C-formatted
+    /// Verifiable Credential can be retrieved.
     fn uri(&self) -> Result<Option<UriBlob>> {
         current_ledger_object::get_field_optional(sfield::URI)
     }
 
-    /// A hint indicating which page of the issuer's directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the issuer's directory links to this entry, in case the
+    /// directory consists of multiple pages.
     fn issuer_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::IssuerNode)
     }
 
-    /// A hint indicating which page of the subject's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the subject's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
     fn subject_node(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::SubjectNode)
     }
@@ -99,7 +108,8 @@ pub trait CurrentCredentialFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

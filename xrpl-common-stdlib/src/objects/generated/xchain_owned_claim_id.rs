@@ -44,12 +44,17 @@ pub trait XChainOwnedClaimIDFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::XChainClaimID)
     }
 
-    /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
+    /// The account that must send the corresponding `XChainCommit` on the source chain. The
+    /// destination may be specified in the `XChainCommit` transaction, which means that if the
+    /// `OtherChainSource` isn't specified, another account can try to specify a different
+    /// destination and steal the funds. This also allows tracking only a single set of signatures,
+    /// since we know which account will send the `XChainCommit` transaction.
     fn other_chain_source(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::OtherChainSource)
     }
 
-    /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.
+    /// The total amount to pay the witness servers for their signatures. It must be at least the
+    /// value of `SignatureReward` in the `Bridge` ledger object.
     fn signature_reward(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignatureReward)
     }
@@ -96,12 +101,17 @@ pub trait CurrentXChainOwnedClaimIDFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::XChainClaimID)
     }
 
-    /// The account that must send the corresponding `XChainCommit` on the source chain. The destination may be specified in the `XChainCommit` transaction, which means that if the `OtherChainSource` isn't specified, another account can try to specify a different destination and steal the funds. This also allows tracking only a single set of signatures, since we know which account will send the `XChainCommit` transaction.
+    /// The account that must send the corresponding `XChainCommit` on the source chain. The
+    /// destination may be specified in the `XChainCommit` transaction, which means that if the
+    /// `OtherChainSource` isn't specified, another account can try to specify a different
+    /// destination and steal the funds. This also allows tracking only a single set of signatures,
+    /// since we know which account will send the `XChainCommit` transaction.
     fn other_chain_source(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::OtherChainSource)
     }
 
-    /// The total amount to pay the witness servers for their signatures. It must be at least the value of `SignatureReward` in the `Bridge` ledger object.
+    /// The total amount to pay the witness servers for their signatures. It must be at least the
+    /// value of `SignatureReward` in the `Bridge` ledger object.
     fn signature_reward(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::SignatureReward)
     }

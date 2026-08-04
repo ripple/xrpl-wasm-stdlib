@@ -11,7 +11,8 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Oracle objects in any ledger.
 pub trait OracleFields: LedgerObjectCommonFields {
-    /// The account with update and delete privileges for the oracle. It's recommended to set up multi-signing on this account.
+    /// The account with update and delete privileges for the oracle. It's recommended to set up
+    /// multi-signing on this account.
     fn owner(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
@@ -21,27 +22,33 @@ pub trait OracleFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OracleDocumentID)
     }
 
-    /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
+    /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This
+    /// field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
     fn provider(&self) -> Result<StandardBlob> {
         ledger_object::get_field(self.get_slot_num(), sfield::Provider)
     }
 
-    /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_. Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16 bytes.
+    /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_.
+    /// Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16
+    /// bytes.
     fn asset_class(&self) -> Result<StandardBlob> {
         ledger_object::get_field(self.get_slot_num(), sfield::AssetClass)
     }
 
-    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other time values on the XRP Ledger, this value does not use the Ripple Epoch.)
+    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other
+    /// time values on the XRP Ledger, this value does not use the Ripple Epoch.)
     fn last_update_time(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LastUpdateTime)
     }
 
-    /// An optional Universal Resource Identifier to reference price data off-chain. This field is limited to 256 bytes.
+    /// An optional Universal Resource Identifier to reference price data off-chain. This field is
+    /// limited to 256 bytes.
     fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
     }
 
-    /// A hint indicating which page of the oracle owner's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the oracle owner's owner directory links to this entry, in
+    /// case the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -59,7 +66,8 @@ pub trait OracleFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current Oracle object.
 pub trait CurrentOracleFields: CurrentLedgerObjectCommonFields {
-    /// The account with update and delete privileges for the oracle. It's recommended to set up multi-signing on this account.
+    /// The account with update and delete privileges for the oracle. It's recommended to set up
+    /// multi-signing on this account.
     fn owner(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Owner)
     }
@@ -69,27 +77,33 @@ pub trait CurrentOracleFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::OracleDocumentID)
     }
 
-    /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
+    /// An arbitrary value that identifies an oracle provider, such as Chainlink, Band, or DIA. This
+    /// field is a string, up to 256 ASCII hex encoded characters (`0x20`-`0x7E`).
     fn provider(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::Provider)
     }
 
-    /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_. Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16 bytes.
+    /// Arbitrary string to describe the type of asset, such as _currency_, _commodity_, or _index_.
+    /// Must be formatted as hexadecimal representing ASCII characters (`0x20`-`0x7E`), maximum 16
+    /// bytes.
     fn asset_class(&self) -> Result<StandardBlob> {
         current_ledger_object::get_field(sfield::AssetClass)
     }
 
-    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other time values on the XRP Ledger, this value does not use the Ripple Epoch.)
+    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other
+    /// time values on the XRP Ledger, this value does not use the Ripple Epoch.)
     fn last_update_time(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LastUpdateTime)
     }
 
-    /// An optional Universal Resource Identifier to reference price data off-chain. This field is limited to 256 bytes.
+    /// An optional Universal Resource Identifier to reference price data off-chain. This field is
+    /// limited to 256 bytes.
     fn uri(&self) -> Result<Option<UriBlob>> {
         current_ledger_object::get_field_optional(sfield::URI)
     }
 
-    /// A hint indicating which page of the oracle owner's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the oracle owner's owner directory links to this entry, in
+    /// case the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }

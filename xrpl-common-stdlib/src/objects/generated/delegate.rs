@@ -20,9 +20,16 @@ pub trait DelegateFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Authorize)
     }
 
-    /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the delegating account's owner directory links to this
+    /// object, in case the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
+    }
+
+    /// A hint indicating which page of the delegate's owner directory links to this object, in case
+    /// the directory consists of multiple pages.
+    fn destination_node(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
@@ -30,7 +37,8 @@ pub trait DelegateFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -48,9 +56,16 @@ pub trait CurrentDelegateFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Authorize)
     }
 
-    /// A hint indicating which page of the delegating account's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the delegating account's owner directory links to this
+    /// object, in case the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
+    }
+
+    /// A hint indicating which page of the delegate's owner directory links to this object, in case
+    /// the directory consists of multiple pages.
+    fn destination_node(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::DestinationNode)
     }
 
     /// The identifying hash of the transaction that most recently modified this object.
@@ -58,7 +73,8 @@ pub trait CurrentDelegateFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
@@ -104,5 +120,17 @@ mod tests {
         assert!(obj.owner_node().is_ok());
         assert!(obj.previous_txn_id().is_ok());
         assert!(obj.previous_txn_lgr_seq().is_ok());
+        assert!(obj.destination_node().is_ok());
+    }
+
+    #[test]
+    fn optional_fields_none() {
+        let mut mock = MockHostBindings::new();
+        mock_all_fields_not_found(&mut mock);
+        let _guard = setup_mock(mock);
+
+        let obj = Delegate::new(0);
+
+        assert!(obj.destination_node().unwrap().is_none());
     }
 }

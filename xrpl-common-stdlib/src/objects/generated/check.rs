@@ -16,47 +16,55 @@ pub trait CheckFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
-    /// The intended recipient of the Check. Only this address can cash the Check, using a [CheckCash transaction][].
+    /// The intended recipient of the Check. Only this address can cash the Check, using a CheckCash
+    /// transaction.
     fn destination(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Destination)
     }
 
-    /// The maximum amount of currency this Check can debit the sender. If the Check is successfully cashed, the destination is credited in the same currency for up to this amount.
+    /// The maximum amount of currency this Check can debit the sender. If the Check is successfully
+    /// cashed, the destination is credited in the same currency for up to this amount.
     fn send_max(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::SendMax)
     }
 
-    /// The sequence number of the [CheckCreate transaction][] that created this check.
+    /// The sequence number of the CheckCreate transaction that created this check.
     fn sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the sender's owner directory links to this object, in case
+    /// the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
-    /// A hint indicating which page of the destination's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the destination's owner directory links to this object, in
+    /// case the directory consists of multiple pages.
     fn destination_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::DestinationNode)
     }
 
-    /// Indicates the time after which this Check is considered expired. See [Specifying Time][] for details.
+    /// Indicates the time after which this Check is considered expired. See Specifying Time for
+    /// details.
     fn expiration(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Expiration)
     }
 
-    /// Arbitrary 256-bit hash provided by the sender as a specific reason or identifier for this Check.
+    /// Arbitrary 256-bit hash provided by the sender as a specific reason or identifier for this
+    /// Check.
     fn invoice_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::InvoiceID)
     }
 
-    /// An arbitrary tag to further specify the source for this Check, such as a hosted recipient at the sender's address.
+    /// An arbitrary tag to further specify the source for this Check, such as a hosted recipient at
+    /// the sender's address.
     fn source_tag(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SourceTag)
     }
 
-    /// An arbitrary tag to further specify the destination for this Check, such as a hosted recipient at the destination address.
+    /// An arbitrary tag to further specify the destination for this Check, such as a hosted
+    /// recipient at the destination address.
     fn destination_tag(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
     }
@@ -66,7 +74,8 @@ pub trait CheckFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -79,47 +88,55 @@ pub trait CurrentCheckFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Account)
     }
 
-    /// The intended recipient of the Check. Only this address can cash the Check, using a [CheckCash transaction][].
+    /// The intended recipient of the Check. Only this address can cash the Check, using a CheckCash
+    /// transaction.
     fn destination(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Destination)
     }
 
-    /// The maximum amount of currency this Check can debit the sender. If the Check is successfully cashed, the destination is credited in the same currency for up to this amount.
+    /// The maximum amount of currency this Check can debit the sender. If the Check is successfully
+    /// cashed, the destination is credited in the same currency for up to this amount.
     fn send_max(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::SendMax)
     }
 
-    /// The sequence number of the [CheckCreate transaction][] that created this check.
+    /// The sequence number of the CheckCreate transaction that created this check.
     fn sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::Sequence)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the sender's owner directory links to this object, in case
+    /// the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
-    /// A hint indicating which page of the destination's owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the destination's owner directory links to this object, in
+    /// case the directory consists of multiple pages.
     fn destination_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::DestinationNode)
     }
 
-    /// Indicates the time after which this Check is considered expired. See [Specifying Time][] for details.
+    /// Indicates the time after which this Check is considered expired. See Specifying Time for
+    /// details.
     fn expiration(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::Expiration)
     }
 
-    /// Arbitrary 256-bit hash provided by the sender as a specific reason or identifier for this Check.
+    /// Arbitrary 256-bit hash provided by the sender as a specific reason or identifier for this
+    /// Check.
     fn invoice_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::InvoiceID)
     }
 
-    /// An arbitrary tag to further specify the source for this Check, such as a hosted recipient at the sender's address.
+    /// An arbitrary tag to further specify the source for this Check, such as a hosted recipient at
+    /// the sender's address.
     fn source_tag(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::SourceTag)
     }
 
-    /// An arbitrary tag to further specify the destination for this Check, such as a hosted recipient at the destination address.
+    /// An arbitrary tag to further specify the destination for this Check, such as a hosted
+    /// recipient at the destination address.
     fn destination_tag(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::DestinationTag)
     }
@@ -129,7 +146,8 @@ pub trait CurrentCheckFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

@@ -20,7 +20,8 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::MPTokenIssuanceID)
     }
 
-    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
+    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is
+    /// 2<sup>63</sup>-1.
     fn mpt_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MPTAmount)
     }
@@ -30,7 +31,8 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LockedAmount)
     }
 
-    /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the owner directory links to this entry, in case the
+    /// directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -40,7 +42,8 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -58,7 +61,8 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::MPTokenIssuanceID)
     }
 
-    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is 2<sup>63</sup>-1.
+    /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is
+    /// 2<sup>63</sup>-1.
     fn mpt_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::MPTAmount)
     }
@@ -68,7 +72,8 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::LockedAmount)
     }
 
-    /// A hint indicating which page of the owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the owner directory links to this entry, in case the
+    /// directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
@@ -78,7 +83,8 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

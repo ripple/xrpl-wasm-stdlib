@@ -10,7 +10,8 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to DepositPreauth objects in any ledger.
 pub trait DepositPreauthFields: LedgerObjectCommonFields {
-    /// The account that granted the preauthorization. (The destination of the preauthorized payments.)
+    /// The account that granted the preauthorization. (The destination of the preauthorized
+    /// payments.)
     fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
@@ -20,7 +21,10 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Authorize)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages. **Note:** The object does not contain a direct link to the owner directory containing it, since that value can be derived from the `Account`.
+    /// A hint indicating which page of the sender's owner directory links to this object, in case
+    /// the directory consists of multiple pages. **Note:** The object does not contain a direct
+    /// link to the owner directory containing it, since that value can be derived from the
+    /// `Account`.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -30,7 +34,8 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -38,7 +43,8 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current DepositPreauth object.
 pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
-    /// The account that granted the preauthorization. (The destination of the preauthorized payments.)
+    /// The account that granted the preauthorization. (The destination of the preauthorized
+    /// payments.)
     fn account(&self) -> Result<AccountID> {
         current_ledger_object::get_field(sfield::Account)
     }
@@ -48,7 +54,10 @@ pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Authorize)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this object, in case the directory consists of multiple pages. **Note:** The object does not contain a direct link to the owner directory containing it, since that value can be derived from the `Account`.
+    /// A hint indicating which page of the sender's owner directory links to this object, in case
+    /// the directory consists of multiple pages. **Note:** The object does not contain a direct
+    /// link to the owner directory containing it, since that value can be derived from the
+    /// `Account`.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
@@ -58,7 +67,8 @@ pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

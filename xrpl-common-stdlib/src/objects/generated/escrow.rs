@@ -11,7 +11,8 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Escrow objects in any ledger.
 pub trait EscrowFields: LedgerObjectCommonFields {
-    /// The address of the owner (sender) of this escrow. This is the account that provided the funds, and gets it back if the escrow is canceled.
+    /// The address of the owner (sender) of this escrow. This is the account that provided the
+    /// funds, and gets it back if the escrow is canceled.
     fn account(&self) -> Result<AccountID> {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
@@ -26,22 +27,28 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Destination)
     }
 
-    /// The amount to be delivered by the payment in escrow. The amount can be XRP, or with the TokenEscrow amendment, a fungible token.
+    /// The amount to be delivered by the payment in escrow. The amount can be XRP, or with the
+    /// TokenEscrow amendment, a fungible token.
     fn amount(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::Amount)
     }
 
-    /// A PREIMAGE-SHA-256 crypto-condition, as hexadecimal. If present, the [EscrowFinish transaction][] must contain a fulfillment that satisfies this condition.
+    /// A PREIMAGE-SHA-256 crypto-condition, as hexadecimal. If present, the EscrowFinish
+    /// transaction must contain a fulfillment that satisfies this condition.
     fn condition(&self) -> Result<Option<ConditionBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Condition)
     }
 
-    /// The escrow can be canceled if and only if this field is present _and_ the time it specifies has passed. Specifically, this is specified as [seconds since the Ripple Epoch][] and it "has passed" if it's earlier than the close time of the previous validated ledger.
+    /// The escrow can be canceled if and only if this field is present _and_ the time it specifies
+    /// has passed. Specifically, this is specified as seconds since the Ripple Epoch and it "has
+    /// passed" if it's earlier than the close time of the previous validated ledger.
     fn cancel_after(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
     }
 
-    /// The time, in [seconds since the Ripple Epoch][], after which this escrow can be finished. Any [EscrowFinish transaction][] before this time fails. (Specifically, this is compared with the close time of the previous validated ledger.)
+    /// The time, in seconds since the Ripple Epoch, after which this escrow can be finished. Any
+    /// EscrowFinish transaction before this time fails. (Specifically, this is compared with the
+    /// close time of the previous validated ledger.)
     fn finish_after(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
     }
@@ -51,17 +58,20 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
     }
 
-    /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient at the owner's address.
+    /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient
+    /// at the owner's address.
     fn source_tag(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SourceTag)
     }
 
-    /// An arbitrary tag to further specify the destination for this escrow, such as a hosted recipient at the destination address.
+    /// An arbitrary tag to further specify the destination for this escrow, such as a hosted
+    /// recipient at the destination address.
     fn destination_tag(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the sender's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -71,22 +81,27 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
-    /// A hint indicating which page of the destination's owner directory links to this object, in case the directory consists of multiple pages. Omitted on escrows created before enabling the [fix1523 amendment][].
+    /// A hint indicating which page of the destination's owner directory links to this object, in
+    /// case the directory consists of multiple pages. Omitted on escrows created before enabling
+    /// the fix1523 amendment.
     fn destination_node(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
     }
 
-    /// The transfer rate or fee to charge when users finish an escrow, locked at the creation of an escrow contract and used during settlement. Applicable to Trust Line Tokens and MPTs only.
+    /// The transfer rate or fee to charge when users finish an escrow, locked at the creation of an
+    /// escrow contract and used during settlement. Applicable to Trust Line Tokens and MPTs only.
     fn transfer_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TransferRate)
     }
 
-    /// The ledger index of the issuer's directory node associated with the `Escrow`. Used when the issuer is neither the source nor destination account.
+    /// The ledger index of the issuer's directory node associated with the `Escrow`. Used when the
+    /// issuer is neither the source nor destination account.
     fn issuer_node(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerNode)
     }

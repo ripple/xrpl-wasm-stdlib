@@ -23,7 +23,8 @@ pub trait LoanFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -113,7 +114,8 @@ pub trait LoanFields: LedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to
+    /// 100000 (inclusive), representing 0% to 100%.
     fn overpayment_fee(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OverpaymentFee)
     }
@@ -123,22 +125,25 @@ pub trait LoanFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::InterestRate)
     }
 
-    /// The premium added to the interest rate for late payments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The premium added to the interest rate for late payments, in units of 1/10th basis points.
+    /// Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn late_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LateInterestRate)
     }
 
-    /// The interest rate charged for repaying the loan early, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The interest rate charged for repaying the loan early, in units of 1/10th basis points.
+    /// Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn close_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CloseInterestRate)
     }
 
-    /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are
+    /// 0 to 100000 (inclusive), representing 0% to 100%.
     fn overpayment_interest_rate(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OverpaymentInterestRate)
     }
 
-    /// The timestamp of when the loan started, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the loan started, in seconds since the Ripple Epoch.
     fn start_date(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::StartDate)
     }
@@ -153,12 +158,12 @@ pub trait LoanFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::GracePeriod)
     }
 
-    /// The timestamp of when the previous payment was made, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the previous payment was made, in seconds since the Ripple Epoch.
     fn previous_payment_due_date(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousPaymentDueDate)
     }
 
-    /// The timestamp of when the next payment is due, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the next payment is due, in seconds since the Ripple Epoch.
     fn next_payment_due_date(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::NextPaymentDueDate)
     }
@@ -228,7 +233,8 @@ pub trait LoanFields: LedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The scale factor that ensures all computed amounts are rounded to the same number of decimal places. It is based on the total loan value at creation time.
+    /// The scale factor that ensures all computed amounts are rounded to the same number of decimal
+    /// places. It is based on the total loan value at creation time.
     /// Raw bytes; INT32 is not yet typed in Rust.
     fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
@@ -251,7 +257,8 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
@@ -337,7 +344,8 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to
+    /// 100000 (inclusive), representing 0% to 100%.
     fn overpayment_fee(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OverpaymentFee)
     }
@@ -347,22 +355,25 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::InterestRate)
     }
 
-    /// The premium added to the interest rate for late payments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The premium added to the interest rate for late payments, in units of 1/10th basis points.
+    /// Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn late_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::LateInterestRate)
     }
 
-    /// The interest rate charged for repaying the loan early, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The interest rate charged for repaying the loan early, in units of 1/10th basis points.
+    /// Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn close_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CloseInterestRate)
     }
 
-    /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The interest rate charged on overpayments, in units of 1/10th basis points. Valid values are
+    /// 0 to 100000 (inclusive), representing 0% to 100%.
     fn overpayment_interest_rate(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OverpaymentInterestRate)
     }
 
-    /// The timestamp of when the loan started, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the loan started, in seconds since the Ripple Epoch.
     fn start_date(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::StartDate)
     }
@@ -377,12 +388,12 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::GracePeriod)
     }
 
-    /// The timestamp of when the previous payment was made, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the previous payment was made, in seconds since the Ripple Epoch.
     fn previous_payment_due_date(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousPaymentDueDate)
     }
 
-    /// The timestamp of when the next payment is due, in [seconds since the Ripple Epoch][].
+    /// The timestamp of when the next payment is due, in seconds since the Ripple Epoch.
     fn next_payment_due_date(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::NextPaymentDueDate)
     }
@@ -448,7 +459,8 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The scale factor that ensures all computed amounts are rounded to the same number of decimal places. It is based on the total loan value at creation time.
+    /// The scale factor that ensures all computed amounts are rounded to the same number of decimal
+    /// places. It is based on the total loan value at creation time.
     /// Raw bytes; INT32 is not yet typed in Rust.
     fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];

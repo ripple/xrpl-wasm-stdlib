@@ -24,7 +24,8 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -39,7 +40,8 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
-    /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's directory.
+    /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's
+    /// directory.
     fn vault_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::VaultNode)
     }
@@ -59,7 +61,8 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
 
-    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is created by this `LoanBroker`.
+    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is
+    /// created by this `LoanBroker`.
     fn loan_sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanSequence)
     }
@@ -69,7 +72,8 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
-    /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
+    /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis
+    /// points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
     fn management_fee_rate(&self) -> Result<Option<u16>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ManagementFeeRate)
     }
@@ -94,7 +98,8 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The maximum amount the protocol can owe the vault. The default value of `0` means there is no limit to the debt.
+    /// The maximum amount the protocol can owe the vault. The default value of `0` means there is
+    /// no limit to the debt.
     /// Raw bytes; NUMBER is not yet typed in Rust.
     fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
@@ -124,12 +129,15 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid
+    /// values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn cover_rate_minimum(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverRateMinimum)
     }
 
-    /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset
+    /// vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to
+    /// 100%.
     fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverRateLiquidation)
     }
@@ -142,7 +150,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The sequence of the ledger that contains the transaction that most recently modified this object.
+    /// The sequence of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
@@ -157,7 +166,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
-    /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's directory.
+    /// Identifies the page where this item is referenced in the `Vault` pseudo-account owner's
+    /// directory.
     fn vault_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::VaultNode)
     }
@@ -177,7 +187,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Owner)
     }
 
-    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is created by this `LoanBroker`.
+    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is
+    /// created by this `LoanBroker`.
     fn loan_sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LoanSequence)
     }
@@ -187,7 +198,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Data)
     }
 
-    /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
+    /// The fee charged by the lending protocol on any loan interest, in units of 1/10th basis
+    /// points. Valid values are 0 to 10000 (inclusive), representing 0% to 10%.
     fn management_fee_rate(&self) -> Result<Option<u16>> {
         current_ledger_object::get_field_optional(sfield::ManagementFeeRate)
     }
@@ -211,7 +223,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The maximum amount the protocol can owe the vault. The default value of `0` means there is no limit to the debt.
+    /// The maximum amount the protocol can owe the vault. The default value of `0` means there is
+    /// no limit to the debt.
     /// Raw bytes; NUMBER is not yet typed in Rust.
     fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
@@ -239,12 +252,15 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
-    /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid
+    /// values are 0 to 100000 (inclusive), representing 0% to 100%.
     fn cover_rate_minimum(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CoverRateMinimum)
     }
 
-    /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to 100%.
+    /// The 1/10th basis point of minimum required first-loss capital that is moved to an asset
+    /// vault to cover a loan default. Valid values are 0 to 100000 (inclusive), representing 0% to
+    /// 100%.
     fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CoverRateLiquidation)
     }

@@ -40,7 +40,7 @@ fi
 # Default rippled source (can be overridden with the first argument, or the
 # RIPPLED_BRANCH env var for just swapping the branch/tag/commit of the
 # default XRPLF/rippled repo).
-DEFAULT_SOURCE="https://github.com/XRPLF/rippled/tree/${RIPPLED_BRANCH:-xrplf/smart-contracts}"
+DEFAULT_SOURCE="https://github.com/XRPLF/rippled/tree/${RIPPLED_BRANCH:-ripple/se/supported}"
 RIPPLED_SOURCE="${1:-$DEFAULT_SOURCE}"
 
 # Output root (can be overridden with the second argument in generate mode). Per-entry

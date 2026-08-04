@@ -16,22 +16,27 @@ pub trait DIDFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
-    /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked
+    /// for validity and is limited to a maximum length of 256 bytes.
     fn did_document(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DIDDocument)
     }
 
-    /// The Universal Resource Identifier that points to the corresponding DID document or the data associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The Universal Resource Identifier that points to the corresponding DID document or the data
+    /// associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't
+    /// checked for validity and is limited to a maximum length of 256 bytes.
     fn uri(&self) -> Result<Option<UriBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::URI)
     }
 
-    /// The public attestations of identity credentials associated with the DID. The `Data` field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The public attestations of identity credentials associated with the DID. The `Data` field
+    /// isn't checked for validity and is limited to a maximum length of 256 bytes.
     fn data(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the sender's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -41,7 +46,8 @@ pub trait DIDFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The index of the ledger that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -54,22 +60,27 @@ pub trait CurrentDIDFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Account)
     }
 
-    /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The W3C standard DID document associated with the DID. The `DIDDocument` field isn't checked
+    /// for validity and is limited to a maximum length of 256 bytes.
     fn did_document(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::DIDDocument)
     }
 
-    /// The Universal Resource Identifier that points to the corresponding DID document or the data associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The Universal Resource Identifier that points to the corresponding DID document or the data
+    /// associated with the DID. This field can be an HTTP(S) URL or IPFS URI. This field isn't
+    /// checked for validity and is limited to a maximum length of 256 bytes.
     fn uri(&self) -> Result<Option<UriBlob>> {
         current_ledger_object::get_field_optional(sfield::URI)
     }
 
-    /// The public attestations of identity credentials associated with the DID. The `Data` field isn't checked for validity and is limited to a maximum length of 256 bytes.
+    /// The public attestations of identity credentials associated with the DID. The `Data` field
+    /// isn't checked for validity and is limited to a maximum length of 256 bytes.
     fn data(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::Data)
     }
 
-    /// A hint indicating which page of the sender's owner directory links to this entry, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the sender's owner directory links to this entry, in case
+    /// the directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
@@ -79,7 +90,8 @@ pub trait CurrentDIDFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The index of the ledger that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

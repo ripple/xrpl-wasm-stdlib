@@ -44,19 +44,13 @@ pub use crate::fields::ledger_obj as ledger_object;
 /// Untyped handle to a slot-cached ledger object, for object types with no typed wrapper.
 pub use any_object::LedgerObject;
 
-// `generated::ContractData` (the ContractData ledger entry) is intentionally not
-// re-exported here: it would collide with `crate::types::contract_data::ContractData`
-// (the escrow data-blob type used throughout the escrow field accessors). Reach it via
-// `crate::objects::generated::ContractData` if needed.
 pub use generated::{
     AMM, AMMFields, AccountRoot, AccountRootFields, Amendments, AmendmentsFields, Bridge,
-    BridgeFields, Check, CheckFields, Contract, ContractDataFields, ContractFields, ContractSource,
-    ContractSourceFields, Credential, CredentialFields, CurrentAMMFields, CurrentAccountRootFields,
-    CurrentAmendmentsFields, CurrentBridgeFields, CurrentCheckFields, CurrentContractDataFields,
-    CurrentContractFields, CurrentContractSourceFields, CurrentCredentialFields, CurrentDIDFields,
-    CurrentDelegateFields, CurrentDepositPreauthFields, CurrentDirectoryNodeFields,
-    CurrentFeeSettingsFields, CurrentLedgerHashesFields, CurrentLoanBrokerFields,
-    CurrentLoanFields, CurrentMPTokenFields, CurrentMPTokenIssuanceFields,
+    BridgeFields, Check, CheckFields, Credential, CredentialFields, CurrentAMMFields,
+    CurrentAccountRootFields, CurrentAmendmentsFields, CurrentBridgeFields, CurrentCheckFields,
+    CurrentCredentialFields, CurrentDIDFields, CurrentDelegateFields, CurrentDepositPreauthFields,
+    CurrentDirectoryNodeFields, CurrentFeeSettingsFields, CurrentLedgerHashesFields,
+    CurrentLoanBrokerFields, CurrentLoanFields, CurrentMPTokenFields, CurrentMPTokenIssuanceFields,
     CurrentNFTokenOfferFields, CurrentNFTokenPageFields, CurrentNegativeUNLFields,
     CurrentOfferFields, CurrentOracleFields, CurrentPayChannelFields,
     CurrentPermissionedDomainFields, CurrentRippleStateFields, CurrentSignerListFields,

@@ -10,12 +10,14 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to NegativeUNL objects in any ledger.
 pub trait NegativeUNLFields: LedgerObjectCommonFields {
-    /// The public key of a trusted validator that is scheduled to be disabled in the next flag ledger.
+    /// The public key of a trusted validator that is scheduled to be disabled in the next flag
+    /// ledger.
     fn validator_to_disable(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ValidatorToDisable)
     }
 
-    /// The public key of a trusted validator in the Negative UNL that is scheduled to be re-enabled in the next flag ledger.
+    /// The public key of a trusted validator in the Negative UNL that is scheduled to be re-enabled
+    /// in the next flag ledger.
     fn validator_to_re_enable(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ValidatorToReEnable)
     }
@@ -25,7 +27,8 @@ pub trait NegativeUNLFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -33,12 +36,14 @@ pub trait NegativeUNLFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current NegativeUNL object.
 pub trait CurrentNegativeUNLFields: CurrentLedgerObjectCommonFields {
-    /// The public key of a trusted validator that is scheduled to be disabled in the next flag ledger.
+    /// The public key of a trusted validator that is scheduled to be disabled in the next flag
+    /// ledger.
     fn validator_to_disable(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::ValidatorToDisable)
     }
 
-    /// The public key of a trusted validator in the Negative UNL that is scheduled to be re-enabled in the next flag ledger.
+    /// The public key of a trusted validator in the Negative UNL that is scheduled to be re-enabled
+    /// in the next flag ledger.
     fn validator_to_re_enable(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::ValidatorToReEnable)
     }
@@ -48,7 +53,8 @@ pub trait CurrentNegativeUNLFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }

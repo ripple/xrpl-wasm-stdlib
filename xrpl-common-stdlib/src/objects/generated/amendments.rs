@@ -17,7 +17,8 @@ use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Amendments objects in any ledger.
 pub trait AmendmentsFields: LedgerObjectCommonFields {
-    /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are no enabled amendments.
+    /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are
+    /// no enabled amendments.
     /// Raw bytes; VECTOR256 is not yet typed in Rust.
     fn amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
@@ -37,7 +38,8 @@ pub trait AmendmentsFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -45,7 +47,8 @@ pub trait AmendmentsFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current Amendments object.
 pub trait CurrentAmendmentsFields: CurrentLedgerObjectCommonFields {
-    /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are no enabled amendments.
+    /// Array of 256-bit amendment IDs for all currently enabled amendments. If omitted, there are
+    /// no enabled amendments.
     /// Raw bytes; VECTOR256 is not yet typed in Rust.
     fn amendments(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
@@ -64,7 +67,8 @@ pub trait CurrentAmendmentsFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }

@@ -15,17 +15,21 @@ pub trait SignerListFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Owner)
     }
 
-    /// A hint indicating which page of the owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the owner directory links to this object, in case the
+    /// directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
 
-    /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
+    /// A target number for signer weights. To produce a valid signature for the owner of this
+    /// SignerList, the signers must provide valid signatures whose weights sum to this value or
+    /// more.
     fn signer_quorum(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerQuorum)
     }
 
-    /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
+    /// An ID for this signer list. Currently always set to `0`. If a future amendment allows
+    /// multiple signer lists for an account, this may change.
     fn signer_list_id(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::SignerListID)
     }
@@ -35,7 +39,8 @@ pub trait SignerListFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -48,17 +53,21 @@ pub trait CurrentSignerListFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Owner)
     }
 
-    /// A hint indicating which page of the owner directory links to this object, in case the directory consists of multiple pages.
+    /// A hint indicating which page of the owner directory links to this object, in case the
+    /// directory consists of multiple pages.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }
 
-    /// A target number for signer weights. To produce a valid signature for the owner of this SignerList, the signers must provide valid signatures whose weights sum to this value or more.
+    /// A target number for signer weights. To produce a valid signature for the owner of this
+    /// SignerList, the signers must provide valid signatures whose weights sum to this value or
+    /// more.
     fn signer_quorum(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::SignerQuorum)
     }
 
-    /// An ID for this signer list. Currently always set to `0`. If a future amendment allows multiple signer lists for an account, this may change.
+    /// An ID for this signer list. Currently always set to `0`. If a future amendment allows
+    /// multiple signer lists for an account, this may change.
     fn signer_list_id(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::SignerListID)
     }
@@ -68,7 +77,8 @@ pub trait CurrentSignerListFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this object.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }

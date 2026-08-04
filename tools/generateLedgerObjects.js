@@ -54,8 +54,12 @@ function parseLedgerEntries(macroFile) {
   for (const match of stripped.matchAll(entryRe)) {
     const [, entryName, classId, className, rpcName, fieldsBlock] = match
     const fields = []
+    // The SoeRequired/SoeOptional/SoeDefault token appears in two rippled
+    // dialects -- `soeREQUIRED` (e.g. xrplf/smart-contracts) and `SoeRequired`
+    // (e.g. ripple/se/supported) -- so match either prefix casing and normalize
+    // to the uppercase `SOE*` form used downstream via `.toUpperCase()`.
     for (const [, sfName, soeRaw] of fieldsBlock.matchAll(
-      /\{\s*sf([A-Za-z0-9]+)\s*,\s*(soe[A-Za-z]+)\s*\}/g,
+      /\{\s*sf([A-Za-z0-9]+)\s*,\s*([Ss]oe[A-Za-z]+)\s*\}/g,
     )) {
       fields.push({ sfName, soe: soeRaw.toUpperCase() })
     }
@@ -70,12 +74,17 @@ function parseLedgerEntries(macroFile) {
 ////////////////////////////////////////////////////////////////////////
 
 // Cleans a raw markdown table-cell description into readable doc-comment
-// prose: strips `{% ... %}` templating tags, converts `[text](url)` links to
-// their visible text, and collapses/trims whitespace.
+// prose: strips `{% ... %}` templating tags, flattens markdown links to their
+// visible text (inline `[text](url)`, reference `[text][ref]`/`[text][]`, and
+// leftover shortcut `[text]` -- the reference definitions live elsewhere in the
+// source page and aren't scraped, so unflattened they'd render as literal
+// brackets), and collapses/trims whitespace.
 function cleanDescription(text) {
   return text
     .replace(/\{%[\s\S]*?%\}/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\[[^\]]*\]/g, "$1")
+    .replace(/\[([^\]]*)\]/g, "$1")
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -124,16 +133,40 @@ async function fetchFieldDocs(className) {
   return parseFieldsTable(markdown)
 }
 
+// Word-wraps a doc-comment description into one or more `/// ` lines at the
+// given indent. rustfmt (stable) does not reflow doc comments -- `wrap_comments`
+// is a nightly-only option -- so the generator wraps them itself to keep lines
+// within the repo's 100-column width.
+const DOC_COMMENT_WIDTH = 100
+function renderDocComment(description, indent) {
+  const prefix = `${indent}/// `
+  const budget = Math.max(DOC_COMMENT_WIDTH - prefix.length, 20)
+  const lines = []
+  let line = ""
+  for (const word of description.split(" ")) {
+    if (line === "") {
+      line = word
+    } else if (line.length + 1 + word.length <= budget) {
+      line += " " + word
+    } else {
+      lines.push(prefix + line)
+      line = word
+    }
+  }
+  if (line !== "") lines.push(prefix + line)
+  return lines.join("\n")
+}
+
 // Resolves a field's doc comment: prefers the cleaned xrpl-dev-portal
 // description, falling back to a generic minimal doc when the page or field
-// row isn't found.
+// row isn't found. Wrapped to the repo width since rustfmt won't reflow it.
 function docCommentFor(fieldDocsForClass, sfName, soe) {
   const description = fieldDocsForClass.get(sfName)
   if (description) {
-    return `    /// ${description}`
+    return renderDocComment(description, "    ")
   }
   const requirement = soe === "SOEREQUIRED" ? "Required" : "Optional"
-  return `    /// The ${sfName} field (${requirement}).`
+  return renderDocComment(`The ${sfName} field (${requirement}).`, "    ")
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -338,14 +371,20 @@ function renderTrait(entry, resolved, fieldDocsForClass, { useCurrent }) {
   const lines = []
   if (useCurrent) {
     lines.push(
-      `/// Trait providing access to fields specific to the current ${className} object.`,
+      renderDocComment(
+        `Trait providing access to fields specific to the current ${className} object.`,
+        "",
+      ),
     )
     lines.push(
       `pub trait Current${className}Fields: CurrentLedgerObjectCommonFields {`,
     )
   } else {
     lines.push(
-      `/// Trait providing access to fields specific to ${className} objects in any ledger.`,
+      renderDocComment(
+        `Trait providing access to fields specific to ${className} objects in any ledger.`,
+        "",
+      ),
     )
     lines.push(`pub trait ${className}Fields: LedgerObjectCommonFields {`)
   }
@@ -392,7 +431,10 @@ function renderStruct(entry) {
     `}`,
     "",
     `impl ${className} {`,
-    `    /// Binds this handle to a host-managed slot holding a ${className} ledger object.`,
+    renderDocComment(
+      `Binds this handle to a host-managed slot holding a ${className} ledger object.`,
+      "    ",
+    ),
     `    pub fn new(slot_num: i32) -> Self {`,
     `        Self { slot_num }`,
     `    }`,

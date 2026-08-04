@@ -17,22 +17,28 @@ pub trait AMMFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Account)
     }
 
-    /// The percentage fee to be charged for trades against this AMM instance, in units of 1/100,000. The maximum value is 1000, for a 1% fee.
+    /// The percentage fee to be charged for trades against this AMM instance, in units of
+    /// 1/100,000. The maximum value is 1000, for a 1% fee.
     fn trading_fee(&self) -> Result<Option<u16>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TradingFee)
     }
 
-    /// The total outstanding balance of liquidity provider tokens from this AMM instance. The holders of these tokens can vote on the AMM's trading fee in proportion to their holdings, or redeem the tokens for a share of the AMM's assets which grows with the trading fees collected.
+    /// The total outstanding balance of liquidity provider tokens from this AMM instance. The
+    /// holders of these tokens can vote on the AMM's trading fee in proportion to their holdings,
+    /// or redeem the tokens for a share of the AMM's assets which grows with the trading fees
+    /// collected.
     fn lp_token_balance(&self) -> Result<Amount> {
         ledger_object::get_field(self.get_slot_num(), sfield::LPTokenBalance)
     }
 
-    /// The definition for one of the two assets this AMM holds. In JSON, this is an object with `currency` and `issuer` fields.
+    /// The definition for one of the two assets this AMM holds. In JSON, this is an object with
+    /// `currency` and `issuer` fields.
     fn asset(&self) -> Result<Issue> {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset)
     }
 
-    /// The definition for the other asset this AMM holds. In JSON, this is an object with `currency` and `issuer` fields.
+    /// The definition for the other asset this AMM holds. In JSON, this is an object with
+    /// `currency` and `issuer` fields.
     fn asset2(&self) -> Result<Issue> {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset2)
     }
@@ -47,7 +53,8 @@ pub trait AMMFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
@@ -60,22 +67,28 @@ pub trait CurrentAMMFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Account)
     }
 
-    /// The percentage fee to be charged for trades against this AMM instance, in units of 1/100,000. The maximum value is 1000, for a 1% fee.
+    /// The percentage fee to be charged for trades against this AMM instance, in units of
+    /// 1/100,000. The maximum value is 1000, for a 1% fee.
     fn trading_fee(&self) -> Result<Option<u16>> {
         current_ledger_object::get_field_optional(sfield::TradingFee)
     }
 
-    /// The total outstanding balance of liquidity provider tokens from this AMM instance. The holders of these tokens can vote on the AMM's trading fee in proportion to their holdings, or redeem the tokens for a share of the AMM's assets which grows with the trading fees collected.
+    /// The total outstanding balance of liquidity provider tokens from this AMM instance. The
+    /// holders of these tokens can vote on the AMM's trading fee in proportion to their holdings,
+    /// or redeem the tokens for a share of the AMM's assets which grows with the trading fees
+    /// collected.
     fn lp_token_balance(&self) -> Result<Amount> {
         current_ledger_object::get_field(sfield::LPTokenBalance)
     }
 
-    /// The definition for one of the two assets this AMM holds. In JSON, this is an object with `currency` and `issuer` fields.
+    /// The definition for one of the two assets this AMM holds. In JSON, this is an object with
+    /// `currency` and `issuer` fields.
     fn asset(&self) -> Result<Issue> {
         current_ledger_object::get_field(sfield::Asset)
     }
 
-    /// The definition for the other asset this AMM holds. In JSON, this is an object with `currency` and `issuer` fields.
+    /// The definition for the other asset this AMM holds. In JSON, this is an object with
+    /// `currency` and `issuer` fields.
     fn asset2(&self) -> Result<Issue> {
         current_ledger_object::get_field(sfield::Asset2)
     }
@@ -90,7 +103,8 @@ pub trait CurrentAMMFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::PreviousTxnID)
     }
 
-    /// The [index of the ledger][Ledger Index] that contains the transaction that most recently modified this entry.
+    /// The index of the ledger that contains the transaction that most recently modified this
+    /// entry.
     fn previous_txn_lgr_seq(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::PreviousTxnLgrSeq)
     }
