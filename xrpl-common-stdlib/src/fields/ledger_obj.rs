@@ -133,6 +133,7 @@ mod tests {
     use crate::host::setup_mock;
     use crate::sfield;
     use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::types::number::Number;
     use mockall::predicate::{always, eq};
 
     const SLOT: i32 = 3;
@@ -159,6 +160,34 @@ mod tests {
 
         assert!(get_field::<u32, _>(SLOT, sfield::Sequence).is_ok());
         assert!(get_field::<AccountID, _>(SLOT, sfield::Account).is_ok());
+    }
+
+    #[test]
+    fn test_get_field_decodes_stnumber_field() {
+        // An `STI_NUMBER` field is 12 bytes; the mock writes a full-width value so this also
+        // exercises `Number`'s buffer size and its `FromLedger` marker.
+        const VALUE: [u8; 12] = [
+            0x00, 0x03, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00, 0xFF, 0xFF, 0xFF, 0xF1,
+        ];
+        let mut mock = MockHostBindings::new();
+        mock.expect_get_ledger_obj_field()
+            .with(
+                eq(SLOT),
+                eq::<i32>(sfield::AssetsTotal.into()),
+                always(),
+                eq(VALUE.len()),
+            )
+            .times(1)
+            .returning(|_, _, out, out_len| {
+                unsafe { out.copy_from_nonoverlapping(VALUE.as_ptr(), VALUE.len()) }
+                out_len as i32
+            });
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            get_field(SLOT, sfield::AssetsTotal).unwrap(),
+            Number::from(VALUE)
+        );
     }
 
     #[test]

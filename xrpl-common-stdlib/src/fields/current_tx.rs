@@ -165,6 +165,7 @@ mod tests {
     use crate::host::setup_mock;
     use crate::sfield;
     use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+    use crate::types::number::Number;
     use mockall::predicate::{always, eq};
 
     fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
@@ -183,6 +184,20 @@ mod tests {
 
         assert!(get_field::<u32, _>(sfield::Sequence).is_ok());
         assert!(get_field::<AccountID, _>(sfield::Account).is_ok());
+    }
+
+    #[test]
+    fn test_get_field_decodes_stnumber_field() {
+        // An `STI_NUMBER` field is 12 bytes; asking for one also exercises `Number`'s buffer size
+        // and its `FromCurrentTx` marker.
+        let mut mock = MockHostBindings::new();
+        expect_tx_field(&mut mock, sfield::PeriodicPayment.into(), 12, 1);
+        let _guard = setup_mock(mock);
+
+        assert_eq!(
+            get_field(sfield::PeriodicPayment).unwrap(),
+            Number::from([0u8; 12])
+        );
     }
 
     #[test]
