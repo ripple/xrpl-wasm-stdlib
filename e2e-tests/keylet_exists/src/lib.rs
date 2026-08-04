@@ -10,6 +10,7 @@ use xrpl_common_stdlib::keylets;
 use xrpl_common_stdlib::objects::ledger_object;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::sfield::SField;
+use xrpl_common_stdlib::types::account_id::{Authorize, Destination, Issuer};
 use xrpl_common_stdlib::types::currency::Currency;
 use xrpl_common_stdlib::types::issue::{IouIssue, Issue, XrpIssue};
 use xrpl_common_stdlib::types::mpt_id::MptId;
@@ -120,15 +121,15 @@ pub extern "C" fn finish() -> i32 {
     seq += 1;
 
     let cred_type: &[u8] = b"termsandconditions";
-    let credential_keylet = keylets::credential_keylet(&account, &account, cred_type);
+    let credential_keylet = keylets::credential_keylet(&account, Issuer(account), cred_type);
     check_object_exists!(credential_keylet, "Credential", sfield::Subject);
     seq += 1;
 
-    let delegate_keylet = keylets::delegate_keylet(&account, &destination);
+    let delegate_keylet = keylets::delegate_keylet(&account, Authorize(destination));
     check_object_exists!(delegate_keylet, "Delegate", sfield::Account);
     seq += 1;
 
-    let deposit_preauth_keylet = keylets::deposit_preauth_keylet(&account, &destination);
+    let deposit_preauth_keylet = keylets::deposit_preauth_keylet(&account, Authorize(destination));
     check_object_exists!(deposit_preauth_keylet, "DepositPreauth", sfield::Account);
     seq += 1;
 
@@ -159,7 +160,7 @@ pub extern "C" fn finish() -> i32 {
     check_object_exists!(oracle_keylet, "Oracle", sfield::Owner);
     seq += 1;
 
-    let paychan_keylet = keylets::paychan_keylet(&account, &destination, seq);
+    let paychan_keylet = keylets::paychan_keylet(&account, Destination(destination), seq);
     check_object_exists!(paychan_keylet, "PayChannel", sfield::Account);
     seq += 1;
 

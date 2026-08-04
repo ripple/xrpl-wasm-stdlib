@@ -12,11 +12,11 @@ Smart escrow WASM modules export `extern "C" fn finish() -> i32`. Returning a po
 
 ## Three Cargo workspaces (intentional, do not merge)
 
-| Workspace | Path                   | Members                                                 |
-| --------- | ---------------------- | ------------------------------------------------------- |
-| Library   | `/Cargo.toml` (root)   | `xrpl-wasm-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib` |
-| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                  |
-| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates      |
+| Workspace | Path                   | Members                                                                             |
+| --------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| Library   | `/Cargo.toml` (root)   | `xrpl-common-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-stdlib-test-utils` |
+| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                                              |
+| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates                                  |
 
 The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they target `wasm32v1-none` with `crate-type = ["cdylib"]`. Build/clippy scripts `cd` into each workspace separately — if you add a new top-level workspace, mirror that in `scripts/build.sh` and `scripts/clippy.sh`.
 
@@ -38,7 +38,7 @@ cargo test --workspace              # just the unit tests (root workspace)
 
 # Single unit test
 cargo test --workspace <test_name>
-cargo test -p xrpl-wasm-stdlib <test_name>
+cargo test -p xrpl-common-stdlib <test_name>
 cargo test -p xrpl-escrow-stdlib <test_name>
 
 # Clippy / fmt across all three workspaces
@@ -66,21 +66,21 @@ Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo cl
 
 `rust-toolchain.toml` pins **Rust 1.89.0** with `rustfmt`, `clippy`, and the `wasm32v1-none` target. The library uses **edition 2024**. Do not bump these casually — the WASM target and edition affect both the library and every example.
 
-## Architecture: crate ownership (`xrpl-wasm-stdlib` vs `xrpl-escrow-stdlib` vs `xrpl-macros`)
+## Architecture: crate ownership (`xrpl-common-stdlib` vs `xrpl-escrow-stdlib` vs `xrpl-macros`)
 
-The library workspace is split into three crates with a strict dependency direction: `xrpl-escrow-stdlib` → `xrpl-wasm-stdlib` → `xrpl-macros`. Never invert this — `xrpl-wasm-stdlib` must not depend on domain (feature-specific) code.
+The library workspace is split into three crates with a strict dependency direction: `xrpl-escrow-stdlib` → `xrpl-common-stdlib` → `xrpl-macros`. Never invert this — `xrpl-common-stdlib` must not depend on domain (feature-specific) code.
 
 - **`xrpl-macros`** — proc-macro crate, no runtime dependencies on the other two. Exports:
   - Typed-constant macros: `r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!` — validate at compile time and emit a typed XRPL value.
   - Entry-point macros: `#[smart_escrow]`, `#[smart_contract]` — wrap a user function in the `extern "C"` symbol the XRPL host calls. Both share a `parse → validate → codegen` pipeline in `entry_point/`; adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
-- **`xrpl-wasm-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
+- **`xrpl-common-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
 - **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Re-exports `xrpl_common_stdlib::*`, so contract code typically only needs to depend on `xrpl-escrow-stdlib`.
 
-**Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-wasm-stdlib` with a re-export. `xrpl-wasm-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
+**Rule of thumb:** domain-specific code (escrow, and any future smart-contract feature) lives in its own crate and is never added to `xrpl-common-stdlib` with a re-export. `xrpl-common-stdlib::ctx::SmartFeatureContext` is the narrow, generic trait (`type Tx: TransactionCommonFields`, `fn tx(&self) -> &Self::Tx`) that feature-specific contexts like `EscrowFinishContext` implement — new features add a new context type/crate rather than extending this trait.
 
 ## Architecture: the three-implementation host-binding swap
 
-This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait (defined in `host_bindings_trait.rs`) via `cfg`-gated `include!`:
+This is the single most important pattern in the repo. `xrpl-common-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait (defined in `host_bindings_trait.rs`) via `cfg`-gated `include!`:
 
 | Config                                                       | Included file            | Purpose                                                                                        |
 | ------------------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -90,11 +90,11 @@ This is the single most important pattern in the repo. `xrpl-wasm-stdlib/src/hos
 
 Consequences:
 
-- `lib.rs` uses `#![cfg_attr(target_arch = "wasm32", no_std)]` — code is `no_std` only when targeting WASM; native builds get `std` so `cargo test` works. This applies to both `xrpl-wasm-stdlib` and `xrpl-escrow-stdlib`.
-- To exercise stdlib code from another crate's tests (e.g. `e2e-tests/`, `xrpl-escrow-stdlib`), enable the `test-host-bindings` feature on `xrpl-wasm-stdlib` — `dev-dependencies` aren't enough because mockall must be available when the lib is consumed as a regular dep.
+- `lib.rs` uses `#![cfg_attr(target_arch = "wasm32", no_std)]` — code is `no_std` only when targeting WASM; native builds get `std` so `cargo test` works. This applies to both `xrpl-common-stdlib` and `xrpl-escrow-stdlib`.
+- To exercise stdlib code from another crate's tests (e.g. `e2e-tests/`, `xrpl-escrow-stdlib`), enable the `test-host-bindings` feature on `xrpl-common-stdlib` — `dev-dependencies` aren't enough because mockall must be available when the lib is consumed as a regular dep.
 - Anything new added to `HostBindings` must be implemented in all three files. CI's `host-function-audit.sh` compares the trait against rippled's exports — keep them in sync.
 
-## Architecture: layering inside `xrpl-wasm-stdlib`
+## Architecture: layering inside `xrpl-common-stdlib`
 
 ```
 src/
@@ -152,7 +152,7 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `Cargo.toml` must set `crate-type = ["cdylib"]` and depend on `xrpl-wasm-stdlib` via path. New examples must be added to `examples/Cargo.toml`'s `[workspace] members`.
+The `Cargo.toml` must set `crate-type = ["cdylib"]` and depend on `xrpl-common-stdlib` via path. New examples must be added to `examples/Cargo.toml`'s `[workspace] members`.
 
 Trace output (`trace`, `trace_data`, `trace_num`) shows up in rippled's `debug.log`.
 
