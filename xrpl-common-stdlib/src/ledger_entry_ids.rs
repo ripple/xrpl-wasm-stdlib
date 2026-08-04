@@ -6,14 +6,14 @@ use crate::types::currency::Currency;
 use crate::types::issue::Issue;
 use crate::types::mpt_id::MptId;
 
-pub const XRPL_KEYLET_SIZE: usize = 32;
-// Type aliases for specific keylets, all currently using the same underlying array type.
-pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
+pub const XRPL_LEDGER_ENTRY_ID_SIZE: usize = 32;
+// Type aliases for specific ledger entry IDs, all currently using the same underlying array type.
+pub type LedgerEntryIdBytes = [u8; XRPL_LEDGER_ENTRY_ID_SIZE];
 
-/// Generates an account keylet for a given XRP Ledger account.
+/// Generates an account ledger entry ID for a given XRP Ledger account.
 ///
-/// Account keylets are used to reference account entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Account ledger entry IDs are used to reference account entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -21,51 +21,51 @@ pub type KeyletBytes = [u8; XRPL_KEYLET_SIZE];
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte account keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte account ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::account_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::accountroot_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::account_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match account_keylet(&account){
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match accountroot_id(&account){
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 /// }
 /// ```
-pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::account_keylet(
+pub fn accountroot_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::accountroot_id(
             account_id.0.as_ptr(), // Assuming AccountID is a tuple struct like AccountID(bytes)
             account_id.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an AMM keylet for a given pair of accounts and currency code.
+/// Generates an AMM ledger entry ID for a given pair of accounts and currency code.
 ///
-/// An AMM keylet is used to reference AMM entries in the XRP Ledger.
+/// An AMM ledger entry ID is used to reference AMM entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -74,13 +74,13 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte AMM keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte AMM ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::amm_keylet` function.
+/// the `host::amm_id` function.
 ///
 /// # Example
 ///
@@ -88,7 +88,7 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::issue::{Issue, XrpIssue, IouIssue};
 /// use xrpl_common_stdlib::types::currency::Currency;
-/// use xrpl_common_stdlib::keylets::amm_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::amm_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let issue1: Issue = Issue::XRP(XrpIssue {});
@@ -97,36 +97,36 @@ pub fn account_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///  let currency = b"RLUSD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; // RLUSD currency code
 ///  let currency: Currency = Currency::from(*currency);
 ///  let issue2 = Issue::IOU(IouIssue::new(issuer, currency));
-///  match amm_keylet(&issue1, &issue2) {
-///    xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///      let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///  match amm_id(&issue1, &issue2) {
+///    xrpl_common_stdlib::host::Result::Ok(id) => {
+///      let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
-///      let _ = trace_num("Error assembling keylet", e.code() as i64);
+///      let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///    }
 ///  }
 ///  Ok(())
 /// }
 /// ```
-pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
+pub fn amm_id(issue1: &Issue, issue2: &Issue) -> Result<LedgerEntryIdBytes> {
     let issue1_bytes = issue1.as_bytes();
     let issue2_bytes = issue2.as_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::amm_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::amm_id(
             issue1_bytes.as_ptr(),
             issue1_bytes.len(),
             issue2_bytes.as_ptr(),
             issue2_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an check keylet for a given owner and sequence in the XRP Ledger.
+/// Generates an check ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Check keylets are used to reference check entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Check ledger entry IDs are used to reference check entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -135,54 +135,54 @@ pub fn amm_keylet(issue1: &Issue, issue2: &Issue) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte check keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte check ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::check_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::check_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::check_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::check_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match check_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match check_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn check_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::check_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::check_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a credential keylet for a given subject, issuer, and credential type.
+/// Generates a credential ledger entry ID for a given subject, issuer, and credential type.
 ///
-/// A credential keylet is used to reference credential entries in the XRP Ledger.
+/// A credential ledger entry ID is used to reference credential entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -192,19 +192,19 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte credential keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte credential ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::credential_keylet` function.
+/// the `host::credential_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::credential_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::credential_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let subject: AccountID =
@@ -212,39 +212,39 @@ pub fn check_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     let issuer: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let cred_type: &[u8] = b"termsandconditions";
-///     match credential_keylet(&subject, &issuer, cred_type) {
-///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///     match credential_id(&subject, &issuer, cred_type) {
+///       xrpl_common_stdlib::host::Result::Ok(id) => {
+///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling keylet", e.code() as i64);
+///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
 /// }
 /// ```
-pub fn credential_keylet(
+pub fn credential_id(
     subject: &AccountID,
     issuer: &AccountID,
     credential_type: &[u8],
-) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::credential_keylet(
+) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::credential_id(
             subject.0.as_ptr(),
             subject.0.len(),
             issuer.0.as_ptr(),
             issuer.0.len(),
             credential_type.as_ptr(),
             credential_type.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a delegate keylet for a given given account and authorized account.
+/// Generates a delegate ledger entry ID for a given given account and authorized account.
 ///
-/// A delegate keylet is used to reference delegate entries in the XRP Ledger.
+/// A delegate ledger entry ID is used to reference delegate entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -253,52 +253,52 @@ pub fn credential_keylet(
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte delegate keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte delegate ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::delegate_keylet` function.
+/// the `host::delegate_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::delegate_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::delegate_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match delegate_keylet(&account, &authorize) {
-///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///     match delegate_id(&account, &authorize) {
+///       xrpl_common_stdlib::host::Result::Ok(id) => {
+///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling keylet", e.code() as i64);
+///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
 /// }
 /// ```
-pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::delegate_keylet(
+pub fn delegate_id(account: &AccountID, authorize: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::delegate_id(
             account.0.as_ptr(),
             account.0.len(),
             authorize.0.as_ptr(),
             authorize.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a deposit preauth keylet for a given account and authorized account.
+/// Generates a deposit preauth ledger entry ID for a given account and authorized account.
 ///
-/// A deposit preauth keylet is used to reference deposit preauth entries in the XRP Ledger.
+/// A deposit preauth ledger entry ID is used to reference deposit preauth entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -307,53 +307,56 @@ pub fn delegate_keylet(account: &AccountID, authorize: &AccountID) -> Result<Key
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte deposit preauth keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte deposit preauth ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::deposit_preauth_keylet` function.
+/// the `host::deposit_preauth_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::deposit_preauth_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::deposit_preauth_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     let authorize: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match deposit_preauth_keylet(&account, &authorize) {
-///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///     match deposit_preauth_id(&account, &authorize) {
+///       xrpl_common_stdlib::host::Result::Ok(id) => {
+///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling keylet", e.code() as i64);
+///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
 /// }
 /// ```
-pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::deposit_preauth_keylet(
+pub fn deposit_preauth_id(
+    account: &AccountID,
+    authorize: &AccountID,
+) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::deposit_preauth_id(
             account.0.as_ptr(),
             account.0.len(),
             authorize.0.as_ptr(),
             authorize.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a DID keylet for a given XRP Ledger account.
+/// Generates a DID ledger entry ID for a given XRP Ledger account.
 ///
-/// DID keylets are used to reference DID entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// DID ledger entry IDs are used to reference DID entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -361,52 +364,52 @@ pub fn deposit_preauth_keylet(account: &AccountID, authorize: &AccountID) -> Res
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte DID keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte DID ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::did_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::did_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::did_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::did_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match did_keylet(&account){
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match did_id(&account){
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 /// }
 /// ```
-pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::did_keylet(
+pub fn did_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::did_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an escrow keylet for a given owner and sequence in the XRP Ledger.
+/// Generates an escrow ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Escrow keylets are used to reference escrow entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Escrow ledger entry IDs are used to reference escrow entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -415,54 +418,54 @@ pub fn did_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte escrow keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte escrow ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::escrow_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::escrow_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::escrow_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::escrow_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match escrow_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match escrow_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn escrow_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::escrow_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::escrow_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a trustline keylet for a given pair of accounts and currency code.
+/// Generates a trustline ledger entry ID for a given pair of accounts and currency code.
 ///
-/// A trustline keylet is used to reference trustline entries in the XRP Ledger.
+/// A trustline ledger entry ID is used to reference trustline entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -472,20 +475,20 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte trustline keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte trustline ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::line_keylet` function.
+/// the `host::trustline_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::currency::Currency;
-/// use xrpl_common_stdlib::keylets::line_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::trustline_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let account1: AccountID =
@@ -494,40 +497,40 @@ pub fn escrow_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///    AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///  let currency = b"RLUSD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; // RLUSD currency code
 ///  let currency: Currency = Currency::from(*currency);
-///  match line_keylet(&account1, &account2, &currency) {
-///    xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///      let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///  match trustline_id(&account1, &account2, &currency) {
+///    xrpl_common_stdlib::host::Result::Ok(id) => {
+///      let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
-///      let _ = trace_num("Error assembling keylet", e.code() as i64);
+///      let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///    }
 ///  }
 ///  Ok(())
 /// }
 /// ```
-pub fn line_keylet(
+pub fn trustline_id(
     account1: &AccountID,
     account2: &AccountID,
     currency: &Currency,
-) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::line_keylet(
+) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::trustline_id(
             account1.0.as_ptr(),
             account1.0.len(),
             account2.0.as_ptr(),
             account2.0.len(),
             currency.0.as_ptr(),
             currency.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an MPT issuance keylet for a given owner and sequence in the XRP Ledger.
+/// Generates an MPT issuance ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// MPT issuance keylets are used to reference MPT issuance entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// MPT issuance ledger entry IDs are used to reference MPT issuance entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -536,54 +539,54 @@ pub fn line_keylet(
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte MPT issuance keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte MPT issuance ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::mpt_issuance_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::mpt_issuance_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::mpt_issuance_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::mpt_issuance_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match mpt_issuance_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match mpt_issuance_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn mpt_issuance_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::mpt_issuance_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::mpt_issuance_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an MPToken keylet for a given MPT ID and holder.
+/// Generates an MPToken ledger entry ID for a given MPT ID and holder.
 ///
-/// An MPToken keylet is used to reference MPToken entries in the XRP Ledger.
+/// An MPToken ledger entry ID is used to reference MPToken entries in the XRP Ledger.
 ///
 /// # Arguments
 ///
@@ -592,20 +595,20 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte MPToken keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte MPToken ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::mptoken_keylet` function.
+/// the `host::mptoken_id` function.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::mpt_id::MptId;
-/// use xrpl_common_stdlib::keylets::mptoken_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::mptoken_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let issuer: AccountID =
@@ -613,34 +616,34 @@ pub fn mpt_issuance_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///     let mptid: MptId = MptId::new(1, issuer);
 ///     let holder: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-///     match mptoken_keylet(&mptid, &holder) {
-///       xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///         let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///     match mptoken_id(&mptid, &holder) {
+///       xrpl_common_stdlib::host::Result::Ok(id) => {
+///         let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
-///         let _ = trace_num("Error assembling keylet", e.code() as i64);
+///         let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///       }
 ///     }
 ///     Ok(())
 /// }
 /// ```
-pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::mptoken_keylet(
+pub fn mptoken_id(mptid: &MptId, holder: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::mptoken_id(
             mptid.as_bytes().as_ptr(),
             mptid.as_bytes().len(),
             holder.0.as_ptr(),
             holder.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an NFT offer keylet for a given owner and sequence in the XRP Ledger.
+/// Generates an NFT offer ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// NFT offer keylets are used to reference NFT offer entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// NFT offer ledger entry IDs are used to reference NFT offer entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -649,55 +652,55 @@ pub fn mptoken_keylet(mptid: &MptId, holder: &AccountID) -> Result<KeyletBytes> 
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte NFT offer keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte NFT offer ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::nft_offer_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::nft_offer_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::nft_offer_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::nft_offer_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match nft_offer_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match nft_offer_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn nft_offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::nft_offer_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::nft_offer_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an offer keylet for a given owner and sequence in the XRP Ledger.
+/// Generates an offer ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Offer keylets are used to reference offer entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Offer ledger entry IDs are used to reference offer entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -706,55 +709,55 @@ pub fn nft_offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte offer keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte offer ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::offer_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::offer_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::offer_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::offer_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match offer_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match offer_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::offer_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::offer_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates an oracle keylet for a given owner and document ID in the XRP Ledger.
+/// Generates an oracle ledger entry ID for a given owner and document ID in the XRP Ledger.
 ///
-/// Oracle keylets are used to reference oracle entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Oracle ledger entry IDs are used to reference oracle entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -763,55 +766,55 @@ pub fn offer_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte oracle keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte oracle ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::oracle_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::oracle_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::oracle_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let document_id = 12345;
-///   match oracle_keylet(&owner, document_id) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match oracle_id(&owner, document_id) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes> {
+pub fn oracle_id(owner: &AccountID, document_id: u32) -> Result<LedgerEntryIdBytes> {
     let document_id_bytes = document_id.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::oracle_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::oracle_id(
             owner.0.as_ptr(),
             owner.0.len(),
             document_id_bytes.as_ptr(),
             document_id_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a payment channel keylet for a given owner and sequence in the XRP Ledger.
+/// Generates a payment channel ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Payment channel keylets are used to reference payment channel entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Payment channel ledger entry IDs are used to reference payment channel entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -821,20 +824,20 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte payment channel keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte payment channel ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::paychan_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::paychan_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::paychan_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::paychan_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -843,41 +846,41 @@ pub fn oracle_keylet(owner: &AccountID, document_id: u32) -> Result<KeyletBytes>
 ///   let destination: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match paychan_keylet(&account, &destination, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match paychan_id(&account, &destination, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn paychan_keylet(
+pub fn paychan_id(
     account: &AccountID,
     destination: &AccountID,
     seq: u32,
-) -> Result<KeyletBytes> {
+) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::paychan_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::paychan_id(
             account.0.as_ptr(),
             account.0.len(),
             destination.0.as_ptr(),
             destination.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a permissioned domain keylet for a given owner and sequence in the XRP Ledger.
+/// Generates a permissioned domain ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Permissioned domain keylets are used to reference permissioned domain entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Permissioned domain ledger entry IDs are used to reference permissioned domain entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -886,55 +889,55 @@ pub fn paychan_keylet(
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte permissioned domain keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte permissioned domain ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::permissioned_domain_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::permissioned_domain_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::permissioned_domain_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::permissioned_domain_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match permissioned_domain_keylet(&account, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match permissioned_domain_id(&account, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn permissioned_domain_id(account: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::permissioned_domain_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::permissioned_domain_id(
             account.0.as_ptr(),
             account.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a signer entry keylet for a given XRP Ledger account.
+/// Generates a signer entry ledger entry ID for a given XRP Ledger account.
 ///
-/// signer entry keylets are used to reference signer entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// signer entry ledger entry IDs are used to reference signer entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -942,52 +945,52 @@ pub fn permissioned_domain_keylet(account: &AccountID, seq: u32) -> Result<Keyle
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte signer entry keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte signer entry ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::signers_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::signers_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::signers_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::signers_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
-///   match signers_keylet(&account){
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match signers_id(&account){
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 /// }
 /// ```
-pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::signers_keylet(
+pub fn signers_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::signers_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a ticket keylet for a given owner and sequence in the XRP Ledger.
+/// Generates a ticket ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Ticket keylets are used to reference ticket entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Ticket ledger entry IDs are used to reference ticket entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -996,55 +999,55 @@ pub fn signers_keylet(account_id: &AccountID) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte ticket keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte ticket ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::ticket_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::ticket_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::ticket_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::ticket_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match ticket_keylet(&owner, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match ticket_id(&owner, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn ticket_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::ticket_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::ticket_id(
             owner.0.as_ptr(),
             owner.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generates a vault keylet for a given owner and sequence in the XRP Ledger.
+/// Generates a vault ledger entry ID for a given owner and sequence in the XRP Ledger.
 ///
-/// Vault keylets are used to reference vault entries in the XRP Ledger's state data.
-/// This function uses the generic `create_keylet_from_host_call` helper to manage the FFI interaction.
+/// Vault ledger entry IDs are used to reference vault entries in the XRP Ledger's state data.
+/// This function uses the generic `create_id_from_host_call` helper to manage the FFI interaction.
 ///
 /// # Arguments
 ///
@@ -1053,71 +1056,71 @@ pub fn ticket_keylet(owner: &AccountID, seq: u32) -> Result<KeyletBytes> {
 ///
 /// # Returns
 ///
-/// * `Result<KeyletBytes>` - On success, returns a 32-byte vault keylet.
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte vault ledger entry ID.
 ///   On failure, returns an `Error` with the corresponding error code.
 ///
 /// # Safety
 ///
 /// This function makes unsafe FFI calls to the host environment through
-/// the `host::vault_keylet` function, though the unsafe code is contained
-/// within the closure passed to `create_keylet_from_host_call`.
+/// the `host::vault_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
-/// use xrpl_common_stdlib::keylets::vault_keylet;
+/// use xrpl_common_stdlib::ledger_entry_ids::vault_id;
 /// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
 ///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///   let sequence = 12345;
-///   match vault_keylet(&account, sequence) {
-///     xrpl_common_stdlib::host::Result::Ok(keylet) => {
-///       let _ = trace_data("Generated keylet", &keylet, DataRepr::AsHex);
+///   match vault_id(&account, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       let _ = trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
-///       let _ = trace_num("Error assembling keylet", e.code() as i64);
+///       let _ = trace_num("Error assembling ledger entry ID", e.code() as i64);
 ///     }
 ///   }
 ///   Ok(())
 ///}
 /// ```
-pub fn vault_keylet(account: &AccountID, seq: u32) -> Result<KeyletBytes> {
+pub fn vault_id(account: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     let seq_bytes = seq.to_le_bytes();
-    create_keylet_from_host_call(|keylet_buffer_ptr, keylet_buffer_len| unsafe {
-        host::vault_keylet(
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::vault_id(
             account.0.as_ptr(),
             account.0.len(),
             seq_bytes.as_ptr(),
             seq_bytes.len(),
-            keylet_buffer_ptr,
-            keylet_buffer_len,
+            id_buffer_ptr,
+            id_buffer_len,
         )
     })
 }
 
-/// Generic helper function to create a keylet by calling a host function.
+/// Generic helper function to create a ledger entry ID by calling a host function.
 ///
 /// This function handles the common tasks of:
-/// - Initializing the keylet output buffer.
+/// - Initializing the ledger entry ID output buffer.
 /// - Invoking the provided `host_call` closure (which performs the unsafe host FFI call).
-/// - Converting the host call's `i32` result code into a `Result<KeyletBytes, Error>`.
+/// - Converting the host call's `i32` result code into a `Result<LedgerEntryIdBytes, Error>`.
 ///
 /// # Arguments
 ///
 /// * `host_call`: A closure that takes a mutable pointer to the output buffer (`*mut u8`)
 ///   and its length (`usize`), performs the specific host FFI call, and returns an `i32` status
 ///   code.
-fn create_keylet_from_host_call<F>(host_call: F) -> Result<KeyletBytes>
+fn create_id_from_host_call<F>(host_call: F) -> Result<LedgerEntryIdBytes>
 where
     F: FnOnce(*mut u8, usize) -> i32,
 {
-    let mut keylet_buffer: KeyletBytes = [0; XRPL_KEYLET_SIZE];
-    let result_code: i32 = host_call(keylet_buffer.as_mut_ptr(), keylet_buffer.len());
+    let mut id_buffer: LedgerEntryIdBytes = [0; XRPL_LEDGER_ENTRY_ID_SIZE];
+    let result_code: i32 = host_call(id_buffer.as_mut_ptr(), id_buffer.len());
 
-    match_result_code_with_expected_bytes(result_code, XRPL_KEYLET_SIZE, || keylet_buffer)
+    match_result_code_with_expected_bytes(result_code, XRPL_LEDGER_ENTRY_ID_SIZE, || id_buffer)
 }
 
 #[cfg(test)]
@@ -1127,34 +1130,32 @@ mod tests {
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
 
-    const EXPECTED_KEYLET: KeyletBytes = [0xCC; XRPL_KEYLET_SIZE];
+    const EXPECTED_ID: LedgerEntryIdBytes = [0xCC; XRPL_LEDGER_ENTRY_ID_SIZE];
 
-    /// Writes `0xCC` into the output buffer and returns `XRPL_KEYLET_SIZE` as success.
-    fn write_keylet_to_buffer(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
-        assert_eq!(out_buff_len, XRPL_KEYLET_SIZE);
+    /// Writes `0xCC` into the output buffer and returns `XRPL_LEDGER_ENTRY_ID_SIZE` as success.
+    fn write_id_to_buffer(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 {
+        assert_eq!(out_buff_len, XRPL_LEDGER_ENTRY_ID_SIZE);
         unsafe {
-            for i in 0..XRPL_KEYLET_SIZE {
+            for i in 0..XRPL_LEDGER_ENTRY_ID_SIZE {
                 *out_buff_ptr.add(i) = 0xCC;
             }
         }
-        XRPL_KEYLET_SIZE as i32
+        XRPL_LEDGER_ENTRY_ID_SIZE as i32
     }
 
-    /// Generates a mock `returning` closure that delegates to `write_keylet_to_buffer`.
+    /// Generates a mock `returning` closure that delegates to `write_id_to_buffer`.
     /// Pass the number of prefix parameters (before the out_buff_ptr/out_buff_len pair)
     /// to match the host function arity.
-    macro_rules! write_keylet_returning {
+    macro_rules! write_id_returning {
         (2) => {
-            |_, _, out_buff_ptr, out_buff_len| write_keylet_to_buffer(out_buff_ptr, out_buff_len)
+            |_, _, out_buff_ptr, out_buff_len| write_id_to_buffer(out_buff_ptr, out_buff_len)
         };
         (4) => {
-            |_, _, _, _, out_buff_ptr, out_buff_len| {
-                write_keylet_to_buffer(out_buff_ptr, out_buff_len)
-            }
+            |_, _, _, _, out_buff_ptr, out_buff_len| write_id_to_buffer(out_buff_ptr, out_buff_len)
         };
         (6) => {
             |_, _, _, _, _, _, out_buff_ptr, out_buff_len| {
-                write_keylet_to_buffer(out_buff_ptr, out_buff_len)
+                write_id_to_buffer(out_buff_ptr, out_buff_len)
             }
         };
     }
@@ -1173,15 +1174,15 @@ mod tests {
         };
     }
 
-    /// Generates a test module with success and error tests for a keylet function.
+    /// Generates a test module with success and error tests for a ledger entry ID function.
     ///
     /// Arguments:
     /// - `$mod_name`: name for the test module
-    /// - `$expect_fn`: mock expectation method (e.g., `expect_account_keylet`)
-    /// - `$success_arity`: number of prefix params for write_keylet_returning (2, 4, or 6)
+    /// - `$expect_fn`: mock expectation method (e.g., `expect_accountroot_id`)
+    /// - `$success_arity`: number of prefix params for write_ledger entry ID_returning (2, 4, or 6)
     /// - `$error_arity`: total number of params for error_returning (4, 6, or 8)
-    /// - `$call_block`: block that sets up args and returns the keylet function call result
-    macro_rules! keylet_test {
+    /// - `$call_block`: block that sets up args and returns the ledger entry ID function call result
+    macro_rules! id_test {
         ($mod_name:ident, $expect_fn:ident, $success_arity:tt, $error_arity:tt, $call_block:block) => {
             mod $mod_name {
                 use super::*;
@@ -1191,12 +1192,12 @@ mod tests {
                     let mut mock = MockHostBindings::new();
                     mock.$expect_fn()
                         .times(1)
-                        .returning(write_keylet_returning!($success_arity));
+                        .returning(write_id_returning!($success_arity));
                     let _guard = setup_mock(mock);
 
                     let result = $call_block;
                     assert!(result.is_ok());
-                    assert_eq!(result.unwrap(), EXPECTED_KEYLET);
+                    assert_eq!(result.unwrap(), EXPECTED_ID);
                 }
 
                 #[test]
@@ -1215,130 +1216,118 @@ mod tests {
         };
     }
 
-    keylet_test!(account_keylet_tests, expect_account_keylet, 2, 4, {
+    id_test!(accountroot_id_tests, expect_accountroot_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        account_keylet(&account_id)
+        accountroot_id(&account_id)
     });
 
-    keylet_test!(check_keylet_tests, expect_check_keylet, 4, 6, {
+    id_test!(check_id_tests, expect_check_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        check_keylet(&owner, 12345)
+        check_id(&owner, 12345)
     });
 
-    keylet_test!(delegate_keylet_tests, expect_delegate_keylet, 4, 6, {
+    id_test!(delegate_id_tests, expect_delegate_id, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
         let authorize = AccountID::from([0xBB; 20]);
-        delegate_keylet(&account, &authorize)
+        delegate_id(&account, &authorize)
     });
 
-    keylet_test!(credential_keylet_tests, expect_credential_keylet, 6, 8, {
+    id_test!(credential_id_tests, expect_credential_id, 6, 8, {
         let subject = AccountID::from([0xBB; 20]);
         let issuer = AccountID::from([0xBB; 20]);
         let cred_type: &[u8] = b"termsandconditions";
-        credential_keylet(&subject, &issuer, cred_type)
+        credential_id(&subject, &issuer, cred_type)
     });
 
-    keylet_test!(amm_keylet_tests, expect_amm_keylet, 4, 6, {
+    id_test!(amm_id_tests, expect_amm_id, 4, 6, {
         use crate::types::issue::{Issue, XrpIssue};
         let issue1 = Issue::XRP(XrpIssue {});
         let issue2 = Issue::XRP(XrpIssue {});
-        amm_keylet(&issue1, &issue2)
+        amm_id(&issue1, &issue2)
     });
 
-    keylet_test!(
-        deposit_preauth_keylet_tests,
-        expect_deposit_preauth_keylet,
-        4,
-        6,
-        {
-            let account = AccountID::from([0xBB; 20]);
-            let authorize = AccountID::from([0xBB; 20]);
-            deposit_preauth_keylet(&account, &authorize)
-        }
-    );
+    id_test!(deposit_preauth_id_tests, expect_deposit_preauth_id, 4, 6, {
+        let account = AccountID::from([0xBB; 20]);
+        let authorize = AccountID::from([0xBB; 20]);
+        deposit_preauth_id(&account, &authorize)
+    });
 
-    keylet_test!(did_keylet_tests, expect_did_keylet, 2, 4, {
+    id_test!(did_id_tests, expect_did_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        did_keylet(&account_id)
+        did_id(&account_id)
     });
 
-    keylet_test!(escrow_keylet_tests, expect_escrow_keylet, 4, 6, {
+    id_test!(escrow_id_tests, expect_escrow_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        escrow_keylet(&owner, 12345)
+        escrow_id(&owner, 12345)
     });
 
-    keylet_test!(line_keylet_tests, expect_line_keylet, 6, 8, {
+    id_test!(trustline_id_tests, expect_trustline_id, 6, 8, {
         use crate::types::currency::Currency;
         let account1 = AccountID::from([0xBB; 20]);
         let account2 = AccountID::from([0xBB; 20]);
         let currency = Currency::from([0xBB; 20]);
-        line_keylet(&account1, &account2, &currency)
+        trustline_id(&account1, &account2, &currency)
     });
 
-    keylet_test!(
-        mpt_issuance_keylet_tests,
-        expect_mpt_issuance_keylet,
-        4,
-        6,
-        {
-            let owner = AccountID::from([0xBB; 20]);
-            mpt_issuance_keylet(&owner, 12345)
-        }
-    );
+    id_test!(mpt_issuance_id_tests, expect_mpt_issuance_id, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        mpt_issuance_id(&owner, 12345)
+    });
 
-    keylet_test!(mptoken_keylet_tests, expect_mptoken_keylet, 4, 6, {
+    id_test!(mptoken_id_tests, expect_mptoken_id, 4, 6, {
         use crate::types::mpt_id::MptId;
         let issuer = AccountID::from([0xBB; 20]);
         let mptid = MptId::new(1, issuer);
         let holder = AccountID::from([0xBB; 20]);
-        mptoken_keylet(&mptid, &holder)
+        mptoken_id(&mptid, &holder)
     });
 
-    keylet_test!(nft_offer_keylet_tests, expect_nft_offer_keylet, 4, 6, {
+    id_test!(nft_offer_id_tests, expect_nft_offer_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        nft_offer_keylet(&owner, 12345)
+        nft_offer_id(&owner, 12345)
     });
 
-    keylet_test!(offer_keylet_tests, expect_offer_keylet, 4, 6, {
+    id_test!(offer_id_tests, expect_offer_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        offer_keylet(&owner, 12345)
+        offer_id(&owner, 12345)
     });
 
-    keylet_test!(oracle_keylet_tests, expect_oracle_keylet, 4, 6, {
+    id_test!(oracle_id_tests, expect_oracle_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        oracle_keylet(&owner, 12345)
+        oracle_id(&owner, 12345)
     });
 
-    keylet_test!(paychan_keylet_tests, expect_paychan_keylet, 6, 8, {
+    id_test!(paychan_id_tests, expect_paychan_id, 6, 8, {
         let account = AccountID::from([0xBB; 20]);
         let destination = AccountID::from([0xBB; 20]);
-        paychan_keylet(&account, &destination, 12345)
+        paychan_id(&account, &destination, 12345)
     });
 
-    keylet_test!(
-        permissioned_domain_keylet_tests,
-        expect_permissioned_domain_keylet,
+    id_test!(
+        permissioned_domain_id_tests,
+        expect_permissioned_domain_id,
         4,
         6,
         {
             let account = AccountID::from([0xBB; 20]);
-            permissioned_domain_keylet(&account, 12345)
+            permissioned_domain_id(&account, 12345)
         }
     );
 
-    keylet_test!(signers_keylet_tests, expect_signers_keylet, 2, 4, {
+    id_test!(signers_id_tests, expect_signers_id, 2, 4, {
         let account_id = AccountID::from([0xBB; 20]);
-        signers_keylet(&account_id)
+        signers_id(&account_id)
     });
 
-    keylet_test!(ticket_keylet_tests, expect_ticket_keylet, 4, 6, {
+    id_test!(ticket_id_tests, expect_ticket_id, 4, 6, {
         let owner = AccountID::from([0xBB; 20]);
-        ticket_keylet(&owner, 12345)
+        ticket_id(&owner, 12345)
     });
 
-    keylet_test!(vault_keylet_tests, expect_vault_keylet, 4, 6, {
+    id_test!(vault_id_tests, expect_vault_id, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
-        vault_keylet(&account, 12345)
+        vault_id(&account, 12345)
     });
 
     #[test]
@@ -1347,13 +1336,13 @@ mod tests {
         let mut mock = MockHostBindings::new();
 
         // Return 16 instead of 32 — positive but wrong size
-        mock.expect_account_keylet()
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, _, _| 16);
 
         let _guard = setup_mock(mock);
 
         let account_id = AccountID::from([0xBB; 20]);
-        let _ = account_keylet(&account_id);
+        let _ = accountroot_id(&account_id);
     }
 }

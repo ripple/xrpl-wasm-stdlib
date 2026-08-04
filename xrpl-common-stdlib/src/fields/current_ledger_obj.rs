@@ -12,7 +12,7 @@
 //! - **Optional** (`get_field_optional`): Returns `Ok(None)` if the field is missing.
 
 use crate::fields::decoder::{FromLedger, decode_host_result};
-use crate::host::{Error, Result, get_current_ledger_obj_field};
+use crate::host::{Error, Result, home_le_field};
 use crate::sfield::SField;
 use crate::types::blob::Blob;
 use core::mem::MaybeUninit;
@@ -29,7 +29,7 @@ pub fn get_field<T: FromLedger, const CODE: i32>(_: SField<T, CODE>) -> Result<T
     let mut buf = T::empty_buffer();
     let n = {
         let slice = buf.as_mut();
-        unsafe { get_current_ledger_obj_field(CODE, slice.as_mut_ptr(), slice.len()) }
+        unsafe { home_le_field(CODE, slice.as_mut_ptr(), slice.len()) }
     };
     decode_host_result::<T>(buf, n)
 }
@@ -81,7 +81,7 @@ pub fn get_blob_field<const N: usize, const CODE: i32>(
     // directly. Zeroing in place (rather than in a separate scratch buffer) costs the same one
     // `memset` the old code paid anyway, just at the final address instead of a temporary one.
     unsafe { core::ptr::write_bytes(data_ptr, 0u8, N) };
-    let n = unsafe { get_current_ledger_obj_field(CODE, data_ptr, N) };
+    let n = unsafe { home_le_field(CODE, data_ptr, N) };
     if n < 0 {
         return Result::Err(Error::from_code(n));
     }
@@ -129,7 +129,7 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq(field_code), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_get_field_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::SourceTag.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| FIELD_NOT_FOUND);
@@ -176,7 +176,7 @@ mod tests {
         // u32's FieldDecoder requires exactly 4 bytes; a shorter write fails the length check
         // and surfaces as InvalidDecoding.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| 3);
@@ -193,7 +193,7 @@ mod tests {
     #[test]
     fn test_get_field_returns_err_on_internal_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
@@ -209,7 +209,7 @@ mod tests {
         // A conformant host can't write past the buffer it was handed; a positive count larger
         // than the buffer is reported as PointerOutOfBounds.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| 8); // claims 8 bytes into a 4-byte u32 buffer
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_writes_bytes_directly_into_blob_data() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
             .returning(|_, buf, size| {
@@ -247,7 +247,7 @@ mod tests {
         // A short write (e.g. an empty/undersized field) must leave the tail zeroed, not
         // uninitialized -- `Blob::data` is `pub`, so callers may read past `len` directly.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
             .returning(|_, buf, _size| {
@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_returns_err_on_internal_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_returns_err_when_host_reports_oversized_write() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
             .returning(|_, _, _| 129); // claims 129 bytes into a 128-byte buffer
@@ -298,7 +298,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
             .returning(|_, _, _| FIELD_NOT_FOUND);

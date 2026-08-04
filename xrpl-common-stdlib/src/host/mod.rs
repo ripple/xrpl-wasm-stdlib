@@ -12,9 +12,9 @@
 //! - `float_from_int` / `float_from_uint` / `float_from_mant_exp` - Convert values to float format
 //! - `float_from_stamount` / `float_from_stnumber` - Convert XRP ledger types to float format
 //! - `float_to_int` / `float_to_mant_exp` - Convert float to integer or decomposed form
-//! - `float_add` / `float_subtract` / `float_multiply` / `float_divide` - Arithmetic
+//! - `float_add` / `float_sub` / `float_mult` / `float_div` - Arithmetic
 //! - `float_pow` / `float_root` - Mathematical functions
-//! - `float_compare` - Comparison operations
+//! - `float_cmp` - Comparison operations
 //!
 //! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
 //!
@@ -253,7 +253,7 @@ pub enum Error {
     EmptySlot = error_codes::EMPTY_SLOT,
 
     /// The requested ledger object could not be found.
-    /// This may occur if the object doesn't exist or the keylet is invalid.
+    /// This may occur if the object doesn't exist or the ledger entry ID is invalid.
     LedgerObjNotFound = error_codes::LEDGER_OBJ_NOT_FOUND,
 
     /// An error occurred while decoding serialized data.

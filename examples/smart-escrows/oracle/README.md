@@ -16,7 +16,7 @@ The Rust code demonstrates how to interact with XRPL oracle objects using the XR
 
 ### Core Components
 
-- **Oracle Integration**: Connects to XRPL oracle objects using keylet as address
+- **Oracle Integration**: Connects to XRPL oracle objects using ledger entry ID as address
 - **Price Retrieval**: Extracts `AssetPrice` data from `PriceDataSeries` within oracle objects
 - **Threshold Logic**: Simple escrow unlock condition (price > 1)
 - **Error Handling**: Graceful failure when oracle data is unavailable (e.g., if the oracle does not exist)
@@ -104,9 +104,9 @@ The integration test suite covers:
 
 #### Core Functionality
 
-- Oracle keylet (address derivation) generation with known parameters
+- Oracle ledger entry ID (address derivation) generation with known parameters
 - Ledger object caching and retrieval
-- Nested field extraction (`PriceDataSeries` → `AssetPrice`)
+- Inner field extraction (`PriceDataSeries` → `AssetPrice`)
 - Price threshold evaluation logic
 
 #### Data Processing
@@ -151,7 +151,7 @@ The integration test suite covers:
 │  │ ┌─────────────┐ │              │ finish() function:      │   │
 │  │ │ PriceData   │ │◄─────────────┤                         │   │
 │  │ │ Series      │ │              │ 1. Generate Oracle      │   │
-│  │ │             │ │              │    Keylet               │   │
+│  │ │             │ │              │    LedgerEntryId               │   │
 │  │ │ └─AssetPrice│ │              │                         │   │
 │  │ └─────────────┘ │              │ 2. Cache Ledger Object  │   │
 │  └─────────────────┘              │                         │   │

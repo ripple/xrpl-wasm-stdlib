@@ -3,7 +3,7 @@
 //! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
 
 use crate::fields::locator::LedgerPathBuilder;
-use crate::host::{Error, Result, Result::Err, Result::Ok, get_ledger_obj_field};
+use crate::host::{Error, Result, Result::Err, Result::Ok, le_field};
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
@@ -31,7 +31,7 @@ pub trait LedgerObjectCommonFields {
     /// The slot number as an i32 value
     fn get_slot_num(&self) -> i32;
 
-    /// Starts a nested-field path rooted at this ledger object, read through its slot.
+    /// Starts an inner-field path rooted at this ledger object, read through its slot.
     ///
     /// Use this to reach into arrays and inner objects that the flat getters below can't return
     /// whole (e.g. `SignerEntries[0].Account`). Chain [`field`](LedgerPathBuilder::field) /
@@ -88,7 +88,7 @@ pub trait CurrentLedgerObjectCommonFields {
     // object (it's a synthetic field that maps to the `index` field, which is the unique ID of an object in the
     // ledger's state tree). See https://github.com/XRPLF/rippled/issues/3649 for more context.
 
-    /// Starts a nested-field path rooted at the current ledger object (no slot).
+    /// Starts an inner-field path rooted at the current ledger object (no slot).
     ///
     /// Use this to reach into arrays and inner objects that the flat getters below can't return
     /// whole. Chain [`field`](LedgerPathBuilder::field) / [`index`](LedgerPathBuilder::index), then
@@ -228,7 +228,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::Data.into(),
                 data.as_mut_ptr(),
@@ -386,7 +386,7 @@ mod tests {
     // Test helper functions
     // ========================================
 
-    /// Helper to set up a mock expectation for get_current_ledger_obj_field
+    /// Helper to set up a mock expectation for home_le_field
     ///
     /// Sets up a mock expectation that will match calls with:
     /// - field: The SField with the specified CODE
@@ -403,13 +403,13 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq(CODE), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
     }
 
-    /// Helper to set up a mock expectation for get_ledger_obj_field
+    /// Helper to set up a mock expectation for le_field
     ///
     /// Sets up a mock expectation that will match calls with:
     /// - slot: The ledger object slot number
@@ -428,7 +428,7 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_ledger_obj_field()
+        mock.expect_le_field()
             .with(eq(slot), eq(CODE), always(), eq(size))
             .times(times)
             .returning(move |_, _, _, _| size as i32);
@@ -461,7 +461,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INTERNAL_ERROR
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -479,7 +479,7 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -498,7 +498,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INVALID_FIELD
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
@@ -515,10 +515,10 @@ mod tests {
         #[test]
         fn test_path_roots_a_by_slot_builder() {
             // `obj.path()` must build against the object's own slot and read through
-            // `get_ledger_obj_nested_field`. SignerEntries[0] is two 4-byte segments = 8 bytes;
+            // `le_inner`. SignerEntries[0] is two 4-byte segments = 8 bytes;
             // the u32 read buffer is 4.
             let mut mock = MockHostBindings::new();
-            mock.expect_get_ledger_obj_nested_field()
+            mock.expect_le_inner()
                 .with(eq(1), always(), eq(8usize), always(), eq(4usize))
                 .times(1)
                 .returning(|_, _, _, _, _| 4);
@@ -559,7 +559,7 @@ mod tests {
             // get_amount: buffer is AMOUNT_SIZE (48), but the host reports the XRP variant's
             // 8-byte length; `Amount::decode` validates the reported length against the parsed
             // variant, so it must be the real wire length, not the buffer size.
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq::<i32>(sfield::Amount.into()), always(), eq(48))
                 .times(1)
                 .returning(|_, _, _, _| 8);
@@ -626,12 +626,12 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_cancel_after
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_condition - FIELD_NOT_FOUND yields None
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(
                     eq(1),
                     eq(sfield::Condition),
@@ -641,27 +641,27 @@ mod tests {
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_destination_node
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::DestinationNode), always(), eq(8))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_destination_tag
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::DestinationTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_finish_after
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::FinishAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_source_tag
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(
                     eq(1),
                     eq(sfield::FinishFunction),
@@ -694,7 +694,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INTERNAL_ERROR
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -712,7 +712,7 @@ mod tests {
         fn test_get_data_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(
                     eq(1),
                     eq(sfield::Data),
@@ -736,7 +736,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INVALID_FIELD
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
@@ -796,7 +796,7 @@ mod tests {
             // amm_id
             expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
             // balance: buffer is AMOUNT_SIZE (48), host reports the XRP variant's 8-byte length.
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq::<i32>(sfield::Balance.into()), always(), eq(48))
                 .times(1)
                 .returning(|_, _, _, _| 8);
@@ -852,42 +852,42 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // account_txn_id
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // amm_id
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::AMMID), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // balance - an absent Amount reports FIELD_NOT_FOUND (there is no 0-length Amount)
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Balance), always(), eq(48))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // burned_nf_tokens
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // domain - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Domain), always(), eq(DOMAIN_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| 0);
             // email_hash
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::EmailHash), always(), eq(16))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // first_nf_token_sequence
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // message_key - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(
                     eq(1),
                     eq(sfield::MessageKey),
@@ -897,37 +897,37 @@ mod tests {
                 .times(1)
                 .returning(|_, _, _, _| 0);
             // minted_nf_tokens
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::MintedNFTokens), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // nf_token_minter
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::NFTokenMinter), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // regular_key
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::RegularKey), always(), eq(ACCOUNT_ID_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // ticket_count
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::TicketCount), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // tick_size
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::TickSize), always(), eq(1))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // transfer_rate
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::TransferRate), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // wallet_locator
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::WalletLocator), always(), eq(32))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
@@ -966,7 +966,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INTERNAL_ERROR
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -985,7 +985,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INVALID_FIELD
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
@@ -1030,7 +1030,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INTERNAL_ERROR
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -1048,7 +1048,7 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -1067,7 +1067,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INVALID_FIELD
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| INVALID_FIELD);
@@ -1084,9 +1084,9 @@ mod tests {
         #[test]
         fn test_path_roots_a_current_obj_builder() {
             // `ctx.escrow().path()` must read through the slot-less
-            // `get_current_ledger_obj_nested_field`.
+            // `home_le_inner`.
             let mut mock = MockHostBindings::new();
-            mock.expect_get_current_ledger_obj_nested_field()
+            mock.expect_home_le_inner()
                 .with(always(), eq(4usize), always(), eq(4usize))
                 .times(1)
                 .returning(|_, _, _, _| 4);

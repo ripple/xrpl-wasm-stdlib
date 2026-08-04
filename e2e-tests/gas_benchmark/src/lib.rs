@@ -25,7 +25,7 @@ const ITERATIONS: usize = 100;
 /// to help identify gas usage patterns.
 ///
 /// Benchmarks covered:
-/// - Locator operations (pack single, pack nested, repack_last)
+/// - Locator operations (pack single, pack inner, repack_last)
 /// - Transaction field access (get_account, get_fee)
 /// - Blob operations (creation and access)
 /// - Result type operations (is_ok, is_err, ok, err)
@@ -47,8 +47,8 @@ pub extern "C" fn finish() -> i32 {
     let _ = trace("BENCHMARK: locator_pack_single");
     accumulator = accumulator.wrapping_add(benchmark_locator_pack_single());
 
-    let _ = trace("BENCHMARK: locator_pack_nested");
-    accumulator = accumulator.wrapping_add(benchmark_locator_pack_nested());
+    let _ = trace("BENCHMARK: locator_pack_inner");
+    accumulator = accumulator.wrapping_add(benchmark_locator_pack_inner());
 
     let _ = trace("BENCHMARK: locator_repack_last");
     accumulator = accumulator.wrapping_add(benchmark_locator_repack_last());
@@ -283,8 +283,8 @@ fn benchmark_locator_pack_single() -> u64 {
     count
 }
 
-/// Benchmark Locator::pack() - nested field access (3 levels)
-fn benchmark_locator_pack_nested() -> u64 {
+/// Benchmark Locator::pack() - inner field access (3 levels)
+fn benchmark_locator_pack_inner() -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
         let mut locator = Locator::new();

@@ -9,12 +9,12 @@ async function test(testContext) {
   // Deploy first escrow that atomic_swap2 will reference
   const firstEscrowResult = await deploy(sourceWallet, destWallet, finish)
 
-  // Create atomic_swap2 escrow with first escrow's keylet in data field
+  // Create atomic_swap2 escrow with first escrow's ledger entry ID in data field
   const atomicSwap2Result = await deploy(
     destWallet,
     sourceWallet,
     finish,
-    firstEscrowResult.escrowKeylet, // 32-byte keylet in data field
+    firstEscrowResult.escrowId, // 32-byte ledger entry ID in data field
   )
 
   // Phase 1: First finish attempt should initialize timing and return tecWASM_REJECTED
@@ -111,13 +111,8 @@ async function test(testContext) {
   }
 
   // Security test: Try to reference non-existent escrow
-  const fakeKeylet = "A".repeat(64) // 32 bytes of 0xAA
-  const fakeRefEscrow = await deploy(
-    destWallet,
-    sourceWallet,
-    finish,
-    fakeKeylet,
-  )
+  const fakeId = "A".repeat(64) // 32 bytes of 0xAA
+  const fakeRefEscrow = await deploy(destWallet, sourceWallet, finish, fakeId)
 
   const txFakeRef = {
     TransactionType: "EscrowFinish",

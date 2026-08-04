@@ -1,4 +1,4 @@
-//! Nested field access: encode a path (sfield codes and array indices) into the compact binary
+//! Inner field access: encode a path (sfield codes and array indices) into the compact binary
 //! format the host understands, then read a field like `Memos[0].MemoType`.
 //!
 //! Two APIs share the same buffer layout:
@@ -37,15 +37,14 @@
 
 use crate::fields::decoder::{FromCurrentTx, FromLedger, decode_host_result};
 use crate::host::{
-    self, Result, get_current_ledger_obj_nested_array_len, get_current_ledger_obj_nested_field,
-    get_ledger_obj_nested_array_len, get_ledger_obj_nested_field, get_tx_nested_field,
+    self, Result, home_le_inner, home_le_inner_arr_len, le_inner, le_inner_arr_len, tx_inner,
 };
 use crate::sfield::SField;
 
 /// The size of the buffer, in bytes, to use for any new locator
 const LOCATOR_BUFFER_SIZE: usize = 64; // max depth: 64/4 = 16
 
-/// A Locator encodes a path to a nested field as a sequence of 4-byte packed values
+/// A Locator encodes a path to an inner field as a sequence of 4-byte packed values
 /// (sfield codes or array indices) in a compact binary format understood by the host.
 ///
 /// ## Derived Traits
@@ -133,7 +132,7 @@ impl Locator {
     }
 }
 
-/// Fluent builder for reading a nested field from the current transaction.
+/// Fluent builder for reading an inner field from the current transaction.
 ///
 /// Obtained from the context via
 /// [`ctx.tx().path()`](crate::current_tx::traits::TransactionCommonFields::path); rooting
@@ -187,7 +186,7 @@ impl TxPathBuilder {
         self
     }
 
-    /// Execute the `get_tx_nested_field` host call for the built path and decode the result as `T`.
+    /// Execute the `tx_inner` host call for the built path and decode the result as `T`.
     ///
     /// `T` picks the terminal type (and therefore the read buffer size and decoder); it must be
     /// readable from a transaction, hence the [`FromCurrentTx`] bound.
@@ -203,7 +202,7 @@ impl TxPathBuilder {
     }
 
     /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
-    /// the nested-path counterpart to
+    /// the inner-path counterpart to
     /// [`get_field_optional`](crate::current_tx::get_field_optional).
     ///
     /// Returns [`host::Error::LocatorMalformed`] without calling the host if the path overflowed.
@@ -215,14 +214,14 @@ impl TxPathBuilder {
         }
     }
 
-    /// Run the built path through `get_tx_nested_field` into a fresh `T` buffer, returning that
+    /// Run the built path through `tx_inner` into a fresh `T` buffer, returning that
     /// buffer and the raw byte count the host reported (negative on error).
     fn read<T: FromCurrentTx>(&self) -> (T::Buffer, i32) {
         let mut buf = T::empty_buffer();
         let n = {
             let slice = buf.as_mut();
             unsafe {
-                get_tx_nested_field(
+                tx_inner(
                     self.locator.as_ptr(),
                     self.locator.num_packed_bytes(),
                     slice.as_mut_ptr(),
@@ -243,14 +242,14 @@ impl TxPathBuilder {
 /// the only one.
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum LedgerSource {
-    /// The ledger object the contract is attached to (`get_current_ledger_obj_nested_field`).
+    /// The ledger object the contract is attached to (`home_le_inner`).
     Current,
-    /// A ledger object cached in the given slot (`get_ledger_obj_nested_field`).
+    /// A ledger object cached in the given slot (`le_inner`).
     Slot(i32),
 }
 
 impl LedgerSource {
-    /// Issue this source's nested-field host call for the packed `locator` bytes.
+    /// Issue this source's inner-field host call for the packed `locator` bytes.
     fn read_field(
         &self,
         loc_ptr: *const u8,
@@ -259,29 +258,23 @@ impl LedgerSource {
         out_len: usize,
     ) -> i32 {
         match *self {
-            LedgerSource::Current => unsafe {
-                get_current_ledger_obj_nested_field(loc_ptr, loc_len, out_ptr, out_len)
-            },
+            LedgerSource::Current => unsafe { home_le_inner(loc_ptr, loc_len, out_ptr, out_len) },
             LedgerSource::Slot(slot) => unsafe {
-                get_ledger_obj_nested_field(slot, loc_ptr, loc_len, out_ptr, out_len)
+                le_inner(slot, loc_ptr, loc_len, out_ptr, out_len)
             },
         }
     }
 
-    /// Issue this source's nested-array-length host call for the packed `locator` bytes.
+    /// Issue this source's inner-array-length host call for the packed `locator` bytes.
     fn read_array_len(&self, loc_ptr: *const u8, loc_len: usize) -> i32 {
         match *self {
-            LedgerSource::Current => unsafe {
-                get_current_ledger_obj_nested_array_len(loc_ptr, loc_len)
-            },
-            LedgerSource::Slot(slot) => unsafe {
-                get_ledger_obj_nested_array_len(slot, loc_ptr, loc_len)
-            },
+            LedgerSource::Current => unsafe { home_le_inner_arr_len(loc_ptr, loc_len) },
+            LedgerSource::Slot(slot) => unsafe { le_inner_arr_len(slot, loc_ptr, loc_len) },
         }
     }
 }
 
-/// Fluent builder for reading a nested field from a ledger object — either the object the contract
+/// Fluent builder for reading an inner field from a ledger object — either the object the contract
 /// is attached to, or one cached into a slot.
 ///
 /// Obtained from the context via
@@ -289,7 +282,7 @@ impl LedgerSource {
 /// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for the
 /// current one. Any object type works, including ones with no bespoke wrapper: reach for
 /// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle around a raw slot
-/// from `cache_ledger_obj`.
+/// from `cache_le`.
 ///
 /// Mirrors [`TxPathBuilder`] — same [`Locator`] buffer, same overflow →
 /// [`host::Error::LocatorMalformed`] guard — with two differences: terminal reads are bounded on
@@ -374,7 +367,7 @@ impl LedgerPathBuilder {
         self
     }
 
-    /// Execute the ledger-object nested-field host call for the built path and decode as `T`.
+    /// Execute the ledger-object inner-field host call for the built path and decode as `T`.
     ///
     /// `T` must be readable from a ledger object, hence the [`FromLedger`] bound. Returns
     /// [`host::Error::LocatorMalformed`] without calling the host if the path is malformed.
@@ -387,7 +380,7 @@ impl LedgerPathBuilder {
     }
 
     /// Like [`get`](Self::get) but treats an absent field as `Ok(None)` rather than an error —
-    /// the nested-path counterpart to
+    /// the inner-path counterpart to
     /// [`get_field_optional`](crate::fields::ledger_obj::get_field_optional).
     ///
     /// Only reports absence for fields the host signals with `FieldNotFound`. Variable-length
@@ -648,10 +641,10 @@ mod tests {
     }
 
     #[test]
-    fn test_get_reads_and_decodes_nested_field() {
+    fn test_get_reads_and_decodes_inner_field() {
         let mut mock = MockHostBindings::new();
         // Path is Memos[0].MemoData -> three 4-byte segments = 12 bytes; u32 read buffer is 4.
-        mock.expect_get_tx_nested_field()
+        mock.expect_tx_inner()
             .with(always(), eq(12usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| 4);
@@ -670,7 +663,7 @@ mod tests {
     fn test_get_returns_locator_malformed_when_overflowed_without_calling_host() {
         // The host must not be queried for a path we know is truncated.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_nested_field().times(0);
+        mock.expect_tx_inner().times(0);
         let _guard = setup_mock(mock);
 
         let mut builder = TxPathBuilder::for_current_tx();
@@ -691,7 +684,7 @@ mod tests {
     fn test_get_propagates_host_error() {
         use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_nested_field()
+        mock.expect_tx_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -708,7 +701,7 @@ mod tests {
     #[test]
     fn test_get_optional_returns_some_when_present() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_nested_field()
+        mock.expect_tx_inner()
             .with(always(), eq(12usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| 4);
@@ -727,7 +720,7 @@ mod tests {
     #[test]
     fn test_get_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_nested_field()
+        mock.expect_tx_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| FIELD_NOT_FOUND);
@@ -798,11 +791,11 @@ mod tests {
     fn test_ledger_current_get_reads_via_current_obj_host_fn() {
         // A builder rooted at the current object must not reach for the slot-taking host function.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_field()
+        mock.expect_home_le_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| 4);
-        mock.expect_get_ledger_obj_nested_field().times(0);
+        mock.expect_le_inner().times(0);
         let _guard = setup_mock(mock);
 
         let result = LedgerPathBuilder::for_current_ledger_obj()
@@ -817,11 +810,11 @@ mod tests {
         const SLOT: i32 = 7;
         let mut mock = MockHostBindings::new();
         // Path is SignerEntries[0] -> two 4-byte segments = 8 bytes; u32 read buffer is 4.
-        mock.expect_get_ledger_obj_nested_field()
+        mock.expect_le_inner()
             .with(eq(SLOT), always(), eq(8usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _, _| 4);
-        mock.expect_get_current_ledger_obj_nested_field().times(0);
+        mock.expect_home_le_inner().times(0);
         let _guard = setup_mock(mock);
 
         let result = LedgerPathBuilder::for_ledger_obj(SLOT)
@@ -836,7 +829,7 @@ mod tests {
     fn test_ledger_get_returns_locator_malformed_when_overflowed_without_calling_host() {
         // The host must not be queried for a path we know is truncated.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_field().times(0);
+        mock.expect_le_inner().times(0);
         let _guard = setup_mock(mock);
 
         let mut builder = LedgerPathBuilder::for_ledger_obj(1);
@@ -857,7 +850,7 @@ mod tests {
     fn test_ledger_get_propagates_host_error() {
         use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_field()
+        mock.expect_home_le_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -875,7 +868,7 @@ mod tests {
     fn test_ledger_get_optional_returns_some_when_present() {
         const SLOT: i32 = 2;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_field()
+        mock.expect_le_inner()
             .with(eq(SLOT), always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _, _| 4);
@@ -892,7 +885,7 @@ mod tests {
     #[test]
     fn test_ledger_get_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_field()
+        mock.expect_home_le_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| FIELD_NOT_FOUND);
@@ -911,8 +904,8 @@ mod tests {
         // Packing `u32::MAX as i32` would encode -1, which the host would read back as a field
         // code. The path must be rejected instead of quietly pointing somewhere else.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_field().times(0);
-        mock.expect_get_ledger_obj_nested_array_len().times(0);
+        mock.expect_le_inner().times(0);
+        mock.expect_le_inner_arr_len().times(0);
         let _guard = setup_mock(mock);
 
         let builder = LedgerPathBuilder::for_ledger_obj(1)
@@ -937,7 +930,7 @@ mod tests {
     #[test]
     fn test_array_len_current_obj_returns_count() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_array_len()
+        mock.expect_home_le_inner_arr_len()
             .with(always(), eq(4usize))
             .times(1)
             .returning(|_, _| 3);
@@ -954,12 +947,11 @@ mod tests {
     fn test_array_len_by_slot_passes_slot_and_returns_count() {
         const SLOT: i32 = 4;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_array_len()
+        mock.expect_le_inner_arr_len()
             .with(eq(SLOT), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _| 2);
-        mock.expect_get_current_ledger_obj_nested_array_len()
-            .times(0);
+        mock.expect_home_le_inner_arr_len().times(0);
         let _guard = setup_mock(mock);
 
         let result = LedgerPathBuilder::for_ledger_obj(SLOT)
@@ -973,7 +965,7 @@ mod tests {
     fn test_array_len_zero_is_ok_not_an_error() {
         // An array that is present but empty is a legitimate answer.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_array_len()
+        mock.expect_home_le_inner_arr_len()
             .times(1)
             .returning(|_, _| 0);
         let _guard = setup_mock(mock);
@@ -989,7 +981,7 @@ mod tests {
     fn test_array_len_propagates_host_error() {
         use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_current_ledger_obj_nested_array_len()
+        mock.expect_home_le_inner_arr_len()
             .times(1)
             .returning(|_, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);
@@ -1004,7 +996,7 @@ mod tests {
     #[test]
     fn test_array_len_returns_locator_malformed_when_overflowed_without_calling_host() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_array_len().times(0);
+        mock.expect_le_inner_arr_len().times(0);
         let _guard = setup_mock(mock);
 
         let mut builder = LedgerPathBuilder::for_ledger_obj(1);
@@ -1023,12 +1015,12 @@ mod tests {
         // The pattern `array_len()` exists for: count, then read each element.
         const SLOT: i32 = 6;
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_nested_array_len()
+        mock.expect_le_inner_arr_len()
             .with(eq(SLOT), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _| 2);
         // Two reads of PriceDataSeries[i].AssetPrice -> 12 bytes of path, 8-byte u64 buffer.
-        mock.expect_get_ledger_obj_nested_field()
+        mock.expect_le_inner()
             .with(eq(SLOT), always(), eq(12usize), always(), eq(8usize))
             .times(2)
             .returning(|_, _, _, _, _| 8);

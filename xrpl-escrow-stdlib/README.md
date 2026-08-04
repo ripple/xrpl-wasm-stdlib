@@ -8,7 +8,7 @@ This crate is part of the `xrpl-common-stdlib` workspace. Generic XRPL primitive
 tied specifically to escrows: the `EscrowFinish` transaction wrapper, the `Escrow`/`CurrentEscrow`
 ledger objects, the escrow-specific field-accessor traits, and [`EscrowFinishContext`] — the control
 surface a Smart Escrow author interacts with. Safe, scoped access to escrow-unique host functions
-(e.g., `update_data`) is exposed as inherent methods; all unsafe FFI is contained here, so user code
+(e.g., `set_data`) is exposed as inherent methods; all unsafe FFI is contained here, so user code
 stays fully safe.
 
 ## Usage

@@ -30,12 +30,12 @@ async function test(testContext) {
   // Deploy atomic_swap1 escrow (Alice → Bob)
   const swap1Result = await deploy(sourceWallet, destWallet, finish)
 
-  // Deploy atomic_swap2 escrow (Bob → Alice) with atomic_swap1's keylet in data field
+  // Deploy atomic_swap2 escrow (Bob → Alice) with atomic_swap1's ledger entry ID in data field
   const swap2Result = await deploy(
     destWallet,
     sourceWallet,
     atomicSwap2Wasm,
-    swap1Result.escrowKeylet,
+    swap1Result.escrowId,
   )
 
   // Phase 1: Execute atomic_swap2 Phase 1 - Initialize timing
@@ -108,7 +108,7 @@ async function test(testContext) {
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("counterpart_escrow"),
-          MemoData: swap2Result.escrowKeylet,
+          MemoData: swap2Result.escrowId,
         },
       },
     ],
@@ -132,7 +132,7 @@ async function test(testContext) {
     destWallet,
     sourceWallet,
     atomicSwap2Wasm,
-    finalSwap1Result.escrowKeylet,
+    finalSwap1Result.escrowId,
   )
 
   // Execute atomic_swap2 Phase 1
@@ -168,7 +168,7 @@ async function test(testContext) {
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("counterpart_escrow"),
-          MemoData: finalSwap2Result.escrowKeylet,
+          MemoData: finalSwap2Result.escrowId,
         },
       },
     ],

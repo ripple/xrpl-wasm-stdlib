@@ -15,10 +15,10 @@ An atomic swap is a trustless exchange mechanism where two parties can swap asse
 
 ## Available Examples
 
-| Example                         | Description                                     |
-| ------------------------------- | ----------------------------------------------- |
-| [atomic_swap1](./atomic_swap1/) | Memo-based validation with keylet references    |
-| [atomic_swap2](./atomic_swap2/) | Data field-based validation with timing control |
+| Example                         | Description                                           |
+| ------------------------------- | ----------------------------------------------------- |
+| [atomic_swap1](./atomic_swap1/) | Memo-based validation with ledger entry ID references |
+| [atomic_swap2](./atomic_swap2/) | Data field-based validation with timing control       |
 
 ## System Flow Diagram
 
@@ -30,10 +30,10 @@ sequenceDiagram
     participant Bob
 
     Alice->>Escrow1: 1. EscrowCreate (with atomic_swap1 WASM)
-    Note over Escrow1: Records keylet K1
+    Note over Escrow1: Records id K1
 
-    Bob->>Escrow2: 2. EscrowCreate (with atomic_swap2 WASM)<br/>Data field = K1 (Escrow A's keylet)
-    Note over Escrow2: Records keylet K2
+    Bob->>Escrow2: 2. EscrowCreate (with atomic_swap2 WASM)<br/>Data field = K1 (Escrow A's id)
+    Note over Escrow2: Records id K2
 
     Bob->>Escrow2: 3. EscrowFinish Phase 1
     Note over Escrow2: Validates Escrow A exists<br/>Appends CancelAfter to data<br/>Returns 0 (wait)
@@ -51,7 +51,7 @@ This diagram shows the complete atomic swap flow with all 4 transactions:
 ```mermaid
 stateDiagram-v2
     [*] --> EscrowACreated: 1. EscrowCreate A (Alice→Bob)
-    EscrowACreated --> EscrowBCreated: 2. EscrowCreate B (Bob→Alice) with A's keylet
+    EscrowACreated --> EscrowBCreated: 2. EscrowCreate B (Bob→Alice) with A's id
     EscrowBCreated --> EscrowAFinished: 3. EscrowFinish A (validates B exists)
     EscrowAFinished --> EscrowBFinished: 4. EscrowFinish B (validates A exists)
     EscrowBFinished --> [*]: Swap complete!
@@ -90,13 +90,13 @@ stateDiagram-v2
 
 ## Common Failure Scenarios
 
-| Scenario                       | Result             |
-| ------------------------------ | ------------------ |
-| Missing memo/data              | Escrow fails       |
-| Wrong keylet reference         | Escrow fails       |
-| Counterpart escrow not found   | Escrow fails       |
-| Accounts not properly reversed | Escrow fails       |
-| One escrow already finished    | Other escrow fails |
+| Scenario                        | Result             |
+| ------------------------------- | ------------------ |
+| Missing memo/data               | Escrow fails       |
+| Wrong ledger entry ID reference | Escrow fails       |
+| Counterpart escrow not found    | Escrow fails       |
+| Accounts not properly reversed  | Escrow fails       |
+| One escrow already finished     | Other escrow fails |
 
 ## Important Notes
 

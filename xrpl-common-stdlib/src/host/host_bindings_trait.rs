@@ -13,7 +13,7 @@
 /// fn my_function<H: HostBindings>(host: &H) {
 ///     unsafe {
 ///         let mut buffer = [0u8; 8];
-///         let result = host.get_ledger_sqn(buffer.as_mut_ptr(), buffer.len());
+///         let result = host.ldgr_index(buffer.as_mut_ptr(), buffer.len());
 ///         // ... use result
 ///     }
 /// }
@@ -49,7 +49,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_sqn(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn ldgr_index(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the parent ledger time.
     ///
@@ -69,7 +69,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_parent_ledger_time(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn parent_ldgr_time(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the hash of the parent ledger.
     ///
@@ -91,7 +91,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_parent_ledger_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn parent_ldgr_hash(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the current transaction base fee.
     ///
@@ -108,7 +108,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_base_fee(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn base_fee(&self, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves the state of an amendment and whether it's enabled or not.
     ///
@@ -129,19 +129,19 @@ pub trait HostBindings {
     /// Caller must ensure all pointer parameters point to valid memory
     unsafe fn amendment_enabled(&self, amendment_ptr: *const u8, amendment_len: usize) -> i32;
 
-    /// Fetch a ledger entry pointed by the given keylet.
+    /// Fetch a ledger entry pointed by the given ledger entry ID.
     ///
-    /// This function uses the keylet to locate a ledger entry. If found, add it to the
+    /// This function uses the ledger entry ID to locate a ledger entry. If found, add it to the
     /// cache. The cache can have up to 255 ledger entries. If `cache_num` is 0, the
     /// new ledger entry will put in the next available cache space. If `cache_num` is not 0,
     /// the new ledger entry will replace an existing ledger entry in the catch.
     ///
     /// # Parameters
     ///
-    /// - `keylet_ptr`: A raw pointer to the keylet, which is a unique identifier used to
+    /// - `id_ptr`: A raw pointer to the ledger entry ID, which is a unique identifier used to
     ///   locate or store data in the ledger.
-    /// - `keylet_len`: The length of the keylet specified by `keylet_ptr`.
-    /// - `cache_num`: The cache number to which the keylet will be placed in.
+    /// - `id_len`: The length of the ledger entry ID specified by `id_ptr`.
+    /// - `cache_num`: The cache number to which the ledger entry ID will be placed in.
     ///   If 0, the host will assign a new cache space.
     ///
     /// # Returns
@@ -151,12 +151,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn cache_ledger_obj(
-        &self,
-        keylet_ptr: *const u8,
-        keylet_len: usize,
-        cache_num: i32,
-    ) -> i32;
+    unsafe fn cache_le(&self, id_ptr: *const u8, id_len: usize, cache_num: i32) -> i32;
 
     /// Retrieves a specific transaction field and writes it into the provided output buffer.
     ///
@@ -174,7 +169,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    unsafe fn tx_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves a specific field from the current ledger object and writes it into the provided buffer.
     ///
@@ -192,12 +187,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_field(
-        &self,
-        field: i32,
-        out_buff_ptr: *mut u8,
-        out_buff_len: usize,
-    ) -> i32;
+    unsafe fn home_le_field(&self, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     /// Retrieves a specific field from a ledger object based on the given parameters.
     ///
@@ -216,7 +206,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_field(
+    unsafe fn le_field(
         &self,
         cache_num: i32,
         field: i32,
@@ -224,10 +214,10 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Retrieves a nested field from the current ledger object and writes it into the provided buffer.
+    /// Retrieves an inner field from the current ledger object and writes it into the provided buffer.
     ///
     /// # Parameters
-    /// - `locator_ptr`: A pointer to a byte array containing the locator for the nested field.
+    /// - `locator_ptr`: A pointer to a byte array containing the locator for the inner field.
     /// - `locator_len`: The length of the locator data in bytes.
     /// - `out_buff_ptr`: A pointer to a mutable byte array where the resulting field data will be written.
     /// - `out_buff_len`: The size of the output buffer in bytes.
@@ -240,7 +230,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_nested_field(
+    unsafe fn tx_inner(
         &self,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -248,15 +238,15 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Retrieves a specific nested field from the current ledger object.
+    /// Retrieves a specific inner field from the current ledger object.
     ///
-    /// This function is designed to access a nested field within the ledger object
+    /// This function is designed to access an inner field within the ledger object
     /// specified by the `locator`. The `locator` acts as a path or identifier to
     /// the desired field. The resulting data is written to the `out_buff` buffer.
     /// The function returns a status code indicating success or failure of the operation.
     ///
     /// # Parameters
-    /// - `locator_ptr`: A pointer to a byte array containing the locator for the nested field.
+    /// - `locator_ptr`: A pointer to a byte array containing the locator for the inner field.
     /// - `locator_len`: The length of the locator data in bytes.
     /// - `out_buff_ptr`: A pointer to a mutable byte array where the resulting field data will be written.
     /// - `out_buff_len`: The size of the output buffer in bytes.
@@ -269,7 +259,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_nested_field(
+    unsafe fn home_le_inner(
         &self,
         locator_ptr: *const u8,
         locator_len: usize,
@@ -277,14 +267,14 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Retrieves a nested field from a ledger object in a specific cache_num and writes the result into an output buffer.
+    /// Retrieves an inner field from a ledger object in a specific cache_num and writes the result into an output buffer.
     ///
     /// # Parameters
     /// - `cache_num`: The cache index of the ledger object to access.
     /// - `locator_ptr`: A pointer to the memory location containing the locator string data
-    ///   (used to identify the nested field in the ledger object).
+    ///   (used to identify the inner field in the ledger object).
     /// - `locator_len`: The length of the locator string.
-    /// - `out_buff_ptr`: A pointer to the buffer where the retrieved nested field value will be written.
+    /// - `out_buff_ptr`: A pointer to the buffer where the retrieved inner field value will be written.
     /// - `out_buff_len`: The size of the output buffer in bytes.
     ///
     /// # Returns
@@ -295,7 +285,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_nested_field(
+    unsafe fn le_inner(
         &self,
         cache_num: i32,
         locator_ptr: *const u8,
@@ -317,7 +307,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_tx_array_len(&self, field: i32) -> i32;
+    unsafe fn tx_arr_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided field value.
     ///
@@ -332,7 +322,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_current_ledger_obj_array_len(&self, field: i32) -> i32;
+    unsafe fn home_le_arr_len(&self, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided cache number and field value.
     ///
@@ -348,12 +338,12 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// This function is safe to call from WASM context
-    unsafe fn get_ledger_obj_array_len(&self, cache_num: i32, field: i32) -> i32;
+    unsafe fn le_arr_len(&self, cache_num: i32, field: i32) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
     /// # Parameters
-    /// - `locator_ptr`: A pointer to a byte array containing the locator for the nested field.
+    /// - `locator_ptr`: A pointer to a byte array containing the locator for the inner field.
     /// - `locator_len`: The length of the locator data in bytes.
     ///
     /// # Returns
@@ -364,12 +354,12 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_tx_nested_array_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
+    unsafe fn tx_inner_arr_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
     /// # Parameters
-    /// - `locator_ptr`: A pointer to a byte array containing the locator for the nested field.
+    /// - `locator_ptr`: A pointer to a byte array containing the locator for the inner field.
     /// - `locator_len`: The length of the locator data in bytes.
     ///
     /// # Returns
@@ -380,17 +370,13 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_current_ledger_obj_nested_array_len(
-        &self,
-        locator_ptr: *const u8,
-        locator_len: usize,
-    ) -> i32;
+    unsafe fn home_le_inner_arr_len(&self, locator_ptr: *const u8, locator_len: usize) -> i32;
 
     /// Retrieves the length of an array based on the provided locator.
     ///
     /// # Parameters
     /// - `cache_num`: The cache index of the ledger object to access.
-    /// - `locator_ptr`: A pointer to a byte array containing the locator for the nested field.
+    /// - `locator_ptr`: A pointer to a byte array containing the locator for the inner field.
     /// - `locator_len`: The length of the locator data in bytes.
     ///
     /// # Returns
@@ -401,7 +387,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_ledger_obj_nested_array_len(
+    unsafe fn le_inner_arr_len(
         &self,
         cache_num: i32,
         locator_ptr: *const u8,
@@ -426,10 +412,10 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn update_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
+    unsafe fn set_data(&self, data_ptr: *const u8, data_len: usize) -> i32;
 
     // ###################################################
-    // Host Function Category: hash and keylet computation
+    // Host Function Category: hash and ledger entry ID computation
     // ###################################################
 
     /// Computes the first 32 bytes (half) of the SHA-512 hash for the given input data.
@@ -449,7 +435,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn compute_sha512_half(
+    unsafe fn sha512_half(
         &self,
         data_ptr: *const u8,
         data_len: usize,
@@ -486,17 +472,17 @@ pub trait HostBindings {
         pubkey_len: usize,
     ) -> i32;
 
-    /// Generates the keylet (key identifier) for a specific account.
+    /// Generates the ledger entry ID (key identifier) for a specific account.
     ///
-    /// This function is used to calculate the account keylet in a cryptographic or
-    /// blockchain-based system. A keylet is typically used to identify an account or entity
+    /// This function is used to calculate the account ledger entry ID in a cryptographic or
+    /// blockchain-based system. A ledger entry ID is typically used to identify an account or entity
     /// in a secure and deterministic way.
     ///
     /// # Parameters
     ///
     /// - `account_ptr`: A pointer to the memory of the account identifier.
     /// - `account_len`: The size (in bytes) of the data pointed to by `account_ptr`.
-    /// - `out_buff_ptr`: A pointer to the memory where the generated keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the memory where the generated ledger entry ID will be stored.
     /// - `out_buff_len`: The length (in bytes) of the buffer pointed to by `out_buff_ptr`.
     ///
     /// # Returns
@@ -507,7 +493,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn account_keylet(
+    unsafe fn accountroot_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -515,10 +501,10 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Generates the keylet (key identifier) for a specific AMM.
+    /// Generates the ledger entry ID (key identifier) for a specific AMM.
     ///
-    /// This function is used to calculate the AMM keylet in a cryptographic or
-    /// blockchain-based system. A keylet is typically used to identify an AMM or entity
+    /// This function is used to calculate the AMM ledger entry ID in a cryptographic or
+    /// blockchain-based system. A ledger entry ID is typically used to identify an AMM or entity
     /// in a secure and deterministic way.
     ///
     /// # Parameters
@@ -527,7 +513,7 @@ pub trait HostBindings {
     /// - `issue1_len`: The size (in bytes) of the data pointed to by `issue1_ptr`.
     /// - `issue2_ptr`: A pointer to the memory of the issue2 identifier.
     /// - `issue2_len`: The size (in bytes) of the data pointed to by `issue2_ptr`.
-    /// - `out_buff_ptr`: A pointer to the memory where the generated keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the memory where the generated ledger entry ID will be stored.
     /// - `out_buff_len`: The length (in bytes) of the buffer pointed to by `out_buff_ptr`.
     ///
     /// # Returns
@@ -538,7 +524,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn amm_keylet(
+    unsafe fn amm_id(
         &self,
         issue1_ptr: *const u8,
         issue1_len: usize,
@@ -548,7 +534,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a check entry in a ledger.
+    /// Computes the Ledger entry ID for a check entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -556,7 +542,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -567,7 +553,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn check_keylet(
+    unsafe fn check_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -577,7 +563,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Generates a keylet for a credential.
+    /// Generates a ledger entry ID for a credential.
     ///
     /// # Parameters
     ///
@@ -587,7 +573,7 @@ pub trait HostBindings {
     /// * `issuer_len`: The length of the issuer data in bytes.
     /// * `cred_type_ptr`: A pointer to the memory location where the credential type data begins.
     /// * `cred_type_len`: The length of the credential type data in bytes.
-    /// * `out_buff_ptr`: A pointer to the buffer where the generated keylet will be written.
+    /// * `out_buff_ptr`: A pointer to the buffer where the generated ledger entry ID will be written.
     /// * `out_buff_len`: The size of the output buffer in bytes.
     ///
     /// # Returns
@@ -599,7 +585,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn credential_keylet(
+    unsafe fn credential_id(
         &self,
         subject_ptr: *const u8,
         subject_len: usize,
@@ -611,7 +597,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a delegate entry in a ledger.
+    /// Computes the Ledger entry ID for a delegate entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -619,7 +605,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `authorize_ptr`: A pointer to the memory location of the authorized account.
     /// - `authorize_len`: The length of the authorized account.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -630,7 +616,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn delegate_keylet(
+    unsafe fn delegate_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -640,7 +626,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a deposit preauth entry in a ledger.
+    /// Computes the Ledger entry ID for a deposit preauth entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -648,7 +634,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `authorize_ptr`: A pointer to the memory location of the authorized account.
     /// - `authorize_len`: The length of the authorized account.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -659,7 +645,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn deposit_preauth_keylet(
+    unsafe fn deposit_preauth_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -669,13 +655,13 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a DID entry in a ledger.
+    /// Computes the Ledger entry ID for a DID entry in a ledger.
     ///
     /// # Parameters
     ///
     /// - `account_ptr`: A pointer to the memory location of the accountID.
     /// - `account_len`: The length of the accountID.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -686,7 +672,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn did_keylet(
+    unsafe fn did_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -694,7 +680,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for an escrow entry in a ledger.
+    /// Computes the Ledger entry ID for an escrow entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -702,7 +688,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -713,7 +699,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn escrow_keylet(
+    unsafe fn escrow_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -723,7 +709,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a trustline entry in a ledger.
+    /// Computes the Ledger entry ID for a trustline entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -733,7 +719,7 @@ pub trait HostBindings {
     /// - `account2_len`: The length of the second accountID.
     /// - `currency_ptr`: A pointer to the memory location of the currency.
     /// - `currency_len`: The length of the currency.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -745,7 +731,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn line_keylet(
+    unsafe fn trustline_id(
         &self,
         account1_ptr: *const u8,
         account1_len: usize,
@@ -757,7 +743,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for an MPT issuance entry in a ledger.
+    /// Computes the Ledger entry ID for an MPT issuance entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -765,7 +751,7 @@ pub trait HostBindings {
     /// - `issuer_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -776,7 +762,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn mpt_issuance_keylet(
+    unsafe fn mpt_issuance_id(
         &self,
         issuer_ptr: *const u8,
         issuer_len: usize,
@@ -786,7 +772,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for an MPToken entry in a ledger.
+    /// Computes the Ledger entry ID for an MPToken entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -794,7 +780,7 @@ pub trait HostBindings {
     /// - `mptid_len`: The length of the MPTID.
     /// - `holder_ptr`: A pointer to the memory location of the holder account.
     /// - `holder_len`: The length of the holder account.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -805,7 +791,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn mptoken_keylet(
+    unsafe fn mptoken_id(
         &self,
         mptid_ptr: *const u8,
         mptid_len: usize,
@@ -815,7 +801,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for an NFT offer entry in a ledger.
+    /// Computes the Ledger entry ID for an NFT offer entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -823,7 +809,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -834,7 +820,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn nft_offer_keylet(
+    unsafe fn nft_offer_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -844,7 +830,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for an offer entry in a ledger.
+    /// Computes the Ledger entry ID for an offer entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -852,7 +838,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -863,7 +849,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn offer_keylet(
+    unsafe fn offer_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -873,7 +859,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Generates a keylet associated with an oracle's account and document ID.
+    /// Generates a ledger entry ID associated with an oracle's account and document ID.
     ///
     /// # Parameters
     ///
@@ -881,7 +867,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `document_id_ptr`: A pointer to the memory location of the document ID.
     /// - `document_id_len`: The length of the document ID data.
-    /// - `out_buff_ptr`: A pointer to a pre-allocated buffer where the resulting keylet will be
+    /// - `out_buff_ptr`: A pointer to a pre-allocated buffer where the resulting ledger entry ID will be
     ///   written.
     /// - `out_buff_len`: The size of the output buffer in bytes.
     ///
@@ -893,7 +879,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn oracle_keylet(
+    unsafe fn oracle_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -903,7 +889,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a payment channel entry in a ledger.
+    /// Computes the Ledger entry ID for a payment channel entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -913,7 +899,7 @@ pub trait HostBindings {
     /// - `destination_len`: The length of the destination.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -925,7 +911,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn paychan_keylet(
+    unsafe fn paychan_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -937,7 +923,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a permissioned domain entry in a ledger.
+    /// Computes the Ledger entry ID for a permissioned domain entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -945,7 +931,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -956,7 +942,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn permissioned_domain_keylet(
+    unsafe fn permissioned_domain_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -966,13 +952,13 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a signer entry in a ledger.
+    /// Computes the Ledger entry ID for a signer entry in a ledger.
     ///
     /// # Parameters
     ///
     /// - `account_ptr`: A pointer to the memory location of the accountID.
     /// - `account_len`: The length of the accountID.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -983,7 +969,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn signers_keylet(
+    unsafe fn signers_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -991,7 +977,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a ticket entry in a ledger.
+    /// Computes the Ledger entry ID for a ticket entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -999,7 +985,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -1010,7 +996,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn ticket_keylet(
+    unsafe fn ticket_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1020,7 +1006,7 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
-    /// Computes the Keylet for a vault entry in a ledger.
+    /// Computes the Ledger entry ID for a vault entry in a ledger.
     ///
     /// # Parameters
     ///
@@ -1028,7 +1014,7 @@ pub trait HostBindings {
     /// - `account_len`: The length of the accountID.
     /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
     /// - `sequence_len`: The length of the sequence data.
-    /// - `out_buff_ptr`: A pointer to the output buffer where the derived keylet will be stored.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
     /// - `out_buff_len`: The length of the output buffer.
     ///
     /// # Returns
@@ -1039,7 +1025,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn vault_keylet(
+    unsafe fn vault_id(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1073,7 +1059,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft(
+    unsafe fn nft_uri(
         &self,
         account_ptr: *const u8,
         account_len: usize,
@@ -1101,7 +1087,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_issuer(
+    unsafe fn nft_issuer(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1127,7 +1113,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_taxon(
+    unsafe fn nft_taxon(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1150,7 +1136,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    unsafe fn nft_flags(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the transfer fee of a specific NFT (Non-Fungible Token).
     ///
@@ -1167,7 +1153,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_transfer_fee(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+    unsafe fn nft_xfer_fee(&self, nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
 
     /// Retrieves the serial number of a specific NFT (Non-Fungible Token).
     ///
@@ -1187,7 +1173,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn get_nft_serial(
+    unsafe fn nft_serial(
         &self,
         nft_id_ptr: *const u8,
         nft_id_len: usize,
@@ -1357,7 +1343,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn float_compare(
+    unsafe fn float_cmp(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1406,7 +1392,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_subtract(
+    unsafe fn float_sub(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1432,7 +1418,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_multiply(
+    unsafe fn float_mult(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1458,7 +1444,7 @@ pub trait HostBindings {
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
     #[allow(clippy::too_many_arguments)]
-    unsafe fn float_divide(
+    unsafe fn float_div(
         &self,
         in_buff1: *const u8,
         in_buff1_len: usize,
@@ -1584,7 +1570,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_account(
+    unsafe fn trace_acct(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
@@ -1610,7 +1596,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_opaque_float(
+    unsafe fn trace_xfloat(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
@@ -1636,7 +1622,7 @@ pub trait HostBindings {
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_amount(
+    unsafe fn trace_amt(
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,

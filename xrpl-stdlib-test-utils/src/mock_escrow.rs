@@ -32,7 +32,7 @@ pub struct EscrowScenarioBuilder {
     amount: Option<Amount>,
     // Stored pre-converted to a host status code (0 == success) rather than `Result<(), Error>`
     // so the builder doesn't need `Result`/`Error` to be `Copy` to stash it in a field.
-    update_data_status: Option<i32>,
+    set_data_status: Option<i32>,
 }
 
 impl EscrowScenarioBuilder {
@@ -46,8 +46,8 @@ impl EscrowScenarioBuilder {
         self
     }
 
-    pub fn with_update_data_returns(mut self, result: Result<(), Error>) -> Self {
-        self.update_data_status = Some(match result {
+    pub fn with_set_data_returns(mut self, result: Result<(), Error>) -> Self {
+        self.set_data_status = Some(match result {
             Ok(()) => 0,
             Err(error) => error.code(),
         });
@@ -84,7 +84,7 @@ impl EscrowScenarioBuilder {
             let account_code = i32::from(sfield::Account);
             let amount_code = i32::from(sfield::Amount);
 
-            mock.expect_get_tx_field()
+            mock.expect_tx_field()
                 .returning(move |field, out_buff_ptr, out_buff_len| {
                     if field == account_code
                         && let Some(account) = account
@@ -110,8 +110,8 @@ impl EscrowScenarioBuilder {
                 });
         }
 
-        if let Some(status) = self.update_data_status {
-            mock.expect_update_data().returning(
+        if let Some(status) = self.set_data_status {
+            mock.expect_set_data().returning(
                 move |_data_ptr, data_len| {
                     if status == 0 { data_len as i32 } else { status }
                 },
@@ -182,26 +182,24 @@ mod tests {
     }
 
     #[test]
-    fn with_update_data_returns_ok_reports_the_payload_length_through_the_real_host_call() {
+    fn with_set_data_returns_ok_reports_the_payload_length_through_the_real_host_call() {
         let _guard = EscrowScenario::builder()
-            .with_update_data_returns(Ok(()))
+            .with_set_data_returns(Ok(()))
             .install();
 
         let payload = b"payload";
-        let code =
-            unsafe { xrpl_common_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code = unsafe { xrpl_common_stdlib::host::set_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, payload.len() as i32);
     }
 
     #[test]
-    fn with_update_data_returns_err_reports_the_error_code_through_the_real_host_call() {
+    fn with_set_data_returns_err_reports_the_error_code_through_the_real_host_call() {
         let _guard = EscrowScenario::builder()
-            .with_update_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::InternalError))
             .install();
 
         let payload = b"payload";
-        let code =
-            unsafe { xrpl_common_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code = unsafe { xrpl_common_stdlib::host::set_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, Error::InternalError.code());
         assert!(code < 0);
     }
@@ -211,7 +209,7 @@ mod tests {
         let overridden_account = AccountID::from([0u8; 20]);
         let mut mock = MockHostBindings::new();
         let expected_code: i32 = i32::from(sfield::Account);
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .withf(move |field, _, _| *field == expected_code)
             .returning(move |_, out_buff_ptr, out_buff_len| {
                 write_bytes(&overridden_account.0, out_buff_ptr, out_buff_len)

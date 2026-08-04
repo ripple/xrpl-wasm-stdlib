@@ -1,7 +1,7 @@
 //! Escrow-specific ledger-object field accessor traits.
 
 use xrpl_common_stdlib::host::error_codes::match_result_code;
-use xrpl_common_stdlib::host::{Error, get_current_ledger_obj_field, update_data};
+use xrpl_common_stdlib::host::{Error, home_le_field, set_data};
 use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::current_ledger_object;
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
@@ -106,9 +106,8 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_data(&self) -> Result<ContractData> {
         let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
 
-        let result_code = unsafe {
-            get_current_ledger_obj_field(sfield::Data.into(), data.as_mut_ptr(), data.len())
-        };
+        let result_code =
+            unsafe { home_le_field(sfield::Data.into(), data.as_mut_ptr(), data.len()) };
 
         match result_code {
             code if code >= 0 => Ok(ContractData {
@@ -134,7 +133,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
         // TODO: Make sure rippled always deletes any existing data bytes in rippled, and sets the new
         // length to be `data.len` (e.g., if the developer writes 2 bytes, then that's the new
         // length and any old bytes are lost).
-        let result_code = unsafe { update_data(data.data.as_ptr(), data.len) };
+        let result_code = unsafe { set_data(data.data.as_ptr(), data.len) };
         match_result_code(result_code, || ())
     }
 }
@@ -157,7 +156,7 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq(CODE), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
@@ -178,7 +177,7 @@ mod tests {
             expect_current_field(&mut mock, sfield::Account, 20, 1);
             // get_amount: buffer is AMOUNT_SIZE (48), but the host reports the XRP variant's
             // 8-byte wire length, which `Amount::decode` validates against the parsed variant.
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq::<i32>(sfield::Amount.into()), always(), eq(48))
                 .times(1)
                 .returning(|_, _, _| 8);
@@ -245,37 +244,37 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_cancel_after
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::CancelAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_condition - FIELD_NOT_FOUND yields None
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_destination_node
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::DestinationNode), always(), eq(8))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_destination_tag
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::DestinationTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_finish_after
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::FinishAfter), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_source_tag
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::FinishFunction), always(), eq(WASM_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
@@ -303,7 +302,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INTERNAL_ERROR
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -321,7 +320,7 @@ mod tests {
         fn test_get_data_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Data), always(), eq(XRPL_CONTRACT_DATA_SIZE))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -340,7 +339,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_account with INVALID_FIELD
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Account), always(), eq(20))
                 .times(1)
                 .returning(|_, _, _| INVALID_FIELD);

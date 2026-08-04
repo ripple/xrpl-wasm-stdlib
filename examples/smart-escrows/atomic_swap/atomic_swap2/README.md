@@ -13,7 +13,7 @@ This approach provides built-in timing coordination and prevents stale swap atte
 
 ## How it works
 
-**Setup**: Create an escrow with the first escrow's keylet in the data field.
+**Setup**: Create an escrow with the first escrow's ledger entry ID in the data field.
 
 **Phase 1**: First `EscrowFinish` validates the referenced escrow exists, appends timing data, and returns "wait".
 
@@ -42,7 +42,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
 
 - Transaction succeeds with `tesSUCCESS`
 - Note the `Sequence` number (e.g., `123`)
-- Extract escrow keylet from transaction metadata `AffectedNodes[].CreatedNode.LedgerIndex`
+- Extract escrow ledger entry ID from transaction metadata `AffectedNodes[].CreatedNode.LedgerIndex`
 
 ### Step 2: Create Second Escrow (Atomic Swap 2 with Data Field)
 
@@ -56,13 +56,13 @@ This guide shows how to manually create and execute a data field-based atomic sw
   "Amount": "2000000",
   "CancelAfter": 2000000000,
   "FinishFunction": "ATOMIC_SWAP2_WASM_HEX_HERE",
-  "Data": "FIRST_ESCROW_KEYLET_32_BYTES_HEX"
+  "Data": "FIRST_ESCROW_ID_32_BYTES_HEX"
 }
 ```
 
 **Key Details:**
 
-- `Data`: Use the keylet from Step 1's transaction metadata (32 bytes hex)
+- `Data`: Use the ledger entry ID from Step 1's transaction metadata (32 bytes hex)
 - `CancelAfter`: Must be set - this becomes the swap deadline
 - `FinishFunction`: Use the compiled atomic_swap2.wasm
 
@@ -125,14 +125,14 @@ This guide shows how to manually create and execute a data field-based atomic sw
 _Initial State (at creation):_
 
 ```
-Data: [First Escrow Keylet - 32 bytes]
+Data: [First Escrow LedgerEntryId - 32 bytes]
 Length: 32 bytes
 ```
 
 _After Phase 1:_
 
 ```
-Data: [First Escrow Keylet - 32 bytes][CancelAfter - 4 bytes]
+Data: [First Escrow LedgerEntryId - 32 bytes][CancelAfter - 4 bytes]
 Length: 36 bytes
 ```
 
@@ -157,7 +157,7 @@ CI=1 ./scripts/run-tests.sh examples/smart-escrows/atomic_swap/atomic_swap2
 
 ### Phase 1 Execution
 
-1. **Data Validation**: Verifies data field contains exactly 32 bytes (first escrow keylet)
+1. **Data Validation**: Verifies data field contains exactly 32 bytes (first escrow ledger entry ID)
 2. **Counterpart Verification**: Loads and validates the first escrow exists on the ledger
 3. **WASM Validation**: Confirms first escrow uses atomic_swap1 contract
 4. **Account Reversal**: Validates proper account setup between escrows
@@ -238,7 +238,7 @@ flowchart TD
 
 ⚠️ **Timing**: The deadline is set from the escrow's `CancelAfter` field during Phase 1. Phase 2 must execute before this deadline.
 
-⚠️ **Data Field**: Must contain exactly 32 bytes (the first escrow's keylet) when creating the escrow.
+⚠️ **Data Field**: Must contain exactly 32 bytes (the first escrow's ledger entry ID) when creating the escrow.
 
 ⚠️ **Phase 2 Data Consistency**: The first 32 bytes of the data field are re-validated in Phase 2 to ensure they haven't been tampered with.
 

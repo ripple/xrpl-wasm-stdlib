@@ -8,7 +8,7 @@
 //!
 //! Two entry points, mirroring the transaction side:
 //!
-//! - [`ledger_object`] — read from a ledger object cached into a slot (via `cache_ledger_obj`).
+//! - [`ledger_object`] — read from a ledger object cached into a slot (via `cache_le`).
 //! - [`current_ledger_object`] — read from the current ledger object, without a slot.
 //!
 //! Both are the generic `FieldDecoder`-based accessors re-exported from [`crate::fields`]; see

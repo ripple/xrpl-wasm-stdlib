@@ -20,7 +20,7 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_common_stdlib::sfield;
@@ -50,7 +50,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
-        let _ = trace_amount("  Amount:", &amount);
+        let _ = trace_amt("  Amount:", &amount);
 
         // Trace Field: LedgerEntryType
         let ledger_entry_type = current_escrow.get_ledger_entry_type().unwrap();
@@ -188,10 +188,10 @@ pub extern "C" fn finish() -> i32 {
     }
 
     // ########################################
-    // Read the same fields through the nested-field path builder
+    // Read the same fields through the inner-field path builder
     // ########################################
     //
-    // `current_escrow.path()` reaches the slot-less `get_current_ledger_obj_nested_field`. A
+    // `current_escrow.path()` reaches the slot-less `home_le_inner`. A
     // single-segment path targets a top-level field, so each read below must agree with the flat
     // getter above — that equality is what proves the locator encoding and the host dispatch are
     // both correct against a real ledger object, not just against mocks.

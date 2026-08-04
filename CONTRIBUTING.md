@@ -74,7 +74,7 @@ Allowed types:
 Examples:
 
 - `feat: Add typed accessor for AMM ledger object`
-- `fix: Correct return code for missing keylet`
+- `fix: Correct return code for missing id`
 - `docs: Document hello_world build steps`
 - `ci: Enforce conventional commit PR titles`
 - `example: Add freelancer escrow sample`
