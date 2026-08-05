@@ -171,3 +171,7 @@ Per `docs/NAMING_CONVENTIONS.md`: Rust files and module dirs use `snake_case`; c
 ## Manual UI testing
 
 Build with `cargo build --target wasm32v1-none --release`, then upload the `.wasm` at <https://ripple.github.io/xrpl-wasm-stdlib/ui/> to exercise it against local rippled or Devnet. That site is deployed by `.github/workflows/docs.yml` via `scripts/docs.sh`, which builds the release wasm, runs `ui/embed-wasm.sh`, and publishes `ui/` to GitHub Pages on every push to `main`.
+
+## Claude Code skill (`skills/`)
+
+`skills/xrpl-smart-escrows/` is a packaged Claude Code skill (`SKILL.md` + `reference/*.md`) that teaches an AI assistant how to build, test, and debug Smart Escrow contracts against this library. It's referenced by `.claude-plugin/plugin.json` at the repo root, which makes the whole repo installable as a skill/plugin source (`/plugin marketplace add`). It lives outside `docs/` deliberately — `scripts/run-markdown.sh` extracts and executes ` ```bash ` fenced code blocks from files under `docs/`/`examples/`/`scripts/`/`README.md`, and the skill's reference docs contain illustrative shell snippets that must not be executed by CI. It's also outside the Cargo `[workspace] members` list, so it has no effect on `cargo build`/clippy/fmt. Keep its `reference/api-surface.md` and `reference/patterns.md` in sync with the actual public API if crate names, entry-point macros, or example contracts change.
