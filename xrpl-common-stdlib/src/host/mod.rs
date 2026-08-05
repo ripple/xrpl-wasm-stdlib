@@ -16,7 +16,7 @@
 //! - `float_pow` / `float_root` - Mathematical functions
 //! - `float_cmp` - Comparison operations
 //!
-//! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
+//! All operations support explicit rounding modes; see [`RoundingMode`].
 //!
 //! See the host_bindings documentation for detailed function signatures.
 
@@ -24,15 +24,28 @@ pub mod chain;
 pub mod error_codes;
 pub mod trace;
 
-// Float rounding mode constants (same as in host_bindings.rs)
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
+/// Rounding mode for float operations, matching rippled's `Number::RoundingMode`.
+///
+/// The host functions take the mode as an `i32`; convert with `.into()` at the call site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum RoundingMode {
+    /// Round to the nearest representable value.
+    ToNearest = 0,
+    /// Round toward zero (truncate).
+    TowardsZero = 1,
+    /// Round toward negative infinity.
+    Downward = 2,
+    /// Round toward positive infinity.
+    Upward = 3,
+}
+
+impl From<RoundingMode> for i32 {
+    #[inline(always)]
+    fn from(mode: RoundingMode) -> Self {
+        mode as i32
+    }
+}
 
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.

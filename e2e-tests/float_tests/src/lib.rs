@@ -10,9 +10,9 @@ use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::trace::DataRepr::AsHex;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
 use xrpl_common_stdlib::host::{
-    FLOAT_ROUNDING_MODES_TO_NEAREST, cache_le, float_add, float_cmp, float_div, float_from_int,
-    float_from_mant_exp, float_from_uint, float_mult, float_pow, float_root, float_sub, le_arr_len,
-    le_field, le_inner, trace_xfloat,
+    RoundingMode, cache_le, float_add, float_cmp, float_div, float_from_int, float_from_mant_exp,
+    float_from_uint, float_mult, float_pow, float_root, float_sub, le_arr_len, le_field, le_inner,
+    trace_xfloat,
 };
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::iou_number::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
@@ -64,7 +64,7 @@ fn test_float_from_wasm() {
     let _ = trace("\n$$$ test_float_from_wasm $$$");
 
     let mut f: [u8; 8] = [0u8; 8];
-    if 8 == unsafe { float_from_int(12300, f.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
+    if 8 == unsafe { float_from_int(12300, f.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) } {
         let _ = trace_float("  float from i64 12300:", &f);
         let _ = trace_data("  float from i64 12300 as HEX:", &f, AsHex);
     } else {
@@ -78,7 +78,7 @@ fn test_float_from_wasm() {
             8,
             f.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     } {
         let _ = trace_float("  float from u64 12300:", &f);
@@ -87,7 +87,7 @@ fn test_float_from_wasm() {
     }
 
     if 8 == unsafe {
-        float_from_mant_exp(123, 2, f.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST)
+        float_from_mant_exp(123, 2, f.as_mut_ptr(), 8, RoundingMode::ToNearest.into())
     } {
         let _ = trace_float("  float from exp 2, mantissa 123:", &f);
     } else {
@@ -102,7 +102,7 @@ fn test_float_cmp() {
     let _ = trace("\n$$$ test_float_cmp $$$");
 
     let mut f1: [u8; 8] = [0u8; 8];
-    if 8 != unsafe { float_from_int(1, f1.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
+    if 8 != unsafe { float_from_int(1, f1.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) } {
         let _ = trace("  float from 1: failed");
     } else {
         let _ = trace_float("  float from 1:", &f1);
@@ -140,13 +140,13 @@ fn test_float_add_subtract() {
                 8,
                 f_compute.as_mut_ptr(),
                 8,
-                FLOAT_ROUNDING_MODES_TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         // let _ = trace_float("  float:", &f_compute);
     }
     let mut f10: [u8; 8] = [0u8; 8];
-    if 8 != unsafe { float_from_int(10, f10.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
+    if 8 != unsafe { float_from_int(10, f10.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) } {
         // let _ = trace("  float from 10: failed");
     }
     if 0 == unsafe { float_cmp(f10.as_ptr(), 8, f_compute.as_ptr(), 8) } {
@@ -164,7 +164,7 @@ fn test_float_add_subtract() {
                 8,
                 f_compute.as_mut_ptr(),
                 8,
-                FLOAT_ROUNDING_MODES_TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
     }
@@ -179,7 +179,7 @@ fn test_float_mult_divide() {
     let _ = trace("\n$$$ test_float_mult_divide $$$");
 
     let mut f10: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(10, f10.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_int(10, f10.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
     let mut f_compute: [u8; 8] = FLOAT_ONE;
     for i in 0..6 {
         unsafe {
@@ -190,7 +190,7 @@ fn test_float_mult_divide() {
                 8,
                 f_compute.as_mut_ptr(),
                 8,
-                FLOAT_ROUNDING_MODES_TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         // let _ = trace_float("  float:", &f_compute);
@@ -201,7 +201,7 @@ fn test_float_mult_divide() {
             1000000,
             f1000000.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
 
@@ -220,12 +220,12 @@ fn test_float_mult_divide() {
                 8,
                 f_compute.as_mut_ptr(),
                 8,
-                FLOAT_ROUNDING_MODES_TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
     }
     let mut f01: [u8; 8] = [0u8; 8];
-    unsafe { float_from_mant_exp(1, -1, f01.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_mant_exp(1, -1, f01.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
 
     if 0 == unsafe { float_cmp(f_compute.as_ptr(), 8, f01.as_ptr(), 8) } {
         let _ = trace("  repeated divide: good");
@@ -245,7 +245,7 @@ fn test_float_pow() {
             3,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float cube of 1:", &f_compute);
@@ -257,13 +257,13 @@ fn test_float_pow() {
             6,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float 6th power of -1:", &f_compute);
 
     let mut f9: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(9, f9.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_int(9, f9.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
     unsafe {
         float_pow(
             f9.as_ptr(),
@@ -271,7 +271,7 @@ fn test_float_pow() {
             2,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float square of 9:", &f_compute);
@@ -283,13 +283,13 @@ fn test_float_pow() {
             0,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float 0th power of 9:", &f_compute);
 
     let mut f0: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(0, f0.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_int(0, f0.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
     unsafe {
         float_pow(
             f0.as_ptr(),
@@ -297,7 +297,7 @@ fn test_float_pow() {
             2,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float square of 0:", &f_compute);
@@ -309,7 +309,7 @@ fn test_float_pow() {
             0,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_num(
@@ -322,7 +322,7 @@ fn test_float_root() {
     let _ = trace("\n$$$ test_float_root $$$");
 
     let mut f9: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(9, f9.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_int(9, f9.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
     let mut f_compute: [u8; 8] = [0u8; 8];
     unsafe {
         float_root(
@@ -331,7 +331,7 @@ fn test_float_root() {
             2,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float sqrt of 9:", &f_compute);
@@ -342,7 +342,7 @@ fn test_float_root() {
             3,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float cbrt of 9:", &f_compute);
@@ -353,7 +353,7 @@ fn test_float_root() {
             1000000,
             f1000000.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     unsafe {
@@ -363,7 +363,7 @@ fn test_float_root() {
             3,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float cbrt of 1000000:", &f_compute);
@@ -374,7 +374,7 @@ fn test_float_root() {
             6,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  float 6th root of 1000000:", &f_compute);
@@ -392,7 +392,7 @@ fn test_float_negate() {
             8,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     // let _ = trace_float("  float:", &f_compute);
@@ -410,7 +410,7 @@ fn test_float_negate() {
             8,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     // let _ = trace_float("  float:", &f_compute);
@@ -426,7 +426,7 @@ fn test_float_invert() {
 
     let mut f_compute: [u8; 8] = [0u8; 8];
     let mut f10: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(10, f10.as_mut_ptr(), 8, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_int(10, f10.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
     unsafe {
         float_div(
             FLOAT_ONE.as_ptr(),
@@ -435,7 +435,7 @@ fn test_float_invert() {
             8,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  invert a float from 10:", &f_compute);
@@ -447,7 +447,7 @@ fn test_float_invert() {
             8,
             f_compute.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST,
+            RoundingMode::ToNearest.into(),
         )
     };
     let _ = trace_float("  invert again:", &f_compute);
