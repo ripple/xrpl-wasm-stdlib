@@ -54,12 +54,10 @@ function parseLedgerEntries(macroFile) {
   for (const match of stripped.matchAll(entryRe)) {
     const [, entryName, classId, className, rpcName, fieldsBlock] = match
     const fields = []
-    // The SoeRequired/SoeOptional/SoeDefault token appears in two rippled
-    // dialects -- `soeREQUIRED` (e.g. xrplf/smart-contracts) and `SoeRequired`
-    // (e.g. ripple/se/supported) -- so match either prefix casing and normalize
-    // to the uppercase `SOE*` form used downstream via `.toUpperCase()`.
+    // The SoeRequired/SoeOptional/SoeDefault token is normalized to the
+    // uppercase `SOE*` form used downstream via `.toUpperCase()`.
     for (const [, sfName, soeRaw] of fieldsBlock.matchAll(
-      /\{\s*sf([A-Za-z0-9]+)\s*,\s*([Ss]oe[A-Za-z]+)\s*\}/g,
+      /\{\s*sf([A-Za-z0-9]+)\s*,\s*(Soe[A-Za-z]+)\s*\}/g,
     )) {
       fields.push({ sfName, soe: soeRaw.toUpperCase() })
     }
