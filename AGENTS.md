@@ -6,7 +6,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## What this repo is
 
-A Rust `no_std` standard library, split across several crates (see below), that lets developers write XRPL smart contracts (currently "Smart Escrows") compiled to WebAssembly. The library wraps a low-level host ABI exposed by `rippled` and offers type-safe accessors for transaction fields, ledger objects, keylets, and serialized fields.
+A Rust `no_std` standard library, split across several crates (see below), that lets developers write XRPL smart contracts (currently "Smart Escrows") compiled to WebAssembly. The library wraps a low-level host ABI exposed by `rippled` and offers type-safe accessors for transaction fields, ledger objects, ledger entry IDs, and serialized fields.
 
 Smart escrow WASM modules export `extern "C" fn escrow_finish() -> i32`. Returning a positive value finishes the escrow, `0` rejects it, and a negative value is a host error code.
 
@@ -75,7 +75,7 @@ The library workspace is split into crates with a strict dependency direction: `
 - **`xrpl-macros`** — proc-macro crate, no runtime dependencies on the other two. Exports:
   - Typed-constant macros: `r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!` — validate at compile time and emit a typed XRPL value.
   - Entry-point macros: `#[smart_escrow]`, `#[smart_contract]` — wrap a user function in the `extern "C"` symbol the XRPL host calls. Both share a `parse → validate → codegen` pipeline in `entry_point/`; adding a third entry-point macro means adding a new orchestrator file there plus a new `#[proc_macro_attribute]` shim in `lib.rs`.
-- **`xrpl-common-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, keylets, types. Contains no feature-specific (e.g. escrow-only) logic.
+- **`xrpl-common-stdlib`** — the general-purpose layer: host bindings, transaction/ledger-object field access, ledger entry IDs, types. Contains no feature-specific (e.g. escrow-only) logic.
 - **`xrpl-escrow-stdlib`** — Smart Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`) and escrow-unique host functions (e.g. `update_data`). Depends on `xrpl-common-stdlib` but does **not** re-export it — contract crates depend on `xrpl-common-stdlib`, `xrpl-macros`, and `xrpl-escrow-stdlib` directly as separate path dependencies (see `examples/smart-escrows/hello_world/Cargo.toml`).
 - **`xrpl-stdlib-test-utils`** — test-only harness crate. Depends on `xrpl-common-stdlib` with the `test-host-bindings` feature enabled and re-exports its `HostBindings`/`MockHostBindings`, adding higher-level `EscrowScenario` builder helpers on top (e.g. `EscrowScenario::builder()...install()`) so downstream crates (like `xrpl-escrow-stdlib`'s own tests) don't have to hand-roll mock setups.
 
@@ -109,7 +109,7 @@ src/
 ├── fields/            # Field decoding traits/helpers shared across XRPL field types, incl. locator.rs (nested-field locator paths)
 ├── host/              # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
 ├── objects/            # Cached ledger entry access (AccountRoot, ArrayObject, AnyObject, traits)
-├── keylets.rs         # Compute keylets (escrow_keylet, oracle_keylet, credential_keylet, account_keylet, amm_keylet, ...)
+├── ledger_entry_ids.rs # Compute ledger entry IDs (escrow_id, oracle_id, credential_id, accountroot_id, amm_id, ...)
 ├── types/             # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, Number, constants.rs, etc.
 ├── sfield.rs          # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
 └── tx_flags.rs        # GENERATED, pub(crate) — transaction flag constants (tf*/asf*/tmf*). Do not hand-edit; rerun generate-tx-flags.sh

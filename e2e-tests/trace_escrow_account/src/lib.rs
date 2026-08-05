@@ -40,7 +40,7 @@ pub extern "C" fn escrow_finish() -> i32 {
 
         // Compute the ledger entry ID for this account's AccountRoot object
         // AccountRoot ledger entry ID = 0x61 (a) + SHA512Half(account_id)
-        // use xrpl_common_stdlib::ledger entry IDs::account_root_ledger entry ID;
+        // use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
         let accountroot_id = accountroot_id(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled

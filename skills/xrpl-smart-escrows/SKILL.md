@@ -1,6 +1,6 @@
 ---
 name: xrpl-smart-escrows
-description: Build, test, and debug XRPL Smart Escrow contracts written in Rust against xrpl-wasm-stdlib (crates xrpl-common-stdlib, xrpl-escrow-stdlib, xrpl-macros), compiled to wasm32v1-none. Use when the user wants to write a smart escrow / EscrowFinish WASM contract, asks about the XRPL WASM host functions, keylets, ledger object access, or mentions xrpl-wasm-stdlib, EscrowFinishContext, FinishResult, or #[smart_escrow].
+description: Build, test, and debug XRPL Smart Escrow contracts written in Rust against xrpl-wasm-stdlib (crates xrpl-common-stdlib, xrpl-escrow-stdlib, xrpl-macros), compiled to wasm32v1-none. Use when the user wants to write a smart escrow / EscrowFinish WASM contract, asks about the XRPL WASM host functions, ledger entry IDs, ledger object access, or mentions xrpl-wasm-stdlib, EscrowFinishContext, FinishResult, or #[smart_escrow].
 ---
 
 # XRPL Smart Escrows
@@ -33,7 +33,7 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 2. **Read whatever data the check needs**:
    - Current tx fields → `ctx.tx()` (`TransactionCommonFields` + `EscrowFinishFields`)
    - The escrow being finished → `ctx.escrow()` (`CurrentEscrowFields`)
-   - Any other ledger object → keylet → `cache_ledger_obj` → typed wrapper or `LedgerObject`
+   - Any other ledger object → ledger entry ID → `cache_le` → typed wrapper or `LedgerObject`
    - See [reference/api-surface.md](reference/api-surface.md) for the full method/type inventory.
 3. **Return `FinishResult::succeed()` / `reject()`** (or `.succeed_with::<N>()` / `.reject_with::<N>()` to pass a custom code).
 4. **Build and test** per [reference/testing.md](reference/testing.md) — native `cargo test`, wasm build via `wasm32v1-none`, and a `runTest.js` integration test against a rippled node.
@@ -41,10 +41,10 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 ## Key constraints (always true)
 
 - `no_std`, no heap allocation, no network/filesystem access, read-only ledger access except the escrow's own `Data` field (via `ctx.update_data()` / `escrow_storage::save_data`).
-- Execution must be deterministic — no wall-clock time, no randomness; use `get_parent_ledger_time`/`get_ledger_sqn` for time/sequence, not host-side clocks.
+- Execution must be deterministic — no wall-clock time, no randomness; use `parent_ledger_time`/`ledger_sqn` for time/sequence, not host-side clocks.
 - Compare token amounts via the `Amount`/`Number`/`IOUNumber` types (host-delegated decimal math), never raw floats.
-- Minimize host calls (`cache_ledger_obj`, keylet computation, field reads) — cache results instead of repeating identical calls; `NoFreeSlots` and execution budget (`Gas`) are real limits.
-- Debug via `trace`/`trace_num`/`trace_data`/`trace_account`/`trace_amount` — output lands in rippled's `debug.log`. Convention: on every error path, `trace_num("<context>", e.code() as i64)` before returning.
+- Minimize host calls (`cache_le`, ledger entry ID computation, field reads) — cache results instead of repeating identical calls; `NoFreeSlots` and execution budget (`Gas`) are real limits.
+- Debug via `trace`/`trace_num`/`trace_data`/`trace_acct`/`trace_amt` — output lands in rippled's `debug.log`. Convention: on every error path, `trace_num("<context>", e.code() as i64)` before returning.
 
 ## Reference
 

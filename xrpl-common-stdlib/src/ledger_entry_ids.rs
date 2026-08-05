@@ -1179,7 +1179,7 @@ mod tests {
     /// Arguments:
     /// - `$mod_name`: name for the test module
     /// - `$expect_fn`: mock expectation method (e.g., `expect_accountroot_id`)
-    /// - `$success_arity`: number of prefix params for write_ledger entry ID_returning (2, 4, or 6)
+    /// - `$success_arity`: number of prefix params for write_id_returning (2, 4, or 6)
     /// - `$error_arity`: total number of params for error_returning (4, 6, or 8)
     /// - `$call_block`: block that sets up args and returns the ledger entry ID function call result
     macro_rules! id_test {

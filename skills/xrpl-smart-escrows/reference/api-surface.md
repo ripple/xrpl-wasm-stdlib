@@ -47,7 +47,7 @@ impl EscrowFinishContext {
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 
 pub trait TransactionCommonFields {
-    fn path(&self) -> TxPathBuilder;                       // nested-field access (memos, arrays)
+    fn path(&self) -> TxPathBuilder;                       // inner-field access (memos, arrays)
     fn get_account(&self) -> Result<AccountID>;
     fn get_transaction_type(&self) -> Result<TransactionType>;
     fn get_gas(&self) -> Result<u32>;
@@ -70,14 +70,14 @@ Variable-length data (Memos, arrays) isn't exposed as a typed method — read it
 
 ```rust
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::get_tx_nested_field;
+use xrpl_common_stdlib::host::tx_inner;
 
 let mut locator = Locator::new();
 locator.pack(sfield::Memos);
 locator.pack(0);                    // index 0
 locator.pack(sfield::MemoData);
 let rc = unsafe {
-    get_tx_nested_field(locator.as_ptr(), locator.num_packed_bytes(), buf.as_mut_ptr(), buf.len())
+    tx_inner(locator.as_ptr(), locator.num_packed_bytes(), buf.as_mut_ptr(), buf.len())
 };
 ```
 
@@ -125,11 +125,11 @@ Implement `EscrowStorage` for a plain struct to persist a small state machine (r
 Two-step pattern for any object besides the current escrow:
 
 ```rust
-use xrpl_common_stdlib::keylets::escrow_keylet;   // or account_keylet, oracle_keylet, credential_keylet, ...
+use xrpl_common_stdlib::ledger_entry_ids::escrow_id;   // or accountroot_id, oracle_id, credential_id, ...
 use xrpl_common_stdlib::host;
 
-let keylet = escrow_keylet(&owner, sequence)?;
-let slot = unsafe { host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
+let id = escrow_id(&owner, sequence)?;
+let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
 if slot < 0 { return FinishResult::reject(); }
 ```
 
@@ -156,30 +156,30 @@ Convenience one-shot for the common case of "just give me this account's XRP/tok
 pub fn get_account_balance(account_id: &AccountID) -> host::Result<Option<Amount>>;
 ```
 
-### Keylet functions (`xrpl_common_stdlib::keylets`)
+### Ledger entry ID functions (`xrpl_common_stdlib::ledger_entry_ids`)
 
-All return `Result<[u8; 32]>` (`KeyletBytes`, `XRPL_KEYLET_SIZE = 32`):
+All return `Result<[u8; 32]>` (`LedgerEntryIdBytes`, `XRPL_LEDGER_ENTRY_ID_SIZE = 32`):
 
 ```
-account_keylet(account_id)
-amm_keylet(issue1, issue2)
-check_keylet(owner, seq)
-credential_keylet(subject, issuer, credential_type)
-delegate_keylet(account, authorize)
-deposit_preauth_keylet(account, authorize)
-did_keylet(account_id)
-escrow_keylet(owner, seq)
-line_keylet(account1, account2, currency)
-mpt_issuance_keylet(owner, seq)
-mptoken_keylet(mptid, holder)
-nft_offer_keylet(owner, seq)
-offer_keylet(owner, seq)
-oracle_keylet(owner, document_id)
-paychan_keylet(account, destination, seq)
-permissioned_domain_keylet(account, seq)
-signers_keylet(account_id)
-ticket_keylet(owner, seq)
-vault_keylet(account, seq)
+accountroot_id(account_id)
+amm_id(issue1, issue2)
+check_id(owner, seq)
+credential_id(subject, issuer, credential_type)
+delegate_id(account, authorize)
+deposit_preauth_id(account, authorize)
+did_id(account_id)
+escrow_id(owner, seq)
+mpt_issuance_id(owner, seq)
+mptoken_id(mptid, holder)
+nft_offer_id(owner, seq)
+offer_id(owner, seq)
+oracle_id(owner, document_id)
+paychan_id(account, destination, seq)
+permissioned_domain_id(account, seq)
+signers_id(account_id)
+ticket_id(owner, seq)
+trustline_id(account1, account2, currency)
+vault_id(account, seq)
 ```
 
 ## Core types (`xrpl_common_stdlib::types`)
@@ -194,7 +194,7 @@ vault_keylet(account, seq)
 | `Blob<const N>` (+ `ConditionBlob`, `WasmBlob`, `UriBlob`, `SignatureBlob`, ... aliases) | Fixed-capacity byte buffer                                                                                            | `new()`, `from_slice()`, `len()`, `is_empty()`, `capacity()`, `as_slice()`                                                                      |
 | `Currency([u8;20])`                                                                      | Currency code                                                                                                         | `new(code)`, `as_bytes()`; `From<[u8;3]>` for standard codes                                                                                    |
 | `NFToken([u8;32])` + `NftFlags(u16)`                                                     | NFT ID and flags                                                                                                      | `flags()`, `transfer_fee()`, `issuer()`, `taxon()`, `token_sequence()`, `uri(&owner)` (also doubles as an ownership check)                      |
-| `Issue` enum (`XrpIssue`/`IouIssue`/`MptIssue`)                                          | Asset identity for `amm_keylet`/`line_keylet`                                                                         | `IouIssue::new(issuer, currency)`, `as_bytes()`                                                                                                 |
+| `Issue` enum (`XrpIssue`/`IouIssue`/`MptIssue`)                                          | Asset identity for `amm_id`/`trustline_id`                                                                            | `IouIssue::new(issuer, currency)`, `as_bytes()`                                                                                                 |
 | `MptId([u8;24])`                                                                         | Multi-purpose token ID                                                                                                | `new(sequence_num, issuer)`, `get_sequence_num()`, `get_issuer()`                                                                               |
 | `PublicKey([u8;33])`                                                                     | Signing key                                                                                                           | `From<[u8;33]>`, `From<[u8;64]>`                                                                                                                |
 | `ContractData`                                                                           | Escrow `Data` field buffer, 1024 bytes                                                                                | returned by `get_data()`, consumed by `update_current_escrow_data()`                                                                            |
