@@ -461,7 +461,7 @@ fn test_float_invert() {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     test_float_from_host();
     test_float_from_wasm();
     test_float_cmp();

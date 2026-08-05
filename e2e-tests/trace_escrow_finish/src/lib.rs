@@ -28,7 +28,7 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_es
 use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");
 
@@ -59,11 +59,11 @@ pub extern "C" fn finish() -> i32 {
             DataRepr::AsHex,
         );
 
-        // Trace Field: ComputationAllowance
-        let computation_allowance: u32 = escrow_finish.get_computation_allowance().unwrap();
-        test_utils::assert_eq!(computation_allowance, 1000000);
-        // ComputationAllowance is set in the transaction - just verify it's reasonable
-        let _ = trace_num("  ComputationAllowance:", computation_allowance as i64);
+        // Trace Field: Gas
+        let gas: u32 = escrow_finish.get_gas().unwrap();
+        test_utils::assert_eq!(gas, 1000000);
+        // Gas is set in the transaction - just verify it's reasonable
+        let _ = trace_num("  Gas:", gas as i64);
 
         // Trace Field: Fee
         let fee = escrow_finish.get_fee().unwrap();
@@ -356,8 +356,8 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // Trace Field: Fulfillment (optional)
-        // NOTE: When an escrow has both Condition and FinishFunction, you cannot provide Fulfillment
-        // in the EscrowFinish transaction (causes temMALFORMED). The FinishFunction validates the condition.
+        // NOTE: When an escrow has both Condition and Bytecode, you cannot provide Fulfillment
+        // in the EscrowFinish transaction (causes temMALFORMED). The Bytecode validates the condition.
         let opt_fulfillment = escrow_finish.get_fulfillment().unwrap();
         if let Some(fulfillment) = opt_fulfillment {
             let _ = trace_num("  Fulfillment length:", fulfillment.len() as i64);
@@ -422,7 +422,7 @@ pub extern "C" fn finish() -> i32 {
                 }
             }
         } else {
-            let _ = trace("  Fulfillment: not present (FinishFunction validates condition)");
+            let _ = trace("  Fulfillment: not present (Bytecode validates condition)");
         }
 
         // As part of https://github.com/ripple/xrpl-wasm-stdlib/issues/91, we had the concept (for a minute) of a

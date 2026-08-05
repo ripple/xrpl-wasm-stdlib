@@ -205,8 +205,8 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::FinishFunction)
+    fn get_bytecode(&self) -> Result<Option<WasmBlob>> {
+        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Bytecode)
     }
 
     /// Retrieves the contract data from the specified ledger object.
@@ -604,8 +604,8 @@ mod tests {
             expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
-            // get_finish_function
-            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
+            // get_bytecode
+            expect_ledger_field(&mut mock, 1, sfield::Bytecode, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -618,7 +618,7 @@ mod tests {
             assert!(obj.get_destination_tag().unwrap().is_some());
             assert!(obj.get_finish_after().unwrap().is_some());
             assert!(obj.get_source_tag().unwrap().is_some());
-            assert!(obj.get_finish_function().unwrap().is_some());
+            assert!(obj.get_bytecode().unwrap().is_some());
         }
 
         #[test]
@@ -660,14 +660,9 @@ mod tests {
                 .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
+            // get_bytecode - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_le_field()
-                .with(
-                    eq(1),
-                    eq(sfield::FinishFunction),
-                    always(),
-                    eq(WASM_BLOB_SIZE),
-                )
+                .with(eq(1), eq(sfield::Bytecode), always(), eq(WASM_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _, _| 0);
 
@@ -684,9 +679,9 @@ mod tests {
             assert!(obj.get_source_tag().unwrap().is_none());
 
             // Variable-size optional fields return Some with len=0 when not found
-            let finish_function = obj.get_finish_function().unwrap();
-            assert!(finish_function.is_some());
-            assert_eq!(finish_function.unwrap().len, 0);
+            let bytecode = obj.get_bytecode().unwrap();
+            assert!(bytecode.is_some());
+            assert_eq!(bytecode.unwrap().len, 0);
         }
 
         #[test]

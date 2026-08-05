@@ -107,7 +107,7 @@ pub trait TransactionCommonFields {
         get_field(sfield::TransactionType)
     }
 
-    /// Retrieves the computation allowance from the current transaction.
+    /// Retrieves the gas amount from the current transaction.
     ///
     /// This field specifies the maximum computational resources that the transaction is
     /// allowed to consume during execution in the XRPL Programmability environment.
@@ -116,10 +116,10 @@ pub trait TransactionCommonFields {
     /// # Returns
     ///
     /// Returns a `Result<u32>` where:
-    /// * `Ok(u32)` - The computation allowance value in platform-defined units
+    /// * `Ok(u32)` - The gas value in platform-defined units
     /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
-    fn get_computation_allowance(&self) -> Result<u32> {
-        get_field(sfield::ComputationAllowance)
+    fn get_gas(&self) -> Result<u32> {
+        get_field(sfield::Gas)
     }
 
     /// Retrieves the fee amount from the current transaction.
@@ -663,8 +663,8 @@ mod tests {
                 expect_tx_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
                 // get_transaction_type
                 expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
-                // get_computation_allowance
-                expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
+                // get_gas
+                expect_tx_field(&mut mock, sfield::Gas, 4, 1);
                 // get_fee: a real XRP Fee is 8 bytes written into the 48-byte Amount buffer, not
                 // the full buffer length (`expect_tx_field` would report `AMOUNT_SIZE` written,
                 // which `Amount::decode` correctly rejects as inconsistent with the XRP variant).
@@ -686,7 +686,7 @@ mod tests {
                 // All mandatory fields should return Ok
                 assert!(tx.get_account().is_ok());
                 assert!(tx.get_transaction_type().is_ok());
-                assert!(tx.get_computation_allowance().is_ok());
+                assert!(tx.get_gas().is_ok());
                 assert!(tx.get_fee().is_ok());
                 assert!(tx.get_sequence().is_ok());
                 assert!(tx.get_signing_pub_key().is_ok());
@@ -729,14 +729,14 @@ mod tests {
             }
 
             #[test]
-            fn test_get_computation_allowance_errors_when_zero_length() {
+            fn test_get_gas_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
                 mock.expect_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let result = TestTransaction.get_computation_allowance();
+                let result = TestTransaction.get_gas();
                 assert!(result.is_err());
                 assert_eq!(
                     result.err().unwrap().code(),
@@ -866,9 +866,9 @@ mod tests {
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
-                // get_computation_allowance
+                // get_gas
                 mock.expect_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_fee
@@ -904,7 +904,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), FIELD_NOT_FOUND);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), FIELD_NOT_FOUND);
 
@@ -935,9 +935,9 @@ mod tests {
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
-                // get_computation_allowance
+                // get_gas
                 mock.expect_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_fee
@@ -973,7 +973,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), INTERNAL_ERROR);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), INTERNAL_ERROR);
 
@@ -1004,9 +1004,9 @@ mod tests {
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
-                // get_computation_allowance
+                // get_gas
                 mock.expect_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_fee
@@ -1042,7 +1042,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), INVALID_FIELD);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), INVALID_FIELD);
 

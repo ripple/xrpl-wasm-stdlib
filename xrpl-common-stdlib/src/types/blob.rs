@@ -28,7 +28,7 @@ pub const SIGNATURE_BLOB_SIZE: usize = 72;
 /// Maximum size of a URI in bytes (applies to DIDs, Oracles, Credentials, NFTs, etc.)
 pub const URI_BLOB_SIZE: usize = 256;
 
-/// Buffer size for WASM bytecode (FinishFunction field)
+/// Buffer size for WASM bytecode (Bytecode field)
 /// Set to 4KB to match the maximum allocation limit enforced by the host
 pub const WASM_BLOB_SIZE: usize = 4096;
 

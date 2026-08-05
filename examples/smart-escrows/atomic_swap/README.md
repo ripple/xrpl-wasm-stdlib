@@ -72,7 +72,7 @@ stateDiagram-v2
   "Destination": "[RECEIVER_ADDRESS]",
   "Amount": "[AMOUNT_IN_DROPS]",
   "CancelAfter": "[UNIX_TIMESTAMP]",
-  "FinishFunction": "[WASM_HEX]"
+  "Bytecode": "[WASM_HEX]"
 }
 ```
 
@@ -84,7 +84,7 @@ stateDiagram-v2
   "Account": "[FINISHER_ADDRESS]",
   "Owner": "[ESCROW_OWNER_ADDRESS]",
   "OfferSequence": "[ESCROW_SEQUENCE_NUMBER]",
-  "ComputationAllowance": 1000000
+  "Gas": 1000000
 }
 ```
 
@@ -120,7 +120,7 @@ cargo build --target wasm32v1-none --release
 ```
 
 Each entry point is annotated with `#[smart_escrow]` (from `xrpl_escrow_stdlib`), which generates the
-`extern "C" fn finish() -> i32` export the XRPL host calls. Both examples keep their annotated functions
+`extern "C" fn escrow_finish() -> i32` export the XRPL host calls. Both examples keep their annotated functions
 returning `i32` directly rather than `FinishResult`, since their multi-phase state machines already thread raw
 return codes through several helper functions.
 

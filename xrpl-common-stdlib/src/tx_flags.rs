@@ -24,6 +24,7 @@ pub(crate) const tfHybrid: u32 = 0x00100000;
 pub(crate) const tfNoRippleDirect: u32 = 0x00010000;
 pub(crate) const tfPartialPayment: u32 = 0x00020000;
 pub(crate) const tfLimitQuality: u32 = 0x00040000;
+pub(crate) const tfSponsorCreatedAccount: u32 = 0x00080000;
 
 pub(crate) const tfSetfAuth: u32 = 0x00010000;
 pub(crate) const tfSetNoRipple: u32 = 0x00020000;
@@ -50,6 +51,7 @@ pub(crate) const tfMPTCanEscrow: u32 = 0x00000008;
 pub(crate) const tfMPTCanTrade: u32 = 0x00000010;
 pub(crate) const tfMPTCanTransfer: u32 = 0x00000020;
 pub(crate) const tfMPTCanClawback: u32 = 0x00000040;
+pub(crate) const tfMPTCanHoldConfidentialBalance: u32 = 0x00000080;
 
 pub(crate) const tfMPTUnauthorize: u32 = 0x00000001;
 
@@ -89,31 +91,37 @@ pub(crate) const tfLoanDefault: u32 = 0x00010000;
 pub(crate) const tfLoanImpair: u32 = 0x00020000;
 pub(crate) const tfLoanUnimpair: u32 = 0x00040000;
 
+pub(crate) const tfSponsorshipSetRequireSignForFee: u32 = 0x00010000;
+pub(crate) const tfSponsorshipClearRequireSignForFee: u32 = 0x00020000;
+pub(crate) const tfSponsorshipSetRequireSignForReserve: u32 = 0x00040000;
+pub(crate) const tfSponsorshipClearRequireSignForReserve: u32 = 0x00080000;
+pub(crate) const tfDeleteObject: u32 = 0x00100000;
+
+pub(crate) const tfSponsorshipEnd: u32 = 0x00010000;
+pub(crate) const tfSponsorshipCreate: u32 = 0x00020000;
+pub(crate) const tfSponsorshipReassign: u32 = 0x00040000;
+
 pub(crate) const tfImmutable: u32 = 0x00010000;
 pub(crate) const tfCodeImmutable: u32 = 0x00020000;
 pub(crate) const tfABIImmutable: u32 = 0x00040000;
 pub(crate) const tfUndeletable: u32 = 0x00080000;
 
-pub(crate) const tmfMPTCanMutateCanLock: u32 = 0x00000002;
-pub(crate) const tmfMPTCanMutateRequireAuth: u32 = 0x00000004;
-pub(crate) const tmfMPTCanMutateCanEscrow: u32 = 0x00000008;
-pub(crate) const tmfMPTCanMutateCanTrade: u32 = 0x00000010;
-pub(crate) const tmfMPTCanMutateCanTransfer: u32 = 0x00000020;
-pub(crate) const tmfMPTCanMutateCanClawback: u32 = 0x00000040;
+pub(crate) const tmfMPTCanEnableCanLock: u32 = 0x00000002;
+pub(crate) const tmfMPTCanEnableRequireAuth: u32 = 0x00000004;
+pub(crate) const tmfMPTCanEnableCanEscrow: u32 = 0x00000008;
+pub(crate) const tmfMPTCanEnableCanTrade: u32 = 0x00000010;
+pub(crate) const tmfMPTCanEnableCanTransfer: u32 = 0x00000020;
+pub(crate) const tmfMPTCanEnableCanClawback: u32 = 0x00000040;
 pub(crate) const tmfMPTCanMutateMetadata: u32 = 0x00010000;
 pub(crate) const tmfMPTCanMutateTransferFee: u32 = 0x00020000;
+pub(crate) const tmfMPTCannotEnableCanHoldConfidentialBalance: u32 = 0x00000080;
 pub(crate) const tmfMPTSetCanLock: u32 = 0x00000001;
-pub(crate) const tmfMPTClearCanLock: u32 = 0x00000002;
-pub(crate) const tmfMPTSetRequireAuth: u32 = 0x00000004;
-pub(crate) const tmfMPTClearRequireAuth: u32 = 0x00000008;
-pub(crate) const tmfMPTSetCanEscrow: u32 = 0x00000010;
-pub(crate) const tmfMPTClearCanEscrow: u32 = 0x00000020;
-pub(crate) const tmfMPTSetCanTrade: u32 = 0x00000040;
-pub(crate) const tmfMPTClearCanTrade: u32 = 0x00000080;
-pub(crate) const tmfMPTSetCanTransfer: u32 = 0x00000100;
-pub(crate) const tmfMPTClearCanTransfer: u32 = 0x00000200;
-pub(crate) const tmfMPTSetCanClawback: u32 = 0x00000400;
-pub(crate) const tmfMPTClearCanClawback: u32 = 0x00000800;
+pub(crate) const tmfMPTSetRequireAuth: u32 = 0x00000002;
+pub(crate) const tmfMPTSetCanEscrow: u32 = 0x00000004;
+pub(crate) const tmfMPTSetCanTrade: u32 = 0x00000008;
+pub(crate) const tmfMPTSetCanTransfer: u32 = 0x00000010;
+pub(crate) const tmfMPTSetCanClawback: u32 = 0x00000020;
+pub(crate) const tmfMPTSetCanHoldConfidentialBalance: u32 = 0x00000040;
 pub(crate) const tfTrustLine: u32 = 0x00000004;
 pub(crate) const tfWithdrawSubTx: u32 = tfLPToken
     | tfSingleAsset
@@ -124,9 +132,23 @@ pub(crate) const tfWithdrawSubTx: u32 = tfLPToken
     | tfOneAssetWithdrawAll;
 pub(crate) const tfDepositSubTx: u32 =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
+pub(crate) const spfSponsorFee: u32 = 1;
+pub(crate) const spfSponsorReserve: u32 = 2;
 pub(crate) const tfSendAmount: u32 = 0x00010000;
 pub(crate) const tfSendNFToken: u32 = 0x00020000;
 pub(crate) const tfAuthorizeToken: u32 = 0x00040000;
+pub(crate) const tmfMPTCanMutateCanLock: u32 = 0x00000002;
+pub(crate) const tmfMPTCanMutateRequireAuth: u32 = 0x00000004;
+pub(crate) const tmfMPTCanMutateCanEscrow: u32 = 0x00000008;
+pub(crate) const tmfMPTCanMutateCanTrade: u32 = 0x00000010;
+pub(crate) const tmfMPTCanMutateCanTransfer: u32 = 0x00000020;
+pub(crate) const tmfMPTCanMutateCanClawback: u32 = 0x00000040;
+pub(crate) const tmfMPTClearCanLock: u32 = 0x00000002;
+pub(crate) const tmfMPTClearRequireAuth: u32 = 0x00000008;
+pub(crate) const tmfMPTClearCanEscrow: u32 = 0x00000020;
+pub(crate) const tmfMPTClearCanTrade: u32 = 0x00000080;
+pub(crate) const tmfMPTClearCanTransfer: u32 = 0x00000200;
+pub(crate) const tmfMPTClearCanClawback: u32 = 0x00000800;
 
 // AccountSet SetFlag/ClearFlag values
 pub(crate) const asfRequireDest: u32 = 1;

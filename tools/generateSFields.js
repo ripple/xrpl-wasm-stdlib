@@ -132,7 +132,7 @@ async function main() {
     TransactionType: "TransactionType",
     Condition: "ConditionBlob",
     Fulfillment: "FulfillmentBlob",
-    FinishFunction: "WasmBlob",
+    Bytecode: "WasmBlob",
     PublicKey: "PublicKeyBlob",
     Domain: "UriBlob",
     MessageKey: "PublicKeyBlob",
@@ -274,7 +274,7 @@ async function main() {
 
   const typeCodesFile = path.join(
     __dirname,
-    "../xrpl-wasm-stdlib/src/core/type_codes.rs",
+    "../xrpl-common-stdlib/src/type_codes.rs",
   )
   try {
     await fs.writeFile(typeCodesFile, typeCodeOutput, "utf8")

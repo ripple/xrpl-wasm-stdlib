@@ -145,7 +145,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` export; your annotated function can be named anything except `finish` (that name is reserved for the generated export).
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` export; your annotated function can be named anything except `escrow_finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 

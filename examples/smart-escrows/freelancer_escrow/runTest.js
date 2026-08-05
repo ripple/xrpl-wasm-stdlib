@@ -14,7 +14,7 @@ function escrowFinishTx(senderAddr, ownerAddr, sequence, intent) {
     Account: senderAddr,
     Owner: ownerAddr,
     OfferSequence: parseInt(sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Memos: [
       {
         Memo: {
@@ -55,7 +55,7 @@ async function test(testContext) {
         Amount: "500000",
         Destination: destWallet.address,
         CancelAfter: close_time + 3600,
-        FinishFunction: finish,
+        Bytecode: finish,
         Data: escrowData,
       },
       sourceWallet,
@@ -80,7 +80,7 @@ async function test(testContext) {
     ),
     arbWallet,
   )
-  if (randomConfirm.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (randomConfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected invalid wallet to be refused confirmation, got:",
       randomConfirm.result.meta.TransactionResult,
@@ -98,7 +98,9 @@ async function test(testContext) {
     ),
     destWallet,
   )
-  if (freelancerConfirm.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (
+    freelancerConfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
+  ) {
     console.error(
       "Expected waiting for client after freelancer confirm, got:",
       freelancerConfirm.result.meta.TransactionResult,
@@ -117,7 +119,7 @@ async function test(testContext) {
     destWallet,
   )
   if (
-    freelancerDeconfirm.result.meta.TransactionResult !== "tecWASM_REJECTED"
+    freelancerDeconfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
   ) {
     console.error(
       "Expected hold after freelancer deconfirm, got:",
@@ -137,7 +139,7 @@ async function test(testContext) {
     destWallet,
   )
   if (
-    freelancerReconfirm.result.meta.TransactionResult !== "tecWASM_REJECTED"
+    freelancerReconfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
   ) {
     console.error(
       "Expected hold after freelancer re-confirm, got:",
@@ -178,7 +180,7 @@ async function test(testContext) {
     ),
     sourceWallet,
   )
-  if (raiseDispute.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (raiseDispute.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected hold after raising dispute, got:",
       raiseDispute.result.meta.TransactionResult,
@@ -196,7 +198,7 @@ async function test(testContext) {
     ),
     destWallet,
   )
-  if (wrongResolver.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (wrongResolver.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected non-disputer resolution to be rejected, got:",
       wrongResolver.result.meta.TransactionResult,
@@ -262,7 +264,7 @@ async function test(testContext) {
     ),
     destWallet,
   )
-  if (raiseDispute2.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (raiseDispute2.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected hold after raising dispute, got:",
       raiseDispute2.result.meta.TransactionResult,
@@ -280,7 +282,7 @@ async function test(testContext) {
     ),
     arbWallet,
   )
-  if (arbRuleClient.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (arbRuleClient.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected lock after arb rules for client, got:",
       arbRuleClient.result.meta.TransactionResult,
@@ -298,7 +300,9 @@ async function test(testContext) {
     ),
     destWallet,
   )
-  if (freelancerBlocked.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (
+    freelancerBlocked.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
+  ) {
     console.error(
       "Expected freelancer to be blocked after arb ruling, got:",
       freelancerBlocked.result.meta.TransactionResult,
@@ -320,7 +324,7 @@ async function test(testContext) {
     ),
     sourceWallet,
   )
-  if (raiseDispute3.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (raiseDispute3.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected hold after raising dispute, got:",
       raiseDispute3.result.meta.TransactionResult,
@@ -338,7 +342,7 @@ async function test(testContext) {
     ),
     destWallet,
   )
-  if (wrongUndispute.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (wrongUndispute.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected non-disputer undispute to be rejected, got:",
       wrongUndispute.result.meta.TransactionResult,
@@ -356,7 +360,7 @@ async function test(testContext) {
     ),
     sourceWallet,
   )
-  if (selfResolve.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (selfResolve.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected hold after self-resolve (back to pending), got:",
       selfResolve.result.meta.TransactionResult,
@@ -375,7 +379,7 @@ async function test(testContext) {
     destWallet,
   )
   if (
-    confirmAfterResolve.result.meta.TransactionResult !== "tecWASM_REJECTED"
+    confirmAfterResolve.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
   ) {
     console.error(
       "Expected hold waiting for client after freelancer confirm, got:",

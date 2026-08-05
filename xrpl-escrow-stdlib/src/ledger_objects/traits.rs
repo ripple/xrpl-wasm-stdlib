@@ -89,8 +89,8 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The WASM code that is executing.
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>> {
-        current_ledger_object::get_blob_field_optional(sfield::FinishFunction)
+    fn get_bytecode(&self) -> Result<Option<WasmBlob>> {
+        current_ledger_object::get_blob_field_optional(sfield::Bytecode)
     }
 
     /// Retrieves the contract `data` from the current escrow object.
@@ -222,8 +222,8 @@ mod tests {
             expect_current_field(&mut mock, sfield::FinishAfter, 4, 1);
             // get_source_tag
             expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
-            // get_finish_function
-            expect_current_field(&mut mock, sfield::FinishFunction, WASM_BLOB_SIZE, 1);
+            // get_bytecode
+            expect_current_field(&mut mock, sfield::Bytecode, WASM_BLOB_SIZE, 1);
 
             let _guard = setup_mock(mock);
 
@@ -236,7 +236,7 @@ mod tests {
             assert!(escrow.get_destination_tag().unwrap().is_some());
             assert!(escrow.get_finish_after().unwrap().is_some());
             assert!(escrow.get_source_tag().unwrap().is_some());
-            assert!(escrow.get_finish_function().unwrap().is_some());
+            assert!(escrow.get_bytecode().unwrap().is_some());
         }
 
         #[test]
@@ -273,9 +273,9 @@ mod tests {
                 .with(eq(sfield::SourceTag), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| FIELD_NOT_FOUND);
-            // get_finish_function - variable size field, returns 0 for empty (Some with len=0)
+            // get_bytecode - variable size field, returns 0 for empty (Some with len=0)
             mock.expect_home_le_field()
-                .with(eq(sfield::FinishFunction), always(), eq(WASM_BLOB_SIZE))
+                .with(eq(sfield::Bytecode), always(), eq(WASM_BLOB_SIZE))
                 .times(1)
                 .returning(|_, _, _| 0);
 
@@ -292,9 +292,9 @@ mod tests {
             assert!(escrow.get_source_tag().unwrap().is_none());
 
             // Variable-size optional fields return Some with len=0 when not found
-            let finish_function = escrow.get_finish_function().unwrap();
-            assert!(finish_function.is_some());
-            assert_eq!(finish_function.unwrap().len, 0);
+            let bytecode = escrow.get_bytecode().unwrap();
+            assert!(bytecode.is_some());
+            assert_eq!(bytecode.unwrap().len, 0);
         }
 
         #[test]

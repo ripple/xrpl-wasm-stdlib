@@ -127,7 +127,7 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
 
 _(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-escrow-stdlib`, a separate crate this guide's own doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
 
@@ -177,7 +177,7 @@ Smart escrows are **conditional payment contracts** that:
 
 Every smart escrow must:
 
-1. **Export a `finish()` function** with signature `extern "C" fn finish() -> i32`. The `#[smart_escrow]` macro
+1. **Export an `escrow_finish()` function** with signature `extern "C" fn escrow_finish() -> i32`. The `#[smart_escrow]` macro
    generates this for you from a function you annotate — see [Your First Contract](#your-first-contract) — so you
    normally never write the raw `extern "C"` export yourself.
 2. **Return a positive value to release** funds, or **zero/negative to keep locked** (`FinishResult::succeed()` /
@@ -607,7 +607,7 @@ These examples demonstrate:
 | **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing |
 | **Local Node**  | `ws://localhost:6006`                    | Local Development   |
 
-Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/se/supported) if you would like to build and run rippled locally.
+Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/smart-escrow) if you would like to build and run rippled locally.
 
 ### Key Testing Considerations
 
@@ -781,7 +781,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The annotated function can be named anything except `finish` (the macro generates its own `finish` export, which would collide with a same-named user function).
+The annotated function can be named anything except `escrow_finish` (the macro generates its own `escrow_finish` export, which would collide with a same-named user function).
 
 **Inspect WASM binary:**
 

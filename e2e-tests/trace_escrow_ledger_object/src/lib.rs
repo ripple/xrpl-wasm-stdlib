@@ -29,7 +29,7 @@ use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_curr
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");
 
@@ -123,14 +123,14 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // TODO: Uncomment this once https://github.com/ripple/xrpl-wasm-stdlib/issues/86 is fixed.
-        // Trace Field: FinishFunction
-        // let opt_finish_function = current_escrow.get_finish_function().unwrap();
-        // if let Some(finish_function) = opt_finish_function {
-        //     FinishFunction is the WASM code - just verify it exists and has reasonable length
-        // let _ = trace_num("  FinishFunction length:", finish_function.len as i64);
+        // Trace Field: Bytecode
+        // let opt_bytecode = current_escrow.get_bytecode().unwrap();
+        // if let Some(bytecode) = opt_bytecode {
+        //     Bytecode is the WASM code - just verify it exists and has reasonable length
+        // let _ = trace_num("  Bytecode length:", bytecode.len as i64);
         // let _ = trace_data(
-        //     "  FinishFunction:",
-        //     &finish_function.data[..finish_function.len],
+        //     "  Bytecode:",
+        //     &bytecode.data[..bytecode.len],
         //     DataRepr::AsHex,
         // );
         // }
@@ -169,7 +169,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Data (contract data)
         // Note: Data field is optional and only present if set during EscrowCreate or
-        // updated via the FinishFunction. We don't set it in runTest.js, so this will likely
+        // updated via the Bytecode. We don't set it in runTest.js, so this will likely
         // return empty or error.
         let data_result = current_escrow.get_data();
         if let Ok(contract_data) = data_result

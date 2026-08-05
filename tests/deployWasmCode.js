@@ -36,7 +36,7 @@ async function deploy(sourceWallet, destWallet, finish, data = null) {
       Amount: "100000",
       Destination: destWallet.address,
       CancelAfter: close_time + 2000,
-      FinishFunction: finish,
+      Bytecode: finish,
       Data: data,
     },
     sourceWallet,

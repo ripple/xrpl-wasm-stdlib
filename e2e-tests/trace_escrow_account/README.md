@@ -39,7 +39,7 @@ This will:
 
 - Connect to WASM Devnet (or local rippled)
 - Create and fund two wallets (Origin and Destination)
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
+- Create an EscrowCreate transaction with your compiled `Bytecode`
 - Finish the escrow, executing the WASM which traces AccountRoot fields
 
 Expected result: `tesSUCCESS` with comprehensive tracing of all AccountRoot fields.

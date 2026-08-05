@@ -32,7 +32,7 @@ const ITERATIONS: usize = 100;
 /// - Error code matching (match_result_code, match_result_code_optional, etc.)
 /// - Hex decoding (decode_hex_32, decode_hex_20)
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ GAS BENCHMARK START $$$$$");
 
     // Get the current transaction
@@ -364,8 +364,8 @@ fn benchmark_u16_field(escrow_finish: &EscrowFinish) -> u64 {
 fn benchmark_u64_field(escrow_finish: &EscrowFinish) -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        // Using get_computation_allowance as a u32 field
-        if escrow_finish.get_computation_allowance().is_ok() {
+        // Using get_gas as a u32 field
+        if escrow_finish.get_gas().is_ok() {
             count += 1;
         }
     }

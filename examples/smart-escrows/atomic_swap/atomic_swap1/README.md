@@ -27,7 +27,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
   "Destination": "rBob...",
   "Amount": "1000000",
   "CancelAfter": 2000000000,
-  "FinishFunction": "ATOMIC_SWAP1_WASM_HEX_HERE"
+  "Bytecode": "ATOMIC_SWAP1_WASM_HEX_HERE"
 }
 ```
 
@@ -48,7 +48,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
   "Destination": "rAlice...",
   "Amount": "2000000",
   "CancelAfter": 2000000000,
-  "FinishFunction": "ATOMIC_SWAP1_WASM_HEX_HERE"
+  "Bytecode": "ATOMIC_SWAP1_WASM_HEX_HERE"
 }
 ```
 
@@ -68,7 +68,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
   "Account": "rAlice...",
   "Owner": "rAlice...",
   "OfferSequence": 123,
-  "ComputationAllowance": 1000000,
+  "Gas": 1000000,
   "Memos": [
     {
       "Memo": {
@@ -104,7 +104,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
   "Account": "rBob...",
   "Owner": "rBob...",
   "OfferSequence": 456,
-  "ComputationAllowance": 1000000,
+  "Gas": 1000000,
   "Memos": [
     {
       "Memo": {
@@ -118,7 +118,7 @@ This guide shows how to manually create and execute an atomic swap using the WAS
 
 **Expected Result:**
 
-- Transaction fails with `tecWASM_REJECTED`
+- Transaction fails with `tecBYTECODE_REJECTED`
 - Trace shows "Failed to cache counterpart escrow, error: -10"
 - This demonstrates the atomic nature - once one escrow is finished, the other cannot complete
 

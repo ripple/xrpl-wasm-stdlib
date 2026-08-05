@@ -39,7 +39,7 @@ use xrpl_common_stdlib::types::mpt_id::MptId;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("=== HOST FUNCTIONS TEST ===");
     let _ = trace("Testing 27 host functions");
 

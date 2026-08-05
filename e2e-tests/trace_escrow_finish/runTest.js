@@ -16,7 +16,7 @@ async function test(testContext) {
     })
   ).result.ledger.close_time
 
-  // Create escrow with both Condition and FinishFunction
+  // Create escrow with both Condition and Bytecode
   // IMPORTANT: Condition must be in full crypto-condition format (39 bytes), not just the hash (32 bytes)
   // Format: A0258020<32-byte-hash>810100
   const condition =
@@ -38,7 +38,7 @@ async function test(testContext) {
     SourceTag: 11747,
     DestinationTag: 23480,
     Condition: condition,
-    FinishFunction: finish,
+    Bytecode: finish,
   }
 
   console.log("EscrowCreate transaction:", escrowCreateTx)
@@ -53,7 +53,7 @@ async function test(testContext) {
   }
   const offerSequence = createResponse.result.tx_json.Sequence
   console.log(
-    `Created escrow with both Condition and FinishFunction at sequence ${offerSequence}`,
+    `Created escrow with both Condition and Bytecode at sequence ${offerSequence}`,
   )
 
   // Setup multi-signing for the EscrowFinish transaction
@@ -185,7 +185,7 @@ async function test(testContext) {
     OfferSequence: parseInt(offerSequence),
     Condition: condition,
     Fulfillment: fulfillment,
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     SourceTag: 12345,
     // Add the created credentials
     CredentialIDs: [credentialID1, credentialID2],
@@ -227,7 +227,7 @@ async function test(testContext) {
     )
     process.exit(1)
   }
-  console.log("✅  Successfully finished escrow with FinishFunction")
+  console.log("✅  Successfully finished escrow with Bytecode")
 
   await client.disconnect()
 }

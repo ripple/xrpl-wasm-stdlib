@@ -143,19 +143,19 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         let _ = trace_num("Starting first escrow security validation", 0);
 
         // 1. WASM Validation: TEMPORARILY DISABLED
-        // The FinishFunction field can be larger than the 4KB buffer limit enforced by the host.
+        // The Bytecode field can be larger than the 4KB buffer limit enforced by the host.
         // TODO: Implement hash-based validation instead of retrieving the full WASM bytecode.
         // For now, we skip WASM validation and rely on other security checks.
         /*
-        let first_finish_function = match first_escrow.get_finish_function() {
+        let first_bytecode = match first_escrow.get_bytecode() {
             Ok(Some(wasm)) => wasm,
             Ok(None) => {
-                let _ = trace_num("First escrow has no FinishFunction - security fail", 0);
+                let _ = trace_num("First escrow has no Bytecode - security fail", 0);
                 return VALIDATION_FAILED;
             }
             Err(e) => {
                 let _ = trace_num(
-                    "Error getting first escrow FinishFunction:",
+                    "Error getting first escrow Bytecode:",
                     e.code() as i64,
                 );
                 return e.code();
@@ -163,7 +163,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         };
 
         // Validate that the first escrow uses a compatible WASM contract
-        if !is_valid_atomic_swap1_wasm(&first_finish_function.data[..first_finish_function.len]) {
+        if !is_valid_atomic_swap1_wasm(&first_bytecode.data[..first_bytecode.len]) {
             let _ = trace_num("First escrow WASM validation failed - not atomic_swap1", 0);
             return VALIDATION_FAILED;
         }

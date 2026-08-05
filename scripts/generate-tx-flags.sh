@@ -22,11 +22,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Default rippled sources (can be overridden with the first two arguments)
-BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/se/supported}"
+BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
 CONTRACT_SOURCE="${2:-https://github.com/XRPLF/rippled/tree/xrplf/smart-contracts}"
 
 # Output file (can be overridden with the third argument)
-OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/tx_flags.rs}"
+OUTPUT_FILE="${3:-xrpl-common-stdlib/src/tx_flags.rs}"
 
 echo "🔧 Generating transaction flag constants..."
 echo "📦 Base source:     $BASE_SOURCE"
@@ -40,7 +40,7 @@ node tools/generateTxFlags.js "$BASE_SOURCE" "$CONTRACT_SOURCE" "$OUTPUT_FILE"
 
 echo ""
 echo "🎨 Formatting generated output..."
-cargo fmt -p xrpl-wasm-stdlib
+cargo fmt -p xrpl-common-stdlib
 
 echo ""
 echo "✅ Flag constants generated successfully!"

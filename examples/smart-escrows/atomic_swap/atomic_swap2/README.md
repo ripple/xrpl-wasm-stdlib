@@ -34,7 +34,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
   "Destination": "rBob...",
   "Amount": "1000000",
   "CancelAfter": 2000000000,
-  "FinishFunction": "REGULAR_WASM_HEX_OR_EMPTY"
+  "Bytecode": "REGULAR_WASM_HEX_OR_EMPTY"
 }
 ```
 
@@ -55,7 +55,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
   "Destination": "rAlice...",
   "Amount": "2000000",
   "CancelAfter": 2000000000,
-  "FinishFunction": "ATOMIC_SWAP2_WASM_HEX_HERE",
+  "Bytecode": "ATOMIC_SWAP2_WASM_HEX_HERE",
   "Data": "FIRST_ESCROW_ID_32_BYTES_HEX"
 }
 ```
@@ -64,7 +64,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
 
 - `Data`: Use the ledger entry ID from Step 1's transaction metadata (32 bytes hex)
 - `CancelAfter`: Must be set - this becomes the swap deadline
-- `FinishFunction`: Use the compiled atomic_swap2.wasm
+- `Bytecode`: Use the compiled atomic_swap2.wasm
 
 **Expected Result:**
 
@@ -81,7 +81,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
   "Account": "rBob...",
   "Owner": "rBob...",
   "OfferSequence": 456,
-  "ComputationAllowance": 1000000
+  "Gas": 1000000
 }
 ```
 
@@ -102,7 +102,7 @@ This guide shows how to manually create and execute a data field-based atomic sw
   "Account": "rBob...",
   "Owner": "rBob...",
   "OfferSequence": 456,
-  "ComputationAllowance": 1000000
+  "Gas": 1000000
 }
 ```
 
@@ -188,7 +188,7 @@ flowchart TD
         J["Get CancelAfter<br/>Timestamp"]
         K["Append CancelAfter<br/>to Data Field<br/>(32 → 36 bytes)"]
         L["Persist Updated Data<br/>to Escrow"]
-        M["Return 0 - Wait<br/>tecWASM_REJECTED<br/>Data Persisted ✓"]
+        M["Return 0 - Wait<br/>tecBYTECODE_REJECTED<br/>Data Persisted ✓"]
         N["Return 0 - Failure<br/>Escrow Rejected"]
 
         A --> B
