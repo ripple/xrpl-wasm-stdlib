@@ -41,7 +41,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000, // required: WASM execution budget
+    Gas: 1000000, // required: WASM execution budget
   }
 
   const response = await submit(tx, sourceWallet)
@@ -57,7 +57,7 @@ async function test(testContext) {
 module.exports = { test }
 ```
 
-The harness supplies `testContext`: `deploy(sourceWallet, destWallet, wasmBytes)` creates an `EscrowCreate` with the compiled WASM as `FinishFunction`; `finish` is the compiled WASM bytes; `submit(tx, wallet)` signs, submits, and waits for validation; `sourceWallet`/`destWallet` are pre-funded test accounts. Multi-contract patterns (atomic swap) call `deploy`/`submit` twice, once per side, in the order the swap requires.
+The harness supplies `testContext`: `deploy(sourceWallet, destWallet, wasmBytes)` creates an `EscrowCreate` with the compiled WASM as `Bytecode`; `finish` is the compiled WASM bytes; `submit(tx, wallet)` signs, submits, and waits for validation; `sourceWallet`/`destWallet` are pre-funded test accounts. Multi-contract patterns (atomic swap) call `deploy`/`submit` twice, once per side, in the order the swap requires.
 
 Run it:
 

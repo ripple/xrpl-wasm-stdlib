@@ -12,7 +12,7 @@ use xrpl_macros::smart_escrow;
 fn my_check(ctx: EscrowFinishContext) -> FinishResult { /* ... */ }
 ```
 
-Rules enforced at compile time: the annotated fn takes exactly `EscrowFinishContext` and returns `FinishResult` or `i32`; no attribute arguments; the fn must not be named `finish` (that's the generated `extern "C"` export symbol). Import `smart_escrow` via `xrpl_escrow_stdlib`/`xrpl_macros` — the generated code references `xrpl_escrow_stdlib` types.
+Rules enforced at compile time: the annotated fn takes exactly `EscrowFinishContext` and returns `FinishResult` or `i32`; no attribute arguments; the fn must not be named `escrow_finish` (that's the generated `extern "C"` export symbol). Import `smart_escrow` via `xrpl_escrow_stdlib`/`xrpl_macros` — the generated code references `xrpl_escrow_stdlib` types.
 
 `#[smart_contract]` is the analogous entry-point macro for a future non-escrow smart-contract feature family; no example in this repo uses it yet.
 
@@ -50,7 +50,7 @@ pub trait TransactionCommonFields {
     fn path(&self) -> TxPathBuilder;                       // nested-field access (memos, arrays)
     fn get_account(&self) -> Result<AccountID>;
     fn get_transaction_type(&self) -> Result<TransactionType>;
-    fn get_computation_allowance(&self) -> Result<u32>;
+    fn get_gas(&self) -> Result<u32>;
     fn get_fee(&self) -> Result<Amount>;
     fn get_sequence(&self) -> Result<u32>;
     fn get_account_txn_id(&self) -> Result<Option<Hash256>>;
@@ -99,7 +99,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
     fn get_previous_txn_id(&self) -> Result<Hash256>;
     fn get_previous_txn_lgr_seq(&self) -> Result<u32>;
     fn get_source_tag(&self) -> Result<Option<u32>>;
-    fn get_finish_function(&self) -> Result<Option<WasmBlob>>;
+    fn get_bytecode(&self) -> Result<Option<WasmBlob>>;
     fn get_data(&self) -> Result<ContractData>;
     fn update_current_escrow_data(data: ContractData) -> Result<()>;
 }
