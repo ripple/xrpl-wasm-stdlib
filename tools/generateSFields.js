@@ -7,7 +7,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
       " path/to/escrow/rippled path/to/contract/rippled [path/to/pipe/to]",
   )
   console.error(
-    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/smart-escrow",
+    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/se/supported",
   )
   console.error(
     "Escrow-side fields are sourced from (and always trust) the escrow branch, so a rename there is picked up automatically. " +

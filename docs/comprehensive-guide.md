@@ -607,7 +607,7 @@ These examples demonstrate:
 | **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing |
 | **Local Node**  | `ws://localhost:6006`                    | Local Development   |
 
-Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/smart-escrow) if you would like to build and run rippled locally.
+Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/se/supported) if you would like to build and run rippled locally.
 
 ### Key Testing Considerations
 

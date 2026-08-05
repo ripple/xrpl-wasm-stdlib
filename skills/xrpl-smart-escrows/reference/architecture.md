@@ -10,13 +10,13 @@ xrpl-escrow-stdlib → xrpl-common-stdlib → xrpl-macros
 
 - **`xrpl-macros`** — proc-macro crate. Exports the typed-constant macros (`r_address!`, `hash256!`, `pubkey!`, `currency!`, `blob!`) and the entry-point macros (`#[smart_escrow]`, `#[smart_contract]`). No runtime dependency on the other two crates.
 - **`xrpl-common-stdlib`** — general-purpose layer: host bindings, transaction/ledger-object field access, ledger entry IDs, core types (`AccountID`, `Amount`, `Number`, `Hash256`, `Blob<N>`, ...). Contains no feature-specific (escrow-only) logic.
-- **`xrpl-escrow-stdlib`** — Smart-Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`), the `CurrentEscrow`/`Escrow` ledger-object wrappers, escrow persistent-storage helpers, and escrow-only host calls (`update_data`). Re-exports `xrpl_common_stdlib::*`, so a contract typically only needs to depend on `xrpl-escrow-stdlib` directly plus `xrpl-macros` for constants.
+- **`xrpl-escrow-stdlib`** — Smart-Escrow-specific entry-point context (`EscrowFinishContext`, `FinishResult`), the `CurrentEscrow`/`Escrow` ledger-object wrappers, escrow persistent-storage helpers, and escrow-only host calls (`set_data`). Re-exports `xrpl_common_stdlib::*`, so a contract typically only needs to depend on `xrpl-escrow-stdlib` directly plus `xrpl-macros` for constants.
 
 > Historical note: earlier revisions of this library named the common crate `xrpl-wasm-stdlib`; it has since been split into `xrpl-common-stdlib` (generic) + `xrpl-escrow-stdlib` (escrow-specific). If you see `xrpl-wasm-stdlib` in older docs or blog posts, read it as `xrpl-common-stdlib`.
 
 ## The three-implementation host-binding swap
 
-Contract code never sees this directly, but it explains why the library builds and tests natively despite being `no_std` on WASM. `HostBindings` (a trait covering every host function: `cache_ledger_obj`, `get_tx_field`, `trace`, etc.) has three implementations selected by `cfg`:
+Contract code never sees this directly, but it explains why the library builds and tests natively despite being `no_std` on WASM. `HostBindings` (a trait covering every host function: `cache_le`, `tx_field`, `trace`, etc.) has three implementations selected by `cfg`:
 
 | Target                                       | Implementation                                                                          |
 | -------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -47,9 +47,9 @@ Smart Escrows execute identically on every validator during consensus. That rule
 
 - Heap allocation (no allocator is wired up under `no_std`; use fixed-size stack arrays / `Blob<N>`)
 - Any host clock, randomness, network, or filesystem access
-- Writing to ledger state other than the escrow's own `Data` field (via `ctx.update_data()`)
+- Writing to ledger state other than the escrow's own `Data` field (via `ctx.set_data()`)
 
-Time- and sequence-based logic must go through host-provided, ledger-derived values (`parent_ledger_time`, `ledger_sqn`) rather than anything computed locally, since those are the only values every validator agrees on.
+Time- and sequence-based logic must go through host-provided, ledger-derived values (`parent_ldgr_time`, `ldgr_index`) rather than anything computed locally, since those are the only values every validator agrees on.
 
 ## Contract crate layout
 

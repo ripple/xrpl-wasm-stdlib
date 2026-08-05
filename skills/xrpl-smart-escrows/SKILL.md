@@ -40,8 +40,8 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 
 ## Key constraints (always true)
 
-- `no_std`, no heap allocation, no network/filesystem access, read-only ledger access except the escrow's own `Data` field (via `ctx.update_data()` / `escrow_storage::save_data`).
-- Execution must be deterministic — no wall-clock time, no randomness; use `parent_ledger_time`/`ledger_sqn` for time/sequence, not host-side clocks.
+- `no_std`, no heap allocation, no network/filesystem access, read-only ledger access except the escrow's own `Data` field (via `ctx.set_data()` / `escrow_storage::save_data`).
+- Execution must be deterministic — no wall-clock time, no randomness; use `parent_ldgr_time`/`ldgr_index` for time/sequence, not host-side clocks.
 - Compare token amounts via the `Amount`/`Number`/`IOUNumber` types (host-delegated decimal math), never raw floats.
 - Minimize host calls (`cache_le`, ledger entry ID computation, field reads) — cache results instead of repeating identical calls; `NoFreeSlots` and execution budget (`Gas`) are real limits.
 - Debug via `trace`/`trace_num`/`trace_data`/`trace_acct`/`trace_amt` — output lands in rippled's `debug.log`. Convention: on every error path, `trace_num("<context>", e.code() as i64)` before returning.

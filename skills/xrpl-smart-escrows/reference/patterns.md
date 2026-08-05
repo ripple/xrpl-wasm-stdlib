@@ -171,7 +171,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-Key idea: every `EscrowFinish` call re-enters this function from scratch — state that must survive between calls has to be explicitly written back with `save_data`/`ctx.update_data()`, since there's no in-memory persistence between invocations.
+Key idea: every `EscrowFinish` call re-enters this function from scratch — state that must survive between calls has to be explicitly written back with `save_data`/`ctx.set_data()`, since there's no in-memory persistence between invocations.
 
 ## 6. Cross-escrow atomic swap — `atomic_swap`
 

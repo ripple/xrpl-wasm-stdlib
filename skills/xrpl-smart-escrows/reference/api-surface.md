@@ -35,7 +35,7 @@ impl FinishResult {
 impl EscrowFinishContext {
     pub fn escrow(&self) -> &CurrentEscrow;
     pub fn tx(&self) -> &EscrowFinish;                                 // via SmartFeatureContext trait
-    pub fn update_data(&self, data: &[u8]) -> host::Result<()>;        // write the escrow's Data field
+    pub fn set_data(&self, data: &[u8]) -> host::Result<()>;        // write the escrow's Data field
 }
 ```
 
@@ -221,8 +221,8 @@ const B2: Blob<8> = blob!("DEADBEEF", 8);                                   // z
 pub fn trace(msg: &str) -> Result<i32>;
 pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) -> Result<i32>;  // DataRepr::AsUTF8 | AsHex
 pub fn trace_num(msg: &str, number: i64) -> Result<i32>;
-pub fn trace_account(msg: &str, account_id: &AccountID) -> Result<i32>;
-pub fn trace_amount(msg: &str, amount: &Amount) -> Result<i32>;
+pub fn trace_acct(msg: &str, account_id: &AccountID) -> Result<i32>;
+pub fn trace_amt(msg: &str, amount: &Amount) -> Result<i32>;
 pub fn trace_float(msg: &str, f: &[u8; 8]) -> Result<i32>;
 ```
 

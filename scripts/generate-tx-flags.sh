@@ -22,7 +22,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Default rippled sources (can be overridden with the first two arguments)
-BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/smart-escrow}"
+BASE_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/se/supported}"
 CONTRACT_SOURCE="${2:-https://github.com/XRPLF/rippled/tree/xrplf/smart-contracts}"
 
 # Output file (can be overridden with the third argument)
