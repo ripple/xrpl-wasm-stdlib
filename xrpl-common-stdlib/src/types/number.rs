@@ -1,12 +1,10 @@
 use crate::host;
 use crate::host::Result;
+use crate::host::RoundingMode;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
 
 /// The number of bytes in the serialized STNumber (float) representation.
 const NUMBER_SIZE: usize = 12;
-
-/// Rounding mode for `Number` conversions: to nearest, matching rippled's default.
-const TO_NEAREST: i32 = host::FLOAT_ROUNDING_MODES_TO_NEAREST;
 
 /// An opaque XRPL `STNumber` value: a decimal float represented as `mantissa × 10^exponent`.
 ///
@@ -44,8 +42,14 @@ impl Number {
     /// Converts a signed integer to a `Number`.
     pub fn from_int(value: i64) -> Result<Number> {
         let mut out = [0u8; NUMBER_SIZE];
-        let rescode =
-            unsafe { host::float_from_int(value, out.as_mut_ptr(), NUMBER_SIZE, TO_NEAREST) };
+        let rescode = unsafe {
+            host::float_from_int(
+                value,
+                out.as_mut_ptr(),
+                NUMBER_SIZE,
+                RoundingMode::ToNearest.into(),
+            )
+        };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
     }
 
@@ -61,7 +65,7 @@ impl Number {
                 value_bytes.len(),
                 out.as_mut_ptr(),
                 NUMBER_SIZE,
-                TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
@@ -76,7 +80,7 @@ impl Number {
                 exponent,
                 out.as_mut_ptr(),
                 NUMBER_SIZE,
-                TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
@@ -91,7 +95,7 @@ impl Number {
                 bytes.len(),
                 out.as_mut_ptr(),
                 NUMBER_SIZE,
-                TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
@@ -106,7 +110,7 @@ impl Number {
                 bytes.len(),
                 out.as_mut_ptr(),
                 NUMBER_SIZE,
-                TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
@@ -121,7 +125,7 @@ impl Number {
                 self.0.len(),
                 int_bytes.as_mut_ptr(),
                 int_bytes.len(),
-                TO_NEAREST,
+                RoundingMode::ToNearest.into(),
             )
         };
         match_result_code_with_expected_bytes(rescode, 8, || i64::from_le_bytes(int_bytes))
