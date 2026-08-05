@@ -16,7 +16,7 @@ use crate::sfield;
 
 /// Trait providing access to fields specific to LedgerHashes objects in any ledger.
 pub trait LedgerHashesFields: LedgerObjectCommonFields {
-    /// **DEPRECATED** Do not use. (The "recent hashes" object on Mainnet has the value `2` in this
+    /// DEPRECATED Do not use. (The "recent hashes" object on Mainnet has the value `2` in this
     /// field as a result of an old software bug. That value gets carried forward as the "recent
     /// hashes" object is updated. New "previous history" objects do not have this field, nor do
     /// "recent hashes" objects in parallel networks started with more recent versions of `xrpld`.)
@@ -48,7 +48,7 @@ pub trait LedgerHashesFields: LedgerObjectCommonFields {
 
 /// Trait providing access to fields specific to the current LedgerHashes object.
 pub trait CurrentLedgerHashesFields: CurrentLedgerObjectCommonFields {
-    /// **DEPRECATED** Do not use. (The "recent hashes" object on Mainnet has the value `2` in this
+    /// DEPRECATED Do not use. (The "recent hashes" object on Mainnet has the value `2` in this
     /// field as a result of an old software bug. That value gets carried forward as the "recent
     /// hashes" object is updated. New "previous history" objects do not have this field, nor do
     /// "recent hashes" objects in parallel networks started with more recent versions of `xrpld`.)

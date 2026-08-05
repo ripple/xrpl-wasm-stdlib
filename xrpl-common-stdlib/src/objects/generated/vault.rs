@@ -134,12 +134,12 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::WithdrawalPolicy)
     }
 
-    /// Specifies decimal precision for share calculations. Assets are multiplied by
-    /// 10<sup>Scale</sup > to convert fractional amounts into whole number shares. For example,
-    /// with a `Scale` of `6`, depositing 20.3 units creates 20,300,000 shares (20.3 ×
-    /// 10<sup>Scale</sup >). For **trust line tokens** this can be configured at vault creation,
-    /// and valid values are between 0-18, with the default being `6`. For **XRP** and **MPTs**,
-    /// this is fixed at `0`. See Scaling Factor for more information.
+    /// Specifies decimal precision for share calculations. Assets are multiplied by 10^Scale to
+    /// convert fractional amounts into whole number shares. For example, with a `Scale` of `6`,
+    /// depositing 20.3 units creates 20,300,000 shares (20.3 × 10^Scale). For trust line tokens
+    /// this can be configured at vault creation, and valid values are between 0-18, with the
+    /// default being `6`. For XRP and MPTs, this is fixed at `0`. See Scaling Factor for more
+    /// information.
     fn scale(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Scale)
     }
@@ -257,12 +257,12 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::WithdrawalPolicy)
     }
 
-    /// Specifies decimal precision for share calculations. Assets are multiplied by
-    /// 10<sup>Scale</sup > to convert fractional amounts into whole number shares. For example,
-    /// with a `Scale` of `6`, depositing 20.3 units creates 20,300,000 shares (20.3 ×
-    /// 10<sup>Scale</sup >). For **trust line tokens** this can be configured at vault creation,
-    /// and valid values are between 0-18, with the default being `6`. For **XRP** and **MPTs**,
-    /// this is fixed at `0`. See Scaling Factor for more information.
+    /// Specifies decimal precision for share calculations. Assets are multiplied by 10^Scale to
+    /// convert fractional amounts into whole number shares. For example, with a `Scale` of `6`,
+    /// depositing 20.3 units creates 20,300,000 shares (20.3 × 10^Scale). For trust line tokens
+    /// this can be configured at vault creation, and valid values are between 0-18, with the
+    /// default being `6`. For XRP and MPTs, this is fixed at `0`. See Scaling Factor for more
+    /// information.
     fn scale(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::Scale)
     }

@@ -21,7 +21,7 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
     }
 
     /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is
-    /// 2<sup>63</sup>-1.
+    /// 2^63-1.
     fn mpt_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MPTAmount)
     }
@@ -62,7 +62,7 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The amount of tokens currently held by the owner. The minimum is 0 and the maximum is
-    /// 2<sup>63</sup>-1.
+    /// 2^63-1.
     fn mpt_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::MPTAmount)
     }

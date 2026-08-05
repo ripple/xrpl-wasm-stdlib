@@ -80,7 +80,7 @@ pub struct Amendments {
 }
 
 impl Amendments {
-    /// Binds this handle to a host-managed slot holding a Amendments ledger object.
+    /// Binds this handle to a host-managed slot holding an Amendments ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

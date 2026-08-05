@@ -52,7 +52,7 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
     }
 
     /// The maximum number of MPTs that can exist at one time. If omitted, the maximum is currently
-    /// limited to 2<sup>63</sup>-1.
+    /// limited to 2^63-1.
     fn maximum_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MaximumAmount)
     }
@@ -140,7 +140,7 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The maximum number of MPTs that can exist at one time. If omitted, the maximum is currently
-    /// limited to 2<sup>63</sup>-1.
+    /// limited to 2^63-1.
     fn maximum_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::MaximumAmount)
     }

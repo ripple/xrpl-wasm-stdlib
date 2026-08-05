@@ -116,7 +116,7 @@ pub struct AMM {
 }
 
 impl AMM {
-    /// Binds this handle to a host-managed slot holding a AMM ledger object.
+    /// Binds this handle to a host-managed slot holding an AMM ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

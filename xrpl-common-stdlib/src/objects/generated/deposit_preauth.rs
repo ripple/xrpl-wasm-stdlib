@@ -22,9 +22,8 @@ pub trait DepositPreauthFields: LedgerObjectCommonFields {
     }
 
     /// A hint indicating which page of the sender's owner directory links to this object, in case
-    /// the directory consists of multiple pages. **Note:** The object does not contain a direct
-    /// link to the owner directory containing it, since that value can be derived from the
-    /// `Account`.
+    /// the directory consists of multiple pages. Note: The object does not contain a direct link to
+    /// the owner directory containing it, since that value can be derived from the `Account`.
     fn owner_node(&self) -> Result<u64> {
         ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
     }
@@ -55,9 +54,8 @@ pub trait CurrentDepositPreauthFields: CurrentLedgerObjectCommonFields {
     }
 
     /// A hint indicating which page of the sender's owner directory links to this object, in case
-    /// the directory consists of multiple pages. **Note:** The object does not contain a direct
-    /// link to the owner directory containing it, since that value can be derived from the
-    /// `Account`.
+    /// the directory consists of multiple pages. Note: The object does not contain a direct link to
+    /// the owner directory containing it, since that value can be derived from the `Account`.
     fn owner_node(&self) -> Result<u64> {
         current_ledger_object::get_field(sfield::OwnerNode)
     }

@@ -57,7 +57,7 @@ pub trait DirectoryNodeFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TakerGetsMPT)
     }
 
-    /// (Offer directories only) **DEPRECATED**. Do not use.
+    /// (Offer directories only) DEPRECATED. Do not use.
     fn exchange_rate(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ExchangeRate)
     }
@@ -159,7 +159,7 @@ pub trait CurrentDirectoryNodeFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::TakerGetsMPT)
     }
 
-    /// (Offer directories only) **DEPRECATED**. Do not use.
+    /// (Offer directories only) DEPRECATED. Do not use.
     fn exchange_rate(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::ExchangeRate)
     }

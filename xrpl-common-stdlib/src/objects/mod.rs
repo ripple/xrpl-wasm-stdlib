@@ -31,7 +31,9 @@
 
 pub mod any_object;
 pub mod array_object;
-pub mod generated;
+// Crate-internal: the flat `pub use generated::{...}` below is the public path
+// to each type (`objects::AccountRoot`), not `objects::generated::...`.
+pub(crate) mod generated;
 #[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub mod test_utils;
 pub mod traits;

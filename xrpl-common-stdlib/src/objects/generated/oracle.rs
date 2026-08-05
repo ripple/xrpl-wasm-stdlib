@@ -35,8 +35,8 @@ pub trait OracleFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::AssetClass)
     }
 
-    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other
-    /// time values on the XRP Ledger, this value does not use the Ripple Epoch.)
+    /// The time the data was last updated, represented in Unix time. (Note: Unlike many other time
+    /// values on the XRP Ledger, this value does not use the Ripple Epoch.)
     fn last_update_time(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LastUpdateTime)
     }
@@ -90,8 +90,8 @@ pub trait CurrentOracleFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::AssetClass)
     }
 
-    /// The time the data was last updated, represented in Unix time. (**Note:** Unlike many other
-    /// time values on the XRP Ledger, this value does not use the Ripple Epoch.)
+    /// The time the data was last updated, represented in Unix time. (Note: Unlike many other time
+    /// values on the XRP Ledger, this value does not use the Ripple Epoch.)
     fn last_update_time(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LastUpdateTime)
     }
@@ -125,7 +125,7 @@ pub struct Oracle {
 }
 
 impl Oracle {
-    /// Binds this handle to a host-managed slot holding a Oracle ledger object.
+    /// Binds this handle to a host-managed slot holding an Oracle ledger object.
     pub fn new(slot_num: i32) -> Self {
         Self { slot_num }
     }

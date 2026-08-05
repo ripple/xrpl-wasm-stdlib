@@ -72,17 +72,34 @@ function parseLedgerEntries(macroFile) {
 ////////////////////////////////////////////////////////////////////////
 
 // Cleans a raw markdown table-cell description into readable doc-comment
-// prose: strips `{% ... %}` templating tags, flattens markdown links to their
-// visible text (inline `[text](url)`, reference `[text][ref]`/`[text][]`, and
-// leftover shortcut `[text]` -- the reference definitions live elsewhere in the
-// source page and aren't scraped, so unflattened they'd render as literal
-// brackets), and collapses/trims whitespace.
+// prose:
+//   - strips `{% ... %}` templating tags;
+//   - flattens markdown links to their visible text (inline `[text](url)`,
+//     reference `[text][ref]`/`[text][]`, and leftover shortcut `[text]` -- the
+//     reference definitions live elsewhere in the source page and aren't
+//     scraped, so unflattened they'd render as literal brackets);
+//   - converts `<sup>`/`<sub>` to `^`/`_` and strips any other HTML tags so
+//     e.g. `2<sup>63</sup>-1` reads as `2^63-1` rather than `263-1`;
+//   - drops `**bold**` markers and decodes the common HTML entities;
+//   - collapses/trims whitespace.
+// The HTML-tag strip is letter-anchored (`</?[a-zA-Z]...>`) so prose
+// comparisons like `x < 5` are left untouched, and entities are decoded last so
+// an escaped `&lt; 5` survives the tag strip and lands as readable `< 5`.
 function cleanDescription(text) {
   return text
     .replace(/\{%[\s\S]*?%\}/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]*)\]\[[^\]]*\]/g, "$1")
     .replace(/\[([^\]]*)\]/g, "$1")
+    .replace(/<sup\s*>([^<]*)<\/sup\s*>/gi, "^$1")
+    .replace(/<sub\s*>([^<]*)<\/sub\s*>/gi, "_$1")
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -275,10 +292,14 @@ function resolveEntryFields(entry, sfieldTypes, unmapped) {
 
     const def = sfieldTypes.get(field.sfName)
     if (!def) {
-      // Not found in sfields.macro -- shouldn't normally happen since
       // ledger_entries.macro and sfields.macro come from the same rippled
-      // source, but skip defensively rather than crash.
-      continue
+      // source, so a field with no sfields.macro entry means the two are out of
+      // sync (a rename/typo). Fail loudly rather than silently dropping the
+      // getter, which would leave a compiling-but-incomplete trait.
+      throw new Error(
+        `sf${field.sfName} (on ledger entry ${entry.className}) has no entry in ` +
+          `sfields.macro -- ledger_entries.macro and sfields.macro are out of sync.`,
+      )
     }
 
     const { rustType, source } = resolveRustTypeDetailed(
@@ -422,6 +443,7 @@ function renderTrait(entry, resolved, fieldDocsForClass, { useCurrent }) {
 // per-entry `load()` can be hand-added where the ergonomics are worth it.
 function renderStruct(entry) {
   const { className } = entry
+  const article = /^[AEIOU]/i.test(className) ? "an" : "a"
   const lines = [
     `#[derive(Debug, Clone, Copy, Eq, PartialEq)]`,
     `pub struct ${className} {`,
@@ -430,7 +452,7 @@ function renderStruct(entry) {
     "",
     `impl ${className} {`,
     renderDocComment(
-      `Binds this handle to a host-managed slot holding a ${className} ledger object.`,
+      `Binds this handle to a host-managed slot holding ${article} ${className} ledger object.`,
       "    ",
     ),
     `    pub fn new(slot_num: i32) -> Self {`,
@@ -705,12 +727,19 @@ function renderUnmappedHeader(unmapped) {
 // generated entry, plus a flat re-export of every public item.
 function renderModFile(entries, unmapped) {
   const lines = [...renderUnmappedHeader(unmapped), BANNER]
-  const modNames = entries.map((e) => snakeCase(e.className))
-  for (const modName of [...modNames].sort()) {
-    lines.push(`pub mod ${modName};`)
+  // Sort both blocks by module name (rather than following rippled's file
+  // order) so the file is stable across upstream entry reorderings.
+  const sortedEntries = [...entries].sort((a, b) =>
+    snakeCase(a.className).localeCompare(snakeCase(b.className)),
+  )
+  // Per-entry modules are private; the flat `pub use` below is the sole public
+  // path to each type (`generated::AccountRoot`, not
+  // `generated::account_root::AccountRoot`).
+  for (const entry of sortedEntries) {
+    lines.push(`mod ${snakeCase(entry.className)};`)
   }
   lines.push("")
-  for (const entry of entries) {
+  for (const entry of sortedEntries) {
     const modName = snakeCase(entry.className)
     const { className } = entry
     const items = SLOT_ONLY_ENTRIES.has(className)
