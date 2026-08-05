@@ -71,20 +71,17 @@ function parseLedgerEntries(macroFile) {
 //  xrpl-dev-portal doc-comment fetching
 ////////////////////////////////////////////////////////////////////////
 
-// Cleans a raw markdown table-cell description into readable doc-comment
-// prose:
-//   - strips `{% ... %}` templating tags;
-//   - flattens markdown links to their visible text (inline `[text](url)`,
-//     reference `[text][ref]`/`[text][]`, and leftover shortcut `[text]` -- the
-//     reference definitions live elsewhere in the source page and aren't
-//     scraped, so unflattened they'd render as literal brackets);
-//   - converts `<sup>`/`<sub>` to `^`/`_` and strips any other HTML tags so
-//     e.g. `2<sup>63</sup>-1` reads as `2^63-1` rather than `263-1`;
-//   - drops `**bold**` markers and decodes the common HTML entities;
-//   - collapses/trims whitespace.
-// The HTML-tag strip is letter-anchored (`</?[a-zA-Z]...>`) so prose
-// comparisons like `x < 5` are left untouched, and entities are decoded last so
-// an escaped `&lt; 5` survives the tag strip and lands as readable `< 5`.
+// Cleans a raw markdown table-cell description into readable doc-comment prose.
+// The scraped xrpl-dev-portal descriptions contain only a small, known set of
+// markup, each handled by a targeted replacement:
+//   - `{% ... %}` templating tags                     -> removed
+//   - markdown links (inline `[t](url)`, reference     -> flattened to their text
+//     `[t][ref]`/`[t][]`, and leftover shortcut `[t]`)
+//   - superscripts/subscripts `2<sup>63</sup>`         -> `2^63` (`^`/`_`)
+//   - `**bold**` emphasis markers                      -> removed
+// then whitespace is collapsed. Intentionally NO generic `<...>` tag stripper and
+// NO entity decoding: the data has no other tags or entities, a catch-all HTML
+// regex is an unreliable filter, and decoding `&`-escapes could revive a live one.
 function cleanDescription(text) {
   return text
     .replace(/\{%[\s\S]*?%\}/g, "")
@@ -93,13 +90,7 @@ function cleanDescription(text) {
     .replace(/\[([^\]]*)\]/g, "$1")
     .replace(/<sup\s*>([^<]*)<\/sup\s*>/gi, "^$1")
     .replace(/<sub\s*>([^<]*)<\/sub\s*>/gi, "_$1")
-    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
     .replace(/\*\*/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
     .replace(/\s+/g, " ")
     .trim()
 }
