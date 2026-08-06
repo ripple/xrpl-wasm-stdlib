@@ -25,14 +25,14 @@ const ITERATIONS: usize = 100;
 /// to help identify gas usage patterns.
 ///
 /// Benchmarks covered:
-/// - Locator operations (pack single, pack nested, repack_last)
+/// - Locator operations (pack single, pack inner, repack_last)
 /// - Transaction field access (get_account, get_fee)
 /// - Blob operations (creation and access)
 /// - Result type operations (is_ok, is_err, ok, err)
 /// - Error code matching (match_result_code, match_result_code_optional, etc.)
 /// - Hex decoding (decode_hex_32, decode_hex_20)
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ GAS BENCHMARK START $$$$$");
 
     // Get the current transaction
@@ -47,8 +47,8 @@ pub extern "C" fn finish() -> i32 {
     let _ = trace("BENCHMARK: locator_pack_single");
     accumulator = accumulator.wrapping_add(benchmark_locator_pack_single());
 
-    let _ = trace("BENCHMARK: locator_pack_nested");
-    accumulator = accumulator.wrapping_add(benchmark_locator_pack_nested());
+    let _ = trace("BENCHMARK: locator_pack_inner");
+    accumulator = accumulator.wrapping_add(benchmark_locator_pack_inner());
 
     let _ = trace("BENCHMARK: locator_repack_last");
     accumulator = accumulator.wrapping_add(benchmark_locator_repack_last());
@@ -283,8 +283,8 @@ fn benchmark_locator_pack_single() -> u64 {
     count
 }
 
-/// Benchmark Locator::pack() - nested field access (3 levels)
-fn benchmark_locator_pack_nested() -> u64 {
+/// Benchmark Locator::pack() - inner field access (3 levels)
+fn benchmark_locator_pack_inner() -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
         let mut locator = Locator::new();
@@ -364,8 +364,8 @@ fn benchmark_u16_field(escrow_finish: &EscrowFinish) -> u64 {
 fn benchmark_u64_field(escrow_finish: &EscrowFinish) -> u64 {
     let mut count = 0u64;
     for _ in 0..ITERATIONS {
-        // Using get_computation_allowance as a u32 field
-        if escrow_finish.get_computation_allowance().is_ok() {
+        // Using get_gas as a u32 field
+        if escrow_finish.get_gas().is_ok() {
             count += 1;
         }
     }
@@ -409,7 +409,7 @@ fn benchmark_optional_field_none(escrow_finish: &EscrowFinish) -> u64 {
 mod coverage_tests {
     use super::*;
 
-    /// Coverage test: exercises all host function categories via finish()
+    /// Coverage test: exercises all host function categories via escrow_finish()
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
@@ -420,13 +420,13 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_test.rs
+        // On non-wasm targets, escrow_finish() uses host_bindings_test.rs
         // which provides stub implementations of all host functions.
-        let result = finish();
+        let result = escrow_finish();
 
-        // The finish() function returns 1 on success, or a negative error code.
+        // The escrow_finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        core::assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "escrow_finish() should return 1 on success");
     }
 }

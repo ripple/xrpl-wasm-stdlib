@@ -34,7 +34,7 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         &entry,
         &kind,
         &CodegenConfig {
-            export_symbol: "finish",
+            export_symbol: "escrow_finish",
             ctx_path: quote!(::xrpl_escrow_stdlib::EscrowFinishContext),
         },
     )

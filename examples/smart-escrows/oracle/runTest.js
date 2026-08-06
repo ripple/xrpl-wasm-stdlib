@@ -49,13 +49,13 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   // This EscrowCreate should fail since the oracle must show the price as <= 1 USD/XRP
   const responseFail = await submit(txFail, sourceWallet)
 
-  if (responseFail.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (responseFail.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error("\nEscrow finished successfully when it should have failed")
     process.exit(1)
   }
@@ -97,7 +97,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const response = await submit(tx, sourceWallet)

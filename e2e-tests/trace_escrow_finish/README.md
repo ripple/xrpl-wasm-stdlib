@@ -40,7 +40,7 @@ This will:
 - Connect to WASM Devnet (or local rippled)
 - Create and fund wallets (source, destination, and signers)
 - Set up a SignerList for multi-signing
-- Create an EscrowCreate transaction with Condition and your compiled `FinishFunction`
+- Create an EscrowCreate transaction with Condition and your compiled `Bytecode`
 - Finish the escrow with a multi-signed transaction including Fulfillment, Memos, and CredentialIDs
 - Execute the WASM which traces all EscrowFinish transaction fields
 

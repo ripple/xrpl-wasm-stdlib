@@ -10,9 +10,9 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::host::cache_ledger_obj;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
-use xrpl_common_stdlib::keylets::account_keylet;
+use xrpl_common_stdlib::host::cache_le;
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
+use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::objects::account_root::AccountRoot;
 use xrpl_common_stdlib::objects::traits::{AccountFields, LedgerObjectCommonFields};
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -24,7 +24,7 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_es
 use xrpl_common_stdlib::types::amount::Amount;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");
 
@@ -38,13 +38,13 @@ pub extern "C" fn finish() -> i32 {
         // Get the account that's finishing the escrow (our configured test account)
         let account_id: AccountID = escrow_finish.get_account().unwrap();
 
-        // Compute the keylet for this account's AccountRoot object
-        // AccountRoot keylet = 0x61 (a) + SHA512Half(account_id)
-        // use xrpl_common_stdlib::keylets::account_root_keylet;
-        let account_keylet = account_keylet(&account_id).unwrap();
+        // Compute the ledger entry ID for this account's AccountRoot object
+        // AccountRoot ledger entry ID = 0x61 (a) + SHA512Half(account_id)
+        // use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
+        let accountroot_id = accountroot_id(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled
-        let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), 32, 0) };
+        let slot = unsafe { cache_le(accountroot_id.as_ptr(), 32, 0) };
         if slot < 0 {
             let _ = trace_num("Error slotting Account object", slot as i64);
             panic!()
@@ -81,7 +81,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace the `Account`
         let account_id = account.get_account().unwrap();
-        // Account is the hardcoded keylet we're looking up - just verify it's 20 bytes
+        // Account is the hardcoded ledger entry ID we're looking up - just verify it's 20 bytes
         test_utils::assert_eq!(account_id.0.len(), 20);
         let _ = trace_data("  Account:", &account_id.0, DataRepr::AsHex);
 
@@ -106,7 +106,7 @@ pub extern "C" fn finish() -> i32 {
             .balance()
             .unwrap()
             .expect("Balance should be present");
-        let _ = trace_amount("Balance of Account Finishing the Escrow:", &balance_amount);
+        let _ = trace_amt("Balance of Account Finishing the Escrow:", &balance_amount);
         // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory
         // (whereas locally this returns the bytes 0x00).
         #[cfg(target_arch = "wasm32")]
@@ -292,7 +292,7 @@ pub extern "C" fn finish() -> i32 {
 mod coverage_tests {
     use super::*;
 
-    /// Coverage test: exercises any host function categories via finish()
+    /// Coverage test: exercises any host function categories via escrow_finish()
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
@@ -303,13 +303,13 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_for_testing.rs
+        // On non-wasm targets, escrow_finish() uses host_bindings_for_testing.rs
         // which provides stub implementations of all host functions.
-        let result = finish();
+        let result = escrow_finish();
 
-        // The finish() function returns 1 on success, or a negative error code.
+        // The escrow_finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        core::assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "escrow_finish() should return 1 on success");
     }
 }

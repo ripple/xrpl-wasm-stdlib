@@ -1,4 +1,4 @@
-# Notary Escrow FinishFunction
+# Notary Escrow Contract
 
 This WebAssembly module implements a notary-based escrow finish condition. It verifies that only a designated notary
 account is allowed to finish the escrow.
@@ -11,7 +11,7 @@ returns 1 (allow), otherwise 0 (deny).
 ### Function
 
 The entry point, `notary_finish(ctx: EscrowFinishContext) -> FinishResult`, is annotated with `#[smart_escrow]`,
-which generates the `extern "C" fn finish() -> i32` export the XRPL host calls. `FinishResult::succeed()` allows
+which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL host calls. `FinishResult::succeed()` allows
 finishing the escrow, `FinishResult::reject()` denies it, and host errors are propagated as their error code via
 `.into()`.
 
@@ -47,7 +47,7 @@ Artifact:
 
 ### 3. Deploy and test on Devnet
 
-Use the test script to deploy an escrow and test the FinishFunction.
+Use the test script to deploy an escrow and test the contract.
 
 ```shell
 cd ../../..
@@ -58,8 +58,8 @@ This will:
 
 - Connect to WASM Devnet
 - Create and fund wallets (including the notary account)
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
-- Attempt to finish the escrow from a non-notary account (should fail with `tecWASM_REJECTED`)
+- Create an EscrowCreate transaction with your compiled `Bytecode`
+- Attempt to finish the escrow from a non-notary account (should fail with `tecBYTECODE_REJECTED`)
 - Finish the escrow from the notary account (should succeed with `tesSUCCESS`)
 
 The escrow will only unlock if the transaction is submitted by the designated notary account.

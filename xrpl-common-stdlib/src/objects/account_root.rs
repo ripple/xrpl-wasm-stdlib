@@ -1,5 +1,5 @@
 use crate::host;
-use crate::keylets::account_keylet;
+use crate::ledger_entry_ids::accountroot_id;
 use crate::objects::traits::{AccountFields, LedgerObjectCommonFields};
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
@@ -19,14 +19,14 @@ impl LedgerObjectCommonFields for AccountRoot {
 impl AccountFields for AccountRoot {}
 
 pub fn get_account_balance(account_id: &AccountID) -> host::Result<Option<Amount>> {
-    // Construct the account keylet. This calls a host function, so propagate the error via `?`
-    let account_keylet = match account_keylet(account_id) {
-        host::Result::Ok(keylet) => keylet,
+    // Construct the account ledger entry ID. This calls a host function, so propagate the error via `?`
+    let accountroot_id = match accountroot_id(account_id) {
+        host::Result::Ok(id) => id,
         host::Result::Err(e) => return host::Result::Err(e),
     };
 
     // Try to cache the ledger object inside rippled
-    let slot = unsafe { host::cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { host::cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return host::Result::Err(Error::from_code(slot));
     }
@@ -43,26 +43,26 @@ mod tests {
     use crate::host::error_codes::INTERNAL_ERROR;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
-    use crate::keylets::XRPL_KEYLET_SIZE;
+    use crate::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
     use crate::sfield;
     use crate::types::amount::AMOUNT_SIZE;
     use mockall::predicate::{always, eq};
 
-    /// Mock account_keylet to write 0xCC bytes and return success.
-    /// The byte value is arbitrary — `cache_ledger_obj` is itself mocked and
-    /// never reads the buffer; what matters is that the keylet's `MaybeUninit`
+    /// Mock accountroot_id to write 0xCC bytes and return success.
+    /// The byte value is arbitrary — `cache_le` is itself mocked and
+    /// never reads the buffer; what matters is that the ledger entry ID's `MaybeUninit`
     /// storage is initialized before downstream code calls `assume_init`.
-    fn mock_account_keylet_success(mock: &mut MockHostBindings) {
-        mock.expect_account_keylet()
+    fn mock_accountroot_id_success(mock: &mut MockHostBindings) {
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, out_buff_ptr, out_buff_len| {
-                assert_eq!(out_buff_len, XRPL_KEYLET_SIZE);
+                assert_eq!(out_buff_len, XRPL_LEDGER_ENTRY_ID_SIZE);
                 unsafe {
-                    for i in 0..XRPL_KEYLET_SIZE {
+                    for i in 0..XRPL_LEDGER_ENTRY_ID_SIZE {
                         *out_buff_ptr.add(i) = 0xCC;
                     }
                 }
-                XRPL_KEYLET_SIZE as i32
+                XRPL_LEDGER_ENTRY_ID_SIZE as i32
             });
     }
 
@@ -72,20 +72,20 @@ mod tests {
         let slot = 5;
         let balance_field_code: i32 = sfield::Balance.into();
 
-        mock_account_keylet_success(&mut mock);
+        mock_accountroot_id_success(&mut mock);
 
-        // Mock cache_ledger_obj to return a valid slot
-        mock.expect_cache_ledger_obj()
+        // Mock cache_le to return a valid slot
+        mock.expect_cache_le()
             .times(1)
             .returning(move |_, _, _| slot);
 
-        // Mock get_ledger_obj_field for Balance. Zero-fill the buffer: the
+        // Mock le_field for Balance. Zero-fill the buffer: the
         // Amount getter allocates via `empty_buffer()`, so the padding must be
         // deterministic. Zero bytes route through the XRP variant of
         // `Amount::from_bytes`, whose wire length is 8 — and `Amount::decode`
         // validates the reported length against the parsed variant, so the host
         // must report 8, not the full buffer size.
-        mock.expect_get_ledger_obj_field()
+        mock.expect_le_field()
             .with(eq(slot), eq(balance_field_code), always(), eq(AMOUNT_SIZE))
             .times(1)
             .returning(move |_, _, buf, buf_size| {
@@ -102,11 +102,11 @@ mod tests {
     }
 
     #[test]
-    fn test_get_account_balance_keylet_error() {
+    fn test_get_account_balance_id_error() {
         let mut mock = MockHostBindings::new();
 
-        // Mock account_keylet to fail
-        mock.expect_account_keylet()
+        // Mock accountroot_id to fail
+        mock.expect_accountroot_id()
             .times(1)
             .returning(|_, _, _, _| INTERNAL_ERROR);
 
@@ -122,10 +122,10 @@ mod tests {
     fn test_get_account_balance_cache_error() {
         let mut mock = MockHostBindings::new();
 
-        mock_account_keylet_success(&mut mock);
+        mock_accountroot_id_success(&mut mock);
 
-        // Mock cache_ledger_obj to return error
-        mock.expect_cache_ledger_obj()
+        // Mock cache_le to return error
+        mock.expect_cache_le()
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
 

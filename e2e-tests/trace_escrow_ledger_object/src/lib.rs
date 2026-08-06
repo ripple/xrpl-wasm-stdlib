@@ -20,7 +20,7 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_common_stdlib::sfield;
@@ -29,7 +29,7 @@ use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_curr
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");
 
@@ -50,7 +50,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
-        let _ = trace_amount("  Amount:", &amount);
+        let _ = trace_amt("  Amount:", &amount);
 
         // Trace Field: LedgerEntryType
         let ledger_entry_type = current_escrow.get_ledger_entry_type().unwrap();
@@ -123,14 +123,14 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // TODO: Uncomment this once https://github.com/ripple/xrpl-wasm-stdlib/issues/86 is fixed.
-        // Trace Field: FinishFunction
-        // let opt_finish_function = current_escrow.get_finish_function().unwrap();
-        // if let Some(finish_function) = opt_finish_function {
-        //     FinishFunction is the WASM code - just verify it exists and has reasonable length
-        // let _ = trace_num("  FinishFunction length:", finish_function.len as i64);
+        // Trace Field: Bytecode
+        // let opt_bytecode = current_escrow.get_bytecode().unwrap();
+        // if let Some(bytecode) = opt_bytecode {
+        //     Bytecode is the WASM code - just verify it exists and has reasonable length
+        // let _ = trace_num("  Bytecode length:", bytecode.len as i64);
         // let _ = trace_data(
-        //     "  FinishFunction:",
-        //     &finish_function.data[..finish_function.len],
+        //     "  Bytecode:",
+        //     &bytecode.data[..bytecode.len],
         //     DataRepr::AsHex,
         // );
         // }
@@ -169,7 +169,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Data (contract data)
         // Note: Data field is optional and only present if set during EscrowCreate or
-        // updated via the FinishFunction. We don't set it in runTest.js, so this will likely
+        // updated via the Bytecode. We don't set it in runTest.js, so this will likely
         // return empty or error.
         let data_result = current_escrow.get_data();
         if let Ok(contract_data) = data_result
@@ -188,10 +188,10 @@ pub extern "C" fn finish() -> i32 {
     }
 
     // ########################################
-    // Read the same fields through the nested-field path builder
+    // Read the same fields through the inner-field path builder
     // ########################################
     //
-    // `current_escrow.path()` reaches the slot-less `get_current_ledger_obj_nested_field`. A
+    // `current_escrow.path()` reaches the slot-less `home_le_inner`. A
     // single-segment path targets a top-level field, so each read below must agree with the flat
     // getter above — that equality is what proves the locator encoding and the host dispatch are
     // both correct against a real ledger object, not just against mocks.
@@ -276,7 +276,7 @@ pub extern "C" fn finish() -> i32 {
 mod coverage_tests {
     use super::*;
 
-    /// Coverage test: exercises any host function categories via finish()
+    /// Coverage test: exercises any host function categories via escrow_finish()
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
@@ -287,13 +287,13 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_for_testing.rs
+        // On non-wasm targets, escrow_finish() uses host_bindings_for_testing.rs
         // which provides stub implementations of all host functions.
-        let result = finish();
+        let result = escrow_finish();
 
-        // The finish() function returns 1 on success, or a negative error code.
+        // The escrow_finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        core::assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "escrow_finish() should return 1 on success");
     }
 }

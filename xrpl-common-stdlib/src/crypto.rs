@@ -9,8 +9,7 @@ use crate::types::public_key::{PUBLIC_KEY_BUFFER_SIZE, PublicKey};
 /// `DataFieldTooLarge` for larger input.
 pub fn sha512_half(data: &[u8]) -> Result<[u8; 32]> {
     let mut out = [0u8; 32];
-    let rescode =
-        unsafe { host::compute_sha512_half(data.as_ptr(), data.len(), out.as_mut_ptr(), 32) };
+    let rescode = unsafe { host::sha512_half(data.as_ptr(), data.len(), out.as_mut_ptr(), 32) };
     match_result_code_with_expected_bytes(rescode, 32, || out)
 }
 
@@ -64,7 +63,7 @@ mod tests {
     #[test]
     fn test_sha512_half_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_compute_sha512_half()
+        mock.expect_sha512_half()
             .times(1)
             .returning(|_data, _dlen, out_ptr, _olen| {
                 write_digest(out_ptr, 0xCD);
@@ -81,7 +80,7 @@ mod tests {
     #[should_panic(expected = "internal invariant violated")]
     fn test_sha512_half_wrong_byte_count() {
         let mut mock = MockHostBindings::new();
-        mock.expect_compute_sha512_half()
+        mock.expect_sha512_half()
             .times(1)
             .returning(|_, _, _, _| 16); // host returns wrong (non-32) byte count
         let _guard = setup_mock(mock);
@@ -92,7 +91,7 @@ mod tests {
     #[test]
     fn test_sha512_half_oversized() {
         let mut mock = MockHostBindings::new();
-        mock.expect_compute_sha512_half()
+        mock.expect_sha512_half()
             .times(1)
             .returning(|_, _, _, _| DATA_FIELD_TOO_LARGE);
         let _guard = setup_mock(mock);

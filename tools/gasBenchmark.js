@@ -107,7 +107,7 @@ async function deployEscrow(sourceWallet, destWallet, wasmHex) {
     Amount: "100000",
     Destination: destWallet.address,
     CancelAfter: closeTime + 2000,
-    FinishFunction: wasmHex,
+    Bytecode: wasmHex,
   }
 
   const result = await submit(tx, sourceWallet)
@@ -127,7 +127,7 @@ async function executeEscrow(sourceWallet, destWallet, offerSequence) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: COMPUTATION_ALLOWANCE,
+    Gas: COMPUTATION_ALLOWANCE,
   }
 
   const result = await submit(tx, sourceWallet)

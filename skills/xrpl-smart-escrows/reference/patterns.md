@@ -33,11 +33,11 @@ Generalizes to: multi-sig-like approval (check `get_signing_pub_key()` against a
 
 ## 2. Oracle / external-price check — `oracle`
 
-Release based on data in an unrelated ledger object, looked up by keylet. Demonstrates the untyped `LedgerObject` nested-field path for object types without a typed wrapper.
+Release based on data in an unrelated ledger object, looked up by ledger entry ID. Demonstrates the untyped `LedgerObject` inner-field path for object types without a typed wrapper.
 
 ```rust
 use xrpl_common_stdlib::host::{self, Error, Result, Result::{Err, Ok}};
-use xrpl_common_stdlib::keylets::oracle_keylet;
+use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
 use xrpl_common_stdlib::objects::LedgerObject;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -59,11 +59,11 @@ fn get_price_from_oracle(slot: i32) -> Result<u64> {
 
 #[smart_escrow]
 fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
-    let keylet = match oracle_keylet(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
+    let id = match oracle_id(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
         Ok(k) => k,
         Err(_) => return FinishResult::reject(),
     };
-    let slot = unsafe { host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
+    let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
     if slot < 0 { return FinishResult::reject(); }
     let price = get_price_from_oracle(slot).unwrap_or(0);
     ((price > 1) as i32).into()
@@ -75,7 +75,7 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
 Release only if the destination holds a specific credential or NFT. Existence of the keyed object _is_ the check — no field comparison needed.
 
 ```rust
-use xrpl_common_stdlib::keylets::credential_keylet;
+use xrpl_common_stdlib::ledger_entry_ids::credential_id;
 use xrpl_common_stdlib::host;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
@@ -88,11 +88,11 @@ fn kyc_finish(ctx: EscrowFinishContext) -> FinishResult {
         Err(_) => return FinishResult::reject(),
     };
     let cred_type: &[u8] = b"termsandconditions";
-    let keylet = match credential_keylet(&account_id, &account_id, cred_type) {
+    let id = match credential_id(&account_id, &account_id, cred_type) {
         Ok(k) => k,
         Err(_) => return FinishResult::reject(),
     };
-    let slot = unsafe { host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
+    let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
     if slot < 0 { return FinishResult::reject(); }
     FinishResult::succeed()
 }
@@ -114,7 +114,7 @@ use xrpl_macros::smart_escrow;
 fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
     unsafe {
         let mut buf = [0u8; 4];
-        let rc = host::get_ledger_sqn(buf.as_mut_ptr(), buf.len());
+        let rc = host::ldgr_index(buf.as_mut_ptr(), buf.len());
         if match_result_code_with_expected_bytes(rc, 4, || Some(rc)).is_err() {
             return rc;
         }
@@ -124,7 +124,7 @@ fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
 }
 ```
 
-For wall-clock-like deadlines use `host::get_parent_ledger_time` instead of `get_ledger_sqn`, and compare against the escrow's own `get_finish_after()`/`get_cancel_after()` where applicable rather than a hardcoded constant.
+For wall-clock-like deadlines use `host::parent_ldgr_time` instead of `ldgr_index`, and compare against the escrow's own `get_finish_after()`/`get_cancel_after()` where applicable rather than a hardcoded constant.
 
 ## 5. Multi-party state machine — `freelancer_escrow`
 
@@ -171,34 +171,34 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-Key idea: every `EscrowFinish` call re-enters this function from scratch — state that must survive between calls has to be explicitly written back with `save_data`/`ctx.update_data()`, since there's no in-memory persistence between invocations.
+Key idea: every `EscrowFinish` call re-enters this function from scratch — state that must survive between calls has to be explicitly written back with `save_data`/`ctx.set_data()`, since there's no in-memory persistence between invocations.
 
 ## 6. Cross-escrow atomic swap — `atomic_swap`
 
-Two escrows, each finished separately, each checking the _other's_ state via a keylet stored in a memo or in its own `Data` field. Demonstrates `Locator` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
+Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `Locator` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
 
 ```rust
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::{self, get_tx_nested_field};
+use xrpl_common_stdlib::host::{self, tx_inner};
 use xrpl_common_stdlib::sfield;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
-// Read Memos[0].MemoData from the current EscrowFinish tx (e.g. the counterpart's keylet)
+// Read Memos[0].MemoData from the current EscrowFinish tx (e.g. the counterpart's ledger entry ID)
 let mut locator = Locator::new();
 locator.pack(sfield::Memos);
 locator.pack(0);
 locator.pack(sfield::MemoData);
-let mut counterpart_keylet = [0u8; 32];
+let mut counterpart_id = [0u8; 32];
 let rc = unsafe {
-    get_tx_nested_field(locator.as_ptr(), locator.num_packed_bytes(),
-        counterpart_keylet.as_mut_ptr(), counterpart_keylet.len())
+    tx_inner(locator.as_ptr(), locator.num_packed_bytes(),
+        counterpart_id.as_mut_ptr(), counterpart_id.len())
 };
 if rc < 0 { return xrpl_escrow_stdlib::FinishResult::reject(); }
 
 // Load the counterpart escrow and read its fields
 let counterpart_slot = unsafe {
-    host::cache_ledger_obj(counterpart_keylet.as_ptr(), counterpart_keylet.len(), 0)
+    host::cache_le(counterpart_id.as_ptr(), counterpart_id.len(), 0)
 };
 if counterpart_slot < 0 { return xrpl_escrow_stdlib::FinishResult::reject(); }
 let counterpart_escrow = Escrow::new(counterpart_slot);

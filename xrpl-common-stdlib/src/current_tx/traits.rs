@@ -57,7 +57,7 @@ use crate::types::uint::Hash256;
 /// XRPL transaction. The trait methods assume the current transaction context is properly
 /// established by the XRPL Programmability environment.
 pub trait TransactionCommonFields {
-    /// Starts a nested-field path rooted at the current transaction.
+    /// Starts an inner-field path rooted at the current transaction.
     ///
     /// Use this to reach into arrays and inner objects that the flat getters below can't return
     /// whole (e.g. `Memos[0].MemoData`). Chain [`field`](TxPathBuilder::field) /
@@ -107,7 +107,7 @@ pub trait TransactionCommonFields {
         get_field(sfield::TransactionType)
     }
 
-    /// Retrieves the computation allowance from the current transaction.
+    /// Retrieves the gas amount from the current transaction.
     ///
     /// This field specifies the maximum computational resources that the transaction is
     /// allowed to consume during execution in the XRPL Programmability environment.
@@ -116,10 +116,10 @@ pub trait TransactionCommonFields {
     /// # Returns
     ///
     /// Returns a `Result<u32>` where:
-    /// * `Ok(u32)` - The computation allowance value in platform-defined units
+    /// * `Ok(u32)` - The gas value in platform-defined units
     /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
-    fn get_computation_allowance(&self) -> Result<u32> {
-        get_field(sfield::ComputationAllowance)
+    fn get_gas(&self) -> Result<u32> {
+        get_field(sfield::Gas)
     }
 
     /// Retrieves the fee amount from the current transaction.
@@ -335,14 +335,14 @@ mod tests {
     struct TestTransaction;
     impl TransactionCommonFields for TestTransaction {}
 
-    /// Helper to set up a mock expectation for `get_tx_field`.
+    /// Helper to set up a mock expectation for `tx_field`.
     fn expect_tx_field<T: Send + std::fmt::Debug + PartialEq + 'static, const CODE: i32>(
         mock: &mut MockHostBindings,
         field: SField<T, CODE>,
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq(field), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
@@ -354,9 +354,9 @@ mod tests {
         use crate::sfield;
 
         // `ctx.tx().path()` must build against the current transaction and read through
-        // `get_tx_nested_field`. Memos[0] is two 4-byte segments = 8 bytes; the u32 buffer is 4.
+        // `tx_inner`. Memos[0] is two 4-byte segments = 8 bytes; the u32 buffer is 4.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_nested_field()
+        mock.expect_tx_inner()
             .with(always(), eq(8usize), always(), eq(4usize))
             .times(1)
             .returning(|_, _, _, _| 4);
@@ -418,32 +418,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account_txn_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_flags
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Flags), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_last_ledger_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::LastLedgerSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_network_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::NetworkID), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_source_tag
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::SourceTag), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_ticket_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
@@ -466,32 +466,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account_txn_id - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_flags - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Flags), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_last_ledger_sequence - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::LastLedgerSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_network_id - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::NetworkID), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_source_tag - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::SourceTag), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_ticket_sequence - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
@@ -515,32 +515,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account_txn_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_flags
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Flags), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_last_ledger_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::LastLedgerSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_network_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::NetworkID), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_source_tag
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::SourceTag), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_ticket_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
@@ -580,32 +580,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account_txn_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_flags
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Flags), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_last_ledger_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::LastLedgerSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_network_id
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::NetworkID), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_source_tag
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::SourceTag), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_ticket_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
@@ -663,12 +663,12 @@ mod tests {
                 expect_tx_field(&mut mock, sfield::Account, ACCOUNT_ID_SIZE, 1);
                 // get_transaction_type
                 expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
-                // get_computation_allowance
-                expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
+                // get_gas
+                expect_tx_field(&mut mock, sfield::Gas, 4, 1);
                 // get_fee: a real XRP Fee is 8 bytes written into the 48-byte Amount buffer, not
                 // the full buffer length (`expect_tx_field` would report `AMOUNT_SIZE` written,
                 // which `Amount::decode` correctly rejects as inconsistent with the XRP variant).
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .times(1)
                     .returning(|_, _, _| 8);
@@ -686,7 +686,7 @@ mod tests {
                 // All mandatory fields should return Ok
                 assert!(tx.get_account().is_ok());
                 assert!(tx.get_transaction_type().is_ok());
-                assert!(tx.get_computation_allowance().is_ok());
+                assert!(tx.get_gas().is_ok());
                 assert!(tx.get_fee().is_ok());
                 assert!(tx.get_sequence().is_ok());
                 assert!(tx.get_signing_pub_key().is_ok());
@@ -699,7 +699,7 @@ mod tests {
             #[test]
             fn test_get_account_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .returning(|_, _, _| 0);
 
@@ -715,7 +715,7 @@ mod tests {
             #[test]
             fn test_get_transaction_type_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .returning(|_, _, _| 0);
 
@@ -729,14 +729,14 @@ mod tests {
             }
 
             #[test]
-            fn test_get_computation_allowance_errors_when_zero_length() {
+            fn test_get_gas_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                mock.expect_tx_field()
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .returning(|_, _, _| 0);
 
                 let _guard = setup_mock(mock);
-                let result = TestTransaction.get_computation_allowance();
+                let result = TestTransaction.get_gas();
                 assert!(result.is_err());
                 assert_eq!(
                     result.err().unwrap().code(),
@@ -747,7 +747,7 @@ mod tests {
             #[test]
             fn test_get_sequence_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .returning(|_, _, _| 0);
 
@@ -765,7 +765,7 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_signing_pub_key - returns 0 (zero length)
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(
                         eq(sfield::SigningPubKey),
                         always(),
@@ -791,7 +791,7 @@ mod tests {
                 // AMOUNT_SIZE buffer used for IOU/MPT amounts); decode must zero-pad rather
                 // than requiring an exact 48-byte slice.
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .returning(|_, buf, _| {
                         // XRP positive flag (0x40) + 1,000,000 drops in the low 7 bytes.
@@ -818,7 +818,7 @@ mod tests {
             #[test]
             fn test_get_fee_errors_when_zero_length() {
                 let mut mock = MockHostBindings::new();
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .returning(|_, _, _| 0);
 
@@ -839,7 +839,7 @@ mod tests {
                 // A SigningPubKey that is neither empty (0, multisign) nor a valid key (33)
                 // can never reach a running escrow: rippled's preflight rejects it. Observing
                 // such a length is an internal invariant violation and must panic.
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(
                         eq(sfield::SigningPubKey),
                         always(),
@@ -857,32 +857,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_transaction_type
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
-                // get_computation_allowance
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                // get_gas
+                mock.expect_tx_field()
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_fee
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_signing_pub_key
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(
                         eq(sfield::SigningPubKey),
                         always(),
@@ -904,7 +904,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), FIELD_NOT_FOUND);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), FIELD_NOT_FOUND);
 
@@ -926,32 +926,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_transaction_type
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
-                // get_computation_allowance
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                // get_gas
+                mock.expect_tx_field()
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_fee
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_signing_pub_key
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(
                         eq(sfield::SigningPubKey),
                         always(),
@@ -973,7 +973,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), INTERNAL_ERROR);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), INTERNAL_ERROR);
 
@@ -995,32 +995,32 @@ mod tests {
                 let mut mock = MockHostBindings::new();
 
                 // get_account
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_transaction_type
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
-                // get_computation_allowance
-                mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                // get_gas
+                mock.expect_tx_field()
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_fee
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_sequence
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_signing_pub_key
-                mock.expect_get_tx_field()
+                mock.expect_tx_field()
                     .with(
                         eq(sfield::SigningPubKey),
                         always(),
@@ -1042,7 +1042,7 @@ mod tests {
                 assert!(tx_type_result.is_err());
                 assert_eq!(tx_type_result.err().unwrap().code(), INVALID_FIELD);
 
-                let comp_allow_result = tx.get_computation_allowance();
+                let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
                 assert_eq!(comp_allow_result.err().unwrap().code(), INVALID_FIELD);
 

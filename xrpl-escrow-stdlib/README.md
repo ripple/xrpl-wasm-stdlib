@@ -8,7 +8,7 @@ This crate is part of the `xrpl-common-stdlib` workspace. Generic XRPL primitive
 tied specifically to escrows: the `EscrowFinish` transaction wrapper, the `Escrow`/`CurrentEscrow`
 ledger objects, the escrow-specific field-accessor traits, and [`EscrowFinishContext`] — the control
 surface a Smart Escrow author interacts with. Safe, scoped access to escrow-unique host functions
-(e.g., `update_data`) is exposed as inherent methods; all unsafe FFI is contained here, so user code
+(e.g., `set_data`) is exposed as inherent methods; all unsafe FFI is contained here, so user code
 stays fully safe.
 
 ## Usage
@@ -30,7 +30,7 @@ fn run(ctx: EscrowFinishContext) -> FinishResult {
 
 The `#[smart_escrow]` entry-point macro (in `xrpl-macros`, re-exported here) constructs the context via
 `EscrowFinishContext::default()` and passes it to your function automatically, then converts your `FinishResult`
-(or `i32`) into the `extern "C" fn finish() -> i32` the XRPL host calls.
+(or `i32`) into the `extern "C" fn escrow_finish() -> i32` the XRPL host calls.
 
 ## Crate layout
 

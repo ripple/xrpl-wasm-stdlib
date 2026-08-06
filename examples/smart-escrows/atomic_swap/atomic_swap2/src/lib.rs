@@ -7,7 +7,7 @@ use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
-use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
+use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_escrow_stdlib::EscrowFinishContext;
@@ -18,7 +18,7 @@ use xrpl_macros::smart_escrow;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
-const KEYLET_PLUS_TIMESTAMP_SIZE: usize = 36;
+const LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE: usize = 36;
 
 /*
 /// Validates if the provided WASM bytes represent a compatible atomic_swap1 contract.
@@ -67,7 +67,7 @@ fn is_valid_atomic_swap1_wasm(wasm_bytes: &[u8]) -> bool {
 /// This function implements a stateful atomic swap using the escrow's data field:
 ///
 /// PHASE 1 (data.len <= 32):
-/// 1. Validates the data field contains exactly 32 bytes (first escrow keylet)
+/// 1. Validates the data field contains exactly 32 bytes (first escrow ledger entry ID)
 /// 2. Verifies the referenced first escrow exists on the ledger
 /// 3. Retrieves current escrow's CancelAfter field as the swap deadline
 /// 4. Appends the CancelAfter timestamp to the data field (36 bytes total)
@@ -102,13 +102,13 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
     );
 
     // STATE MACHINE: Determine execution phase based on data field length
-    // Phase 1: data.len <= 32 (contains only first escrow keylet)
-    // Phase 2: data.len > 32 (contains first escrow keylet + timing data)
-    if current_data.len <= XRPL_KEYLET_SIZE {
+    // Phase 1: data.len <= 32 (contains only first escrow ledger entry ID)
+    // Phase 2: data.len > 32 (contains first escrow ledger entry ID + timing data)
+    if current_data.len <= XRPL_LEDGER_ENTRY_ID_SIZE {
         // PHASE 1: Initialization - validate first escrow and set timing deadline
 
-        // Validate that the data contains exactly 32 bytes (first escrow keylet)
-        if current_data.len != XRPL_KEYLET_SIZE {
+        // Validate that the data contains exactly 32 bytes (first escrow ledger entry ID)
+        if current_data.len != XRPL_LEDGER_ENTRY_ID_SIZE {
             let _ = trace_num(
                 "Invalid data length for first run, expected 32 bytes, got:",
                 current_data.len as i64,
@@ -116,8 +116,9 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
             return VALIDATION_FAILED;
         }
 
-        // Extract the first escrow keylet from data field
-        let first_escrow_id: [u8; XRPL_KEYLET_SIZE] = current_data.data[0..32].try_into().unwrap();
+        // Extract the first escrow ledger entry ID from data field
+        let first_escrow_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] =
+            current_data.data[0..32].try_into().unwrap();
         let _ = trace_data(
             "First escrow ID from data:",
             &first_escrow_id,
@@ -127,7 +128,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
         let first_escrow_slot =
-            unsafe { host::cache_ledger_obj(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
+            unsafe { host::cache_le(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
         if first_escrow_slot < 0 {
             let _ = trace_num(
                 "Failed to cache first escrow, error:",
@@ -142,19 +143,19 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         let _ = trace_num("Starting first escrow security validation", 0);
 
         // 1. WASM Validation: TEMPORARILY DISABLED
-        // The FinishFunction field can be larger than the 4KB buffer limit enforced by the host.
+        // The Bytecode field can be larger than the 4KB buffer limit enforced by the host.
         // TODO: Implement hash-based validation instead of retrieving the full WASM bytecode.
         // For now, we skip WASM validation and rely on other security checks.
         /*
-        let first_finish_function = match first_escrow.get_finish_function() {
+        let first_bytecode = match first_escrow.get_bytecode() {
             Ok(Some(wasm)) => wasm,
             Ok(None) => {
-                let _ = trace_num("First escrow has no FinishFunction - security fail", 0);
+                let _ = trace_num("First escrow has no Bytecode - security fail", 0);
                 return VALIDATION_FAILED;
             }
             Err(e) => {
                 let _ = trace_num(
-                    "Error getting first escrow FinishFunction:",
+                    "Error getting first escrow Bytecode:",
                     e.code() as i64,
                 );
                 return e.code();
@@ -162,7 +163,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         };
 
         // Validate that the first escrow uses a compatible WASM contract
-        if !is_valid_atomic_swap1_wasm(&first_finish_function.data[..first_finish_function.len]) {
+        if !is_valid_atomic_swap1_wasm(&first_bytecode.data[..first_bytecode.len]) {
             let _ = trace_num("First escrow WASM validation failed - not atomic_swap1", 0);
             return VALIDATION_FAILED;
         }
@@ -287,8 +288,8 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
     } else {
         // PHASE 2: Timing validation - check if we're within the deadline
 
-        // Validate data field contains at least 36 bytes (32 bytes keylet + 4 bytes timing)
-        if current_data.len < KEYLET_PLUS_TIMESTAMP_SIZE {
+        // Validate data field contains at least 36 bytes (32 bytes ledger entry ID + 4 bytes timing)
+        if current_data.len < LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE {
             let _ = trace_num(
                 "Invalid data length for second run, expected at least 36 bytes, got:",
                 current_data.len as i64,
@@ -296,7 +297,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
             return VALIDATION_FAILED;
         }
 
-        // PRODUCTION CONSIDERATION: Re-validate first 32 bytes match first escrow keylet
+        // PRODUCTION CONSIDERATION: Re-validate first 32 bytes match first escrow ledger entry ID
         // This ensures the data field hasn't been modified between Phase 1 and Phase 2
         // Note: We don't re-verify the first escrow exists in Phase 2 because:
         // 1. It was already verified in Phase 1
@@ -313,7 +314,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         // Get current ledger time for deadline comparison
         let mut time_buffer = [0u8; 4];
         let time_result =
-            unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
+            unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
         let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
             u32::from_le_bytes(time_buffer)
