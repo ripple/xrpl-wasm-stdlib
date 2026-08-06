@@ -1,40 +1,39 @@
-
 use crate::host;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
 
-/// Data representation
+/// How the host should read the data buffer. Mirrors xrpld's `TraceDataType`; the discriminants
+/// are wire values, numbered from 1 so a zeroed `data_type` hits the host's invalid branch.
 #[derive(Clone, Copy)]
-pub enum DataRepr {
-    /// As UTF-8
-    AsUTF8 = 0,
-    /// As hexadecimal
-    AsHex = 1,
+#[repr(i32)]
+pub enum TraceDataType {
+    /// 8 little-endian bytes, printed as a signed decimal.
+    Int64 = 1,
+    /// 8 little-endian bytes, printed as an unsigned decimal.
+    Uint64 = 2,
+    /// 8 bytes holding an opaque float.
+    Xfloat = 3,
+    /// A 20-byte account ID, printed as base58.
+    Account = 4,
+    /// A serialized `STAmount`.
+    Amount = 5,
+    /// Raw bytes, hex-encoded by the host.
+    AsHex = 6,
+    /// Bytes printed verbatim as text.
+    AsText = 7,
 }
 
-/// Write the contents of a message to the xrpld trace log.
-///
-/// # Parameters
-/// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
-///
-/// # Returns
-///
-/// Returns an integer representing the result of the operation. A value of `0` or higher signifies
-/// the number of message bytes that were written to the trace function. Non-zero values indicate
-/// an error (e.g., incorrect buffer sizes).
-#[inline(always)] // <-- Inline because this function is very small
-pub fn trace(msg: &str) {
-    // Use an empty slice's pointer instead of null to satisfy Rust's safety requirements
-    // Even for zero-length slices, `slice::from_raw_parts` requires a non-null, aligned pointer
-    let empty_data: &[u8] = &[];
-
+/// Fire-and-forget: the host checks its log level, swallows every error, and drops the call
+/// silently when `msg.len() + data.len()` exceeds 1024 bytes.
+#[inline(always)]
+fn trace_impl(msg: &str, data_type: TraceDataType, data: &[u8]) {
     unsafe {
         host::trace(
             msg.as_ptr(),
             msg.len(),
-            empty_data.as_ptr(),
-            0usize,
-            DataRepr::AsUTF8 as _,
+            data_type as i32,
+            data.as_ptr(),
+            data.len(),
         )
     }
 }
@@ -43,19 +42,29 @@ pub fn trace(msg: &str) {
 ///
 /// # Parameters
 /// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
-///
-/// # Returns
-///
-/// Returns an integer representing the result of the operation. A value of `0` or higher signifies
-/// the number of message bytes that were written to the trace function. Non-zero values indicate
-/// an error (e.g., incorrect buffer sizes).
 #[inline(always)] // <-- Inline because this function is very small
-pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) {
-    unsafe {
-        let data_ptr = data.as_ptr();
-        let data_len = data.len();
-        host::trace(msg.as_ptr(), msg.len(), data_ptr, data_len, data_repr as _)
-    };
+pub fn trace(msg: &str) {
+    trace_impl(msg, TraceDataType::AsText, &[]);
+}
+
+/// Write a message and a data buffer to the xrpld trace log, hex-encoded by the host.
+///
+/// # Parameters
+/// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
+/// * `data`: The bytes to emit alongside `msg`.
+#[inline(always)] // <-- Inline because this function is very small
+pub fn trace_hex(msg: &str, data: &[u8]) {
+    trace_impl(msg, TraceDataType::AsHex, data);
+}
+
+/// Write a message and a data buffer to the xrpld trace log, printed verbatim as text.
+///
+/// # Parameters
+/// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
+/// * `data`: The bytes to emit alongside `msg`.
+#[inline(always)] // <-- Inline because this function is very small
+pub fn trace_text(msg: &str, data: &[u8]) {
+    trace_impl(msg, TraceDataType::AsText, data);
 }
 
 /// Write the contents of a message, and a number, to the xrpld trace log.
@@ -63,53 +72,43 @@ pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) {
 /// # Parameters
 /// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
 /// * `number`: A number to emit into the trace logs.
-///
-/// # Returns
-///
-/// Returns an integer representing the result of the operation. A value of `0` or higher signifies
-/// the number of message bytes that were written to the trace function. Non-zero values indicate
-/// an error (e.g., incorrect buffer sizes).
 #[inline(always)]
 pub fn trace_num(msg: &str, number: i64) {
-    unsafe { host::trace_num(msg.as_ptr(), msg.len(), number) };
+    trace_impl(msg, TraceDataType::Int64, &number.to_le_bytes());
+}
+
+/// Write the contents of a message, and an unsigned number, to the xrpld trace log. Use this
+/// over [`trace_num`] for values above [`i64::MAX`].
+///
+/// # Parameters
+/// * `msg`: A str ref pointing to an array of bytes containing UTF-8 characters.
+/// * `number`: A number to emit into the trace logs.
+#[inline(always)]
+pub fn trace_num_unsigned(msg: &str, number: u64) {
+    trace_impl(msg, TraceDataType::Uint64, &number.to_le_bytes());
 }
 
 #[inline(always)]
 pub fn trace_acct_buf(msg: &str, account_id: &[u8; 20]) {
-    unsafe {
-        host::trace_acct(
-            msg.as_ptr(),
-            msg.len(),
-            account_id.as_ptr(),
-            account_id.len(),
-        )
-    }
+    trace_impl(msg, TraceDataType::Account, account_id);
 }
 
 #[inline(always)]
 pub fn trace_acct(msg: &str, account_id: &AccountID) {
-    unsafe {
-        host::trace_acct(
-            msg.as_ptr(),
-            msg.len(),
-            account_id.0.as_ptr(),
-            account_id.0.len(),
-        )
-    }
+    trace_impl(msg, TraceDataType::Account, &account_id.0);
 }
 
 #[inline(always)]
 pub fn trace_amt(msg: &str, amount: &Amount) {
-    // Convert Amount to the STAmount format expected by the host trace function
     let (amount_bytes, len) = amount.to_stamount_bytes();
 
-    unsafe { host::trace_amt(msg.as_ptr(), msg.len(), amount_bytes.as_ptr(), len) };
+    trace_impl(msg, TraceDataType::Amount, &amount_bytes[..len]);
 }
 
-/// Write a float to the XRPLD trace log
+/// Write a float to the xrpld trace log.
 #[inline(always)]
 pub fn trace_float(msg: &str, f: &[u8; 8]) {
-    unsafe { host::trace_xfloat(msg.as_ptr(), msg.len(), f.as_ptr(), 8) };
+    trace_impl(msg, TraceDataType::Xfloat, f);
 }
 
 #[cfg(test)]
@@ -118,7 +117,6 @@ mod tests {
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
     use crate::types::amount::Amount;
-    use mockall::predicate::always;
 
     #[test]
     fn test_trace_amt_xrp() {
@@ -126,10 +124,10 @@ mod tests {
 
         let message = "Test XRP amount";
 
-        // Set up expectations for trace_amt call
-        mock.expect_trace_amt()
-            .with(always(), always(), always(), always())
-            .returning(|_, _, _, _| ());
+        mock.expect_trace()
+            .withf(|_, _, data_type, _, _| *data_type == TraceDataType::Amount as i32)
+            .times(1)
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 
@@ -138,8 +136,6 @@ mod tests {
             num_drops: 1_000_000,
         };
 
-        // Smoke test only: trace is fire-and-forget, and the mock matches any arguments, so
-        // there is nothing to assert beyond the call not panicking.
         trace_amt(message, &amount);
     }
 
@@ -149,10 +145,10 @@ mod tests {
 
         let message = "Test MPT amount";
 
-        // Set up expectations for trace_amt call
-        mock.expect_trace_amt()
-            .with(always(), always(), always(), always())
-            .returning(|_, _, _, _| ());
+        mock.expect_trace()
+            .withf(|_, _, data_type, _, _| *data_type == TraceDataType::Amount as i32)
+            .times(1)
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 
@@ -172,8 +168,6 @@ mod tests {
             mpt_id,
         };
 
-        // Smoke test only: trace is fire-and-forget, and the mock matches any arguments, so
-        // there is nothing to assert beyond the call not panicking.
         trace_amt(message, &amount);
     }
 
@@ -183,10 +177,10 @@ mod tests {
 
         let message = "Test IOU amount";
 
-        // Set up expectations for trace_amt call
-        mock.expect_trace_amt()
-            .with(always(), always(), always(), always())
-            .returning(|_, _, _, _| ());
+        mock.expect_trace()
+            .withf(|_, _, data_type, _, _| *data_type == TraceDataType::Amount as i32)
+            .times(1)
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 
@@ -209,8 +203,6 @@ mod tests {
             currency,
         };
 
-        // Smoke test only: trace is fire-and-forget, and the mock matches any arguments, so
-        // there is nothing to assert beyond the call not panicking.
         trace_amt(message, &amount);
     }
 
@@ -220,10 +212,10 @@ mod tests {
 
         let message = "Test negative XRP amount";
 
-        // Set up expectations for trace_amt call
-        mock.expect_trace_amt()
-            .with(always(), always(), always(), always())
-            .returning(|_, _, _, _| ());
+        mock.expect_trace()
+            .withf(|_, _, data_type, _, _| *data_type == TraceDataType::Amount as i32)
+            .times(1)
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 
@@ -232,8 +224,6 @@ mod tests {
             num_drops: -1_000_000,
         };
 
-        // Smoke test only: trace is fire-and-forget, and the mock matches any arguments, so
-        // there is nothing to assert beyond the call not panicking.
         trace_amt(message, &amount);
     }
 

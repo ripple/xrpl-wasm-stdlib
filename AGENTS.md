@@ -167,7 +167,7 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 
 The `Cargo.toml` must set `crate-type = ["cdylib"]` and depend on `xrpl-common-stdlib`, `xrpl-macros`, and `xrpl-escrow-stdlib` as separate path dependencies. New examples must be added to `examples/Cargo.toml`'s `[workspace] members`.
 
-Trace output (`trace`, `trace_data`, `trace_num`) shows up in rippled's `debug.log`.
+Trace output (`trace`, `trace_hex`, `trace_num`) shows up in rippled's `debug.log`.
 
 ## Integration test pattern
 

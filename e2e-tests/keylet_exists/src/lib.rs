@@ -5,7 +5,7 @@ extern crate std;
 
 use crate::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::host;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_acct, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace, trace_acct, trace_hex, trace_num};
 use xrpl_common_stdlib::ledger_entry_ids;
 use xrpl_common_stdlib::objects::ledger_object;
 use xrpl_common_stdlib::sfield;
@@ -24,7 +24,7 @@ pub fn object_exists<T, const CODE: i32>(
 ) -> Result<bool> {
     match id_result {
         Ok(id) => {
-            trace_data(id_type, &id, DataRepr::AsHex);
+            trace_hex(id_type, &id);
 
             let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
             if slot < 0 {
@@ -36,7 +36,7 @@ pub fn object_exists<T, const CODE: i32>(
                 trace_num("Getting field: ", field_code as i64);
                 match ledger_object::get_field(slot, sfield::PreviousTxnID) {
                     Ok(data) => {
-                        trace_data("Field data: ", &data.0, DataRepr::AsHex);
+                        trace_hex("Field data: ", &data.0);
                     }
                     Err(result_code) => {
                         trace_num("Error getting field: ", result_code.into());
@@ -48,7 +48,7 @@ pub fn object_exists<T, const CODE: i32>(
                 trace_num("Getting field: ", field_code as i64);
                 match ledger_object::get_field(slot, sfield::Account) {
                     Ok(data) => {
-                        trace_data("Field data: ", &data.0, DataRepr::AsHex);
+                        trace_hex("Field data: ", &data.0);
                     }
                     Err(result_code) => {
                         trace_num("Error getting field: ", result_code.into());

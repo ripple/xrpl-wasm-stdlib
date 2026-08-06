@@ -11,7 +11,7 @@
 
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::cache_le;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace, trace_amt, trace_hex, trace_num};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::objects::AccountRoot;
 use xrpl_common_stdlib::objects::traits::{AccountRootFields, LedgerObjectCommonFields};
@@ -83,7 +83,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let account_id = account.account().unwrap();
         // Account is the hardcoded ledger entry ID we're looking up - just verify it's 20 bytes
         test_utils::assert_eq!(account_id.0.len(), 20);
-        trace_data("  Account:", &account_id.0, DataRepr::AsHex);
+        trace_hex("  Account:", &account_id.0);
 
         // Trace the `AccountTxnID` (optional - required for testing)
         let account_txn_id_opt = account.account_txn_id().unwrap();
@@ -91,7 +91,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             account_txn_id_opt.expect("AccountTxnID should be present for testing");
         // AccountTxnID is system-generated - just verify it's 32 bytes
         test_utils::assert_eq!(account_txn_id.0.len(), 32);
-        trace_data("  AccountTxnID:", &account_txn_id.0, DataRepr::AsHex);
+        trace_hex("  AccountTxnID:", &account_txn_id.0);
 
         // Trace `AMMID` (optional - only present on AMM AccountRoot entries)
         // Note: This is a regular account, not an AMM account, so AMMID should be None
@@ -137,7 +137,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             &expected_domain[..],
             "Domain should be 'example.com'"
         );
-        trace_data("  Domain:", &domain.data[..domain.len], DataRepr::AsHex);
+        trace_hex("  Domain:", &domain.data[..domain.len]);
 
         // Trace the `EmailHash` (optional - required for testing)
         let email_hash_opt = account.email_hash().unwrap();
@@ -153,7 +153,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             expected_email_hash,
             "EmailHash should be MD5 of 'hello'"
         );
-        trace_data("  EmailHash:", &email_hash.0, DataRepr::AsHex);
+        trace_hex("  EmailHash:", &email_hash.0);
 
         // Trace the `FirstNFTokenSequence` (optional - required for testing)
         let first_nf_token_sequence = account
@@ -177,11 +177,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             &expected_message_key,
             "MessageKey mismatch"
         );
-        trace_data(
-            "  MessageKey:",
-            &message_key.data[..message_key.len],
-            DataRepr::AsHex,
-        );
+        trace_hex("  MessageKey:", &message_key.data[..message_key.len]);
 
         // Trace the `MintedNFTokens` (optional - required for testing)
         let minted_nf_tokens = account
@@ -199,7 +195,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .expect("NFTokenMinter should be set for testing");
         // NFTokenMinter is an AccountID - verify it's 20 bytes
         test_utils::assert_eq!(nf_token_minter.0.len(), 20);
-        trace_data("  NFTokenMinter:", &nf_token_minter.0, DataRepr::AsHex);
+        trace_hex("  NFTokenMinter:", &nf_token_minter.0);
 
         // Trace the `OwnerCount` (required)
         let owner_count = account.owner_count().unwrap();
@@ -210,7 +206,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let previous_txn_id = account.previous_txn_id().unwrap();
         // PreviousTxnID is system-generated - just verify it's 32 bytes
         test_utils::assert_eq!(previous_txn_id.0.len(), 32);
-        trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
+        trace_hex("  PreviousTxnID:", &previous_txn_id.0);
 
         // Trace the `PreviousTxnLgrSeq` (required)
         let previous_txn_lgr_seq = account.previous_txn_lgr_seq().unwrap();
@@ -224,7 +220,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .expect("RegularKey should be set for testing");
         // RegularKey is an AccountID - verify it's 20 bytes
         test_utils::assert_eq!(regular_key.0.len(), 20);
-        trace_data("  RegularKey:", &regular_key.0, DataRepr::AsHex);
+        trace_hex("  RegularKey:", &regular_key.0);
 
         // Trace the `Sequence` (required)
         let sequence = account.sequence().unwrap();
@@ -275,7 +271,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             expected_wallet_locator,
             "WalletLocator should be all 0xAA bytes"
         );
-        trace_data("  WalletLocator:", &wallet_locator.0, DataRepr::AsHex);
+        trace_hex("  WalletLocator:", &wallet_locator.0);
 
         trace("}");
         trace("");

@@ -767,7 +767,7 @@ let len2 = unsafe { tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 2
 **Add trace statements:**
 
 ```rust ignore
-use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_common_stdlib::host::trace::{trace, trace_hex, trace_num};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
@@ -780,7 +780,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 
     let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex);
+            trace_hex("Account", &acc.0);
             acc
         },
         Err(e) => {

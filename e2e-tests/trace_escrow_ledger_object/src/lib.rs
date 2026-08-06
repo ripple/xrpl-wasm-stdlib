@@ -20,7 +20,7 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace, trace_amt, trace_hex, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
 use xrpl_common_stdlib::sfield;
@@ -46,7 +46,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         // Trace Field: Account
         let account = current_escrow.get_account().unwrap();
         test_utils::assert_eq!(account.0.len(), 20);
-        trace_data("  Account:", &account.0, DataRepr::AsHex);
+        trace_hex("  Account:", &account.0);
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
@@ -67,11 +67,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             Ok(opt_condition) => {
                 if let Some(condition) = opt_condition {
                     trace_num("  Condition length:", condition.len() as i64);
-                    trace_data(
-                        "  Condition (full hex):",
-                        condition.as_slice(),
-                        DataRepr::AsHex,
-                    );
+                    trace_hex("  Condition (full hex):", condition.as_slice());
 
                     test_utils::assert_eq!(
                         condition.len(),
@@ -99,7 +95,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let destination = current_escrow.get_destination().unwrap();
         // Destination is set in runTest.js (destWallet), just verify it's a valid AccountID
         test_utils::assert_eq!(destination.0.len(), 20);
-        trace_data("  Destination:", &destination.0, DataRepr::AsHex);
+        trace_hex("  Destination:", &destination.0);
 
         // Trace Field: DestinationTag (optional - already set in runTest.js)
         let opt_destination_tag = current_escrow.get_destination_tag().unwrap();
@@ -128,10 +124,9 @@ pub extern "C" fn escrow_finish() -> i32 {
         // if let Some(bytecode) = opt_bytecode {
         //     Bytecode is the WASM code - just verify it exists and has reasonable length
         // trace_num("  Bytecode length:", bytecode.len as i64);
-        // trace_data(
+        // trace_hex(
         //     "  Bytecode:",
         //     &bytecode.data[..bytecode.len],
-        //     DataRepr::AsHex,
         // );
         // }
 
@@ -154,7 +149,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         // PreviousTxnID is the hash of the EscrowCreate transaction - unpredictable
         // Just verify it's 32 bytes (valid Hash256)
         test_utils::assert_eq!(previous_txn_id.0.len(), 32);
-        trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
+        trace_hex("  PreviousTxnID:", &previous_txn_id.0);
 
         // Trace Field: PreviousTxnLgrSeq
         let previous_txn_lgr_seq = current_escrow.get_previous_txn_lgr_seq().unwrap();
@@ -176,11 +171,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             && contract_data.len > 0
         {
             trace_num("  Data length:", contract_data.len as i64);
-            trace_data(
-                "  Data:",
-                &contract_data.data[..contract_data.len],
-                DataRepr::AsHex,
-            );
+            trace_hex("  Data:", &contract_data.data[..contract_data.len]);
         }
 
         trace("}");
@@ -205,7 +196,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .get::<AccountID>()
             .unwrap();
         test_utils::assert_eq!(path_account.0, current_escrow.get_account().unwrap().0);
-        trace_data("  Account (via path):", &path_account.0, DataRepr::AsHex);
+        trace_hex("  Account (via path):", &path_account.0);
 
         // Path Read: OwnerNode
         let path_owner_node = current_escrow

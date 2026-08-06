@@ -189,12 +189,8 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     mock.expect_float_root()
         .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
 
-    // Trace functions - fire-and-forget logging, return nothing
+    // Trace
     mock.expect_trace().returning(|_, _, _, _, _| ());
-    mock.expect_trace_num().returning(|_, _, _| ());
-    mock.expect_trace_acct().returning(|_, _, _, _| ());
-    mock.expect_trace_xfloat().returning(|_, _, _, _| ());
-    mock.expect_trace_amt().returning(|_, _, _, _| ());
 }
 
 // #[cfg(test)]
@@ -320,17 +316,14 @@ export_host_functions! {
     fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> ();
-    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> ();
-    fn trace_acct(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> ();
-    fn trace_xfloat(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> ();
-    fn trace_amt(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> ();
+    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();
 
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host::trace::TraceDataType;
 
     #[test]
     fn test_ledger_functions_with_mock() {
@@ -399,31 +392,30 @@ mod tests {
     fn test_trace_functions_with_mock() {
         let mut mock = MockHostBindings::new();
 
-        // Mock trace function (fire-and-forget, returns nothing)
         mock.expect_trace()
-            .times(1)
-            .returning(|_msg_ptr, _msg_len, _data_ptr, _data_len, _as_hex| ());
+            .times(2)
+            .returning(|_msg_ptr, _msg_len, _data_type, _data_ptr, _data_len| ());
 
-        // Mock trace_num function (fire-and-forget, returns nothing)
-        mock.expect_trace_num()
-            .times(1)
-            .returning(|_msg_ptr, _msg_len, _number| ());
-
-        // Test trace functions. Nothing is returned, so `.times(1)` on each expectation is
-        // what verifies the calls actually happened.
         let message = b"Test message";
         let data = b"Test data";
+        let number = 42i64.to_le_bytes();
 
         unsafe {
             mock.trace(
                 message.as_ptr(),
                 message.len(),
+                TraceDataType::AsText as i32,
                 data.as_ptr(),
                 data.len(),
-                0,
             );
 
-            mock.trace_num(message.as_ptr(), message.len(), 42);
+            mock.trace(
+                message.as_ptr(),
+                message.len(),
+                TraceDataType::Int64 as i32,
+                number.as_ptr(),
+                number.len(),
+            );
         }
     }
 

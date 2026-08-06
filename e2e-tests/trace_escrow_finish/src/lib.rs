@@ -19,7 +19,7 @@ use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{
-    DataRepr, trace, trace_acct, trace_acct_buf, trace_amt, trace_data, trace_num,
+    trace, trace_acct, trace_acct_buf, trace_amt, trace_hex, trace_num,
 };
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -53,11 +53,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let transaction_type: TransactionType = escrow_finish.get_transaction_type().unwrap();
         test_utils::assert_eq!(transaction_type, TransactionType::EscrowFinish);
         let tx_type_bytes: [u8; 2] = transaction_type.into();
-        trace_data(
-            "  TransactionType (EscrowFinish):",
-            &tx_type_bytes,
-            DataRepr::AsHex,
-        );
+        trace_hex("  TransactionType (EscrowFinish):", &tx_type_bytes);
 
         // Trace Field: Gas
         let gas: u32 = escrow_finish.get_gas().unwrap();
@@ -81,7 +77,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         if let Some(account_txn_id) = opt_account_txn_id {
             // AccountTxnID is optional - if present, verify it's 32 bytes
             test_utils::assert_eq!(account_txn_id.0.len(), 32);
-            trace_data("  AccountTxnID:", &account_txn_id.0, DataRepr::AsHex);
+            trace_hex("  AccountTxnID:", &account_txn_id.0);
         }
 
         // Trace Field: Flags (optional)
@@ -119,7 +115,7 @@ pub extern "C" fn escrow_finish() -> i32 {
                 Some(signing_pub_key) => {
                     trace("  SigningPubKey (single-signed):");
                     trace_num("    Length:", signing_pub_key.0.len() as i64);
-                    trace_data("    Data:", &signing_pub_key.0, DataRepr::AsHex);
+                    trace_hex("    Data:", &signing_pub_key.0);
                 }
                 None => {
                     trace("  SigningPubKey: None (multi-signed transaction)");
@@ -162,11 +158,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             };
             trace_num("    Memo #:", i as i64);
             if output_len > 0 {
-                trace_data(
-                    "      MemoType:",
-                    &memo_buf[..output_len as usize],
-                    DataRepr::AsHex,
-                );
+                trace_hex("      MemoType:", &memo_buf[..output_len as usize]);
             }
 
             locator.repack_last(sfield::MemoData);
@@ -179,11 +171,7 @@ pub extern "C" fn escrow_finish() -> i32 {
                 )
             };
             if output_len > 0 {
-                trace_data(
-                    "      MemoData:",
-                    &memo_buf[..output_len as usize],
-                    DataRepr::AsHex,
-                );
+                trace_hex("      MemoData:", &memo_buf[..output_len as usize]);
             }
 
             locator.repack_last(sfield::MemoFormat);
@@ -196,11 +184,7 @@ pub extern "C" fn escrow_finish() -> i32 {
                 )
             };
             if output_len > 0 {
-                trace_data(
-                    "      MemoFormat:",
-                    &memo_buf[..output_len as usize],
-                    DataRepr::AsHex,
-                );
+                trace_hex("      MemoFormat:", &memo_buf[..output_len as usize]);
             }
         }
 
@@ -239,10 +223,9 @@ pub extern "C" fn escrow_finish() -> i32 {
             if output_len == 20 {
                 trace_acct_buf("     Account:", &buf[..20].try_into().unwrap());
             } else {
-                trace_data(
+                trace_hex(
                     "     Account (unexpected length):",
                     &buf[..output_len as usize],
-                    DataRepr::AsHex,
                 );
                 panic!()
             }
@@ -260,11 +243,7 @@ pub extern "C" fn escrow_finish() -> i32 {
                 trace_num("  cannot get TxnSignature, error:", output_len as i64);
                 panic!()
             }
-            trace_data(
-                "     TxnSignature:",
-                &buf[..output_len as usize],
-                DataRepr::AsHex,
-            );
+            trace_hex("     TxnSignature:", &buf[..output_len as usize]);
 
             locator.repack_last(sfield::SigningPubKey);
             let output_len = unsafe {
@@ -284,11 +263,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             }
             // SigningPubKey should be 33 bytes (compressed public key)
             trace_num("     SigningPubKey length:", output_len as i64);
-            trace_data(
-                "     SigningPubKey:",
-                &buf[..output_len as usize],
-                DataRepr::AsHex,
-            );
+            trace_hex("     SigningPubKey:", &buf[..output_len as usize]);
         }
 
         // TxnSignature - only present for single-signed transactions
@@ -297,11 +272,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             host::Result::Ok(txn_signature) => {
                 trace("  TxnSignature (single-signed):");
                 trace_num("    Length:", txn_signature.len() as i64);
-                trace_data(
-                    "    Data:",
-                    &txn_signature.data[..txn_signature.len()],
-                    DataRepr::AsHex,
-                );
+                trace_hex("    Data:", &txn_signature.data[..txn_signature.len()]);
             }
             host::Result::Err(_) => {
                 trace("  TxnSignature not present (multi-signed transaction)");
@@ -326,11 +297,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             host::Result::Ok(opt_condition) => {
                 if let Some(condition) = opt_condition {
                     trace_num("  Condition length:", condition.len() as i64);
-                    trace_data(
-                        "  Condition (full hex):",
-                        condition.as_slice(),
-                        DataRepr::AsHex,
-                    );
+                    trace_hex("  Condition (full hex):", condition.as_slice());
 
                     // Assert the condition matches the expected value
                     test_utils::assert_eq!(
@@ -361,11 +328,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let opt_fulfillment = escrow_finish.get_fulfillment().unwrap();
         if let Some(fulfillment) = opt_fulfillment {
             trace_num("  Fulfillment length:", fulfillment.len() as i64);
-            trace_data(
-                "  Fulfillment (hex):",
-                fulfillment.as_slice(),
-                DataRepr::AsHex,
-            );
+            trace_hex("  Fulfillment (hex):", fulfillment.as_slice());
 
             // Assert the fulfillment matches the expected value
             test_utils::assert_eq!(
@@ -391,16 +354,8 @@ pub extern "C" fn escrow_finish() -> i32 {
             // For empty preimage: A002 8000
             let fulfillment_data = fulfillment.as_slice();
             if fulfillment.len() >= 4 {
-                trace_data(
-                    "    Fulfillment type tag:",
-                    &fulfillment_data[0..2],
-                    DataRepr::AsHex,
-                );
-                trace_data(
-                    "    Preimage length encoding:",
-                    &fulfillment_data[2..4],
-                    DataRepr::AsHex,
-                );
+                trace_hex("    Fulfillment type tag:", &fulfillment_data[0..2]);
+                trace_hex("    Preimage length encoding:", &fulfillment_data[2..4]);
 
                 // Parse the preimage length
                 if fulfillment_data[2] == 0x80 {
@@ -413,10 +368,9 @@ pub extern "C" fn escrow_finish() -> i32 {
                             "    Expected SHA-256 of empty string: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
                         );
                     } else if fulfillment.len() >= 4 + preimage_len {
-                        trace_data(
+                        trace_hex(
                             "    Preimage (hex):",
                             &fulfillment_data[4..4 + preimage_len],
-                            DataRepr::AsHex,
                         );
                     }
                 }
@@ -438,7 +392,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         //     for i in 0..credential_ids.len() {
         //         let cred_id = credential_ids.get(i).unwrap();
         //         trace_num("  CredentialID index:", i as i64);
-        //         trace_data("    CredentialID:", cred_id.as_bytes(), DataRepr::AsHex);
+        //         trace_hex("    CredentialID:", cred_id.as_bytes());
         //     }
         // } else {
         //     trace("  No CredentialIDs present");

@@ -124,7 +124,7 @@ cargo build --target wasm32v1-none --release
 These debugging statements will show up in the `debug.log` for rippled.
 
 ```rust
-use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
+use xrpl_common_stdlib::host::trace::{trace, trace_hex};
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
@@ -132,7 +132,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 
     let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex);
+            trace_hex("Account", &acc.0);
             acc
         },
         Err(e) => {

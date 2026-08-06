@@ -7,7 +7,7 @@
 //! targets, the expressions are evaluated (preserving side effects) but the
 //! assertions themselves are skipped.
 
-use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::types::transaction_type::TransactionType;
 
 /// Trait for types that can be traced in assertions.
@@ -48,7 +48,7 @@ impl TraceValue for u64 {
         } else {
             // Value too large for i64, use hex representation
             let bytes = value.to_be_bytes();
-            trace_data(msg, &bytes, DataRepr::AsHex);
+            trace_hex(msg, &bytes);
         }
     }
 }
@@ -61,7 +61,7 @@ impl TraceValue for usize {
         } else {
             // Value too large for i64, use hex representation
             let bytes = value.to_be_bytes();
-            trace_data(msg, &bytes, DataRepr::AsHex);
+            trace_hex(msg, &bytes);
         }
     }
 }
@@ -70,7 +70,7 @@ impl TraceValue for usize {
 impl<const N: usize> TraceValue for [u8; N] {
     #[inline]
     fn trace_value(msg: &str, value: &[u8; N]) {
-        trace_data(msg, value, DataRepr::AsHex);
+        trace_hex(msg, value);
     }
 }
 
@@ -78,7 +78,7 @@ impl<const N: usize> TraceValue for [u8; N] {
 impl TraceValue for &[u8] {
     #[inline]
     fn trace_value(msg: &str, value: &&[u8]) {
-        trace_data(msg, value, DataRepr::AsHex);
+        trace_hex(msg, value);
     }
 }
 
@@ -87,7 +87,7 @@ impl TraceValue for &[u8] {
 impl<const N: usize> TraceValue for &[u8; N] {
     #[inline]
     fn trace_value(msg: &str, value: &&[u8; N]) {
-        trace_data(msg, *value, DataRepr::AsHex);
+        trace_hex(msg, *value);
     }
 }
 
@@ -105,7 +105,7 @@ pub fn trace_value_generic<T>(msg: &str, value: &T) {
     let data_ptr = value as *const T as *const u8;
     let data_len = core::mem::size_of::<T>();
     let data_slice = unsafe { core::slice::from_raw_parts(data_ptr, data_len) };
-    trace_data(msg, data_slice, DataRepr::AsHex);
+    trace_hex(msg, data_slice);
 }
 
 /// Asserts that two expressions are equal.
