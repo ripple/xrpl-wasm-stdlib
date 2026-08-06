@@ -92,7 +92,7 @@ fi
 echo "🔗 Checking external dependencies..."
 
 # Check that xrpl library is loaded
-if ! grep -q "xrpl@4.5.0-smartescrow" "$UI_FILE"; then
+if ! grep -q "xrpl@5.1.0-smartescrow" "$UI_FILE"; then
     echo "⚠️  Warning: xrpl library version may have changed"
 fi
 

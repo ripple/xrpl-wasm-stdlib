@@ -1,0 +1,18 @@
+{
+  "cSpell.words": [
+    "clippy",
+    "Dwarnings",
+    "keylet",
+    "ldgr",
+    "nodemodules",
+    "RUSTFLAGS",
+    "rustup",
+    "sfield",
+    "uninit",
+    "xfloat"
+  ],
+  "rust-analyzer.linkedProjects": [
+    "Cargo.toml",
+    "examples/Cargo.toml"
+  ]
+}

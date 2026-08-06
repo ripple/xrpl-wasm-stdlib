@@ -1,8 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "xrpl-wasm-stdlib",
-    "xrpl-wasm-stdlib/xrpl-address-macro",
+    "xrpl-common-stdlib",
+    "xrpl-macros",
+    "xrpl-escrow-stdlib",
+    "xrpl-stdlib-test-utils"
 ]
 exclude = [
     "examples",
@@ -10,9 +12,11 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.7.1"
 license = "ISC"
 repository = "https://github.com/ripple/xrpl-wasm-stdlib"
+
+[workspace.dependencies]
+mockall = "0.15.0"
 
 [profile.release]
 opt-level = "s"   # Optimize for size

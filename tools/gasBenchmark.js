@@ -107,7 +107,7 @@ async function deployEscrow(sourceWallet, destWallet, wasmHex) {
     Amount: "100000",
     Destination: destWallet.address,
     CancelAfter: closeTime + 2000,
-    FinishFunction: wasmHex,
+    Bytecode: wasmHex,
   }
 
   const result = await submit(tx, sourceWallet)
@@ -127,7 +127,7 @@ async function executeEscrow(sourceWallet, destWallet, offerSequence) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: COMPUTATION_ALLOWANCE,
+    Gas: COMPUTATION_ALLOWANCE,
   }
 
   const result = await submit(tx, sourceWallet)
@@ -183,11 +183,11 @@ async function measureGas(contractName) {
       // Deploy escrow with contract
       console.log(`Run ${i + 1}/${NUM_RUNS}...`)
       console.log("  Deploying escrow with contract...")
-      let offerSequence = await deployEscrow(sourceWallet, destWallet, wasmHex)
+      let { sequence } = await deployEscrow(sourceWallet, destWallet, wasmHex)
       console.log(`  Escrow created with sequence: ${offerSequence}`)
 
       // Execute escrow and measure gas
-      const gas = await executeEscrow(sourceWallet, destWallet, offerSequence)
+      const gas = await executeEscrow(sourceWallet, destWallet, sequence)
       gasReadings.push(gas)
       console.log(`  Gas used: ${gas}`)
     }

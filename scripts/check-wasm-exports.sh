@@ -1,6 +1,6 @@
 #!/bin/bash
 # WASM contract exports checking script
-# Checks that all WASM examples export the required finish function
+# Checks that all WASM examples export the required escrow_finish function
 
 set -euo pipefail
 
@@ -10,14 +10,15 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "🔍 Checking WASM contract exports..."
-# Check that all WASM examples export the required finish function
+# Check that all WASM examples export the required escrow_finish function
 check_src_dir_exports() {
     local src_dir="$1"
     local dir=$(dirname "$src_dir")
+    [[ "$dir" == *"test_utils"* ]] && return 0
     echo "🔧 Checking exports in $dir"
     if [[ -f "$src_dir/lib.rs" ]]; then
-        grep -q "finish() -> i32" "$src_dir/lib.rs" || {
-            echo "❌ Missing required finish() -> i32 export in $dir"
+        grep -q "escrow_finish() -> i32" "$src_dir/lib.rs" || grep -q "#\[smart_escrow\]" "$src_dir/lib.rs" || {
+            echo "❌ Missing required escrow_finish() -> i32 export in $dir"
             exit 1
         }
     else

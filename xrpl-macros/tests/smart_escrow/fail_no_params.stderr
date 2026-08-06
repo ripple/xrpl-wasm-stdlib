@@ -1,0 +1,5 @@
+error: entry-point function must take exactly one parameter of type `EscrowFinishContext`
+ --> tests/smart_escrow/fail_no_params.rs:4:4
+  |
+4 | fn run() -> Result<bool, ()> {
+  |    ^^^

@@ -8,7 +8,7 @@ async function test(testContext) {
   const { deploy, finish, client, submit, sourceWallet, destWallet } =
     testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   const closeTime = (
     await client.request({
@@ -48,15 +48,15 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
   }
 
   // This EscrowCreate should fail since the oracle must show the price as <= 1 USD/XRP
   const responseFail = await submit(txFail, sourceWallet)
 
-  if (responseFail.result.meta.TransactionResult !== "tecWASM_REJECTED") {
-    console.error("\nEscrow finished successfully????")
+  if (responseFail.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
+    console.error("\nEscrow finished successfully when it should have failed")
     process.exit(1)
   }
 
@@ -96,8 +96,8 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
   }
 
   const response = await submit(tx, sourceWallet)

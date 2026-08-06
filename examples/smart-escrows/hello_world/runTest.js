@@ -1,14 +1,14 @@
 async function test(testContext) {
   const { deploy, finish, submit, sourceWallet, destWallet } = testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   const tx = {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
   }
 
   const response = await submit(tx, sourceWallet)

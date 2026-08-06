@@ -40,6 +40,48 @@
 - Follow general code style guidelines (enforced by CI) and [naming conventions](./docs/NAMING_CONVENTIONS.md).
 - Include tests for new functionality
 - Update documentation as needed
+- Use a Conventional Commits PR title (see below) and a non-empty description filled in from the PR template
+
+### Conventional Commits
+
+PR titles are checked in CI and must follow this format:
+
+```
+<type>: <Description>
+```
+
+- `<type>` is one of the allowed types in the table below, all lowercase.
+- The description must start with a capital letter.
+- Keep the title short and imperative (e.g. "Add typed AMM accessor", not "Added typed AMM accessor").
+
+Allowed types:
+
+| Type       | Use for                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `feat`     | A new feature (host function, helper, public API addition, etc.) |
+| `fix`      | A bug fix                                                        |
+| `docs`     | Documentation-only changes                                       |
+| `style`    | Formatting, missing semicolons, etc.; no code behavior change    |
+| `refactor` | Code change that neither fixes a bug nor adds a feature          |
+| `perf`     | Performance improvement                                          |
+| `test`     | Adding or correcting tests                                       |
+| `build`    | Build system, Cargo, toolchain, or dependency changes            |
+| `ci`       | CI configuration and workflow changes                            |
+| `chore`    | Maintenance that doesn't fit the categories above                |
+| `release`  | Release-related changes (version bumps, changelog updates, etc.) |
+| `example`  | Adding or changing a sample contract under `examples/`           |
+
+Examples:
+
+- `feat: Add typed accessor for AMM ledger object`
+- `fix: Correct return code for missing id`
+- `docs: Document hello_world build steps`
+- `ci: Enforce conventional commit PR titles`
+- `example: Add freelancer escrow sample`
+
+When a PR is merged with squash-and-merge, the PR title becomes the commit message — keeping titles in this format keeps `git log` on `main` clean and machine-readable.
+
+When merging without squashing, individual commits are also checked; commits that do not follow the format will be flagged by the `Check PR commits` workflow.
 
 **For new examples:**
 
@@ -82,26 +124,28 @@ cargo build --target wasm32v1-none --release
 These debugging statements will show up in the `debug.log` for rippled.
 
 ```rust
-use xrpl_wasm_stdlib::host::trace::{trace, trace_data, DataRepr};
+use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
     trace("Contract starting").ok();
 
-    let account = match EscrowFinish.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.as_bytes(), DataRepr::AsHex).ok();
+            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
             acc
         },
         Err(e) => {
-            trace(&format!("Error: {:?}", e)).ok();
-            return 0;
+            return e.code().into();
         }
     };
 
     // Rest of logic...
+    FinishResult::succeed()
 }
 ```
+
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` export; your annotated function can be named anything except `escrow_finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 
@@ -125,9 +169,10 @@ runTest().catch(console.error)
 ## Project Structure
 
 ```
-xrpl-wasm-stdlib/
+xrpl-common-stdlib/
 ├── src/                    # Library source code
 ├── examples/smart-escrows/ # Example smart contracts
+├── skills/                 # Claude Code skills (e.g. xrpl-smart-escrows)
 ├── scripts/                # Development and CI scripts
 ├── ui/                     # Testing web interface
 ├── e2e-tests/              # Integration tests
@@ -178,7 +223,7 @@ git push origin v0.x.y
 
 ## Getting Help
 
-- Check [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_wasm_stdlib/guide/index.html)
+- Check [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html)
 - Search existing GitHub issues
 - Create new issue with "question" label
 - Reference related issues in PRs

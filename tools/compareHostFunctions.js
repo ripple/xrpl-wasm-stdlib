@@ -8,32 +8,7 @@ if (process.argv.length !== 3) {
 ////////////////////////////////////////////////////////////////////////
 //  Get all necessary files from rippled
 ////////////////////////////////////////////////////////////////////////
-const path = require("path")
-const fs = require("fs/promises")
-
-async function readFileFromGitHub(repo, filename) {
-  if (!repo.includes("tree")) {
-    repo += "/tree/HEAD"
-  }
-  let url = repo.replace("github.com", "raw.githubusercontent.com")
-  url = url.replace("tree/", "")
-  url += "/" + filename
-
-  if (!url.startsWith("http")) {
-    url = "https://" + url
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`)
-    }
-    return await response.text()
-  } catch (e) {
-    console.error(`Error reading ${url}: ${e.message}`)
-    process.exit(1)
-  }
-}
+const { readFile, readSourceFile: read } = require("./rippledSource")
 
 function areListsEqual(a, b) {
   if (a.length !== b.length) return false
@@ -45,53 +20,39 @@ function areListsEqual(a, b) {
   return true
 }
 
-async function readFile(folder, filename) {
-  const filePath = path.join(folder, filename)
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch (e) {
-    throw new Error(`File not found: ${filePath}, ${e.message}`)
-  }
-}
-
-const read = process.argv[2].includes("github.com")
-  ? readFileFromGitHub
-  : readFile
-
 async function main() {
   const wasmImportFile = await read(
     process.argv[2],
-    "src/xrpld/app/wasm/detail/WasmVM.cpp",
+    "src/libxrpl/tx/wasm/WasmVM.cpp",
   )
   const hostWrapperFile = await read(
     process.argv[2],
-    "src/xrpld/app/wasm/HostFuncWrapper.h",
+    "include/xrpl/tx/wasm/HostFuncWrapper.h",
   )
-  const rustHostFunctionFile = await readFile(
-    __dirname,
-    "../xrpl-wasm-stdlib/src/host/host_bindings.rs",
-  )
-  const rustHostFunctionTestFile = await readFile(
-    __dirname,
-    "../xrpl-wasm-stdlib/src/host/host_bindings_for_testing.rs",
-  )
-
   let importHits = [
+    // Parse WASM host function imports in `WasmVM.cpp`
     ...wasmImportFile.matchAll(
-      // parse the WASM host function imports in `WasmVM.cpp`
-      /^ *WASM_IMPORT_FUNC2? *\(i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *hfs, *[0-9']+\);$/gm,
+      /^ *WASM_IMPORT_FUNC2? *\(\*?i, *([A-Za-z0-9]+), *("([A-Za-z0-9_]+)",)? *&?hfs, *[0-9']+\);$/gm,
     ),
   ]
+  console.log(
+    `\n📝 WasmVM.cpp: Regex matched ${importHits.length} import functions`,
+  )
+
   const imports = importHits
     .map((hit) => [hit[1], hit[3] != null ? hit[3] : hit[1]])
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   let wrapperHits = [
+    // Parse the `proto` functions in `HostFuncWrapper.h`
     ...hostWrapperFile.matchAll(
-      // parse the `proto` functions in `HostFuncWrapper.h.h`
       /^ *using ([A-Za-z0-9]+)_proto =[ \n]*([A-Za-z0-9_]+)\(([A-Za-z0-9_\* \n,]*)\);$/gm,
     ),
   ]
+  console.log(
+    `📝 HostFuncWrapper.h: Regex matched ${wrapperHits.length} wrapper functions`,
+  )
+
   const wrappers = wrapperHits
     .map((hit) => [
       hit[1],
@@ -169,13 +130,19 @@ async function main() {
   }
 
   function checkHits(fileTitle, rustHostFunctions) {
+    console.log(`\n🔍 Comparing ${fileTitle} with C++ host functions...`)
+    console.log(`   Found ${rustHostFunctions.length} Rust functions`)
+    console.log(`   Found ${cppHostFunctions.length} C++ functions`)
+
     if (
       !areListsEqual(
         rustHostFunctions.map((f) => f.name),
         cppHostFunctions.map((f) => f.name),
       )
     ) {
-      console.error("Rust Host Functions and C++ Host Functions do not match!")
+      console.error(
+        `\n❌ ${fileTitle}: Rust Host Functions and C++ Host Functions do not match!`,
+      )
       const rustMissing = cppHostFunctions.filter(
         (f) => !rustHostFunctions.some((rf) => rf.name === f.name),
       )
@@ -184,12 +151,12 @@ async function main() {
       )
       if (rustMissing.length > 0)
         console.error(
-          "Missing Rust Host Functions:",
+          `   Missing Rust Host Functions in ${fileTitle}:`,
           "\x1b[31m" + rustMissing.map((f) => f.name).join(", ") + "\x1b[0m",
         )
       if (cppMissing.length > 0)
         console.error(
-          "Missing C++ Host Functions:",
+          `   Missing C++ Host Functions (extra in ${fileTitle}):`,
           "\x1b[31m" + cppMissing.map((f) => f.name).join(", ") + "\x1b[0m",
         )
       process.exit(1)
@@ -229,59 +196,196 @@ async function main() {
     }
   }
 
-  let rustHits = [
-    ...rustHostFunctionFile.matchAll(
-      // parse the Rust host functions in `host_bindings.rs`
-      /^ *pub fn ([A-Za-z0-9_]+)\([ \n]*([A-Za-z0-9_:*, \n]*)\) -> ([A-Za-z0-9]+);$/gm,
-    ),
-  ]
-  const rustFuncs = rustHits.map((hit) => [
-    hit[1],
-    hit[3],
-    hit[2]
-      .trim()
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => s.split(":")[1].trim()),
-  ])
-  const rustHostFunctions = rustFuncs
-    .map((hit) => {
-      return {
-        name: hit[0],
-        return: translateParamType(hit[1]),
-        params: hit[2].map(translateParamType),
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
-  checkHits("host_bindings.rs", rustHostFunctions)
+  // host_bindings_trait.rs
+  {
+    const rustHostFunctionFile = await readFile(
+      __dirname,
+      "../xrpl-common-stdlib/src/host/host_bindings_trait.rs",
+    )
 
-  let rustTestHits = [
-    ...rustHostFunctionTestFile.matchAll(
-      // parse the Rust host functions in `host_bindings_for_testing.rs`
-      /^ *pub (unsafe )?fn ([A-Za-z0-9_]+)\([ \n]*([A-Za-z0-9_:*, \n]*)\) -> ([A-Za-z0-9]+)/gm,
-    ),
-  ]
-  const rustTestFuncs = rustTestHits.map((hit) => [
-    hit[2],
-    hit[4],
-    hit[3]
-      .trim()
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => s.split(":")[1].trim()),
-  ])
-  const rustTestHostFunctions = rustTestFuncs
-    .map((hit) => {
-      return {
-        name: hit[0],
-        return: translateParamType(hit[1]),
-        params: hit[2].map(translateParamType),
-      }
+    // Match multiline function declarations - need to match across newlines
+    const regex =
+      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gm
+    let rustHits = [...rustHostFunctionFile.matchAll(regex)]
+    console.log(
+      `\n📝 host_bindings_trait.rs: Regex matched ${rustHits.length} functions`,
+    )
+    if (rustHits.length < 10) {
+      console.log(
+        `   Matched functions: ${rustHits.map((h) => h[1]).join(", ")}`,
+      )
+    }
+
+    const rustFuncs = rustHits.map((hit) => {
+      const params = hit[2]
+        ? hit[2]
+            .replace(/\n/g, " ") // Replace newlines with spaces
+            .trim()
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+            .map((s) => s.split(":")[1].trim())
+        : []
+      return [hit[1], hit[3], params]
     })
-    .sort((a, b) => a.name.localeCompare(b.name))
-  checkHits("host_bindings_for_testing.rs", rustTestHostFunctions)
+    const rustHostFunctions = rustFuncs
+      .map((hit) => {
+        return {
+          name: hit[0],
+          return: translateParamType(hit[1]),
+          params: hit[2].map(translateParamType),
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+    checkHits("host_bindings_trait.rs", rustHostFunctions)
+  }
+
+  // host_bindings_wasm.rs
+  {
+    const rustHostfunctionFile = await readFile(
+      __dirname,
+      "../xrpl-common-stdlib/src/host/host_bindings_wasm.rs",
+    )
+
+    // Match multiline function declarations
+    const regex =
+      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gm
+    let rustHits = [...rustHostfunctionFile.matchAll(regex)]
+    console.log(
+      `\n📝 host_bindings_wasm.rs: Regex matched ${rustHits.length} functions`,
+    )
+    if (rustHits.length < 10) {
+      console.log(
+        `   Matched functions: ${rustHits.map((h) => h[1]).join(", ")}`,
+      )
+    }
+
+    const rustFuncs = rustHits.map((hit) => {
+      const params = hit[2]
+        .replace(/\n/g, " ") // Replace newlines with spaces
+        .trim()
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map((s) => s.split(":")[1].trim())
+      return [hit[1], hit[3], params]
+    })
+    const rustHostFunctions = rustFuncs
+      .map((hit) => {
+        return {
+          name: hit[0],
+          return: translateParamType(hit[1]),
+          params: hit[2].map(translateParamType),
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+    checkHits("host_bindings_wasm.rs", rustHostFunctions)
+  }
+
+  // host_bindings_test.rs
+  {
+    const rustHostFunctionFile = await readFile(
+      __dirname,
+      "../xrpl-common-stdlib/src/host/host_bindings_test.rs",
+    )
+
+    // Extract only the export_host_functions! macro invocation (not the definition)
+    // Look for the pattern that starts with a comment about generating stub functions
+    const macroMatch = rustHostFunctionFile.match(
+      /\s*export_host_functions!\s*\{([\s\S]*?)\n\}/,
+    )
+    if (!macroMatch) {
+      console.error(
+        "Could not find export_host_functions! macro invocation in host_bindings_test.rs",
+      )
+      process.exit(1)
+    }
+    const macroContent = macroMatch[1]
+
+    // Match multiline function declarations (inside export_host_functions! macro)
+    const regex =
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
+    let rustTestHits = [...macroContent.matchAll(regex)]
+    console.log(
+      `\n📝 host_bindings_test.rs: Regex matched ${rustTestHits.length} functions`,
+    )
+    if (rustTestHits.length < 10) {
+      console.log(
+        `   Matched functions: ${rustTestHits.map((h) => h[1]).join(", ")}`,
+      )
+    }
+
+    const rustTestFuncs = rustTestHits.map((hit) => {
+      const params = hit[2]
+        .replace(/\n/g, " ") // Replace newlines with spaces
+        .trim()
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map((s) => s.split(":")[1].trim())
+      return [hit[1], hit[3], params]
+    })
+    const rustTestHostFunctions = rustTestFuncs
+      .map((hit) => {
+        return {
+          name: hit[0],
+          return: translateParamType(hit[1]),
+          params: hit[2].map(translateParamType),
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+    checkHits("host_bindings_test.rs", rustTestHostFunctions)
+  }
+
+  // host_bindings_empty.rs
+  {
+    const rustHostFunctionFile = await readFile(
+      __dirname,
+      "../xrpl-common-stdlib/src/host/host_bindings_empty.rs",
+    )
+
+    // Extract only the export_host_functions! macro invocation (not the definition)
+    // Look for the pattern that starts with a comment about generating stub functions
+    const macroMatch = rustHostFunctionFile.match(
+      /^\s*export_host_functions!\s*\{([\s\S]*?)\n\}/m,
+    )
+    if (!macroMatch) {
+      console.error(
+        "Could not find export_host_functions! macro invocation in host_bindings_empty.rs",
+      )
+      process.exit(1)
+    }
+    const macroContent = macroMatch[1]
+
+    // Match multiline function declarations (inside export_host_functions! macro)
+    const regex =
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
+    let rustEmptyHits = [...macroContent.matchAll(regex)]
+    console.log(
+      `\n📝 host_bindings_empty.rs: Regex matched ${rustEmptyHits.length} functions`,
+    )
+
+    const rustEmptyFuncs = rustEmptyHits.map((hit) => {
+      const params = hit[2]
+        .replace(/\n/g, " ") // Replace newlines with spaces
+        .trim()
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map((s) => s.split(":")[1].trim())
+      return [hit[1], hit[3], params]
+    })
+    const rustEmptyHostFunctions = rustEmptyFuncs
+      .map((hit) => {
+        return {
+          name: hit[0],
+          return: translateParamType(hit[1]),
+          params: hit[2].map(translateParamType),
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+    checkHits("host_bindings_empty.rs", rustEmptyHostFunctions)
+  }
 
   console.log("All host functions match between Rust and C++ implementations.")
 }

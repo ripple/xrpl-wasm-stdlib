@@ -9,7 +9,9 @@ const client =
 
 async function submit(tx, wallet, debug = false) {
   const txResult = await client.submitAndWait(tx, { autofill: true, wallet })
-  console.log("SUBMITTED " + tx.TransactionType)
+  console.log(
+    "SUBMITTED " + tx.TransactionType + "(" + txResult.result.hash + ")",
+  )
 
   if (debug) console.log(txResult.result ?? txResult)
   else console.log("Result code: " + txResult.result?.meta?.TransactionResult)
@@ -34,7 +36,7 @@ async function deploy(sourceWallet, destWallet, finish, data = null) {
       Amount: "100000",
       Destination: destWallet.address,
       CancelAfter: close_time + 2000,
-      FinishFunction: finish,
+      Bytecode: finish,
       Data: data,
     },
     sourceWallet,
@@ -43,9 +45,20 @@ async function deploy(sourceWallet, destWallet, finish, data = null) {
   if (response1.result.meta.TransactionResult !== "tesSUCCESS") process.exit(1)
   const sequence = response1.result.tx_json.Sequence
 
+  // Extract escrow ledger entry ID from the created escrow node in metadata
+  let escrowId = null
+  if (response1.result.meta && response1.result.meta.AffectedNodes) {
+    for (const node of response1.result.meta.AffectedNodes) {
+      if (node.CreatedNode && node.CreatedNode.LedgerEntryType === "Escrow") {
+        escrowId = node.CreatedNode.LedgerIndex
+        break
+      }
+    }
+  }
+
   await client.disconnect()
 
-  return sequence
+  return { sequence, escrowId }
 }
 
 module.exports = { deploy }

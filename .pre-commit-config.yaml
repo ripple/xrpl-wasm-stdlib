@@ -16,6 +16,11 @@ repos:
         pass_filenames: false
         types: [file, rust]
         language: system
+      - id: fix-registry-urls
+        name: Replace non-public registry URLs in package-lock.json
+        entry: perl -pi -e 's|"resolved"\x3a "https://(?!registry\.npmjs\.org/)[^"]*?/((?:@[^/]+/)?[^/]+/-/[^"]+)"|"resolved"\x3a "https://registry.npmjs.org/$1"|g'
+        language: system
+        files: package-lock\.json$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -39,4 +44,4 @@ repos:
     rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
     hooks:
       - id: prettier
-        args: [--no-semi]
+        args: [--no-semi, --tab-width, "2"]

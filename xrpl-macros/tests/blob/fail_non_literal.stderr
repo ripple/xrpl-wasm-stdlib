@@ -1,0 +1,5 @@
+error: expected string literal
+ --> tests/blob/fail_non_literal.rs:5:11
+  |
+5 |     blob!(hex);
+  |           ^^^

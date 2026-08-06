@@ -23,7 +23,7 @@ This comprehensive guide covers everything you need to develop smart escrows usi
       - [NFT Objects](#nft-objects)
     - [Type System](#type-system)
       - [Core Types](#core-types)
-      - [Keylet Generation](#keylet-generation)
+      - [Ledger Entry ID Generation](#ledger-entry-id-generation)
     - [Host Functions](#host-functions)
       - [Ledger Access](#ledger-access)
       - [Transaction Fields](#transaction-fields)
@@ -36,8 +36,10 @@ This comprehensive guide covers everything you need to develop smart escrows usi
       - [Multi-Signature Notary](#multi-signature-notary)
       - [NFT Ownership Verification](#nft-ownership-verification)
       - [Time-Based Ledger Sequence](#time-based-ledger-sequence)
+      - [Atomic Swap Examples](#atomic-swap-examples)
   - [Testing and Debugging](#testing-and-debugging)
     - [Test Networks](#test-networks)
+    - [Key Testing Considerations](#key-testing-considerations)
     - [Test Using the Web UI](#test-using-the-web-ui)
     - [Performance Optimization](#performance-optimization)
       - [Binary Size Optimization](#binary-size-optimization)
@@ -79,7 +81,7 @@ npm install
 1. **Clone the repository:**
 
    ```shell
-   git clone https://github.com/XRPLF/xrpl-wasm-stdlib.git
+   git clone https://github.com/ripple/xrpl-wasm-stdlib.git
    cd xrpl-wasm-stdlib
    ```
 
@@ -98,31 +100,36 @@ npm install
 
 Let's create a simple escrow that releases funds when an account balance exceeds 10 XRP:
 
-```rust
+```rust ignore
 
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::host::Result::{Ok, Err};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let tx = EscrowFinish;
-
+#[smart_escrow]
+fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
     // Get the account trying to finish the escrow
-    let account = match tx.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => acc,
-        Err(_) => return 0, // Invalid transaction
+        Err(_) => return FinishResult::reject(), // Invalid transaction
     };
 
     // Check account balance
     match get_account_balance(&account) {
-        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => 1, // Release (>10 XRP)
-        _ => 0, // Keep locked
+        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
+        _ => FinishResult::reject(), // Keep locked
     }
 }
 ```
+
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
+
+_(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-escrow-stdlib`, a separate crate this guide's own doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
 
 **Build and test:**
 
@@ -136,7 +143,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib" }
+xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
+xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
+xrpl-macros = { path = "../xrpl-macros" }
 
 [lib]
 crate-type = ["cdylib"]
@@ -168,8 +177,11 @@ Smart escrows are **conditional payment contracts** that:
 
 Every smart escrow must:
 
-1. **Export a `finish()` function** with signature `extern "C" fn finish() -> i32`
-2. **Return 1 to release** funds or **0 to keep locked**
+1. **Export an `escrow_finish()` function** with signature `extern "C" fn escrow_finish() -> i32`. The `#[smart_escrow]` macro
+   generates this for you from a function you annotate — see [Your First Contract](#your-first-contract) — so you
+   normally never write the raw `extern "C"` export yourself.
+2. **Return a positive value to release** funds, or **zero/negative to keep locked** (`FinishResult::succeed()` /
+   `FinishResult::reject()` under the macro)
 3. **Be deterministic** - same inputs always produce same outputs
 4. **Use `#![no_std]`** - no standard library available (use ours instead 😉)
 
@@ -196,10 +208,14 @@ Smart escrows run in a constrained WebAssembly environment:
 
 The XRPL WASM Standard Library provides type-safe access to transaction data through the `current_tx` module.
 
+> **Under `#[smart_escrow]`:** your entry function receives an `EscrowFinishContext`, not a bare `EscrowFinish`.
+> Access the current transaction via `ctx.tx()` and the current escrow ledger object via `ctx.escrow()` (both
+> implement the same field traits shown below) rather than constructing `EscrowFinish` directly.
+
 #### EscrowFinish Transaction
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 
 let tx = EscrowFinish;
 
@@ -215,10 +231,10 @@ let escrow_sequence = tx.get_escrow_sequence().unwrap();
 
 #### Field Access
 
-```rust
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::sfield;
+```rust ignore
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::sfield;
 
 let tx = EscrowFinish;
 
@@ -239,9 +255,9 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::get_account_balance;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::sfield;
 
 let account = AccountID::from([0u8; 20]); // Replace with real account
 
@@ -256,8 +272,8 @@ let balance = get_account_balance(&account);
 
 ```rust ignore
 // NFT functionality uses the NFToken type
-use xrpl_wasm_stdlib::core::types::nft::NFToken;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_common_stdlib::types::nft::NFToken;
+use xrpl_common_stdlib::types::account_id::AccountID;
 
 let owner = AccountID::from([0u8; 20]);
 let nft_id_bytes = [0u8; 32]; // 32-byte NFT identifier
@@ -290,14 +306,14 @@ let uri = nft_token.uri(&owner)?;
 #### Core Types
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::types::{
+use xrpl_common_stdlib::types::{
     account_id::AccountID,           // 20-byte XRPL account identifier
     amount::Amount, // Token amounts (XRP, IOU, MPT)
 };
-use xrpl_wasm_stdlib::types::NFT;      // [u8; 32] NFT identifier
+use xrpl_common_stdlib::types::NFT;      // [u8; 32] NFT identifier
 
-// Create AccountID from r-address (if r_address macro exists)
-// let account = xrpl_wasm_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+// Create AccountID from r-address at compile time
+// const ACCOUNT: AccountID = xrpl_common_stdlib::r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
 
 // Create from raw bytes
 let account = AccountID::from([0u8; 20]);
@@ -309,37 +325,37 @@ let nft: NFT = [0u8; 32];
 // Use the working examples for guaranteed compilable code
 ```
 
-#### Keylet Generation
+#### Ledger Entry ID Generation
 
-Keylets are used to locate objects in the ledger:
+Ledger entry IDs are used to locate objects in the ledger:
 
 ```rust ignore
-use xrpl_wasm_stdlib::core::types::keylets::{
-    account_keylet,
-    line_keylet,
-    escrow_keylet,
-    oracle_keylet,
+use xrpl_common_stdlib::ledger_entry_ids::{
+    accountroot_id,
+    trustline_id,
+    escrow_id,
+    oracle_id,
 };
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::asset::Asset;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::asset::Asset;
 
 let account = AccountID::from([0u8; 20]);
 let sequence = 12345i32;
 
-// Account keylet
-let keylet = account_keylet(&account);
+// Account id
+let id = accountroot_id(&account);
 
-// Trust line keylet (requires Asset types)
+// Trust line id (requires Asset types)
 let asset1 = Asset::XRP(XrpAsset {});
 let asset2 = Asset::IOU(IouAsset::new(issuer, currency));
-let keylet = line_keylet(&account, &asset1, &asset2);
+let id = trustline_id(&account, &asset1, &asset2);
 
-// Escrow keylet
-let keylet = escrow_keylet(&account, sequence);
+// Escrow id
+let id = escrow_id(&account, sequence);
 
-// Oracle keylet
+// Oracle id
 let document_id = 1i32;
-let keylet = oracle_keylet(&account, document_id);
+let id = oracle_id(&account, document_id);
 ```
 
 ### Host Functions
@@ -350,18 +366,18 @@ Low-level host function access through the `host` module.
 
 ```rust
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::AccountRoot;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::cache_ledger_obj;
-use xrpl_wasm_stdlib::host::Error;
+use xrpl_common_stdlib::objects::account_root::AccountRoot;
+use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
+use xrpl_common_stdlib::host::cache_le;
+use xrpl_common_stdlib::host::Error;
 
 // The correct approach is to use the trait methods
 fn main() {
     let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-    let account_keylet = account_keylet(&account).unwrap_or_panic();
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let accountroot_id = accountroot_id(&account).unwrap_or_panic();
+    let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return;
     }
@@ -374,10 +390,11 @@ fn main() {
 
 #### Transaction Fields
 
-```rust
+```rust ignore
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::{TransactionCommonFields, EscrowFinishFields};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_escrow_stdlib::current_tx::traits::EscrowFinishFields;
 
 fn main() {
     let tx = EscrowFinish;
@@ -398,16 +415,16 @@ fn main() {
 
 The library uses custom `Result` types for comprehensive error handling:
 
-```rust
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::ledger_objects::account_root::{get_account_balance, AccountRoot};
-use xrpl_wasm_stdlib::core::ledger_objects::traits::AccountFields;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::core::types::keylets::account_keylet;
-use xrpl_wasm_stdlib::host::{cache_ledger_obj, Error, Result};
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+```rust ignore
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::objects::account_root::{get_account_balance, AccountRoot};
+use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
+use xrpl_common_stdlib::host::{cache_le, Error, Result};
+use xrpl_common_stdlib::host::Result::{Ok, Err};
 
 fn process_escrow() -> Result<i32> {
     let tx = EscrowFinish;
@@ -421,12 +438,12 @@ fn process_escrow() -> Result<i32> {
     let balance = get_account_balance(&account);
 
     // Handle specific errors - create AccountRoot to access account fields
-    let account_keylet = match account_keylet(&account) {
-        Ok(keylet) => keylet,
+    let accountroot_id = match accountroot_id(&account) {
+        Ok(id) => id,
         Err(e) => return Err(e), // Invalid account
     };
 
-    let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+    let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
     if slot < 0 {
         return Err(Error::from_code(slot));
     }
@@ -457,6 +474,20 @@ fn process_escrow() -> Result<i32> {
 - `WasmError::BufferTooSmall` - Output buffer insufficient
 - `WasmError::CacheSlotNotFound` - Cached object evicted
 
+**Error Code Debugging:**
+
+Host functions return negative integers for errors. You can use trace functions to log error codes for debugging:
+
+```rust ignore
+use xrpl_common_stdlib::host::trace::trace_num;
+
+let result = unsafe { some_host_function(params) };
+if result < 0 {
+    let _ = trace_num("Host function failed with error:", result as i64);
+    return result; // or handle appropriately
+}
+```
+
 ---
 
 ## Examples
@@ -470,7 +501,7 @@ The simplest possible smart escrow that demonstrates basic concepts.
 **Key learning points:**
 
 - Basic contract structure with `#![no_std]` and `#![no_main]`
-- Using `#[unsafe(no_mangle)]` for the entry point function
+- Using `#[smart_escrow]` to declare the entry point function, instead of hand-writing the `extern "C"` export
 - Simple error handling with pattern matching
 - Trace logging for debugging
 
@@ -545,6 +576,28 @@ A compliance-focused escrow that requires credential verification.
 - Implements time-locked escrows
 - Shows sequence-based logic
 
+#### Atomic Swap Examples
+
+These examples demonstrate:
+
+- Cross-escrow reference patterns (memo-based and data field-based)
+- Account validation between related escrows
+- Timing coordination and deadline management
+- Atomic failure handling when escrows are finished
+- Multi-phase execution patterns
+
+**📁 [`examples/smart-escrows/atomic_swap1/`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/atomic_swap1/) - Memo-Based Atomic Swap**
+
+- Stateless atomic swap using transaction memos
+- Cross-escrow validation and account reversal
+- Demonstrates mutual escrow validation patterns
+
+**📁 [`examples/smart-escrows/atomic_swap2/`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/atomic_swap2/) - Data Field-Based Atomic Swap**
+
+- Stateful atomic swap using escrow data fields
+- Two-phase execution with built-in timing validation
+- Shows state persistence and deadline management
+
 ## Testing and Debugging
 
 ### Test Networks
@@ -555,6 +608,13 @@ A compliance-focused escrow that requires credential verification.
 | **Local Node**  | `ws://localhost:6006`                    | Local Development   |
 
 Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/se/supported) if you would like to build and run rippled locally.
+
+### Key Testing Considerations
+
+- Always create fresh escrows for each test to avoid finishing issues
+- Use extensive trace output to debug coordination timing issues (you can access these traces by running rippled locally)
+- Test both success and failure paths for atomic behavior
+- Understand that escrow finishing affects subsequent tests
 
 ### Test Using the Web UI
 
@@ -575,14 +635,16 @@ The web UI allows you to:
    ```
 
 2. **Upload your WASM file:**
-   - Open the testing interface in your browser
-   - Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
-   - The contract will be loaded automatically
+
+- Open the testing interface in your browser
+- Click "Choose File" and select your `.wasm` file from `target/wasm32v1-none/release/`
+- The contract will be loaded automatically
 
 3. **Test your contract:**
-   - Set up test scenarios using the interface
-   - Configure transaction data and ledger state
-   - Execute and see results with debug output
+
+- Set up test scenarios using the interface
+- Configure transaction data and ledger state
+- Execute and see results with debug output
 
 ### Performance Optimization
 
@@ -624,16 +686,16 @@ match operation() {
 let account = tx.get_account();
 let balance = get_account_balance(&account);
 // Create AccountRoot to access account fields
-let account_keylet = account_keylet(&account);
-let slot = cache_ledger_obj(&account_keylet);
+let accountroot_id = accountroot_id(&account);
+let slot = cache_le(&accountroot_id);
 let account_root = AccountRoot { slot_num: slot };
 let sequence = account_root.sequence();
 
 // Bad: Multiple calls for same data
 let balance = get_account_balance(&tx.get_account());
-// Bad: Multiple calls - should cache the account and keylet
-let account_keylet = account_keylet(&tx.get_account());
-let slot = cache_ledger_obj(&account_keylet);
+// Bad: Multiple calls - should cache the account and id
+let accountroot_id = accountroot_id(&tx.get_account());
+let slot = cache_le(&accountroot_id);
 let account_root = AccountRoot { slot_num: slot };
 let sequence = account_root.sequence();
 ```
@@ -643,8 +705,8 @@ let sequence = account_root.sequence();
 ```rust ignore
 // Cache ledger objects for multiple field access using traits
 let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
-let account_keylet = account_keylet(&account).unwrap_or_panic();
-let slot = unsafe { cache_ledger_obj(account_keylet.as_ptr(), account_keylet.len(), 0) };
+let accountroot_id = accountroot_id(&account).unwrap_or_panic();
+let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
 let account_root = AccountRoot { slot_num: slot };
 
 // Use trait methods to access fields efficiently
@@ -661,62 +723,65 @@ let mut accounts = [AccountID::default(); 10];
 
 // Reuse buffers for transaction fields
 let mut buffer = [0u8; 64];
-let len1 = unsafe { get_tx_field(sfield::Account, buffer[..20].as_mut_ptr(), 20) };
-let len2 = unsafe { get_tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 20) };
+let len1 = unsafe { tx_field(sfield::Account, buffer[..20].as_mut_ptr(), 20) };
+let len2 = unsafe { tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 20) };
 ```
 
 ### Troubleshooting
 
 #### Common Build Issues
 
-| Issue                            | Solution                                             |
-| -------------------------------- | ---------------------------------------------------- |
-| `wasm32v1-none` target not found | `rustup target add wasm32v1-none`                    |
-| Link errors                      | Check `crate-type = ["cdylib"]` in Cargo.toml        |
-| Binary too large                 | Use release profile optimizations                    |
-| Missing exports                  | Ensure `#[unsafe(no_mangle)]` on `finish()` function |
-| Compilation errors               | Check `#![no_std]` and avoid std library usage       |
+| Issue                            | Solution                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `wasm32v1-none` target not found | `rustup target add wasm32v1-none`                                                                                 |
+| Link errors                      | Check `crate-type = ["cdylib"]` in Cargo.toml                                                                     |
+| Binary too large                 | Use release profile optimizations                                                                                 |
+| Missing exports                  | Ensure `#[smart_escrow]` is applied to your entry function (or `#[unsafe(no_mangle)]` if hand-writing the export) |
+| Compilation errors               | Check `#![no_std]` and avoid std library usage                                                                    |
 
 #### Common Runtime Issues
 
-| Issue                    | Cause                   | Solution                                    |
-| ------------------------ | ----------------------- | ------------------------------------------- |
-| Function not found       | WASM export missing     | Check `#[unsafe(no_mangle)]` on entry point |
-| Memory access violation  | Buffer overflow         | Verify buffer sizes and bounds              |
-| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_ledger_obj` calls           |
-| Field not found          | Missing ledger field    | Handle `FieldNotFound` errors               |
-| Invalid field data       | Malformed field         | Validate input data                         |
+| Issue                    | Cause                   | Solution                                                                                              |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Function not found       | WASM export missing     | Check `#[smart_escrow]` on your entry function (or `#[unsafe(no_mangle)]` if hand-writing the export) |
+| Memory access violation  | Buffer overflow         | Verify buffer sizes and bounds                                                                        |
+| Cache full (NoFreeSlots) | Too many cached objects | Minimize `cache_le` calls                                                                             |
+| Field not found          | Missing ledger field    | Handle `FieldNotFound` errors                                                                         |
+| Invalid field data       | Malformed field         | Validate input data                                                                                   |
 
 #### Debugging Techniques
 
 **Add trace statements:**
 
-```rust
-use xrpl_wasm_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
-use xrpl_wasm_stdlib::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::host::Result::{Ok, Err};
+```rust ignore
+use xrpl_common_stdlib::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::host::Result::{Ok, Err};
+use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+#[smart_escrow]
+fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
     trace("Contract starting").ok();
 
-    let tx = EscrowFinish;
-    let account = match tx.get_account() {
+    let account = match ctx.tx().get_account() {
         Ok(acc) => {
             trace_data("Account", &acc.0, DataRepr::AsHex).ok();
             acc
         },
         Err(e) => {
-            trace_num("Error getting account: {:?}", e as i64).ok();
-            return 0;
+            let _ = trace_num("Error getting account, code:", e.code() as i64);
+            return e.code().into();
         }
     };
 
     // More logic with tracing...
-    1 // Return 1 to complete the function
+    FinishResult::succeed() // Release the escrow
 }
 ```
+
+The annotated function can be named anything except `escrow_finish` (the macro generates its own `escrow_finish` export, which would collide with a same-named user function).
 
 **Inspect WASM binary:**
 

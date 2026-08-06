@@ -1,0 +1,5 @@
+error: parameter type must be `EscrowFinishContext`
+ --> tests/smart_escrow/fail_wrong_param.rs:4:13
+  |
+4 | fn run(ctx: u32) -> Result<bool, ()> {
+  |             ^^^

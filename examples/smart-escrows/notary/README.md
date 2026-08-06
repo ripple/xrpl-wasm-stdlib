@@ -1,4 +1,4 @@
-# Notary Escrow FinishFunction
+# Notary Escrow Contract
 
 This WebAssembly module implements a notary-based escrow finish condition. It verifies that only a designated notary
 account is allowed to finish the escrow.
@@ -10,8 +10,10 @@ returns 1 (allow), otherwise 0 (deny).
 
 ### Function
 
-`finish() -> i32` — returns 1 to allow finishing the escrow, 0 to reject (deny finishing). On host errors, the function
-returns a non-zero error code from the host.
+The entry point, `notary_finish(ctx: EscrowFinishContext) -> FinishResult`, is annotated with `#[smart_escrow]`,
+which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL host calls. `FinishResult::succeed()` allows
+finishing the escrow, `FinishResult::reject()` denies it, and host errors are propagated as their error code via
+`.into()`.
 
 ## Prerequisites
 
@@ -45,7 +47,7 @@ Artifact:
 
 ### 3. Deploy and test on Devnet
 
-Use the test script to deploy an escrow and test the FinishFunction.
+Use the test script to deploy an escrow and test the contract.
 
 ```shell
 cd ../../..
@@ -56,8 +58,8 @@ This will:
 
 - Connect to WASM Devnet
 - Create and fund wallets (including the notary account)
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
-- Attempt to finish the escrow from a non-notary account (should fail with `tecWASM_REJECTED`)
+- Create an EscrowCreate transaction with your compiled `Bytecode`
+- Attempt to finish the escrow from a non-notary account (should fail with `tecBYTECODE_REJECTED`)
 - Finish the escrow from the notary account (should succeed with `tesSUCCESS`)
 
 The escrow will only unlock if the transaction is submitted by the designated notary account.
@@ -76,12 +78,12 @@ cargo run --package wasm-host-simulator --bin wasm-host-simulator -- --dir examp
 The notary account is defined as a constant in `src/lib.rs` using the `r_address!` macro:
 
 ```rust
-const NOTARY_ACCOUNT: [u8; 20] = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
+const NOTARY_ACCOUNT: AccountID = r_address!("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH");
 ```
 
-To use a different notary account, simply edit this line with your desired r-address. The macro validates the address at compile time and converts it to the 20-byte AccountID.
+To use a different notary account, simply edit this line with your desired r-address. The macro validates the address at compile time and converts it to an `AccountID`.
 
 ## Notes
 
-- The contract compares raw 20-byte AccountIDs. Classic addresses are converted at compile-time by the `r_address!` macro.
+- The contract compares `AccountID` values directly. Classic addresses are converted at compile-time by the `r_address!` macro.
 - Make sure the hardcoded notary address in `src/lib.rs` matches the account you'll use in step 4 to submit `EscrowFinish`.

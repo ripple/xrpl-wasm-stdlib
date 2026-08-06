@@ -1,0 +1,5 @@
+error: #[smart_escrow] takes no arguments
+ --> tests/smart_escrow/fail_attr_args.rs:5:16
+  |
+5 | #[smart_escrow(foo)]
+  |                ^^^

@@ -7,21 +7,21 @@ const notary = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
 async function test(testContext) {
   const { submit, sourceWallet, deploy, finish, destWallet } = testContext
 
-  const offerSequence = await deploy(sourceWallet, destWallet, finish)
+  const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
   const txFail = {
     TransactionType: "EscrowFinish",
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
   }
 
   // Submitting EscrowFinish transaction...
   // This should fail since the notary isn't sending this transaction
   const responseFail = await submit(txFail, sourceWallet)
 
-  if (responseFail.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (responseFail.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.log("\nEscrow finished successfully????")
     process.exit(1)
   }
@@ -30,8 +30,8 @@ async function test(testContext) {
     TransactionType: "EscrowFinish",
     Account: notary.address,
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
   }
 
   // Submitting EscrowFinish transaction...
