@@ -409,7 +409,7 @@ fn benchmark_optional_field_none(escrow_finish: &EscrowFinish) -> u64 {
 mod coverage_tests {
     use super::*;
 
-    /// Coverage test: exercises all host function categories via finish()
+    /// Coverage test: exercises all host function categories via escrow_finish()
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
@@ -420,13 +420,13 @@ mod coverage_tests {
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_test.rs
+        // On non-wasm targets, escrow_finish() uses host_bindings_test.rs
         // which provides stub implementations of all host functions.
-        let result = finish();
+        let result = escrow_finish();
 
-        // The finish() function returns 1 on success, or a negative error code.
+        // The escrow_finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        core::assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "escrow_finish() should return 1 on success");
     }
 }
