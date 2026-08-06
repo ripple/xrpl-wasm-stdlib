@@ -170,7 +170,7 @@ mod tests {
             0x00, 0x03, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00, 0xFF, 0xFF, 0xFF, 0xF1,
         ];
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_obj_field()
+        mock.expect_le_field()
             .with(
                 eq(SLOT),
                 eq::<i32>(sfield::AssetsTotal.into()),
