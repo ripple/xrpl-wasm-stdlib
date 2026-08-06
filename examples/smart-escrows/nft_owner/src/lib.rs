@@ -4,7 +4,7 @@
 extern crate std;
 
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
@@ -62,7 +62,7 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
     // Extract NFT ID from memo (first 32 bytes) and create NFToken
     let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..32].try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
-    trace_data("NFT ID from memo:", nft_token.as_bytes(), DataRepr::AsHex);
+    trace_hex("NFT ID from memo:", nft_token.as_bytes());
 
     // Demonstrate NFToken field extraction
     if let Ok(nft_flags) = nft_token.flags() {
@@ -84,7 +84,7 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
         trace_num("NFT Transfer Fee:", transfer_fee as i64);
     }
     if let Ok(issuer) = nft_token.issuer() {
-        trace_data("NFT Issuer:", &issuer.0, DataRepr::AsHex);
+        trace_hex("NFT Issuer:", &issuer.0);
     }
     if let Ok(taxon) = nft_token.taxon() {
         trace_num("NFT Taxon:", taxon as i64);
@@ -104,7 +104,7 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
     // Check if destination owns the NFT by attempting to retrieve its URI
     match nft_token.uri(&destination) {
         Ok(_uri) => {
-            trace_data("NFT is owned by destination", &[], DataRepr::AsHex);
+            trace_hex("NFT is owned by destination", &[]);
             FinishResult::succeed() // <-- Finish the escrow successfully
         }
         Err(e) => {

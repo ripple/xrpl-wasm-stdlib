@@ -219,7 +219,8 @@ const B2: Blob<8> = blob!("DEADBEEF", 8);                                   // z
 
 ```rust
 pub fn trace(msg: &str) -> Result<i32>;
-pub fn trace_data(msg: &str, data: &[u8], data_repr: DataRepr) -> Result<i32>;  // DataRepr::AsUTF8 | AsHex
+pub fn trace_hex(msg: &str, data: &[u8]);   // host hex-encodes the bytes
+pub fn trace_text(msg: &str, data: &[u8]);  // host prints the bytes verbatim
 pub fn trace_num(msg: &str, number: i64) -> Result<i32>;
 pub fn trace_acct(msg: &str, account_id: &AccountID) -> Result<i32>;
 pub fn trace_amt(msg: &str, amount: &Amount) -> Result<i32>;

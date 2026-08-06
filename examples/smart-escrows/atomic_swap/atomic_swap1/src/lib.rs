@@ -6,7 +6,7 @@ extern crate std;
 use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
@@ -125,11 +125,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     // Extract the counterpart escrow ledger entry ID (first 32 bytes of memo)
     let counterpart_escrow_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] =
         memo.data[0..32].try_into().unwrap();
-    trace_data(
-        "Counterpart escrow ID from memo:",
-        &counterpart_escrow_id,
-        DataRepr::AsHex,
-    );
+    trace_hex("Counterpart escrow ID from memo:", &counterpart_escrow_id);
 
     // Load the counterpart escrow from the ledger
     let counterpart_slot = unsafe {
@@ -170,10 +166,9 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         return VALIDATION_FAILED;
     }
 
-    trace_data(
+    trace_hex(
         "Counterpart data field:",
         &counterpart_data.data[0..counterpart_data.len],
-        DataRepr::AsHex,
     );
 
     // Get current escrow's account and destination fields
@@ -215,26 +210,17 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 
     // ATOMIC SWAP VALIDATION: Verify inverted account correlations
     if current_account.0 != counterpart_destination.0 {
-        trace_data("Current account:", &current_account.0, DataRepr::AsHex);
-        trace_data(
+        trace_hex("Current account:", &current_account.0);
+        trace_hex(
             "Expected counterpart destination:",
             &counterpart_destination.0,
-            DataRepr::AsHex,
         );
         return VALIDATION_FAILED;
     }
 
     if current_destination.0 != counterpart_account.0 {
-        trace_data(
-            "Current destination:",
-            &current_destination.0,
-            DataRepr::AsHex,
-        );
-        trace_data(
-            "Expected counterpart account:",
-            &counterpart_account.0,
-            DataRepr::AsHex,
-        );
+        trace_hex("Current destination:", &current_destination.0);
+        trace_hex("Expected counterpart account:", &counterpart_account.0);
         return VALIDATION_FAILED;
     }
 
@@ -267,11 +253,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     new_data.len = LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE;
 
     trace_num("Updated data length:", new_data.len as i64);
-    trace_data(
-        "Updated data:",
-        &new_data.data[0..new_data.len],
-        DataRepr::AsHex,
-    );
+    trace_hex("Updated data:", &new_data.data[0..new_data.len]);
 
     // Persist the updated data field to the escrow object
     match <CurrentEscrow as CurrentEscrowFields>::update_current_escrow_data(new_data) {

@@ -5,7 +5,7 @@ extern crate std;
 
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
@@ -95,11 +95,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
     };
 
     trace_num("Current data length:", current_data.len as i64);
-    trace_data(
-        "Current data:",
-        &current_data.data[0..current_data.len],
-        DataRepr::AsHex,
-    );
+    trace_hex("Current data:", &current_data.data[0..current_data.len]);
 
     // STATE MACHINE: Determine execution phase based on data field length
     // Phase 1: data.len <= 32 (contains only first escrow ledger entry ID)
@@ -119,11 +115,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         // Extract the first escrow ledger entry ID from data field
         let first_escrow_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] =
             current_data.data[0..32].try_into().unwrap();
-        trace_data(
-            "First escrow ID from data:",
-            &first_escrow_id,
-            DataRepr::AsHex,
-        );
+        trace_hex("First escrow ID from data:", &first_escrow_id);
 
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
@@ -205,12 +197,8 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
 
         // Verify proper account reversal: first(A→B) ↔ current(B→A)
         if first_account.0 != current_destination.0 {
-            trace_data("First escrow account:", &first_account.0, DataRepr::AsHex);
-            trace_data(
-                "Current escrow destination:",
-                &current_destination.0,
-                DataRepr::AsHex,
-            );
+            trace_hex("First escrow account:", &first_account.0);
+            trace_hex("Current escrow destination:", &current_destination.0);
             trace_num(
                 "Account reversal validation failed - accounts don't match",
                 0,
@@ -219,16 +207,8 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         }
 
         if first_destination.0 != current_account.0 {
-            trace_data(
-                "First escrow destination:",
-                &first_destination.0,
-                DataRepr::AsHex,
-            );
-            trace_data(
-                "Current escrow account:",
-                &current_account.0,
-                DataRepr::AsHex,
-            );
+            trace_hex("First escrow destination:", &first_destination.0);
+            trace_hex("Current escrow account:", &current_account.0);
             trace_num(
                 "Account reversal validation failed - destinations don't match",
                 0,
@@ -266,11 +246,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         current_data.len += 4;
 
         trace_num("Updated data length:", current_data.len as i64);
-        trace_data(
-            "Updated data:",
-            &current_data.data[0..current_data.len],
-            DataRepr::AsHex,
-        );
+        trace_hex("Updated data:", &current_data.data[0..current_data.len]);
 
         // Persist the updated data field to the escrow object
         match <CurrentEscrow as CurrentEscrowFields>::update_current_escrow_data(current_data) {

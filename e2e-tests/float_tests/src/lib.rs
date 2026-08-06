@@ -7,12 +7,10 @@ extern crate std;
 
 use xrpl_common_stdlib::decode_hex_32;
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::trace::DataRepr::AsHex;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
+use xrpl_common_stdlib::host::trace::{trace, trace_float, trace_hex, trace_num};
 use xrpl_common_stdlib::host::{
     RoundingMode, cache_le, float_add, float_cmp, float_div, float_from_int, float_from_mant_exp,
     float_from_uint, float_mult, float_pow, float_root, float_sub, le_arr_len, le_field, le_inner,
-    trace_xfloat,
 };
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::iou_number::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
@@ -66,7 +64,7 @@ fn test_float_from_wasm() {
     let mut f: [u8; 8] = [0u8; 8];
     if 8 == unsafe { float_from_int(12300, f.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) } {
         trace_float("  float from i64 12300:", &f);
-        trace_data("  float from i64 12300 as HEX:", &f, AsHex);
+        trace_hex("  float from i64 12300 as HEX:", &f);
     } else {
         trace("  float from i64 12300: failed");
     }

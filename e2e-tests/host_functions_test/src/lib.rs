@@ -28,7 +28,7 @@ extern crate std;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::trace::{
-    DataRepr, trace, trace_acct_buf, trace_amt, trace_data, trace_num,
+    TraceDataType, trace, trace_acct_buf, trace_amt, trace_hex, trace_num,
 };
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -135,7 +135,7 @@ fn test_ledger_header_functions() -> i32 {
         trace_num("ERROR: parent_ldgr_hash wrong length:", hash_result as i64);
         return -103; // Parent ledger hash test failed - should be exactly 32 bytes
     }
-    trace_data("Parent ledger hash:", &hash_buffer, DataRepr::AsHex);
+    trace_hex("Parent ledger hash:", &hash_buffer);
 
     trace("SUCCESS: Ledger header functions");
     0
@@ -182,11 +182,7 @@ fn test_transaction_data_functions() -> i32 {
         return -202; // Fee field test failed - XRP amounts should be exactly 8 bytes
     }
     trace_num("Transaction Fee length:", fee_len as i64);
-    trace_data(
-        "Transaction Fee (serialized XRP amount):",
-        &fee_buffer,
-        DataRepr::AsHex,
-    );
+    trace_hex("Transaction Fee (serialized XRP amount):", &fee_buffer);
 
     // Test with Sequence field (required, 4 bytes uint32)
     let mut seq_buffer = [0u8; 4];
@@ -202,7 +198,7 @@ fn test_transaction_data_functions() -> i32 {
         trace_num("ERROR: tx_field(Sequence) wrong length:", seq_len as i64);
         return -203; // Sequence field test failed
     }
-    trace_data("Transaction Sequence:", &seq_buffer, DataRepr::AsHex);
+    trace_hex("Transaction Sequence:", &seq_buffer);
 
     // NOTE: tx_field2() through tx_field6() have been deprecated.
     // Use tx_field() with appropriate parameters for all transaction field access.
@@ -224,11 +220,7 @@ fn test_transaction_data_functions() -> i32 {
         // Expected - locator may not match transaction structure
     } else {
         trace_num("Inner field length:", inner_result as i64);
-        trace_data(
-            "Inner field:",
-            &inner_buffer[..inner_result as usize],
-            DataRepr::AsHex,
-        );
+        trace_hex("Inner field:", &inner_buffer[..inner_result as usize]);
     }
 
     // Test 2.3: tx_arr_len() - Get array length
@@ -281,20 +273,18 @@ fn test_current_ledger_object_functions() -> i32 {
             "Current object balance length (XRP amount):",
             balance_result as i64,
         );
-        trace_data(
+        trace_hex(
             "Current object balance (serialized XRP amount):",
             &balance_buffer,
-            DataRepr::AsHex,
         );
     } else {
         trace_num(
             "Current object balance length (non-XRP amount):",
             balance_result as i64,
         );
-        trace_data(
+        trace_hex(
             "Current object balance:",
             &balance_buffer[..balance_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -336,10 +326,9 @@ fn test_current_ledger_object_functions() -> i32 {
         );
     } else {
         trace_num("Current inner field length:", current_inner_result as i64);
-        trace_data(
+        trace_hex(
             "Current inner field:",
             &current_inner_buffer[..current_inner_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -488,20 +477,18 @@ fn test_any_ledger_object_functions() -> i32 {
             "Cached object balance length (XRP amount):",
             cached_balance_result as i64,
         );
-        trace_data(
+        trace_hex(
             "Cached object balance (serialized XRP amount):",
             &cached_balance_buffer,
-            DataRepr::AsHex,
         );
     } else {
         trace_num(
             "Cached object balance length (non-XRP amount):",
             cached_balance_result as i64,
         );
-        trace_data(
+        trace_hex(
             "Cached object balance:",
             &cached_balance_buffer[..cached_balance_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -522,10 +509,9 @@ fn test_any_ledger_object_functions() -> i32 {
         trace_num("INFO: le_inner not applicable:", cached_inner_result as i64);
     } else {
         trace_num("Cached inner field length:", cached_inner_result as i64);
-        trace_data(
+        trace_hex(
             "Cached inner field:",
             &cached_inner_buffer[..cached_inner_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -579,11 +565,7 @@ fn test_id_generation_functions() -> i32 {
         );
         return -501; // AccountRoot ledger entry ID generation failed
     }
-    trace_data(
-        "AccountRoot ledger entry ID:",
-        &accountroot_id_buffer,
-        DataRepr::AsHex,
-    );
+    trace_hex("AccountRoot ledger entry ID:", &accountroot_id_buffer);
 
     // Test 5.2: credential_id() - Generate ledger entry ID for credential
     let mut credential_id_buffer = [0u8; 32];
@@ -607,10 +589,9 @@ fn test_id_generation_functions() -> i32 {
         );
         // This is expected to fail due to unusual parameter types
     } else {
-        trace_data(
+        trace_hex(
             "Credential ledger entry ID:",
             &credential_id_buffer[..credential_id_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -633,11 +614,7 @@ fn test_id_generation_functions() -> i32 {
         trace_num("ERROR: escrow_id failed:", escrow_id_result as i64);
         return -503; // Escrow ledger entry ID generation failed
     }
-    trace_data(
-        "Escrow ledger entry ID:",
-        &escrow_id_buffer,
-        DataRepr::AsHex,
-    );
+    trace_hex("Escrow ledger entry ID:", &escrow_id_buffer);
 
     // Test 5.4: oracle_id() - Generate ledger entry ID for oracle
     let mut oracle_id_buffer = [0u8; 32];
@@ -658,11 +635,7 @@ fn test_id_generation_functions() -> i32 {
         trace_num("ERROR: oracle_id failed:", oracle_id_result as i64);
         return -504; // Oracle ledger entry ID generation failed
     }
-    trace_data(
-        "Oracle ledger entry ID:",
-        &oracle_id_buffer,
-        DataRepr::AsHex,
-    );
+    trace_hex("Oracle ledger entry ID:", &oracle_id_buffer);
 
     trace("SUCCESS: LedgerEntryId generation functions");
     0
@@ -689,8 +662,8 @@ fn test_utility_functions() -> i32 {
         trace_num("ERROR: sha512_half failed:", hash_result as i64);
         return -601; // SHA512 half computation failed
     }
-    trace_data("Input data:", test_data, DataRepr::AsHex);
-    trace_data("SHA512 half hash:", &hash_output, DataRepr::AsHex);
+    trace_hex("Input data:", test_data);
+    trace_hex("SHA512 half hash:", &hash_output);
 
     // Test 6.2: nft_uri() - NFT data retrieval
     let escrow_finish = EscrowFinish;
@@ -716,49 +689,26 @@ fn test_utility_functions() -> i32 {
         // This is expected - test account likely doesn't own the dummy NFT
     } else {
         trace_num("NFT data length:", nft_result as i64);
-        trace_data(
-            "NFT data:",
-            &nft_buffer[..nft_result as usize],
-            DataRepr::AsHex,
-        );
+        trace_hex("NFT data:", &nft_buffer[..nft_result as usize]);
     }
 
     // Test 6.3: trace() - Debug logging with data
     let trace_message = b"Test trace message";
     let trace_data_payload = b"payload";
-    let trace_result = unsafe {
+    unsafe {
         host::trace(
             trace_message.as_ptr(),
             trace_message.len(),
+            TraceDataType::AsHex as i32,
             trace_data_payload.as_ptr(),
             trace_data_payload.len(),
-            1, // as_hex = true
         )
     };
 
-    if trace_result < 0 {
-        trace_num("ERROR: trace() failed:", trace_result as i64);
-        return -603; // Trace function failed
-    }
-    trace_num("Trace function bytes written:", trace_result as i64);
-
     // Test 6.4: trace_num() - Debug logging with number
     let test_number = 42i64;
-    let trace_num_result = trace_num("Test number trace", test_number);
-
-    use xrpl_common_stdlib::host::Result;
-    match trace_num_result {
-        Result::Ok(_) => {
-            trace_num("Trace_num function succeeded", 0);
-        }
-        Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_num() failed:",
-                trace_num_result.err().unwrap().code() as i64,
-            );
-            return -604; // Trace number function failed
-        }
-    }
+    trace_num("Test number trace", test_number);
+    trace_num("Trace_num function succeeded", 0);
 
     // Test 6.5: trace_amt() - Debug logging with Amount
     match test_trace_amt_functions() {
@@ -785,11 +735,7 @@ fn test_data_update_functions() -> i32 {
         return -701; // Data update failed
     }
 
-    trace_data(
-        "Successfully updated ledger entry with:",
-        update_payload,
-        DataRepr::AsHex,
-    );
+    trace_hex("Successfully updated ledger entry with:", update_payload);
     trace("SUCCESS: Data update functions");
     1 // <-- Finish the escrow to indicate a successful outcome
 }
@@ -803,37 +749,15 @@ fn test_trace_amt_functions() -> i32 {
     let xrp_amount = Amount::XRP {
         num_drops: 1_000_000, // 1 XRP
     };
-    let trace_result = trace_amt("Test XRP amount (1 XRP)", &xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with positive XRP");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -605; // Trace amount XRP failed
-        }
-    }
+    trace_amt("Test XRP amount (1 XRP)", &xrp_amount);
+    trace("SUCCESS: trace_amt with positive XRP");
 
     // Test 6.5.2: trace_amt() with negative XRP amount
     let negative_xrp_amount = Amount::XRP {
         num_drops: -500_000, // -0.5 XRP
     };
-    let trace_result = trace_amt("Test negative XRP amount (-0.5 XRP)", &negative_xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with negative XRP");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt negative XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -606; // Trace amount negative XRP failed
-        }
-    }
+    trace_amt("Test negative XRP amount (-0.5 XRP)", &negative_xrp_amount);
+    trace("SUCCESS: trace_amt with negative XRP");
 
     // Test 6.5.3: trace_amt() with zero XRP amount
     // TODO: uncomment when new devnet is deployed
@@ -854,37 +778,15 @@ fn test_trace_amt_functions() -> i32 {
 
     // Test 6.5.4: trace_amt() with small XRP amount (fee-like)
     let fee_amount = Amount::XRP { num_drops: 10 }; // 10 drops (typical fee)
-    let trace_result = trace_amt("Test small XRP amount (10 drops)", &fee_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with small XRP");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt small XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -608; // Trace amount small XRP failed
-        }
-    }
+    trace_amt("Test small XRP amount (10 drops)", &fee_amount);
+    trace("SUCCESS: trace_amt with small XRP");
 
     // Test 6.5.5: trace_amt() with large XRP amount
     let large_xrp_amount = Amount::XRP {
         num_drops: 100_000_000_000, // 100,000 XRP
     };
-    let trace_result = trace_amt("Test large XRP amount (100,000 XRP)", &large_xrp_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with large XRP");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt large XRP failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -609; // Trace amount large XRP failed
-        }
-    }
+    trace_amt("Test large XRP amount (100,000 XRP)", &large_xrp_amount);
+    trace("SUCCESS: trace_amt with large XRP");
 
     trace("SUCCESS: trace_amt XRP tests completed");
 
@@ -913,19 +815,8 @@ fn test_trace_amt_functions() -> i32 {
         issuer,
         currency,
     };
-    let trace_result = trace_amt("Test IOU amount", &iou_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with IOU");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt IOU failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -610; // Trace amount IOU failed
-        }
-    }
+    trace_amt("Test IOU amount", &iou_amount);
+    trace("SUCCESS: trace_amt with IOU");
 
     // Test 6.5.7: trace_amt() with MPT amount (positive)
     const MPT_VALUE: u64 = 500_000;
@@ -939,19 +830,8 @@ fn test_trace_amt_functions() -> i32 {
         is_positive: true,
         mpt_id,
     };
-    let trace_result = trace_amt("Test positive MPT amount", &mpt_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with positive MPT");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt positive MPT failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -611; // Trace amount positive MPT failed
-        }
-    }
+    trace_amt("Test positive MPT amount", &mpt_amount);
+    trace("SUCCESS: trace_amt with positive MPT");
 
     // Test 6.5.8: trace_amt() with MPT amount (negative)
     let negative_mpt_amount = Amount::MPT {
@@ -959,19 +839,8 @@ fn test_trace_amt_functions() -> i32 {
         is_positive: false,
         mpt_id,
     };
-    let trace_result = trace_amt("Test negative MPT amount", &negative_mpt_amount);
-    match trace_result {
-        host::Result::Ok(_) => {
-            trace("SUCCESS: trace_amt with negative MPT");
-        }
-        host::Result::Err(_) => {
-            trace_num(
-                "ERROR: trace_amt negative MPT failed:",
-                trace_result.err().unwrap().code() as i64,
-            );
-            return -612; // Trace amount negative MPT failed
-        }
-    }
+    trace_amt("Test negative MPT amount", &negative_mpt_amount);
+    trace("SUCCESS: trace_amt with negative MPT");
 
     // Test 6.5.9: trace_amt() with zero MPT amount
     // TODO: uncomment when new devnet is deployed

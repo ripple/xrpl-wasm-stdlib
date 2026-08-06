@@ -43,29 +43,14 @@ pub const INVALID_FLOAT_INPUT: i32 = -19;
 /// An error occurred during floating-point computation.
 pub const INVALID_FLOAT_COMPUTATION: i32 = -20;
 
-// ###################################################################################
-// Library-owned error codes (NOT part of the host ABI).
-//
-// The host only ever returns codes in the range above (or traps), so these live in a
-// range reserved for the stdlib, growing upward from `i32::MIN`. They describe
-// conditions the stdlib itself detected, not anything the host reported, so they can
-// never collide with a host code.
-//
-// `rippled` used to own two of these: `-1` meant an internal error (it now means
-// `Unimplemented`) and `-11` meant a decoding failure (it now means
-// `OutOfTransferLimit`). Both concepts are still needed here, so they moved down here
-// rather than being dropped.
-// ###################################################################################
+// Library-owned error codes, reserved upward from `i32::MIN` so they can't collide with a host
+// code. xrpld reassigned `-1` and `-11`, so these two moved here rather than being dropped.
 
-/// Reserved for internal invariant trips in the stdlib, generally unrelated to inputs.
-/// These indicate a bug and should be reported with an issue. Note that the invariant trips
-/// the stdlib can detect eagerly panic instead (see
-/// [`match_result_code_with_expected_bytes`]), so this is currently a reserved slot rather
-/// than one any library code returns.
+/// Reserved for internal invariant trips. Currently a reserved slot: the trips the stdlib can
+/// detect eagerly panic instead (see [`match_result_code_with_expected_bytes`]).
 pub const INTERNAL_ERROR: i32 = i32::MIN;
 
 /// A byte slice the host returned could not be decoded into the requested type.
-/// Distinct from [`INTERNAL_ERROR`]: the invariant held, the bytes just didn't parse.
 pub const INVALID_DECODING: i32 = i32::MIN + 1;
 
 /// Evaluates a result code and executes a closure on success (result_code > 0).
@@ -385,10 +370,10 @@ mod tests {
     fn test_match_result_code_with_expected_bytes_optional_byte_mismatch() {
         let mut mock = MockHostBindings::new();
 
-        // Set up expectations for trace_num calls (2 calls in the error path)
-        mock.expect_trace_num()
-            .with(always(), always(), always())
-            .returning(|_, _, _| ())
+        // Two traces on the error path, both carrying an Int64 payload.
+        mock.expect_trace()
+            .with(always(), always(), always(), always(), always())
+            .returning(|_, _, _, _, _| ())
             .times(2);
 
         let _guard = setup_mock(mock);
@@ -405,10 +390,10 @@ mod tests {
     fn test_match_result_code_with_expected_bytes_optional_other_error() {
         let mut mock = MockHostBindings::new();
 
-        // Set up expectations for trace_num call (1 call in the error path)
-        mock.expect_trace_num()
-            .with(always(), always(), always())
-            .returning(|_, _, _| ());
+        // One trace on the error path, carrying an Int64 payload.
+        mock.expect_trace()
+            .with(always(), always(), always(), always(), always())
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 

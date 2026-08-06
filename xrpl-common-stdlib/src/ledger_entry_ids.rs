@@ -36,14 +36,14 @@ pub type LedgerEntryIdBytes = [u8; XRPL_LEDGER_ENTRY_ID_SIZE];
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
 ///   match accountroot_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -89,7 +89,7 @@ pub fn accountroot_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 /// use xrpl_common_stdlib::types::issue::{Issue, XrpIssue, IouIssue};
 /// use xrpl_common_stdlib::types::currency::Currency;
 /// use xrpl_common_stdlib::ledger_entry_ids::amm_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let issue1: Issue = Issue::XRP(XrpIssue {});
 ///  let issuer: AccountID =
@@ -99,7 +99,7 @@ pub fn accountroot_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///  let issue2 = Issue::IOU(IouIssue::new(issuer, currency));
 ///  match amm_id(&issue1, &issue2) {
 ///    xrpl_common_stdlib::host::Result::Ok(id) => {
-///      trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///      trace_hex("Generated ledger entry ID", &id);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
 ///      trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -149,7 +149,7 @@ pub fn amm_id(issue1: &Issue, issue2: &Issue) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::check_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -157,7 +157,7 @@ pub fn amm_id(issue1: &Issue, issue2: &Issue) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match check_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -205,7 +205,7 @@ pub fn check_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::credential_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let subject: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
@@ -214,7 +214,7 @@ pub fn check_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///     let cred_type: &[u8] = b"termsandconditions";
 ///     match credential_id(&subject, &issuer, cred_type) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_hex("Generated ledger entry ID", &id);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
 ///         trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -266,7 +266,7 @@ pub fn credential_id(
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::delegate_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
@@ -274,7 +274,7 @@ pub fn credential_id(
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match delegate_id(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_hex("Generated ledger entry ID", &id);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
 ///         trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -320,7 +320,7 @@ pub fn delegate_id(account: &AccountID, authorize: &AccountID) -> Result<LedgerE
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::deposit_preauth_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let account: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
@@ -328,7 +328,7 @@ pub fn delegate_id(account: &AccountID, authorize: &AccountID) -> Result<LedgerE
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match deposit_preauth_id(&account, &authorize) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_hex("Generated ledger entry ID", &id);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
 ///         trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -379,14 +379,14 @@ pub fn deposit_preauth_id(
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::did_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
 ///   match did_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -432,7 +432,7 @@ pub fn did_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::escrow_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -440,7 +440,7 @@ pub fn did_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match escrow_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -489,7 +489,7 @@ pub fn escrow_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::currency::Currency;
 /// use xrpl_common_stdlib::ledger_entry_ids::trustline_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///  let account1: AccountID =
 ///    AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
@@ -499,7 +499,7 @@ pub fn escrow_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///  let currency: Currency = Currency::from(*currency);
 ///  match trustline_id(&account1, &account2, &currency) {
 ///    xrpl_common_stdlib::host::Result::Ok(id) => {
-///      trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///      trace_hex("Generated ledger entry ID", &id);
 ///    }
 ///    xrpl_common_stdlib::host::Result::Err(e) => {
 ///      trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -553,7 +553,7 @@ pub fn trustline_id(
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::mpt_issuance_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -561,7 +561,7 @@ pub fn trustline_id(
 ///   let sequence = 12345;
 ///   match mpt_issuance_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -609,7 +609,7 @@ pub fn mpt_issuance_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::types::mpt_id::MptId;
 /// use xrpl_common_stdlib::ledger_entry_ids::mptoken_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let issuer: AccountID =
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
@@ -618,7 +618,7 @@ pub fn mpt_issuance_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes
 ///         AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 ///     match mptoken_id(&mptid, &holder) {
 ///       xrpl_common_stdlib::host::Result::Ok(id) => {
-///         trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///         trace_hex("Generated ledger entry ID", &id);
 ///       }
 ///       xrpl_common_stdlib::host::Result::Err(e) => {
 ///         trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -666,7 +666,7 @@ pub fn mptoken_id(mptid: &MptId, holder: &AccountID) -> Result<LedgerEntryIdByte
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::nft_offer_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -674,7 +674,7 @@ pub fn mptoken_id(mptid: &MptId, holder: &AccountID) -> Result<LedgerEntryIdByte
 ///   let sequence = 12345;
 ///   match nft_offer_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -723,7 +723,7 @@ pub fn nft_offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::offer_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -731,7 +731,7 @@ pub fn nft_offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match offer_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -780,7 +780,7 @@ pub fn offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -788,7 +788,7 @@ pub fn offer_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let document_id = 12345;
 ///   match oracle_id(&owner, document_id) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -838,7 +838,7 @@ pub fn oracle_id(owner: &AccountID, document_id: u32) -> Result<LedgerEntryIdByt
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::paychan_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
@@ -848,7 +848,7 @@ pub fn oracle_id(owner: &AccountID, document_id: u32) -> Result<LedgerEntryIdByt
 ///   let sequence = 12345;
 ///   match paychan_id(&account, &destination, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -903,7 +903,7 @@ pub fn paychan_id(
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::permissioned_domain_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
@@ -911,7 +911,7 @@ pub fn paychan_id(
 ///   let sequence = 12345;
 ///   match permissioned_domain_id(&account, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -960,14 +960,14 @@ pub fn permissioned_domain_id(account: &AccountID, seq: u32) -> Result<LedgerEnt
 ///
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::signers_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account:AccountID = AccountID::from(
 ///     *b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3"
 ///   );
 ///   match signers_id(&account){
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -1013,7 +1013,7 @@ pub fn signers_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::ticket_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let owner: AccountID =
@@ -1021,7 +1021,7 @@ pub fn signers_id(account_id: &AccountID) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match ticket_id(&owner, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
@@ -1070,7 +1070,7 @@ pub fn ticket_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 /// ```rust
 /// use xrpl_common_stdlib::types::account_id::AccountID;
 /// use xrpl_common_stdlib::ledger_entry_ids::vault_id;
-/// use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let account: AccountID =
@@ -1078,7 +1078,7 @@ pub fn ticket_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
 ///   let sequence = 12345;
 ///   match vault_id(&account, sequence) {
 ///     xrpl_common_stdlib::host::Result::Ok(id) => {
-///       trace_data("Generated ledger entry ID", &id, DataRepr::AsHex);
+///       trace_hex("Generated ledger entry ID", &id);
 ///     }
 ///     xrpl_common_stdlib::host::Result::Err(e) => {
 ///       trace_num("Error assembling ledger entry ID", e.code() as i64);
