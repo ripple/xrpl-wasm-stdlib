@@ -113,4 +113,19 @@ mod tests {
         // Both constructors should produce the same result
         assert_eq!(currency_new, currency_from);
     }
+
+    #[test]
+    fn test_currency_equality() {
+        // Identical byte arrays compare equal
+        let code1 = Currency::new([3u8; CURRENCY_SIZE]);
+        let code2 = Currency::new([3u8; CURRENCY_SIZE]);
+        assert_eq!(code1, code2);
+
+        // Differing byte arrays compare unequal
+        let code3 = Currency::new([4u8; CURRENCY_SIZE]);
+        assert_ne!(code1, code3);
+
+        // Distinct standard currency codes compare unequal
+        assert_ne!(Currency::from(*b"USD"), Currency::from(*b"EUR"));
+    }
 }
