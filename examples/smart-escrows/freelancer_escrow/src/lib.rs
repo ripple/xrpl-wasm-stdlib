@@ -3,18 +3,21 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::current_tx::escrow_finish::get_current_escrow_finish;
-use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::fields::locator::Locator;
+use xrpl_common_stdlib::host::parent_ldgr_time;
+use xrpl_common_stdlib::host::trace::trace_num;
+use xrpl_common_stdlib::host::tx_inner;
+use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
+use xrpl_escrow_stdlib::ledger_objects::escrow_storage::{EscrowStorage, load_data, save_data};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::contract_data::ContractData;
-use xrpl_wasm_stdlib::host::get_parent_ledger_time;
-use xrpl_wasm_stdlib::host::get_tx_nested_field;
-use xrpl_wasm_stdlib::host::trace::trace_num;
-use xrpl_wasm_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::sfield;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
 macro_rules! try_or_trace {
     ($e:expr, $label:literal) => {
@@ -22,7 +25,7 @@ macro_rules! try_or_trace {
             Ok(v) => v,
             Err(e) => {
                 let _ = trace_num($label, e.code() as i64);
-                return e.code();
+                return e.code().into();
             }
         }
     };
@@ -111,17 +114,6 @@ impl State {
     const FREELANCER_CONFIRMED: usize = 25;
     const DISPUTING_PARTY: usize = 26;
 
-    fn load(escrow: &CurrentEscrow) -> Result<Self> {
-        let inner = match escrow.get_data() {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
-        if inner.len < Self::SIZE {
-            return Err(Error::InvalidParams);
-        }
-        Ok(Self { inner })
-    }
-
     fn arbitrator(&self) -> AccountID {
         let mut buf = [0u8; 20];
         buf.copy_from_slice(&self.inner.data[Self::ARBITRATOR]);
@@ -170,9 +162,29 @@ impl State {
             DisputeState::ArbLocked => 3,
         };
     }
+}
 
-    fn persist(self) -> Result<()> {
-        CurrentEscrow::update_current_escrow_data(self.inner)
+impl EscrowStorage for State {
+    fn encode(&self, out: &mut [u8]) -> Result<usize> {
+        if out.len() < Self::SIZE {
+            return Err(Error::InvalidParams);
+        }
+        out[..Self::SIZE].copy_from_slice(&self.inner.data[..Self::SIZE]);
+        Ok(Self::SIZE)
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self> {
+        if bytes.len() < Self::SIZE {
+            return Err(Error::InvalidParams);
+        }
+        let mut data = [0u8; XRPL_CONTRACT_DATA_SIZE];
+        data[..Self::SIZE].copy_from_slice(&bytes[..Self::SIZE]);
+        Ok(Self {
+            inner: ContractData {
+                data,
+                len: Self::SIZE,
+            },
+        })
     }
 }
 
@@ -185,7 +197,7 @@ fn read_intent() -> Result<Intent> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             buf.as_mut_ptr(),
@@ -238,7 +250,7 @@ fn deadline_release(state: &State) -> Result<bool> {
         return Ok(false);
     }
     let mut buf = [0u8; 4];
-    let code = unsafe { get_parent_ledger_time(buf.as_mut_ptr(), buf.len()) };
+    let code = unsafe { parent_ldgr_time(buf.as_mut_ptr(), buf.len()) };
     if code < 0 {
         return Err(Error::from_code(code));
     }
@@ -247,19 +259,22 @@ fn deadline_release(state: &State) -> Result<bool> {
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let tx = get_current_escrow_finish();
+#[smart_escrow]
+fn escrow(ctx: EscrowFinishContext) -> FinishResult {
+    let tx = ctx.tx();
     let tx_account = try_or_trace!(tx.get_account(), "tx_account");
-    let escrow = get_current_escrow();
+    let escrow: &CurrentEscrow = ctx.escrow();
     let client = try_or_trace!(escrow.get_account(), "client");
     let freelancer = try_or_trace!(escrow.get_destination(), "freelancer");
-    let mut state = try_or_trace!(State::load(&escrow), "state");
+    let mut state = match try_or_trace!(load_data::<State>(&ctx), "state") {
+        Some(state) => state,
+        None => return FinishResult::reject(),
+    };
     let intent = try_or_trace!(read_intent(), "intent");
 
     let role = match identify(tx_account, client, freelancer, state.arbitrator()) {
         Some(r) => r,
-        None => return 0,
+        None => return FinishResult::reject(),
     };
 
     // Auto-release is sticky: once the freelancer has confirmed and the deadline has
@@ -267,7 +282,7 @@ pub extern "C" fn finish() -> i32 {
     // before any state mutation, so no intent (confirm, deconfirm, or dispute) can
     // clear a condition that is already met.
     if try_or_trace!(deadline_release(&state), "ledger_time") {
-        return 1;
+        return FinishResult::succeed();
     }
 
     match (role, intent, state.dispute()) {
@@ -280,35 +295,35 @@ pub extern "C" fn finish() -> i32 {
             state.set_confirmation(party_of(role), intent == Intent::Confirm);
             let release = state.client_confirmed() && state.freelancer_confirmed()
                 || try_or_trace!(deadline_release(&state), "ledger_time");
-            try_or_trace!(state.persist(), "persist");
-            release as i32
+            try_or_trace!(save_data(&ctx, &state), "persist");
+            (release as i32).into()
         }
         // Participant raises a dispute, clears confirmations
         (Role::Client | Role::Freelancer, Intent::Dispute, DisputeState::None) => {
             state.set_confirmation(Party::Client, false);
             state.set_confirmation(Party::Freelancer, false);
             state.set_dispute(DisputeState::ActiveBy(party_of(role)));
-            try_or_trace!(state.persist(), "persist");
-            0
+            try_or_trace!(save_data(&ctx, &state), "persist");
+            FinishResult::reject()
         }
         // Disputing party withdraws their own dispute
         (Role::Client | Role::Freelancer, Intent::Undispute, DisputeState::ActiveBy(by))
             if by == party_of(role) =>
         {
             state.set_dispute(DisputeState::None);
-            try_or_trace!(state.persist(), "persist");
-            0
+            try_or_trace!(save_data(&ctx, &state), "persist");
+            FinishResult::reject()
         }
         // Arbitrator rules on an active dispute
         (Role::Arbitrator, _, DisputeState::ActiveBy(_)) => match ArbRuling::from_intent(intent) {
-            Some(ArbRuling::ForFreelancer) => 1,
+            Some(ArbRuling::ForFreelancer) => FinishResult::succeed(),
             Some(ArbRuling::ForClient) => {
                 state.set_dispute(DisputeState::ArbLocked);
-                try_or_trace!(state.persist(), "persist");
-                0
+                try_or_trace!(save_data(&ctx, &state), "persist");
+                FinishResult::reject()
             }
-            None => 0,
+            None => FinishResult::reject(),
         },
-        _ => 0,
+        _ => FinishResult::reject(),
     }
 }

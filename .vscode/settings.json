@@ -3,12 +3,13 @@
     "clippy",
     "Dwarnings",
     "keylet",
-    "keylets",
+    "ldgr",
     "nodemodules",
     "RUSTFLAGS",
     "rustup",
     "sfield",
-    "uninit"
+    "uninit",
+    "xfloat"
   ],
   "rust-analyzer.linkedProjects": [
     "Cargo.toml",

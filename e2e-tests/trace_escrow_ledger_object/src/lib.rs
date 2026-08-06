@@ -20,14 +20,16 @@ const EXPECTED_CONDITION: [u8; 39] = [
     0x4C, 0x65, 0xE5, 0xE3, 0x81, 0x01, 0x03,
 ];
 
+use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_common_stdlib::objects::traits::CurrentLedgerObjectCommonFields;
+use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::{CurrentEscrow, get_current_escrow};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::ledger_objects::traits::CurrentLedgerObjectCommonFields;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_amount, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
     let _ = trace("");
 
@@ -48,7 +50,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Amount
         let amount = current_escrow.get_amount().unwrap();
-        let _ = trace_amount("  Amount:", &amount);
+        let _ = trace_amt("  Amount:", &amount);
 
         // Trace Field: LedgerEntryType
         let ledger_entry_type = current_escrow.get_ledger_entry_type().unwrap();
@@ -121,14 +123,14 @@ pub extern "C" fn finish() -> i32 {
         }
 
         // TODO: Uncomment this once https://github.com/ripple/xrpl-wasm-stdlib/issues/86 is fixed.
-        // Trace Field: FinishFunction
-        // let opt_finish_function = current_escrow.get_finish_function().unwrap();
-        // if let Some(finish_function) = opt_finish_function {
-        //     FinishFunction is the WASM code - just verify it exists and has reasonable length
-        // let _ = trace_num("  FinishFunction length:", finish_function.len as i64);
+        // Trace Field: Bytecode
+        // let opt_bytecode = current_escrow.get_bytecode().unwrap();
+        // if let Some(bytecode) = opt_bytecode {
+        //     Bytecode is the WASM code - just verify it exists and has reasonable length
+        // let _ = trace_num("  Bytecode length:", bytecode.len as i64);
         // let _ = trace_data(
-        //     "  FinishFunction:",
-        //     &finish_function.data[..finish_function.len],
+        //     "  Bytecode:",
+        //     &bytecode.data[..bytecode.len],
         //     DataRepr::AsHex,
         // );
         // }
@@ -167,7 +169,7 @@ pub extern "C" fn finish() -> i32 {
 
         // Trace Field: Data (contract data)
         // Note: Data field is optional and only present if set during EscrowCreate or
-        // updated via the FinishFunction. We don't set it in runTest.js, so this will likely
+        // updated via the Bytecode. We don't set it in runTest.js, so this will likely
         // return empty or error.
         let data_result = current_escrow.get_data();
         if let Ok(contract_data) = data_result
@@ -185,6 +187,87 @@ pub extern "C" fn finish() -> i32 {
         let _ = trace("");
     }
 
+    // ########################################
+    // Read the same fields through the inner-field path builder
+    // ########################################
+    //
+    // `current_escrow.path()` reaches the slot-less `home_le_inner`. A
+    // single-segment path targets a top-level field, so each read below must agree with the flat
+    // getter above — that equality is what proves the locator encoding and the host dispatch are
+    // both correct against a real ledger object, not just against mocks.
+    {
+        let _ = trace("### Current Escrow Ledger Object Fields via path()");
+
+        // Path Read: Account
+        let path_account = current_escrow
+            .path()
+            .field(sfield::Account)
+            .get::<AccountID>()
+            .unwrap();
+        test_utils::assert_eq!(path_account.0, current_escrow.get_account().unwrap().0);
+        let _ = trace_data("  Account (via path):", &path_account.0, DataRepr::AsHex);
+
+        // Path Read: OwnerNode
+        let path_owner_node = current_escrow
+            .path()
+            .field(sfield::OwnerNode)
+            .get::<u64>()
+            .unwrap();
+        test_utils::assert_eq!(path_owner_node, current_escrow.get_owner_node().unwrap());
+        let _ = trace_num("  OwnerNode (via path):", path_owner_node as i64);
+
+        // Path Read: PreviousTxnLgrSeq
+        let path_prev_lgr_seq = current_escrow
+            .path()
+            .field(sfield::PreviousTxnLgrSeq)
+            .get::<u32>()
+            .unwrap();
+        test_utils::assert_eq!(
+            path_prev_lgr_seq,
+            current_escrow.get_previous_txn_lgr_seq().unwrap()
+        );
+        let _ = trace_num("  PreviousTxnLgrSeq (via path):", path_prev_lgr_seq as i64);
+
+        // Path Read: DestinationTag, an optional field that runTest.js does set. Both routes must
+        // agree it is present, and agree on the value.
+        let path_dest_tag = current_escrow
+            .path()
+            .field(sfield::DestinationTag)
+            .get_optional::<u32>()
+            .unwrap();
+        let flat_dest_tag = current_escrow.get_destination_tag().unwrap();
+        test_utils::assert!(path_dest_tag.is_some());
+        test_utils::assert!(flat_dest_tag.is_some());
+        test_utils::assert_eq!(path_dest_tag.unwrap(), flat_dest_tag.unwrap());
+        let _ = trace_num(
+            "  DestinationTag (via path):",
+            path_dest_tag.unwrap() as i64,
+        );
+
+        // A path whose segments overflow the 64-byte locator must be rejected locally, without
+        // ever reaching the host.
+        let mut overflowed = current_escrow.path();
+        for i in 0..17 {
+            overflowed = overflowed.index(i);
+        }
+        test_utils::assert!(overflowed.get::<u32>().is_err());
+
+        // `array_len()` against the current object. An Escrow has no array field, so this asks the
+        // host about a non-array and must surface an error rather than a bogus count.
+        let non_array_len = current_escrow.path().field(sfield::Account).array_len();
+        match non_array_len {
+            Ok(len) => {
+                let _ = trace_num("  array_len on non-array returned:", len as i64);
+            }
+            Err(error) => {
+                let _ = trace_num("  array_len on non-array errored:", error.code() as i64);
+            }
+        }
+        test_utils::assert!(non_array_len.is_err());
+
+        let _ = trace("");
+    }
+
     let _ = trace("$$$$$ WASM EXECUTION COMPLETE $$$$$");
     1 // <-- Finish the escrow to indicate a successful outcome
 }
@@ -193,24 +276,24 @@ pub extern "C" fn finish() -> i32 {
 mod coverage_tests {
     use super::*;
 
-    /// Coverage test: exercises any host function categories via finish()
+    /// Coverage test: exercises any host function categories via escrow_finish()
     ///
     /// This test runs the same logic as the integration test, but on native
     /// targets with stub host functions. It's used to measure code coverage
-    /// of xrpl-wasm-stdlib.
+    /// of xrpl-common-stdlib.
     ///
     /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
     /// so this test verifies that the code *runs*, not that it's *correct*.
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, finish() uses host_bindings_for_testing.rs
+        // On non-wasm targets, escrow_finish() uses host_bindings_for_testing.rs
         // which provides stub implementations of all host functions.
-        let result = finish();
+        let result = escrow_finish();
 
-        // The finish() function returns 1 on success, or a negative error code.
+        // The escrow_finish() function returns 1 on success, or a negative error code.
         // With stub host functions, we expect success (though the actual
         // behavior depends on the stub implementations).
-        core::assert_eq!(result, 1, "finish() should return 1 on success");
+        core::assert_eq!(result, 1, "escrow_finish() should return 1 on success");
     }
 }

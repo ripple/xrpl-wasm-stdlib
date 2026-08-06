@@ -74,7 +74,7 @@ Allowed types:
 Examples:
 
 - `feat: Add typed accessor for AMM ledger object`
-- `fix: Correct return code for missing keylet`
+- `fix: Correct return code for missing id`
 - `docs: Document hello_world build steps`
 - `ci: Enforce conventional commit PR titles`
 - `example: Add freelancer escrow sample`
@@ -124,11 +124,7 @@ cargo build --target wasm32v1-none --release
 These debugging statements will show up in the `debug.log` for rippled.
 
 ```rust
-use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
-use xrpl_wasm_stdlib::ctx::SmartFeatureContext;
-use xrpl_wasm_stdlib::host::trace::{trace, trace_data, DataRepr};
-use xrpl_wasm_stdlib::smart_escrow;
-use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
@@ -149,7 +145,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` export; your annotated function can be named anything except `finish` (that name is reserved for the generated export).
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` export; your annotated function can be named anything except `escrow_finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 
@@ -173,9 +169,10 @@ runTest().catch(console.error)
 ## Project Structure
 
 ```
-xrpl-wasm-stdlib/
+xrpl-common-stdlib/
 ├── src/                    # Library source code
 ├── examples/smart-escrows/ # Example smart contracts
+├── skills/                 # Claude Code skills (e.g. xrpl-smart-escrows)
 ├── scripts/                # Development and CI scripts
 ├── ui/                     # Testing web interface
 ├── e2e-tests/              # Integration tests
@@ -226,7 +223,7 @@ git push origin v0.x.y
 
 ## Getting Help
 
-- Check [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_wasm_stdlib/guide/index.html)
+- Check [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html)
 - Search existing GitHub issues
 - Create new issue with "question" label
 - Reference related issues in PRs

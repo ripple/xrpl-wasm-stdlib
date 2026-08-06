@@ -30,7 +30,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Memos: [
       {
         Memo: {
@@ -43,7 +43,7 @@ async function test(testContext) {
 
   const responseFail = await submit(txFail, sourceWallet)
 
-  if (responseFail.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (responseFail.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.log("\nEscrow finished successfully????")
     process.exit(1)
   }
@@ -91,7 +91,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Memos: [
       {
         Memo: {

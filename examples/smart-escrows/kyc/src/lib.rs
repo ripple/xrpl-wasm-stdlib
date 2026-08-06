@@ -3,41 +3,38 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_escrow_stdlib::ledger_objects::current_escrow::{self, CurrentEscrow};
+use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_common_stdlib::ledger_entry_ids::credential_id;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_wasm_stdlib::core::keylets::credential_keylet;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let current_escrow: CurrentEscrow = current_escrow::get_current_escrow();
-
-    let account_id = match current_escrow.get_destination() {
+#[smart_escrow]
+fn kyc_finish(ctx: EscrowFinishContext) -> FinishResult {
+    let account_id = match ctx.escrow().get_destination() {
         Ok(account_id) => account_id,
         Err(e) => {
             let _ = trace_num("Error getting destination", e.code() as i64);
-            return e.code(); // <-- Do not execute the escrow.
+            return e.code().into(); // <-- Do not execute the escrow.
         }
     };
 
     let cred_type: &[u8] = b"termsandconditions";
-    match credential_keylet(&account_id, &account_id, cred_type) {
-        Ok(keylet) => {
-            let _ = trace_data("cred_keylet", &keylet, DataRepr::AsHex);
+    match credential_id(&account_id, &account_id, cred_type) {
+        Ok(id) => {
+            let _ = trace_data("cred_id", &id, DataRepr::AsHex);
 
-            let slot = unsafe {
-                xrpl_wasm_stdlib::host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0)
-            };
+            let slot = unsafe { xrpl_common_stdlib::host::cache_le(id.as_ptr(), id.len(), 0) };
             if slot < 0 {
                 let _ = trace_num("CACHE ERROR", i64::from(slot));
-                return 0;
+                return FinishResult::reject();
             };
-            1 // <-- Finish the escrow to indicate a successful outcome
+            FinishResult::succeed() // <-- Finish the escrow to indicate a successful outcome
         }
         Err(e) => {
-            let _ = trace_num("Error getting credential keylet", e.code() as i64);
-            e.code() // <-- Do not execute the escrow.
+            let _ = trace_num("Error getting credential ledger entry ID", e.code() as i64);
+            e.code().into() // <-- Do not execute the escrow.
         }
     }
 }

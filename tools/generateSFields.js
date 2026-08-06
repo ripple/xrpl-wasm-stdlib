@@ -7,7 +7,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
       " path/to/escrow/rippled path/to/contract/rippled [path/to/pipe/to]",
   )
   console.error(
-    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/smart-escrow",
+    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/se/supported",
   )
   console.error(
     "Escrow-side fields are sourced from (and always trust) the escrow branch, so a rename there is picked up automatically. " +
@@ -132,7 +132,7 @@ async function main() {
     TransactionType: "TransactionType",
     Condition: "ConditionBlob",
     Fulfillment: "FulfillmentBlob",
-    FinishFunction: "WasmBlob",
+    Bytecode: "WasmBlob",
     PublicKey: "PublicKeyBlob",
     Domain: "UriBlob",
     MessageKey: "PublicKeyBlob",
@@ -274,7 +274,7 @@ async function main() {
 
   const typeCodesFile = path.join(
     __dirname,
-    "../xrpl-wasm-stdlib/src/core/type_codes.rs",
+    "../xrpl-common-stdlib/src/type_codes.rs",
   )
   try {
     await fs.writeFile(typeCodesFile, typeCodeOutput, "utf8")
@@ -286,7 +286,7 @@ async function main() {
   const outputFile =
     process.argv.length == 5
       ? process.argv[4]
-      : path.join(__dirname, "../xrpl-wasm-stdlib/src/sfield.rs")
+      : path.join(__dirname, "../xrpl-common-stdlib/src/sfield.rs")
   try {
     // Read existing file to preserve type definitions and impl blocks
     let existingContent = ""

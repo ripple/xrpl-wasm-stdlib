@@ -3,75 +3,88 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::core::keylets::oracle_keylet;
-use xrpl_wasm_stdlib::core::locator::Locator;
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::host::error_codes::match_result_code;
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{Result, Result::Err, Result::Ok};
-use xrpl_wasm_stdlib::r_address;
-use xrpl_wasm_stdlib::{host, sfield};
+use xrpl_common_stdlib::host::trace::{trace, trace_num};
+use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
+use xrpl_common_stdlib::objects::LedgerObject;
+use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
+use xrpl_common_stdlib::r_address;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::{host, sfield};
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
+use xrpl_macros::smart_escrow;
 
 const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 const ORACLE_DOCUMENT_ID: u32 = 1;
 
 pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
-    let mut locator = Locator::new();
-    locator.pack(sfield::PriceDataSeries);
-    locator.pack(0);
-    locator.pack(sfield::AssetPrice);
+    // The Oracle entry has no typed wrapper, so reach its inner fields through the untyped slot
+    // handle. Check the series is non-empty before indexing into it, rather than relying on the
+    // read of [0] to fail.
+    let oracle = LedgerObject::new(slot);
 
-    let mut data: [u8; 8] = [0; 8];
-    let result_code = unsafe {
-        host::get_ledger_obj_nested_field(
-            slot,
-            locator.as_ptr(),
-            locator.num_packed_bytes(),
-            data.as_mut_ptr(),
-            data.len(),
-        )
+    let series_len = match oracle.path().field(sfield::PriceDataSeries).array_len() {
+        Ok(len) => len,
+        Err(error) => {
+            let _ = trace_num("Error getting PriceDataSeries length", error.code() as i64);
+            return Err(error);
+        }
     };
-    let _ = trace_data("get_price_from_oracle: data=", &data, DataRepr::AsHex);
+    let _ = trace_num(
+        "get_price_from_oracle: price_data_series_len=",
+        series_len as i64,
+    );
+    if series_len == 0 {
+        let _ = trace("get_price_from_oracle: oracle has no price data");
+        return Err(Error::FieldNotFound);
+    }
 
-    let asset_price = match match_result_code(result_code, || data) {
-        Ok(asset_bytes) => {
-            let price = u64::from_le_bytes(asset_bytes);
+    // PriceDataSeries[0].AssetPrice
+    let asset_price = oracle
+        .path()
+        .field(sfield::PriceDataSeries)
+        .index(0)
+        .field(sfield::AssetPrice)
+        .get::<u64>();
+
+    match asset_price {
+        Ok(price) => {
             let _ = trace_num("get_price_from_oracle: asset_price=", price as i64);
-            price
+            Ok(price)
         }
         Err(error) => {
             let _ = trace_num("Error getting asset_price", error.code() as i64);
-            return Err(error); // Must return to short circuit.
+            Err(error) // Must return to short circuit.
         }
-    };
-    Ok(asset_price)
+    }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
-    let oracle_keylet = match oracle_keylet(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
-        Ok(keylet) => keylet,
+#[smart_escrow]
+fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
+    let oracle_id = match oracle_id(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
+        Ok(id) => id,
         Err(error) => {
-            let _ = trace_num("finish: oracle_keylet error_code=", error.code() as i64);
-            return error.code();
+            let _ = trace_num("finish: oracle_id error_code=", error.code() as i64);
+            return error.code().into();
         }
     };
 
     let slot: i32;
     unsafe {
-        slot = host::cache_ledger_obj(oracle_keylet.as_ptr(), oracle_keylet.len(), 0);
-        let _ = trace_num("finish: cache_ledger_obj slot=", slot as i64);
+        slot = host::cache_le(oracle_id.as_ptr(), oracle_id.len(), 0);
+        let _ = trace_num("finish: cache_le slot=", slot as i64);
 
         if slot < 0 {
-            let _ = trace_num("finish: cache_ledger_obj failed, returning 0", 0);
-            return 0;
+            let _ = trace_num("finish: cache_le failed, returning 0", 0);
+            return FinishResult::reject();
         };
     }
 
     let price = match get_price_from_oracle(slot) {
         Ok(v) => v,
-        Err(e) => return e.code(),
+        Err(e) => return e.code().into(),
     };
 
-    (price > 1) as i32 // <-- Finish the escrow to indicate a successful outcome
+    // <-- Finish the escrow to indicate a successful outcome
+    ((price > 1) as i32).into()
 }

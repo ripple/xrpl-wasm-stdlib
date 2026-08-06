@@ -3,6 +3,10 @@
 This WebAssembly module implements a simple escrow finish function that emits the text "Hello World" into the trace log
 and always returns 1. This example is useful for getting started with a new Smart Escrow.
 
+The entry point is annotated with `#[smart_escrow]` (from `xrpl_escrow_stdlib`), which generates the
+`extern "C" fn escrow_finish() -> i32` export the XRPL host calls. The annotated function itself takes an
+`EscrowFinishContext` and returns `FinishResult` — see [`src/lib.rs`](./src/lib.rs).
+
 ## Prerequisites
 
 - Rust toolchain with `wasm32v1-none` target
@@ -27,12 +31,12 @@ cargo build --target wasm32v1-none --release
 Artifact:
 
 ```
-./target/wasm32v1-none/release/helloworld.wasm
+./target/wasm32v1-none/release/hello_world.wasm
 ```
 
 ### 3. Deploy and test on Devnet
 
-Use the test script to deploy an escrow and test the FinishFunction.
+Use the test script to deploy an escrow and test the contract.
 
 ```shell
 cd ../../..
@@ -43,7 +47,7 @@ This will:
 
 - Connect to WASM Devnet
 - Create and fund two wallets (Origin and Destination)
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
+- Create an EscrowCreate transaction with your compiled `Bytecode`
 - Finish the escrow, executing the `helloworld` WASM
 
 Expected result: `tesSUCCESS` and “Escrow finished successfully!”.

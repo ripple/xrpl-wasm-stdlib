@@ -9,7 +9,7 @@ if (process.argv.length != 2) {
 const path = require("path")
 const fs = require("fs/promises")
 
-const HOST_DIR = path.join(__dirname, "../xrpl-wasm-stdlib/src/host")
+const HOST_DIR = path.join(__dirname, "../xrpl-common-stdlib/src/host")
 
 const FILES = {
   trait: "host_bindings_trait.rs",
@@ -197,28 +197,29 @@ function generateExportMacroContent(methods, withUnderscorePrefix = false) {
     {
       name: "Host Function Category: ledger and transaction info",
       filter: (m) =>
-        m.name.startsWith("get_ledger") ||
-        m.name.startsWith("get_parent") ||
-        m.name.startsWith("get_base") ||
-        m.name.startsWith("get_tx") ||
-        m.name.startsWith("get_current") ||
+        m.name === "ldgr_index" ||
+        m.name.startsWith("parent_ldgr") ||
+        m.name === "base_fee" ||
         m.name.startsWith("amendment") ||
-        m.name.startsWith("cache"),
+        m.name.startsWith("cache") ||
+        m.name.startsWith("tx_") ||
+        m.name.startsWith("home_le_") ||
+        m.name.startsWith("le_"),
     },
     {
       name: "Host Function Category: update current ledger entry",
-      filter: (m) => m.name === "update_data",
+      filter: (m) => m.name === "set_data",
     },
     {
-      name: "Host Function Category: hash and keylet computation",
+      name: "Host Function Category: hash and ledger entry ID computation",
       filter: (m) =>
-        m.name.includes("keylet") ||
-        m.name === "compute_sha512_half" ||
+        m.name.includes("id") ||
+        m.name === "sha512_half" ||
         m.name === "check_sig",
     },
     {
       name: "Host Function Category: NFT",
-      filter: (m) => m.name.startsWith("get_nft"),
+      filter: (m) => m.name.startsWith("nft_"),
     },
     {
       name: "Host Function Category: FLOAT",

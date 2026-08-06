@@ -3,9 +3,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_common_stdlib::host::trace::trace;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
-use xrpl_wasm_stdlib::host::trace::trace;
 
 #[smart_escrow]
 fn run(_ctx: EscrowFinishContext) -> FinishResult {

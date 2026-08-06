@@ -7,5 +7,5 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-xrpl-wasm-stdlib = { path = "../xrpl-wasm-stdlib", features = ["test-host-bindings"] }
+xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }
 mockall.workspace = true

@@ -2,7 +2,7 @@
 # Generate SField constants from rippled source
 # This script generates type-safe SField constants for the XRPL WASM Standard Library.
 # It also regenerates the STI_* type-code constants in
-# xrpl-wasm-stdlib/src/core/type_codes.rs from the contract rippled source.
+# xrpl-common-stdlib/src/type_codes.rs from the contract rippled source.
 #
 # Fields are sourced from two rippled branches: escrow-side fields are always
 # taken from the escrow branch (so a rename there is picked up automatically
@@ -25,7 +25,7 @@ ESCROW_SOURCE="${1:-https://github.com/XRPLF/rippled/tree/ripple/se/supported}"
 CONTRACT_SOURCE="${2:-https://github.com/XRPLF/rippled/tree/xrplf/smart-contracts}"
 
 # Output file (can be overridden with the third argument)
-OUTPUT_FILE="${3:-xrpl-wasm-stdlib/src/sfield.rs}"
+OUTPUT_FILE="${3:-xrpl-common-stdlib/src/sfield.rs}"
 
 echo "🔧 Generating SField constants..."
 echo "📦 Escrow source:   $ESCROW_SOURCE"
@@ -45,7 +45,7 @@ node tools/generateSFields.js "$ESCROW_SOURCE" "$CONTRACT_SOURCE" "$OUTPUT_FILE"
 
 echo ""
 echo "🎨 Formatting generated output..."
-cargo fmt -p xrpl-wasm-stdlib
+cargo fmt -p xrpl-common-stdlib
 
 echo ""
 echo "✅ SField constants and STI_* type codes generated successfully!"

@@ -1,4 +1,4 @@
-//! Procedural-macro entry points for `xrpl-wasm-stdlib`.
+//! Procedural-macro entry points for `xrpl-common-stdlib`.
 //!
 //! Each macro here is a thin shim that delegates to its module's `expand`.
 //! Logic, helpers, and unit tests live in the per-macro files.
@@ -30,8 +30,8 @@ mod r_address;
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::r_address;
-/// use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+/// use xrpl_common_stdlib::r_address;
+/// use xrpl_common_stdlib::types::account_id::AccountID;
 ///
 /// const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 /// ```
@@ -51,8 +51,8 @@ pub fn r_address(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::hash256;
-/// use xrpl_wasm_stdlib::core::types::uint::Hash256;
+/// use xrpl_common_stdlib::hash256;
+/// use xrpl_common_stdlib::types::uint::Hash256;
 ///
 /// const H: Hash256 =
 ///     hash256!("0000000000000000000000000000000000000000000000000000000000000001");
@@ -75,8 +75,8 @@ pub fn hash256(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::pubkey;
-/// use xrpl_wasm_stdlib::core::types::public_key::PublicKey;
+/// use xrpl_common_stdlib::pubkey;
+/// use xrpl_common_stdlib::types::public_key::PublicKey;
 ///
 /// const KEY: PublicKey =
 ///     pubkey!("02C7387FFC25C156CA7F8A6D760C8D01EF642CEE9CE4680C33FFB3FF39AFECFE70");
@@ -103,8 +103,8 @@ pub fn pubkey(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::currency;
-/// use xrpl_wasm_stdlib::core::types::currency::Currency;
+/// use xrpl_common_stdlib::currency;
+/// use xrpl_common_stdlib::types::currency::Currency;
 ///
 /// const USD: Currency = currency!("USD");
 /// const CUSTOM: Currency = currency!("0158415500000000C1F76FF6ECB0BAC600000000");
@@ -131,8 +131,8 @@ pub fn currency(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```rust,ignore
-/// use xrpl_wasm_stdlib::blob;
-/// use xrpl_wasm_stdlib::core::types::blob::Blob;
+/// use xrpl_common_stdlib::blob;
+/// use xrpl_common_stdlib::types::blob::Blob;
 ///
 /// const EXACT: Blob<4> = blob!("DEADBEEF");
 /// const PADDED: Blob<32> = blob!("DEADBEEF", 32);
@@ -145,7 +145,7 @@ pub fn blob(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Wraps a Smart Escrow finish function in the `extern "C" fn finish()` entry point
+/// Wraps a Smart Escrow finish function in the `extern "C" fn escrow_finish()` entry point
 /// the XRPL host calls when an `EscrowFinish` transaction invokes the feature.
 ///
 /// The annotated function must:
@@ -168,8 +168,8 @@ pub fn blob(input: TokenStream) -> TokenStream {
 /// ```rust,ignore
 /// // Import from the feature crate, not from xrpl_macros directly.
 /// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
-/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
-/// use xrpl_escrow_stdlib::core::types::amount::Amount;
+/// use xrpl_escrow_stdlib::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::types::amount::Amount;
 ///
 /// #[smart_escrow]
 /// fn finish(ctx: EscrowFinishContext) -> FinishResult {
@@ -189,8 +189,8 @@ pub fn blob(input: TokenStream) -> TokenStream {
 ///
 /// ```rust,ignore
 /// use xrpl_escrow_stdlib::{smart_escrow, EscrowFinishContext, FinishResult};
-/// use xrpl_escrow_stdlib::core::current_tx::traits::TransactionCommonFields;
-/// use xrpl_escrow_stdlib::core::types::amount::Amount;
+/// use xrpl_escrow_stdlib::current_tx::traits::TransactionCommonFields;
+/// use xrpl_escrow_stdlib::types::amount::Amount;
 ///
 /// #[smart_escrow]
 /// fn finish(ctx: EscrowFinishContext) -> i32 {

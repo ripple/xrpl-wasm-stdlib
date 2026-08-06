@@ -24,9 +24,11 @@ The Rust code demonstrates how to interact with XRPL NFT objects and escrow data
 
 ### Key Functions
 
-- `finish()`: Main entry point that determines escrow unlock status
+- `nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult`: Main entry point that determines escrow unlock
+  status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL
+  host calls.
 - `get_first_memo()`: Extracts the first memo data from the transaction
-- NFT ownership verification using `get_nft()` from the XRPL standard library
+- NFT ownership verification using `nft_uri()` from the XRPL standard library
 
 ## How it Works
 
@@ -85,7 +87,7 @@ Artifact:
 
 ### 3. Deploy and test on Devnet
 
-Use the test script to deploy an escrow and test the FinishFunction.
+Use the test script to deploy an escrow and test the contract.
 
 ```shell
 cd ../../..
@@ -96,7 +98,7 @@ This will:
 
 - Connect to WASM Devnet
 - Create and fund two wallets (Origin and Destination)
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
+- Create an EscrowCreate transaction with your compiled `Bytecode`
 - Submit an `EscrowFinish` transaction with the NFT ID in the memo field
 - Verify that the escrow unlocks only if the destination account owns the specified NFT
 

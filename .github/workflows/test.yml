@@ -11,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  XRPLD_DOCKER_IMAGE: rippleci/xrpld:ripple--se--supported
+  XRPLD_DOCKER_IMAGE: rippleci/xrpld:5fd5839f
 
 jobs:
   pre-commit:

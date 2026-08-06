@@ -238,7 +238,7 @@ async function test(testContext) {
     Amount: "100000",
     Destination: destWallet.address,
     CancelAfter: close_time + 2000,
-    FinishFunction: finish,
+    Bytecode: finish,
   }
 
   const createResponse = await submit(escrowCreateTx, testAccount)
@@ -260,7 +260,7 @@ async function test(testContext) {
     Account: testAccount.address,
     Owner: testAccount.address,
     OfferSequence: parseInt(offerSequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const response = await submit(tx, testAccount)
@@ -276,7 +276,7 @@ async function test(testContext) {
     process.exit(1)
   }
 
-  console.log("✅  Successfully finished escrow with FinishFunction")
+  console.log("✅  Successfully finished escrow with Bytecode")
 }
 
 module.exports = { test }

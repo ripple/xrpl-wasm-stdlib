@@ -1,0 +1,4 @@
+{
+  "name": "xrpl-wasm-stdlib",
+  "skills": ["./skills/xrpl-smart-escrows"]
+}

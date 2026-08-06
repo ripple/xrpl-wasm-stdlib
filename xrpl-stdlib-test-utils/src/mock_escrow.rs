@@ -4,11 +4,11 @@
 //! tests read in terms of the escrow scenario instead of raw host-function wiring.
 
 use crate::mock_common::{MockGuard, MockHostBindings, apply_default_expectations, setup_mock};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::types::amount::Amount;
-use xrpl_wasm_stdlib::host::Error;
-use xrpl_wasm_stdlib::host::error_codes::BUFFER_TOO_SMALL;
-use xrpl_wasm_stdlib::sfield;
+use xrpl_common_stdlib::host::Error;
+use xrpl_common_stdlib::host::error_codes::BUFFER_TOO_SMALL;
+use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::account_id::AccountID;
+use xrpl_common_stdlib::types::amount::{AMOUNT_SIZE, Amount};
 
 /// Pre-wires common Smart Escrow test setups onto a [`MockHostBindings`].
 ///
@@ -32,7 +32,7 @@ pub struct EscrowScenarioBuilder {
     amount: Option<Amount>,
     // Stored pre-converted to a host status code (0 == success) rather than `Result<(), Error>`
     // so the builder doesn't need `Result`/`Error` to be `Copy` to stash it in a field.
-    update_data_status: Option<i32>,
+    set_data_status: Option<i32>,
 }
 
 impl EscrowScenarioBuilder {
@@ -46,8 +46,8 @@ impl EscrowScenarioBuilder {
         self
     }
 
-    pub fn with_update_data_returns(mut self, result: Result<(), Error>) -> Self {
-        self.update_data_status = Some(match result {
+    pub fn with_set_data_returns(mut self, result: Result<(), Error>) -> Self {
+        self.set_data_status = Some(match result {
             Ok(()) => 0,
             Err(error) => error.code(),
         });
@@ -84,7 +84,7 @@ impl EscrowScenarioBuilder {
             let account_code = i32::from(sfield::Account);
             let amount_code = i32::from(sfield::Amount);
 
-            mock.expect_get_tx_field()
+            mock.expect_tx_field()
                 .returning(move |field, out_buff_ptr, out_buff_len| {
                     if field == account_code
                         && let Some(account) = account
@@ -94,15 +94,24 @@ impl EscrowScenarioBuilder {
                     if field == amount_code
                         && let Some(amount) = &amount
                     {
-                        let (bytes, len) = amount.to_stamount_bytes();
+                        // `to_stamount_bytes` always reports 48 (the full trace buffer). A real
+                        // host instead returns only the bytes it wrote for the amount's variant
+                        // (8 XRP / 33 MPT / 48 IOU), which is what the getter's decoder validates
+                        // against — so model that here rather than claiming a full 48-byte write.
+                        let (bytes, _) = amount.to_stamount_bytes();
+                        let len = match amount {
+                            Amount::XRP { .. } => 8,
+                            Amount::MPT { .. } => 33,
+                            Amount::IOU { .. } => AMOUNT_SIZE,
+                        };
                         return write_bytes(&bytes[..len], out_buff_ptr, out_buff_len);
                     }
                     out_buff_len as i32
                 });
         }
 
-        if let Some(status) = self.update_data_status {
-            mock.expect_update_data().returning(
+        if let Some(status) = self.set_data_status {
+            mock.expect_set_data().returning(
                 move |_data_ptr, data_len| {
                     if status == 0 { data_len as i32 } else { status }
                 },
@@ -126,7 +135,7 @@ fn write_bytes(bytes: &[u8], out_buff_ptr: *mut u8, out_buff_len: usize) -> i32 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xrpl_wasm_stdlib::core::current_tx::get_field;
+    use xrpl_common_stdlib::current_tx::get_field;
 
     fn test_account() -> AccountID {
         AccountID::from([0xAB; 20])
@@ -168,29 +177,29 @@ mod tests {
 
         // OfferSequence wasn't configured by the scenario; the default fallback (declared
         // after the scenario's expectation) still handles it instead of panicking.
-        let result: xrpl_wasm_stdlib::host::Result<u32> = get_field(sfield::OfferSequence);
+        let result: xrpl_common_stdlib::host::Result<u32> = get_field(sfield::OfferSequence);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn with_update_data_returns_ok_reports_the_payload_length_through_the_real_host_call() {
+    fn with_set_data_returns_ok_reports_the_payload_length_through_the_real_host_call() {
         let _guard = EscrowScenario::builder()
-            .with_update_data_returns(Ok(()))
+            .with_set_data_returns(Ok(()))
             .install();
 
         let payload = b"payload";
-        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code = unsafe { xrpl_common_stdlib::host::set_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, payload.len() as i32);
     }
 
     #[test]
-    fn with_update_data_returns_err_reports_the_error_code_through_the_real_host_call() {
+    fn with_set_data_returns_err_reports_the_error_code_through_the_real_host_call() {
         let _guard = EscrowScenario::builder()
-            .with_update_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::InternalError))
             .install();
 
         let payload = b"payload";
-        let code = unsafe { xrpl_wasm_stdlib::host::update_data(payload.as_ptr(), payload.len()) };
+        let code = unsafe { xrpl_common_stdlib::host::set_data(payload.as_ptr(), payload.len()) };
         assert_eq!(code, Error::InternalError.code());
         assert!(code < 0);
     }
@@ -200,7 +209,7 @@ mod tests {
         let overridden_account = AccountID::from([0u8; 20]);
         let mut mock = MockHostBindings::new();
         let expected_code: i32 = i32::from(sfield::Account);
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .withf(move |field, _, _| *field == expected_code)
             .returning(move |_, out_buff_ptr, out_buff_len| {
                 write_bytes(&overridden_account.0, out_buff_ptr, out_buff_len)
