@@ -185,7 +185,7 @@ sequenceDiagram
 ## Return Values
 
 The entry point is `escrow(ctx: EscrowFinishContext) -> FinishResult`, annotated with `#[smart_escrow]`. The
-macro generates the `extern "C" fn finish() -> i32` export the XRPL host actually calls, converting the returned
+macro generates the `extern "C" fn escrow_finish() -> i32` export the XRPL host actually calls, converting the returned
 `FinishResult` into that ABI:
 
 | `FinishResult`                 | `finish()` return | Meaning                                                |

@@ -7,8 +7,8 @@ const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 
 use crate::host::Result;
 use crate::host::error_codes::{match_result_code, match_result_code_optional};
-use crate::host::get_current_ledger_obj_field;
-use crate::host::get_ledger_obj_field;
+use crate::host::home_le_field;
+use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -59,7 +59,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::LoanOriginationFee.into(),
                 buffer.as_mut_ptr(),
@@ -74,7 +74,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::LoanServiceFee.into(),
                 buffer.as_mut_ptr(),
@@ -89,7 +89,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::LatePaymentFee.into(),
                 buffer.as_mut_ptr(),
@@ -104,7 +104,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::ClosePaymentFee.into(),
                 buffer.as_mut_ptr(),
@@ -178,7 +178,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::PeriodicPayment.into(),
                 buffer.as_mut_ptr(),
@@ -193,7 +193,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::PrincipalOutstanding.into(),
                 buffer.as_mut_ptr(),
@@ -208,7 +208,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::TotalValueOutstanding.into(),
                 buffer.as_mut_ptr(),
@@ -223,7 +223,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::ManagementFeeOutstanding.into(),
                 buffer.as_mut_ptr(),
@@ -239,7 +239,7 @@ pub trait LoanFields: LedgerObjectCommonFields {
     fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::LoanScale.into(),
                 buffer.as_mut_ptr(),
@@ -293,7 +293,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::LoanOriginationFee.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -307,7 +307,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::LoanServiceFee.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -321,7 +321,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::LatePaymentFee.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -335,7 +335,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::ClosePaymentFee.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -408,7 +408,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::PeriodicPayment.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -422,7 +422,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::PrincipalOutstanding.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -436,7 +436,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::TotalValueOutstanding.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -450,7 +450,7 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::ManagementFeeOutstanding.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -464,13 +464,8 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     /// Raw bytes; INT32 is not yet typed in Rust.
     fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            get_current_ledger_obj_field(
-                sfield::LoanScale.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
+        let result_code =
+            unsafe { home_le_field(sfield::LoanScale.into(), buffer.as_mut_ptr(), buffer.len()) };
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 }

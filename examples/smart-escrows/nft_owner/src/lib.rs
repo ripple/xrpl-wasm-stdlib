@@ -4,8 +4,8 @@
 extern crate std;
 
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::get_tx_nested_field;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
@@ -25,7 +25,7 @@ pub fn get_first_memo() -> Result<Option<ContractData>> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let result_code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             data.data.as_mut_ptr(),

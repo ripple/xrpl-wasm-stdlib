@@ -39,8 +39,8 @@ This will:
 
 - Connect to WASM Devnet (or local rippled)
 - Create and fund two wallets (source and destination)
-- Create an EscrowCreate transaction with Condition and your compiled `FinishFunction`
-- Finish the escrow with Fulfillment and ComputationAllowance
+- Create an EscrowCreate transaction with Condition and your compiled `Bytecode`
+- Finish the escrow with Fulfillment and Gas
 - Execute the WASM which traces all Escrow ledger object fields
 
 Expected result: `tesSUCCESS` with comprehensive tracing of all Escrow ledger object fields, including the Condition in full crypto-condition format.

@@ -6,7 +6,7 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::blob::{ConditionBlob, WasmBlob};
+use crate::types::blob::{ConditionBlob, StandardBlob, WasmBlob};
 use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Escrow objects in any ledger.
@@ -53,9 +53,14 @@ pub trait EscrowFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
     }
 
-    /// The FinishFunction field (Optional).
-    fn finish_function(&self) -> Result<Option<WasmBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
+    /// The Bytecode field (Optional).
+    fn bytecode(&self) -> Result<Option<WasmBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::Bytecode)
+    }
+
+    /// The Data field (Optional).
+    fn data(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 
     /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient
@@ -152,7 +157,8 @@ mod tests {
         assert!(obj.condition().is_ok());
         assert!(obj.cancel_after().is_ok());
         assert!(obj.finish_after().is_ok());
-        assert!(obj.finish_function().is_ok());
+        assert!(obj.bytecode().is_ok());
+        assert!(obj.data().is_ok());
         assert!(obj.source_tag().is_ok());
         assert!(obj.destination_tag().is_ok());
         assert!(obj.destination_node().is_ok());

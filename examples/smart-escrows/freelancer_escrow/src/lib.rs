@@ -6,9 +6,9 @@ extern crate std;
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::get_parent_ledger_time;
-use xrpl_common_stdlib::host::get_tx_nested_field;
+use xrpl_common_stdlib::host::parent_ldgr_time;
 use xrpl_common_stdlib::host::trace::trace_num;
+use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -197,7 +197,7 @@ fn read_intent() -> Result<Intent> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             buf.as_mut_ptr(),
@@ -250,7 +250,7 @@ fn deadline_release(state: &State) -> Result<bool> {
         return Ok(false);
     }
     let mut buf = [0u8; 4];
-    let code = unsafe { get_parent_ledger_time(buf.as_mut_ptr(), buf.len()) };
+    let code = unsafe { parent_ldgr_time(buf.as_mut_ptr(), buf.len()) };
     if code < 0 {
         return Err(Error::from_code(code));
     }

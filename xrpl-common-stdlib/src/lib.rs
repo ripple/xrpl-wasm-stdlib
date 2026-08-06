@@ -17,7 +17,7 @@ pub mod ctx;
 pub mod current_tx;
 pub mod fields;
 pub mod host;
-pub mod keylets;
+pub mod ledger_entry_ids;
 pub mod objects;
 pub mod sfield;
 pub(crate) mod tx_flags;

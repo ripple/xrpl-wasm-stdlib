@@ -1,30 +1,30 @@
 use crate::host::{
-    Error, Result, amendment_enabled as host_amendment_enabled,
-    error_codes::match_result_code_with_expected_bytes, get_base_fee, get_ledger_sqn,
-    get_parent_ledger_hash, get_parent_ledger_time,
+    Error, Result, amendment_enabled as host_amendment_enabled, base_fee as host_base_fee,
+    error_codes::match_result_code_with_expected_bytes, ldgr_index, parent_ldgr_hash,
+    parent_ldgr_time,
 };
 
 pub fn ledger_sqn() -> Result<u32> {
     let mut uint_bytes = [0u8; 4];
-    let rescode = unsafe { get_ledger_sqn(uint_bytes.as_mut_ptr(), 4) };
+    let rescode = unsafe { ldgr_index(uint_bytes.as_mut_ptr(), 4) };
     match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
 pub fn parent_ledger_time() -> Result<u32> {
     let mut uint_bytes = [0u8; 4];
-    let rescode = unsafe { get_parent_ledger_time(uint_bytes.as_mut_ptr(), 4) };
+    let rescode = unsafe { parent_ldgr_time(uint_bytes.as_mut_ptr(), 4) };
     match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
 pub fn parent_ledger_hash() -> Result<[u8; 32]> {
     let mut bytes = [0u8; 32];
-    let rescode = unsafe { get_parent_ledger_hash(bytes.as_mut_ptr(), 32) };
+    let rescode = unsafe { parent_ldgr_hash(bytes.as_mut_ptr(), 32) };
     match_result_code_with_expected_bytes(rescode, 32, || bytes)
 }
 
 pub fn base_fee() -> Result<u32> {
     let mut uint_bytes = [0u8; 4];
-    let rescode = unsafe { get_base_fee(uint_bytes.as_mut_ptr(), 4) };
+    let rescode = unsafe { host_base_fee(uint_bytes.as_mut_ptr(), 4) };
     match_result_code_with_expected_bytes(rescode, 4, || u32::from_le_bytes(uint_bytes))
 }
 
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn test_ledger_sqn_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_sqn().times(1).returning(|ptr, _| {
+        mock.expect_ldgr_index().times(1).returning(|ptr, _| {
             write_u32(ptr, 42);
             4
         });
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn test_ledger_sqn_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_ledger_sqn()
+        mock.expect_ldgr_index()
             .times(1)
             .returning(|_, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);
@@ -93,12 +93,10 @@ mod tests {
     #[test]
     fn test_parent_ledger_time_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_parent_ledger_time()
-            .times(1)
-            .returning(|ptr, _| {
-                write_u32(ptr, 1_000_000);
-                4
-            });
+        mock.expect_parent_ldgr_time().times(1).returning(|ptr, _| {
+            write_u32(ptr, 1_000_000);
+            4
+        });
         let _guard = setup_mock(mock);
 
         let result = parent_ledger_time();
@@ -109,7 +107,7 @@ mod tests {
     #[test]
     fn test_parent_ledger_time_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_parent_ledger_time()
+        mock.expect_parent_ldgr_time()
             .times(1)
             .returning(|_, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);
@@ -122,12 +120,10 @@ mod tests {
     #[test]
     fn test_parent_ledger_hash_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_parent_ledger_hash()
-            .times(1)
-            .returning(|ptr, _| {
-                write_hash(ptr, 0xAB);
-                32
-            });
+        mock.expect_parent_ldgr_hash().times(1).returning(|ptr, _| {
+            write_hash(ptr, 0xAB);
+            32
+        });
         let _guard = setup_mock(mock);
 
         let result = parent_ledger_hash();
@@ -138,7 +134,7 @@ mod tests {
     #[test]
     fn test_parent_ledger_hash_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_parent_ledger_hash()
+        mock.expect_parent_ldgr_hash()
             .times(1)
             .returning(|_, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);
@@ -151,7 +147,7 @@ mod tests {
     #[test]
     fn test_base_fee_success() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_base_fee().times(1).returning(|ptr, _| {
+        mock.expect_base_fee().times(1).returning(|ptr, _| {
             write_u32(ptr, 12);
             4
         });
@@ -165,7 +161,7 @@ mod tests {
     #[test]
     fn test_base_fee_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_base_fee()
+        mock.expect_base_fee()
             .times(1)
             .returning(|_, _| INTERNAL_ERROR);
         let _guard = setup_mock(mock);

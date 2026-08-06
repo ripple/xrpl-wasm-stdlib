@@ -6,6 +6,7 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
+use crate::types::blob::StandardBlob;
 use crate::types::uint::{Hash192, Hash256};
 
 /// Trait providing access to fields specific to MPToken objects in any ledger.
@@ -47,6 +48,36 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
+
+    /// The ConfidentialBalanceInbox field (Optional).
+    fn confidential_balance_inbox(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceInbox)
+    }
+
+    /// The ConfidentialBalanceSpending field (Optional).
+    fn confidential_balance_spending(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceSpending)
+    }
+
+    /// The ConfidentialBalanceVersion field (Optional).
+    fn confidential_balance_version(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceVersion)
+    }
+
+    /// The IssuerEncryptedBalance field (Optional).
+    fn issuer_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerEncryptedBalance)
+    }
+
+    /// The AuditorEncryptedBalance field (Optional).
+    fn auditor_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptedBalance)
+    }
+
+    /// The HolderEncryptionKey field (Optional).
+    fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HolderEncryptionKey)
+    }
 }
 
 /// Trait providing access to fields specific to the current MPToken object.
@@ -87,6 +118,36 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
     /// object.
     fn previous_txn_lgr_seq(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
+    }
+
+    /// The ConfidentialBalanceInbox field (Optional).
+    fn confidential_balance_inbox(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::ConfidentialBalanceInbox)
+    }
+
+    /// The ConfidentialBalanceSpending field (Optional).
+    fn confidential_balance_spending(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::ConfidentialBalanceSpending)
+    }
+
+    /// The ConfidentialBalanceVersion field (Optional).
+    fn confidential_balance_version(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::ConfidentialBalanceVersion)
+    }
+
+    /// The IssuerEncryptedBalance field (Optional).
+    fn issuer_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::IssuerEncryptedBalance)
+    }
+
+    /// The AuditorEncryptedBalance field (Optional).
+    fn auditor_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::AuditorEncryptedBalance)
+    }
+
+    /// The HolderEncryptionKey field (Optional).
+    fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::HolderEncryptionKey)
     }
 }
 
@@ -132,6 +193,12 @@ mod tests {
         assert!(obj.previous_txn_lgr_seq().is_ok());
         assert!(obj.mpt_amount().is_ok());
         assert!(obj.locked_amount().is_ok());
+        assert!(obj.confidential_balance_inbox().is_ok());
+        assert!(obj.confidential_balance_spending().is_ok());
+        assert!(obj.confidential_balance_version().is_ok());
+        assert!(obj.issuer_encrypted_balance().is_ok());
+        assert!(obj.auditor_encrypted_balance().is_ok());
+        assert!(obj.holder_encryption_key().is_ok());
     }
 
     #[test]
@@ -144,5 +211,6 @@ mod tests {
 
         assert!(obj.mpt_amount().unwrap().is_none());
         assert!(obj.locked_amount().unwrap().is_none());
+        assert!(obj.confidential_balance_version().unwrap().is_none());
     }
 }

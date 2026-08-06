@@ -28,7 +28,7 @@ pub fn save_data<T: EscrowStorage>(ctx: &EscrowFinishContext, data: &T) -> Resul
         Result::Ok(n) => n,
         Result::Err(e) => return Result::Err(e),
     };
-    ctx.update_data(&bytes[..n])
+    ctx.set_data(&bytes[..n])
 }
 
 #[cfg(test)]
@@ -65,7 +65,7 @@ mod tests {
     }
 
     fn expect_get_data(mock: &mut MockHostBindings, returning: i32, payload: Option<Vec<u8>>) {
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq(sfield::Data), always(), eq(XRPL_CONTRACT_DATA_SIZE))
             .times(1)
             .returning(move |_, out_buff_ptr, _| {
@@ -133,9 +133,9 @@ mod tests {
     }
 
     #[test]
-    fn save_data_writes_encoded_bytes_via_update_data() {
+    fn save_data_writes_encoded_bytes_via_set_data() {
         let mut mock = MockHostBindings::new();
-        mock.expect_update_data()
+        mock.expect_set_data()
             .withf(|_data_ptr, data_len| *data_len == 4)
             .times(1)
             .returning(|data_ptr, data_len| {
@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn save_data_propagates_host_error_without_swallowing_it() {
         let _guard = EscrowScenario::builder()
-            .with_update_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::InternalError))
             .install();
 
         let ctx = EscrowFinishContext::default();

@@ -238,13 +238,12 @@ const EXCLUDED_FIELDS = new Set(["LedgerIndex", "Flags", "LedgerEntryType"])
 // contracts can read *other* (non-current) escrows through a typed trait.
 const SLOT_ONLY_ENTRIES = new Set(["Escrow"])
 
-// Per-entry field exclusions, keyed by className. Escrow's `Data` field is a
-// host-mutable ContractData blob whose accessor is hand-written in
-// xrpl-escrow-stdlib (the `EscrowContractData` extension trait), so it must not
-// be emitted here as a generic StandardBlob getter.
-const PER_ENTRY_EXCLUDED_FIELDS = {
-  Escrow: new Set(["Data"]),
-}
+// Per-entry field exclusions, keyed by className. Currently empty: every field
+// with a `FromLedger`-decodable type is emitted as a generated getter (e.g.
+// escrow's `Data` reads as a `StandardBlob`). Escrow's host-mutable *write* path
+// (`set_data`) still lives hand-written in xrpl-escrow-stdlib, but the read is
+// generated like any other field.
+const PER_ENTRY_EXCLUDED_FIELDS = {}
 
 // Rust types with a single, fixed import path, used for field-getter return
 // types that don't live in crate::types::blob or crate::types::uint.
@@ -353,8 +352,8 @@ function renderRawGetter(field, wireType, fieldDocsForClass, useCurrent) {
     ? `Result<Option<[u8; ${RAW_UNMAPPED_FIELD_SIZE_CONST}]>>`
     : `Result<[u8; ${RAW_UNMAPPED_FIELD_SIZE_CONST}]>`
   const hostCall = useCurrent
-    ? `get_current_ledger_obj_field(sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
-    : `get_ledger_obj_field(self.get_slot_num(), sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
+    ? `home_le_field(sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
+    : `le_field(self.get_slot_num(), sfield::${sfName}.into(), buffer.as_mut_ptr(), buffer.len())`
   const matcher = isOptional
     ? `match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))`
     : `match_result_code(result_code, || buffer)`
@@ -518,9 +517,9 @@ function buildImports(usedRustTypes, opts) {
   if (opts.hasRawOptional) matchFns.push("match_result_code_optional")
   pushGrouped("crate::host::error_codes", matchFns)
   if (opts.hasRawGetter && opts.needsCurrentAccessor)
-    lines.push(`use crate::host::get_current_ledger_obj_field;`)
+    lines.push(`use crate::host::home_le_field;`)
   if (opts.hasRawGetter && opts.needsSlotAccessor)
-    lines.push(`use crate::host::get_ledger_obj_field;`)
+    lines.push(`use crate::host::le_field;`)
   if (opts.needsSfield) lines.push(`use crate::sfield;`)
 
   return lines

@@ -2,7 +2,7 @@
 //!
 //! These types are used as placeholders in SField definitions for array and object types
 //! that cannot be directly retrieved from ledger objects. They are primarily used within
-//! `Locator` for navigating nested structures.
+//! `Locator` for navigating inner structures.
 
 /// Placeholder type for array SFields.
 ///

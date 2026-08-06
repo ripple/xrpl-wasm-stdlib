@@ -64,7 +64,7 @@ const customFieldTypes = {
   TransactionType: "TransactionType",
   Condition: "ConditionBlob",
   Fulfillment: "FulfillmentBlob",
-  FinishFunction: "WasmBlob",
+  Bytecode: "WasmBlob",
   PublicKey: "PublicKeyBlob",
   Domain: "UriBlob",
   MessageKey: "PublicKeyBlob",

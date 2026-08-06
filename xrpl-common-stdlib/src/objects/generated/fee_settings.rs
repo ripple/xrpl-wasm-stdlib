@@ -45,14 +45,14 @@ pub trait FeeSettingsFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ReserveIncrementDrops)
     }
 
-    /// The ExtensionComputeLimit field (Optional).
-    fn extension_compute_limit(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::ExtensionComputeLimit)
+    /// The GasLimit field (Optional).
+    fn gas_limit(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::GasLimit)
     }
 
-    /// The ExtensionSizeLimit field (Optional).
-    fn extension_size_limit(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::ExtensionSizeLimit)
+    /// The BytecodeSizeLimit field (Optional).
+    fn bytecode_size_limit(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::BytecodeSizeLimit)
     }
 
     /// The GasPrice field (Optional).
@@ -109,14 +109,14 @@ pub trait CurrentFeeSettingsFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::ReserveIncrementDrops)
     }
 
-    /// The ExtensionComputeLimit field (Optional).
-    fn extension_compute_limit(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::ExtensionComputeLimit)
+    /// The GasLimit field (Optional).
+    fn gas_limit(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::GasLimit)
     }
 
-    /// The ExtensionSizeLimit field (Optional).
-    fn extension_size_limit(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::ExtensionSizeLimit)
+    /// The BytecodeSizeLimit field (Optional).
+    fn bytecode_size_limit(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::BytecodeSizeLimit)
     }
 
     /// The GasPrice field (Optional).
@@ -178,8 +178,8 @@ mod tests {
         assert!(obj.base_fee_drops().is_ok());
         assert!(obj.reserve_base_drops().is_ok());
         assert!(obj.reserve_increment_drops().is_ok());
-        assert!(obj.extension_compute_limit().is_ok());
-        assert!(obj.extension_size_limit().is_ok());
+        assert!(obj.gas_limit().is_ok());
+        assert!(obj.bytecode_size_limit().is_ok());
         assert!(obj.gas_price().is_ok());
         assert!(obj.previous_txn_id().is_ok());
         assert!(obj.previous_txn_lgr_seq().is_ok());
@@ -197,8 +197,8 @@ mod tests {
         assert!(obj.reference_fee_units().unwrap().is_none());
         assert!(obj.reserve_base().unwrap().is_none());
         assert!(obj.reserve_increment().unwrap().is_none());
-        assert!(obj.extension_compute_limit().unwrap().is_none());
-        assert!(obj.extension_size_limit().unwrap().is_none());
+        assert!(obj.gas_limit().unwrap().is_none());
+        assert!(obj.bytecode_size_limit().unwrap().is_none());
         assert!(obj.gas_price().unwrap().is_none());
         assert!(obj.previous_txn_id().unwrap().is_none());
         assert!(obj.previous_txn_lgr_seq().unwrap().is_none());

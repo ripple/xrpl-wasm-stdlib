@@ -12,11 +12,11 @@
 //! - `float_from_int` / `float_from_uint` / `float_from_mant_exp` - Convert values to float format
 //! - `float_from_stamount` / `float_from_stnumber` - Convert XRP ledger types to float format
 //! - `float_to_int` / `float_to_mant_exp` - Convert float to integer or decomposed form
-//! - `float_add` / `float_subtract` / `float_multiply` / `float_divide` - Arithmetic
+//! - `float_add` / `float_sub` / `float_mult` / `float_div` - Arithmetic
 //! - `float_pow` / `float_root` - Mathematical functions
-//! - `float_compare` - Comparison operations
+//! - `float_cmp` - Comparison operations
 //!
-//! All operations support explicit rounding modes (0=ToNearest, 1=TowardsZero, 2=Downward, 3=Upward).
+//! All operations support explicit rounding modes; see [`RoundingMode`].
 //!
 //! See the host_bindings documentation for detailed function signatures.
 
@@ -24,15 +24,28 @@ pub mod chain;
 pub mod error_codes;
 pub mod trace;
 
-// Float rounding mode constants (same as in host_bindings.rs)
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TO_NEAREST: i32 = 0;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_TOWARDS_ZERO: i32 = 1;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_DOWNWARD: i32 = 2;
-#[allow(unused)]
-pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
+/// Rounding mode for float operations, matching rippled's `Number::RoundingMode`.
+///
+/// The host functions take the mode as an `i32`; convert with `.into()` at the call site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum RoundingMode {
+    /// Round to the nearest representable value.
+    ToNearest = 0,
+    /// Round toward zero (truncate).
+    TowardsZero = 1,
+    /// Round toward negative infinity.
+    Downward = 2,
+    /// Round toward positive infinity.
+    Upward = 3,
+}
+
+impl From<RoundingMode> for i32 {
+    #[inline(always)]
+    fn from(mode: RoundingMode) -> Self {
+        mode as i32
+    }
+}
 
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.
@@ -253,7 +266,7 @@ pub enum Error {
     EmptySlot = error_codes::EMPTY_SLOT,
 
     /// The requested ledger object could not be found.
-    /// This may occur if the object doesn't exist or the keylet is invalid.
+    /// This may occur if the object doesn't exist or the ledger entry ID is invalid.
     LedgerObjNotFound = error_codes::LEDGER_OBJ_NOT_FOUND,
 
     /// An error occurred while decoding serialized data.

@@ -376,7 +376,7 @@ async function main() {
   const outputFile =
     process.argv.length == 5
       ? process.argv[4]
-      : path.join(__dirname, "../xrpl-wasm-stdlib/src/tx_flags.rs")
+      : path.join(__dirname, "../xrpl-common-stdlib/src/tx_flags.rs")
   try {
     await fs.writeFile(outputFile, output, "utf8")
     console.log("File written successfully to", outputFile)

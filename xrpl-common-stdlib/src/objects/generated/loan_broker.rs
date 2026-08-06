@@ -7,8 +7,8 @@ const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 
 use crate::host::Result;
 use crate::host::error_codes::match_result_code_optional;
-use crate::host::get_current_ledger_obj_field;
-use crate::host::get_ledger_obj_field;
+use crate::host::home_le_field;
+use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -88,7 +88,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::DebtTotal.into(),
                 buffer.as_mut_ptr(),
@@ -104,7 +104,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::DebtMaximum.into(),
                 buffer.as_mut_ptr(),
@@ -119,7 +119,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::CoverAvailable.into(),
                 buffer.as_mut_ptr(),
@@ -213,13 +213,8 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     /// Raw bytes; NUMBER is not yet typed in Rust.
     fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            get_current_ledger_obj_field(
-                sfield::DebtTotal.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
+        let result_code =
+            unsafe { home_le_field(sfield::DebtTotal.into(), buffer.as_mut_ptr(), buffer.len()) };
         match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
     }
 
@@ -229,7 +224,7 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::DebtMaximum.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -243,7 +238,7 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::CoverAvailable.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),

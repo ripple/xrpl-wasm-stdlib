@@ -6,10 +6,10 @@ extern crate std;
 use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host;
 use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
-use xrpl_common_stdlib::host::get_tx_nested_field;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
+use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::keylets::XRPL_KEYLET_SIZE;
+use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
@@ -18,13 +18,13 @@ use xrpl_common_stdlib::types::contract_data::{
 };
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
-use xrpl_escrow_stdlib::ledger_objects::escrow::{Escrow, EscrowContractData};
+use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_macros::smart_escrow;
 
 // Security constants for validation
 const VALIDATION_FAILED: i32 = 0;
-const KEYLET_PLUS_TIMESTAMP_SIZE: usize = 36;
+const LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE: usize = 36;
 
 /*
 /// Validates if the provided WASM bytes represent a compatible atomic_swap2 contract.
@@ -55,9 +55,9 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// Extracts the first memo from the transaction.
 ///
 /// This function uses a Locator to navigate the transaction structure:
-/// - Memos[0].MemoData contains the counterpart escrow keylet
+/// - Memos[0].MemoData contains the counterpart escrow ledger entry ID
 /// - Returns the memo data as a byte array and its length
-/// - Used to get the 32-byte keylet of the counterpart escrow
+/// - Used to get the 32-byte ledger entry ID of the counterpart escrow
 #[unsafe(no_mangle)]
 pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
     let mut data: ContractData = ContractData {
@@ -69,7 +69,7 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
     locator.pack(0);
     locator.pack(sfield::MemoData);
     let result_code = unsafe {
-        get_tx_nested_field(
+        tx_inner(
             locator.as_ptr(),
             locator.num_packed_bytes(),
             data.data.as_mut_ptr(),
@@ -89,16 +89,16 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
 /// Phase 1: Initialization - validate counterpart escrow and set timing deadline.
 ///
 /// This function:
-/// 1. Extracts counterpart escrow keylet from transaction memo
+/// 1. Extracts counterpart escrow ledger entry ID from transaction memo
 /// 2. Loads and validates the counterpart escrow from the ledger
 /// 3. Verifies account reversal (A→B references B→A)
 /// 4. Retrieves CancelAfter as the swap deadline
-/// 5. Stores the counterpart keylet + deadline in the data field
+/// 5. Stores the counterpart ledger entry ID + deadline in the data field
 /// 6. Returns 0 to wait for Phase 2
 fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Phase 1: Initialization", 0);
 
-    // Extract the counterpart escrow keylet from transaction memo
+    // Extract the counterpart escrow ledger entry ID from transaction memo
     let (memo, memo_len) = match get_first_memo() {
         Ok(v) => match v {
             Some(v) => v,
@@ -116,14 +116,15 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         }
     };
 
-    // Validate memo contains a full 32-byte keylet
-    if memo_len != XRPL_KEYLET_SIZE {
+    // Validate memo contains a full 32-byte ledger entry ID
+    if memo_len != XRPL_LEDGER_ENTRY_ID_SIZE {
         let _ = trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
         return VALIDATION_FAILED;
     }
 
-    // Extract the counterpart escrow keylet (first 32 bytes of memo)
-    let counterpart_escrow_id: [u8; XRPL_KEYLET_SIZE] = memo.data[0..32].try_into().unwrap();
+    // Extract the counterpart escrow ledger entry ID (first 32 bytes of memo)
+    let counterpart_escrow_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] =
+        memo.data[0..32].try_into().unwrap();
     let _ = trace_data(
         "Counterpart escrow ID from memo:",
         &counterpart_escrow_id,
@@ -132,7 +133,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 
     // Load the counterpart escrow from the ledger
     let counterpart_slot = unsafe {
-        host::cache_ledger_obj(
+        host::cache_le(
             counterpart_escrow_id.as_ptr(),
             counterpart_escrow_id.len(),
             0,
@@ -150,8 +151,12 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Starting counterpart security validation", 0);
 
     // Data Field Validation: Verify counterpart's data field structure
-    let counterpart_data = match counterpart_escrow.get_data() {
-        Ok(data) => data,
+    let counterpart_data = match counterpart_escrow.data() {
+        Ok(Some(data)) => data,
+        Ok(None) => {
+            let _ = trace_num("Counterpart escrow has no data field", 0);
+            return VALIDATION_FAILED;
+        }
         Err(e) => {
             let _ = trace_num("Error getting counterpart data:", e.code() as i64);
             return e.code();
@@ -159,8 +164,8 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     };
 
     // For atomic_swap2: data must be 32 bytes (Phase 1) or 36 bytes (Phase 2)
-    if counterpart_data.len != XRPL_KEYLET_SIZE
-        && counterpart_data.len != KEYLET_PLUS_TIMESTAMP_SIZE
+    if counterpart_data.len != XRPL_LEDGER_ENTRY_ID_SIZE
+        && counterpart_data.len != LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE
     {
         let _ = trace_num(
             "Counterpart data field invalid length, expected 32 or 36 bytes, got:",
@@ -254,16 +259,16 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 
     let _ = trace_num("Current escrow CancelAfter:", cancel_after as i64);
 
-    // Build new data field: counterpart keylet (32 bytes) + CancelAfter (4 bytes)
+    // Build new data field: counterpart ledger entry ID (32 bytes) + CancelAfter (4 bytes)
     let mut new_data = xrpl_common_stdlib::types::contract_data::ContractData {
         data: [0u8; XRPL_CONTRACT_DATA_SIZE],
         len: 0,
     };
-    new_data.data[0..XRPL_KEYLET_SIZE].copy_from_slice(&counterpart_escrow_id);
+    new_data.data[0..XRPL_LEDGER_ENTRY_ID_SIZE].copy_from_slice(&counterpart_escrow_id);
     let cancel_after_bytes = cancel_after.to_le_bytes();
-    new_data.data[XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
+    new_data.data[XRPL_LEDGER_ENTRY_ID_SIZE..LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE]
         .copy_from_slice(&cancel_after_bytes);
-    new_data.len = KEYLET_PLUS_TIMESTAMP_SIZE;
+    new_data.len = LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE;
 
     let _ = trace_num("Updated data length:", new_data.len as i64);
     let _ = trace_data(
@@ -298,8 +303,8 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::ContractData) -> i32 {
     let _ = trace_num("Phase 2: Timing validation", 0);
 
-    // Validate data field contains at least 36 bytes (32 bytes keylet + 4 bytes timing)
-    if current_data.len < KEYLET_PLUS_TIMESTAMP_SIZE {
+    // Validate data field contains at least 36 bytes (32 bytes ledger entry ID + 4 bytes timing)
+    if current_data.len < LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE {
         let _ = trace_num(
             "Invalid data length for Phase 2, expected at least 36 bytes, got:",
             current_data.len as i64,
@@ -309,7 +314,7 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
 
     // Extract the CancelAfter timestamp from the last 4 bytes of data field
     let cancel_after_bytes: [u8; 4] = current_data.data
-        [XRPL_KEYLET_SIZE..KEYLET_PLUS_TIMESTAMP_SIZE]
+        [XRPL_LEDGER_ENTRY_ID_SIZE..LEDGER_ENTRY_ID_PLUS_TIMESTAMP_SIZE]
         .try_into()
         .unwrap();
     let cancel_after = u32::from_le_bytes(cancel_after_bytes);
@@ -318,7 +323,7 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
     // Get current ledger time for deadline comparison
     let mut time_buffer = [0u8; 4];
     let time_result =
-        unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
+        unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
     let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
         u32::from_le_bytes(time_buffer)
@@ -347,9 +352,9 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
 /// This function implements a stateful atomic swap using the escrow's data field:
 ///
 /// PHASE 1 (data.len == 0):
-/// 1. Extracts counterpart escrow keylet from transaction memo
+/// 1. Extracts counterpart escrow ledger entry ID from transaction memo
 /// 2. Validates the counterpart escrow exists and accounts are reversed
-/// 3. Stores counterpart keylet + CancelAfter timestamp in data field
+/// 3. Stores counterpart ledger entry ID + CancelAfter timestamp in data field
 /// 4. Returns 0 (failure) to wait for the second execution
 ///
 /// PHASE 2 (data.len > 0):
@@ -380,7 +385,7 @@ fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
 
     // STATE MACHINE: Determine execution phase based on data field length
     // Phase 1: data.len == 0 (no state stored yet)
-    // Phase 2: data.len >= 36 (contains counterpart keylet + timing data)
+    // Phase 2: data.len >= 36 (contains counterpart ledger entry ID + timing data)
     if current_data.len == 0 {
         phase1_initialize(current_escrow)
     } else {

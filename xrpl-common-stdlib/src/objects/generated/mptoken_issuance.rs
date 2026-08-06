@@ -95,6 +95,29 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
     fn mutable_flags(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MutableFlags)
     }
+
+    /// The ReferenceHolding field (Optional).
+    fn reference_holding(&self) -> Result<Option<Hash256>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ReferenceHolding)
+    }
+
+    /// The IssuerEncryptionKey field (Optional).
+    fn issuer_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerEncryptionKey)
+    }
+
+    /// The AuditorEncryptionKey field (Optional).
+    fn auditor_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptionKey)
+    }
+
+    /// The ConfidentialOutstandingAmount field (Optional).
+    fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
+        ledger_object::get_field_optional(
+            self.get_slot_num(),
+            sfield::ConfidentialOutstandingAmount,
+        )
+    }
 }
 
 /// Trait providing access to fields specific to the current MPTokenIssuance object.
@@ -183,6 +206,26 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
     fn mutable_flags(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::MutableFlags)
     }
+
+    /// The ReferenceHolding field (Optional).
+    fn reference_holding(&self) -> Result<Option<Hash256>> {
+        current_ledger_object::get_field_optional(sfield::ReferenceHolding)
+    }
+
+    /// The IssuerEncryptionKey field (Optional).
+    fn issuer_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::IssuerEncryptionKey)
+    }
+
+    /// The AuditorEncryptionKey field (Optional).
+    fn auditor_encryption_key(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::AuditorEncryptionKey)
+    }
+
+    /// The ConfidentialOutstandingAmount field (Optional).
+    fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
+        current_ledger_object::get_field_optional(sfield::ConfidentialOutstandingAmount)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -233,6 +276,10 @@ mod tests {
         assert!(obj.mptoken_metadata().is_ok());
         assert!(obj.domain_id().is_ok());
         assert!(obj.mutable_flags().is_ok());
+        assert!(obj.reference_holding().is_ok());
+        assert!(obj.issuer_encryption_key().is_ok());
+        assert!(obj.auditor_encryption_key().is_ok());
+        assert!(obj.confidential_outstanding_amount().is_ok());
     }
 
     #[test]
@@ -249,5 +296,7 @@ mod tests {
         assert!(obj.locked_amount().unwrap().is_none());
         assert!(obj.domain_id().unwrap().is_none());
         assert!(obj.mutable_flags().unwrap().is_none());
+        assert!(obj.reference_holding().unwrap().is_none());
+        assert!(obj.confidential_outstanding_amount().unwrap().is_none());
     }
 }

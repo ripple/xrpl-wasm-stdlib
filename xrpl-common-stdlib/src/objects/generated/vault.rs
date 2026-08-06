@@ -7,8 +7,8 @@ const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 
 use crate::host::Result;
 use crate::host::error_codes::match_result_code_optional;
-use crate::host::get_current_ledger_obj_field;
-use crate::host::get_ledger_obj_field;
+use crate::host::home_le_field;
+use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -67,7 +67,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::AssetsTotal.into(),
                 buffer.as_mut_ptr(),
@@ -82,7 +82,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::AssetsAvailable.into(),
                 buffer.as_mut_ptr(),
@@ -98,7 +98,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::AssetsMaximum.into(),
                 buffer.as_mut_ptr(),
@@ -114,7 +114,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::LossUnrealized.into(),
                 buffer.as_mut_ptr(),
@@ -194,7 +194,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::AssetsTotal.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -208,7 +208,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::AssetsAvailable.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -223,7 +223,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::AssetsMaximum.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),
@@ -238,7 +238,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::LossUnrealized.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),

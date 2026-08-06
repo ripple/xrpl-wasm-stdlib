@@ -142,7 +142,7 @@ mod tests {
     // Test helper functions
     // ========================================
 
-    /// Helper to set up a mock expectation for get_current_ledger_obj_field
+    /// Helper to set up a mock expectation for home_le_field
     ///
     /// Sets up a mock expectation that will match calls with:
     /// - field: The SField with the specified CODE
@@ -159,13 +159,13 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_current_ledger_obj_field()
+        mock.expect_home_le_field()
             .with(eq(CODE), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
     }
 
-    /// Helper to set up a mock expectation for get_ledger_obj_field
+    /// Helper to set up a mock expectation for le_field
     ///
     /// Sets up a mock expectation that will match calls with:
     /// - slot: The ledger object slot number
@@ -184,7 +184,7 @@ mod tests {
         size: usize,
         times: usize,
     ) {
-        mock.expect_get_ledger_obj_field()
+        mock.expect_le_field()
             .with(eq(slot), eq(CODE), always(), eq(size))
             .times(times)
             .returning(move |_, _, _, _| size as i32);
@@ -217,7 +217,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INTERNAL_ERROR
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -235,7 +235,7 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
                 .returning(|_, _, _, _| INTERNAL_ERROR);
@@ -254,7 +254,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INVALID_FIELD
-            mock.expect_get_ledger_obj_field()
+            mock.expect_le_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _, _| INVALID_FIELD);
@@ -299,7 +299,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INTERNAL_ERROR
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -317,7 +317,7 @@ mod tests {
         fn test_get_ledger_entry_type_returns_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
                 .returning(|_, _, _| INTERNAL_ERROR);
@@ -336,7 +336,7 @@ mod tests {
             let mut mock = MockHostBindings::new();
 
             // get_flags with INVALID_FIELD
-            mock.expect_get_current_ledger_obj_field()
+            mock.expect_home_le_field()
                 .with(eq(sfield::Flags), always(), eq(4))
                 .times(1)
                 .returning(|_, _, _| INVALID_FIELD);

@@ -5,6 +5,7 @@ use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
+use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
 use crate::types::uint::Hash256;
 
@@ -79,6 +80,16 @@ pub trait RippleStateFields: LedgerObjectCommonFields {
     fn high_quality_out(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityOut)
     }
+
+    /// The HighSponsor field (Optional).
+    fn high_sponsor(&self) -> Result<Option<AccountID>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::HighSponsor)
+    }
+
+    /// The LowSponsor field (Optional).
+    fn low_sponsor(&self) -> Result<Option<AccountID>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LowSponsor)
+    }
 }
 
 /// Trait providing access to fields specific to the current RippleState object.
@@ -152,6 +163,16 @@ pub trait CurrentRippleStateFields: CurrentLedgerObjectCommonFields {
     fn high_quality_out(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::HighQualityOut)
     }
+
+    /// The HighSponsor field (Optional).
+    fn high_sponsor(&self) -> Result<Option<AccountID>> {
+        current_ledger_object::get_field_optional(sfield::HighSponsor)
+    }
+
+    /// The LowSponsor field (Optional).
+    fn low_sponsor(&self) -> Result<Option<AccountID>> {
+        current_ledger_object::get_field_optional(sfield::LowSponsor)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -200,6 +221,8 @@ mod tests {
         assert!(obj.high_node().is_ok());
         assert!(obj.high_quality_in().is_ok());
         assert!(obj.high_quality_out().is_ok());
+        assert!(obj.high_sponsor().is_ok());
+        assert!(obj.low_sponsor().is_ok());
     }
 
     #[test]
@@ -216,5 +239,7 @@ mod tests {
         assert!(obj.high_node().unwrap().is_none());
         assert!(obj.high_quality_in().unwrap().is_none());
         assert!(obj.high_quality_out().unwrap().is_none());
+        assert!(obj.high_sponsor().unwrap().is_none());
+        assert!(obj.low_sponsor().unwrap().is_none());
     }
 }

@@ -2,7 +2,7 @@
 # Generate SField constants from rippled source
 # This script generates type-safe SField constants for the XRPL WASM Standard Library.
 # It also regenerates the STI_* type-code constants in
-# xrpl-wasm-stdlib/src/core/type_codes.rs from the contract rippled source.
+# xrpl-common-stdlib/src/type_codes.rs from the contract rippled source.
 #
 # Fields are sourced from two rippled branches: escrow-side fields are always
 # taken from the escrow branch (so a rename there is picked up automatically

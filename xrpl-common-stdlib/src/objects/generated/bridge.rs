@@ -7,8 +7,8 @@ const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 
 use crate::host::Result;
 use crate::host::error_codes::match_result_code;
-use crate::host::get_current_ledger_obj_field;
-use crate::host::get_ledger_obj_field;
+use crate::host::home_le_field;
+use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -42,7 +42,7 @@ pub trait BridgeFields: LedgerObjectCommonFields {
     fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_ledger_obj_field(
+            le_field(
                 self.get_slot_num(),
                 sfield::XChainBridge.into(),
                 buffer.as_mut_ptr(),
@@ -115,7 +115,7 @@ pub trait CurrentBridgeFields: CurrentLedgerObjectCommonFields {
     fn xchain_bridge(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
         let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
         let result_code = unsafe {
-            get_current_ledger_obj_field(
+            home_le_field(
                 sfield::XChainBridge.into(),
                 buffer.as_mut_ptr(),
                 buffer.len(),

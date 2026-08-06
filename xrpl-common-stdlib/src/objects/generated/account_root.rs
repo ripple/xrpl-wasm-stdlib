@@ -126,6 +126,21 @@ pub trait AccountRootFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FirstNFTokenSequence)
     }
 
+    /// The SponsoredOwnerCount field (Optional).
+    fn sponsored_owner_count(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoredOwnerCount)
+    }
+
+    /// The SponsoringOwnerCount field (Optional).
+    fn sponsoring_owner_count(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoringOwnerCount)
+    }
+
+    /// The SponsoringAccountCount field (Optional).
+    fn sponsoring_account_count(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoringAccountCount)
+    }
+
     /// If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted
     /// on non-AMM accounts. Contains the ledger entry ID of the corresponding AMM ledger entry. Set
     /// during account creation; cannot be modified.
@@ -262,6 +277,21 @@ pub trait CurrentAccountRootFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::FirstNFTokenSequence)
     }
 
+    /// The SponsoredOwnerCount field (Optional).
+    fn sponsored_owner_count(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SponsoredOwnerCount)
+    }
+
+    /// The SponsoringOwnerCount field (Optional).
+    fn sponsoring_owner_count(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SponsoringOwnerCount)
+    }
+
+    /// The SponsoringAccountCount field (Optional).
+    fn sponsoring_account_count(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SponsoringAccountCount)
+    }
+
     /// If present, indicates that this is a special AMM pseudo-account AccountRoot; always omitted
     /// on non-AMM accounts. Contains the ledger entry ID of the corresponding AMM ledger entry. Set
     /// during account creation; cannot be modified.
@@ -337,6 +367,9 @@ mod tests {
         assert!(obj.minted_nftokens().is_ok());
         assert!(obj.burned_nftokens().is_ok());
         assert!(obj.first_nftoken_sequence().is_ok());
+        assert!(obj.sponsored_owner_count().is_ok());
+        assert!(obj.sponsoring_owner_count().is_ok());
+        assert!(obj.sponsoring_account_count().is_ok());
         assert!(obj.amm_id().is_ok());
         assert!(obj.vault_id().is_ok());
         assert!(obj.loan_broker_id().is_ok());
@@ -362,6 +395,9 @@ mod tests {
         assert!(obj.minted_nftokens().unwrap().is_none());
         assert!(obj.burned_nftokens().unwrap().is_none());
         assert!(obj.first_nftoken_sequence().unwrap().is_none());
+        assert!(obj.sponsored_owner_count().unwrap().is_none());
+        assert!(obj.sponsoring_owner_count().unwrap().is_none());
+        assert!(obj.sponsoring_account_count().unwrap().is_none());
         assert!(obj.amm_id().unwrap().is_none());
         assert!(obj.vault_id().unwrap().is_none());
         assert!(obj.loan_broker_id().unwrap().is_none());

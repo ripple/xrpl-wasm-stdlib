@@ -41,7 +41,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(escrowResult.sequence),
-    ComputationAllowance: 1000000, // required: WASM execution budget
+    Gas: 1000000, // required: WASM execution budget
   }
 
   const response = await submit(tx, sourceWallet)
@@ -57,7 +57,7 @@ async function test(testContext) {
 module.exports = { test }
 ```
 
-The harness supplies `testContext`: `deploy(sourceWallet, destWallet, wasmBytes)` creates an `EscrowCreate` with the compiled WASM as `FinishFunction`; `finish` is the compiled WASM bytes; `submit(tx, wallet)` signs, submits, and waits for validation; `sourceWallet`/`destWallet` are pre-funded test accounts. Multi-contract patterns (atomic swap) call `deploy`/`submit` twice, once per side, in the order the swap requires.
+The harness supplies `testContext`: `deploy(sourceWallet, destWallet, wasmBytes)` creates an `EscrowCreate` with the compiled WASM as `Bytecode`; `finish` is the compiled WASM bytes; `submit(tx, wallet)` signs, submits, and waits for validation; `sourceWallet`/`destWallet` are pre-funded test accounts. Multi-contract patterns (atomic swap) call `deploy`/`submit` twice, once per side, in the order the swap requires.
 
 Run it:
 
@@ -79,7 +79,7 @@ Build release, then upload the `.wasm` at `https://ripple.github.io/xrpl-wasm-st
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `FieldNotFound`                                  | Reading an optional field that isn't set on this tx/object, or a typo'd `sfield` constant / wrong nesting via `Locator`                |
 | Buffer overflow / truncated read                 | Destination buffer smaller than the field's actual size (check `Blob<N>` capacity, `ContractData` is 1024 bytes)                       |
-| `NoFreeSlots`                                    | Too many `cache_ledger_obj` calls in one execution — cache the slot and reuse it instead of re-resolving the same keylet               |
+| `NoFreeSlots`                                    | Too many `cache_le` calls in one execution — cache the slot and reuse it instead of re-resolving the same ledger entry ID              |
 | Escrow finishes when it shouldn't, or vice versa | Check the actual `i32` returned — `FinishResult`/`i32` boolean coercion (`(cond as i32)`) is easy to get backwards; positive = release |
 
 Add `trace`/`trace_num` calls on both success and failure paths during development (see [api-surface.md](api-surface.md)); they show up in rippled's `debug.log`. Always create a **fresh escrow per test run** — an already-finished or already-cancelled escrow can't be re-tested.

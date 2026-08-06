@@ -9,29 +9,29 @@ async function test(testContext) {
   // Deploy first escrow that atomic_swap2 will reference
   const firstEscrowResult = await deploy(sourceWallet, destWallet, finish)
 
-  // Create atomic_swap2 escrow with first escrow's keylet in data field
+  // Create atomic_swap2 escrow with first escrow's ledger entry ID in data field
   const atomicSwap2Result = await deploy(
     destWallet,
     sourceWallet,
     finish,
-    firstEscrowResult.escrowKeylet, // 32-byte keylet in data field
+    firstEscrowResult.escrowId, // 32-byte ledger entry ID in data field
   )
 
-  // Phase 1: First finish attempt should initialize timing and return tecWASM_REJECTED
+  // Phase 1: First finish attempt should initialize timing and return tecBYTECODE_REJECTED
   // The contract returns 0 to indicate "wait for phase 2", but data update persists
   const txPhase1 = {
     TransactionType: "EscrowFinish",
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(atomicSwap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responsePhase1 = await submit(txPhase1, destWallet)
 
-  if (responsePhase1.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (responsePhase1.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
-      "\nPhase 1 expected tecWASM_REJECTED, got:",
+      "\nPhase 1 expected tecBYTECODE_REJECTED, got:",
       responsePhase1.result.meta.TransactionResult,
     )
     process.exit(1)
@@ -54,7 +54,7 @@ async function test(testContext) {
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(atomicSwap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responsePhase2 = await submit(txPhase2, destWallet)
@@ -91,14 +91,15 @@ async function test(testContext) {
       Account: destWallet.address,
       Owner: destWallet.address,
       OfferSequence: parseInt(invalidDataEscrow.sequence),
-      ComputationAllowance: 1000000,
+      Gas: 1000000,
     }
 
     const responseInvalidData = await submit(txInvalidData, destWallet)
 
     // Should fail due to invalid data field length
     if (
-      responseInvalidData.result.meta.TransactionResult !== "tecWASM_REJECTED"
+      responseInvalidData.result.meta.TransactionResult !==
+      "tecBYTECODE_REJECTED"
     ) {
       console.error(
         "\nSecurity test failed: escrow with invalid data should have been rejected:",
@@ -111,26 +112,23 @@ async function test(testContext) {
   }
 
   // Security test: Try to reference non-existent escrow
-  const fakeKeylet = "A".repeat(64) // 32 bytes of 0xAA
-  const fakeRefEscrow = await deploy(
-    destWallet,
-    sourceWallet,
-    finish,
-    fakeKeylet,
-  )
+  const fakeId = "A".repeat(64) // 32 bytes of 0xAA
+  const fakeRefEscrow = await deploy(destWallet, sourceWallet, finish, fakeId)
 
   const txFakeRef = {
     TransactionType: "EscrowFinish",
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(fakeRefEscrow.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseFakeRef = await submit(txFakeRef, destWallet)
 
   // Should fail due to non-existent referenced escrow
-  if (responseFakeRef.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (
+    responseFakeRef.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
+  ) {
     console.error(
       "\nSecurity test failed: escrow with fake reference should have been rejected:",
       responseFakeRef.result.meta.TransactionResult,

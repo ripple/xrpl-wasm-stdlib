@@ -10,7 +10,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: sequence,
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseFail = await submit(txFail, sourceWallet)

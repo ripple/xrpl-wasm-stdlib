@@ -25,7 +25,7 @@
 //! companion crates (`xrpl-escrow-stdlib` for escrow flows).
 
 use crate::fields::decoder::{FromCurrentTx, decode_host_result};
-use crate::host::{Error, Result, get_tx_field};
+use crate::host::{Error, Result, tx_field};
 use crate::sfield::SField;
 use crate::types::blob::Blob;
 use core::mem::MaybeUninit;
@@ -57,7 +57,7 @@ pub fn get_field<T: FromCurrentTx, const CODE: i32>(_: SField<T, CODE>) -> Resul
     let mut buf = T::empty_buffer();
     let n = {
         let slice = buf.as_mut();
-        unsafe { get_tx_field(CODE, slice.as_mut_ptr(), slice.len()) }
+        unsafe { tx_field(CODE, slice.as_mut_ptr(), slice.len()) }
     };
     decode_host_result::<T>(buf, n)
 }
@@ -124,7 +124,7 @@ pub fn get_blob_field<const N: usize, const CODE: i32>(
     // directly. Zeroing in place (rather than in a separate scratch buffer) costs the same one
     // `memset` the old code paid anyway, just at the final address instead of a temporary one.
     unsafe { core::ptr::write_bytes(data_ptr, 0u8, N) };
-    let n = unsafe { get_tx_field(CODE, data_ptr, N) };
+    let n = unsafe { tx_field(CODE, data_ptr, N) };
     if n < 0 {
         return Result::Err(Error::from_code(n));
     }
@@ -168,7 +168,7 @@ mod tests {
     use mockall::predicate::{always, eq};
 
     fn expect_tx_field(mock: &mut MockHostBindings, field_code: i32, size: usize, times: usize) {
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq(field_code), always(), eq(size))
             .times(times)
             .returning(move |_, _, _| size as i32);
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn test_get_field_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::SourceTag.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| FIELD_NOT_FOUND);
@@ -215,7 +215,7 @@ mod tests {
         // u32's FieldDecoder requires exactly 4 bytes; a shorter write fails the length check
         // and surfaces as InvalidDecoding.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| 3);
@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn test_get_field_returns_err_on_internal_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
@@ -266,7 +266,7 @@ mod tests {
         // A conformant host can't write past the buffer it was handed; a positive count larger
         // than the buffer is reported as PointerOutOfBounds.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::Sequence.into()), always(), eq(4))
             .times(1)
             .returning(|_, _, _| 8); // claims 8 bytes into a 4-byte u32 buffer
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_writes_bytes_directly_into_blob_data() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, buf, size| {
@@ -304,7 +304,7 @@ mod tests {
         // A short write (e.g. an empty/undersized field) must leave the tail zeroed, not
         // uninitialized -- `Blob::data` is `pub`, so callers may read past `len` directly.
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, buf, _size| {
@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_returns_err_on_internal_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, _, _| INTERNAL_ERROR);
@@ -338,7 +338,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_returns_err_when_host_reports_oversized_write() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, _, _| 34); // claims 34 bytes into a 33-byte buffer
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_optional_returns_none_on_field_not_found() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, _, _| FIELD_NOT_FOUND);
@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn test_get_blob_field_optional_returns_some_when_present() {
         let mut mock = MockHostBindings::new();
-        mock.expect_get_tx_field()
+        mock.expect_tx_field()
             .with(eq::<i32>(sfield::PublicKey.into()), always(), eq(33))
             .times(1)
             .returning(|_, _, _| 33);

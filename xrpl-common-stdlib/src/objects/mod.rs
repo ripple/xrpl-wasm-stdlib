@@ -8,7 +8,7 @@
 //!
 //! Two entry points, mirroring the transaction side:
 //!
-//! - [`ledger_object`] — read from a ledger object cached into a slot (via `cache_ledger_obj`).
+//! - [`ledger_object`] — read from a ledger object cached into a slot (via `cache_le`).
 //! - [`current_ledger_object`] — read from the current ledger object, without a slot.
 //!
 //! Both are the generic `FieldDecoder`-based accessors re-exported from [`crate::fields`]; see
@@ -56,15 +56,15 @@ pub use generated::{
     CurrentNFTokenOfferFields, CurrentNFTokenPageFields, CurrentNegativeUNLFields,
     CurrentOfferFields, CurrentOracleFields, CurrentPayChannelFields,
     CurrentPermissionedDomainFields, CurrentRippleStateFields, CurrentSignerListFields,
-    CurrentTicketFields, CurrentVaultFields, CurrentXChainOwnedClaimIDFields,
-    CurrentXChainOwnedCreateAccountClaimIDFields, DID, DIDFields, Delegate, DelegateFields,
-    DepositPreauth, DepositPreauthFields, DirectoryNode, DirectoryNodeFields, Escrow, EscrowFields,
-    FeeSettings, FeeSettingsFields, LedgerHashes, LedgerHashesFields, Loan, LoanBroker,
-    LoanBrokerFields, LoanFields, MPToken, MPTokenFields, MPTokenIssuance, MPTokenIssuanceFields,
-    NFTokenOffer, NFTokenOfferFields, NFTokenPage, NFTokenPageFields, NegativeUNL,
-    NegativeUNLFields, Offer, OfferFields, Oracle, OracleFields, PayChannel, PayChannelFields,
-    PermissionedDomain, PermissionedDomainFields, RippleState, RippleStateFields, SignerList,
-    SignerListFields, Ticket, TicketFields, Vault, VaultFields, XChainOwnedClaimID,
-    XChainOwnedClaimIDFields, XChainOwnedCreateAccountClaimID,
-    XChainOwnedCreateAccountClaimIDFields,
+    CurrentSponsorshipFields, CurrentTicketFields, CurrentVaultFields,
+    CurrentXChainOwnedClaimIDFields, CurrentXChainOwnedCreateAccountClaimIDFields, DID, DIDFields,
+    Delegate, DelegateFields, DepositPreauth, DepositPreauthFields, DirectoryNode,
+    DirectoryNodeFields, Escrow, EscrowFields, FeeSettings, FeeSettingsFields, LedgerHashes,
+    LedgerHashesFields, Loan, LoanBroker, LoanBrokerFields, LoanFields, MPToken, MPTokenFields,
+    MPTokenIssuance, MPTokenIssuanceFields, NFTokenOffer, NFTokenOfferFields, NFTokenPage,
+    NFTokenPageFields, NegativeUNL, NegativeUNLFields, Offer, OfferFields, Oracle, OracleFields,
+    PayChannel, PayChannelFields, PermissionedDomain, PermissionedDomainFields, RippleState,
+    RippleStateFields, SignerList, SignerListFields, Sponsorship, SponsorshipFields, Ticket,
+    TicketFields, Vault, VaultFields, XChainOwnedClaimID, XChainOwnedClaimIDFields,
+    XChainOwnedCreateAccountClaimID, XChainOwnedCreateAccountClaimIDFields,
 };
