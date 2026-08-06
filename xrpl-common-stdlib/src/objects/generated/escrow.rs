@@ -6,7 +6,8 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::blob::{ConditionBlob, StandardBlob, WasmBlob};
+use crate::types::blob::{ConditionBlob, WasmBlob};
+use crate::types::contract_data::ContractData;
 use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Escrow objects in any ledger.
@@ -59,7 +60,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
     }
 
     /// The Data field (Optional).
-    fn data(&self) -> Result<Option<StandardBlob>> {
+    fn data(&self) -> Result<Option<ContractData>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Data)
     }
 

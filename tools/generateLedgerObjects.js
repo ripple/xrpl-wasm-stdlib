@@ -245,11 +245,25 @@ const SLOT_ONLY_ENTRIES = new Set(["Escrow"])
 // generated like any other field.
 const PER_ENTRY_EXCLUDED_FIELDS = {}
 
+// Per-entry Rust-type overrides, keyed by className then sfName. Unlike the
+// global `customFieldTypes` in sfieldTypeMap.js (shared with the sfield
+// generator, so keyed by field name across every entry), this narrows an
+// override to one field on one entry. Escrow's `Data` is the standard
+// 1024-byte blob, but it carries host-mutable contract-storage semantics, so it
+// renders as the `ContractData` alias to keep the generated read (`data()`) and
+// the hand-written write (`set_data`) speaking one named type. `ContractData`
+// is a transparent alias of `StandardBlob`, so the getter is byte-identical --
+// only the rendered type name changes.
+const PER_ENTRY_FIELD_TYPES = {
+  Escrow: { Data: "ContractData" },
+}
+
 // Rust types with a single, fixed import path, used for field-getter return
 // types that don't live in crate::types::blob or crate::types::uint.
 const SIMPLE_TYPE_IMPORTS = {
   AccountID: "crate::types::account_id::AccountID",
   Amount: "crate::types::amount::Amount",
+  ContractData: "crate::types::contract_data::ContractData",
   Currency: "crate::types::currency::Currency",
   Issue: "crate::types::issue::Issue",
   MptId: "crate::types::mpt_id::MptId",
@@ -313,7 +327,10 @@ function resolveEntryFields(entry, sfieldTypes, unmapped) {
       continue
     }
 
-    out.push({ kind: "field", field, rustType })
+    const perEntryType = PER_ENTRY_FIELD_TYPES[entry.className]
+    const overriddenType =
+      (perEntryType && perEntryType[field.sfName]) || rustType
+    out.push({ kind: "field", field, rustType: overriddenType })
   }
   return out
 }
