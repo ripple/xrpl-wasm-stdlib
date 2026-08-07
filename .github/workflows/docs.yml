@@ -30,7 +30,7 @@ jobs:
 
       - name: Upload documentation files as artifact
         id: docs-artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: target/doc
           retention-days: 10
