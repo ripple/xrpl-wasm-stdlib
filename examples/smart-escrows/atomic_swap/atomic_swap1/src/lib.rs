@@ -151,8 +151,12 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let _ = trace_num("Starting counterpart security validation", 0);
 
     // Data Field Validation: Verify counterpart's data field structure
-    let counterpart_data = match counterpart_escrow.get_data() {
-        Ok(data) => data,
+    let counterpart_data = match counterpart_escrow.data() {
+        Ok(Some(data)) => data,
+        Ok(None) => {
+            let _ = trace_num("Counterpart escrow has no data field", 0);
+            return VALIDATION_FAILED;
+        }
         Err(e) => {
             let _ = trace_num("Error getting counterpart data:", e.code() as i64);
             return e.code();
@@ -194,7 +198,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     };
 
     // Get counterpart escrow's account and destination fields
-    let counterpart_account = match counterpart_escrow.get_account() {
+    let counterpart_account = match counterpart_escrow.account() {
         Ok(account) => account,
         Err(e) => {
             let _ = trace_num("Error getting counterpart escrow account:", e.code() as i64);
@@ -202,7 +206,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
         }
     };
 
-    let counterpart_destination = match counterpart_escrow.get_destination() {
+    let counterpart_destination = match counterpart_escrow.destination() {
         Ok(destination) => destination,
         Err(e) => {
             let _ = trace_num(

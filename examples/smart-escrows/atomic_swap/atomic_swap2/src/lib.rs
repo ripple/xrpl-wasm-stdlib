@@ -171,7 +171,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         */
 
         // 2. Account Reversal Validation: Verify proper account setup between escrows
-        let first_account = match first_escrow.get_account() {
+        let first_account = match first_escrow.account() {
             Ok(account) => account,
             Err(e) => {
                 let _ = trace_num("Error getting first escrow account:", e.code() as i64);
@@ -179,7 +179,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
             }
         };
 
-        let first_destination = match first_escrow.get_destination() {
+        let first_destination = match first_escrow.destination() {
             Ok(destination) => destination,
             Err(e) => {
                 let _ = trace_num("Error getting first escrow destination:", e.code() as i64);

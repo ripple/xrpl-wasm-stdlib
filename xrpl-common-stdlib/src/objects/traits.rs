@@ -1,16 +1,17 @@
 //! Generic ledger-object field accessor traits.
 //!
-//! Escrow-specific traits live in the `xrpl-escrow-stdlib` crate.
+//! The base traits `LedgerObjectCommonFields` / `CurrentLedgerObjectCommonFields` are
+//! hand-written here (no field is common to every ledger entry). Every per-ledger-entry
+//! field trait (`AccountRootFields`, `EscrowFields`, `OracleFields`, etc.) is generated in
+//! `crate::objects::generated` and re-exported from `crate::objects`; a couple are also
+//! re-exported here for a stable `objects::traits::*` import path.
+
+pub use crate::objects::generated::{AccountRootFields, EscrowFields};
 
 use crate::fields::locator::LedgerPathBuilder;
-use crate::host::{Error, Result, Result::Err, Result::Ok, le_field};
+use crate::host::Result;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
-use crate::types::account_id::AccountID;
-use crate::types::amount::Amount;
-use crate::types::blob::{ConditionBlob, PublicKeyBlob, UriBlob, WasmBlob};
-use crate::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
-use crate::types::uint::{Hash128, Hash256};
 
 /// Trait providing access to common fields present in all ledger objects.
 ///
@@ -31,7 +32,7 @@ pub trait LedgerObjectCommonFields {
     /// The slot number as an i32 value
     fn get_slot_num(&self) -> i32;
 
-    /// Starts an inner-field path rooted at this ledger object, read through its slot.
+    /// Starts a nested-field path rooted at this ledger object, read through its slot.
     ///
     /// Use this to reach into arrays and inner objects that the flat getters below can't return
     /// whole (e.g. `SignerEntries[0].Account`). Chain [`field`](LedgerPathBuilder::field) /
@@ -88,7 +89,7 @@ pub trait CurrentLedgerObjectCommonFields {
     // object (it's a synthetic field that maps to the `index` field, which is the unique ID of an object in the
     // ledger's state tree). See https://github.com/XRPLF/rippled/issues/3649 for more context.
 
-    /// Starts an inner-field path rooted at the current ledger object (no slot).
+    /// Starts a nested-field path rooted at the current ledger object (no slot).
     ///
     /// Use this to reach into arrays and inner objects that the flat getters below can't return
     /// whole. Chain [`field`](LedgerPathBuilder::field) / [`index`](LedgerPathBuilder::index), then
@@ -127,258 +128,13 @@ pub trait CurrentLedgerObjectCommonFields {
     }
 }
 
-/// Trait providing access to fields specific to Escrow objects in any ledger.
-///
-/// This trait extends `LedgerObjectCommonFields` and provides methods to access
-/// fields that are specific to Escrow objects in any ledger, not just the current one.
-/// Each method requires a register number to identify which ledger object to access.
-pub trait EscrowFields: LedgerObjectCommonFields {
-    /// The address of the owner (sender) of this escrow. This is the account that provided the XRP
-    /// and gets it back if the escrow is canceled.
-    fn get_account(&self) -> Result<AccountID> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Account)
-    }
-
-    /// The amount of XRP, in drops, currently held in the escrow.
-    fn get_amount(&self) -> Result<Amount> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Amount)
-    }
-
-    /// The escrow can be canceled if and only if this field is present and the time it specifies
-    /// has passed. Specifically, this is specified as seconds since the Ripple Epoch and it
-    /// "has passed" if it's earlier than the close time of the previous validated ledger.
-    fn get_cancel_after(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::CancelAfter)
-    }
-
-    /// A PREIMAGE-SHA-256 crypto-condition in full crypto-condition format. If present, the EscrowFinish
-    /// transaction must contain a fulfillment that satisfies this condition.
-    fn get_condition(&self) -> Result<Option<ConditionBlob>> {
-        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Condition)
-    }
-
-    /// The destination address where the XRP is paid if the escrow is successful.
-    fn get_destination(&self) -> Result<AccountID> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Destination)
-    }
-
-    /// A hint indicating which page of the destination's owner directory links to this object, in
-    /// case the directory consists of multiple pages. Omitted on escrows created before enabling the fix1523 amendment.
-    fn get_destination_node(&self) -> Result<Option<u64>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationNode)
-    }
-
-    /// An arbitrary tag to further specify the destination for this escrow, such as a hosted
-    /// recipient at the destination address.
-    fn get_destination_tag(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::DestinationTag)
-    }
-
-    /// The time, in seconds since the Ripple Epoch, after which this escrow can be finished. Any
-    /// EscrowFinish transaction before this time fails. (Specifically, this is compared with the
-    /// close time of the previous validated ledger.)
-    fn get_finish_after(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishAfter)
-    }
-
-    /// A hint indicating which page of the sender's owner directory links to this entry, in case
-    /// the directory consists of multiple pages.
-    fn get_owner_node(&self) -> Result<u64> {
-        ledger_object::get_field(self.get_slot_num(), sfield::OwnerNode)
-    }
-
-    /// The identifying hash of the transaction that most recently modified this entry.
-    fn get_previous_txn_id(&self) -> Result<Hash256> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
-    }
-
-    /// The index of the ledger that contains the transaction that most recently modified this
-    /// entry.
-    fn get_previous_txn_lgr_seq(&self) -> Result<u32> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
-    }
-
-    /// An arbitrary tag to further specify the source for this escrow, such as a hosted recipient
-    /// at the owner's address.
-    fn get_source_tag(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::SourceTag)
-    }
-
-    /// The WASM code that is executing.
-    fn get_bytecode(&self) -> Result<Option<WasmBlob>> {
-        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Bytecode)
-    }
-
-    /// Retrieves the contract data from the specified ledger object.
-    ///
-    /// This function fetches the `data` field from the ledger object at the specified register
-    /// and returns it as a ContractData structure. The data is read into a fixed-size buffer
-    /// of XRPL_CONTRACT_DATA_SIZE.
-    ///
-    /// # Arguments
-    ///
-    /// * `register_num` - The register number where the ledger object is stored
-    ///
-    /// # Returns
-    ///
-    /// Returns a `Result<ContractData>` where:
-    /// * `Ok(ContractData)` - Contains the retrieved data and its actual length
-    /// * `Err(Error)` - If the retrieval operation failed
-    fn get_data(&self) -> Result<ContractData> {
-        let mut data: [u8; XRPL_CONTRACT_DATA_SIZE] = [0; XRPL_CONTRACT_DATA_SIZE];
-
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::Data.into(),
-                data.as_mut_ptr(),
-                data.len(),
-            )
-        };
-
-        match result_code {
-            code if code >= 0 => Ok(ContractData {
-                data,
-                len: code as usize,
-            }),
-            code => Err(Error::from_code(code)),
-        }
-    }
-}
-
-/// Trait providing access to fields specific to AccountRoot objects in any ledger.
-///
-/// This trait extends `LedgerObjectCommonFields` and provides methods to access
-/// fields that are specific to Escrow objects in any ledger, not just the current one.
-/// Each method requires a register number to identify which ledger object to access.
-pub trait AccountFields: LedgerObjectCommonFields {
-    /// The identifying address of the account.
-    fn get_account(&self) -> Result<AccountID> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Account)
-    }
-
-    /// AccountTxnID field for the account.
-    fn account_txn_id(&self) -> Result<Option<Hash256>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::AccountTxnID)
-    }
-
-    /// The ledger entry ID of the corresponding AMM ledger entry. Set during account creation; cannot be modified.
-    /// If present, indicates that this is a special AMM AccountRoot; always omitted on non-AMM accounts.
-    /// (Added by the AMM amendment)
-    fn amm_id(&self) -> Result<Option<Hash256>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::AMMID)
-    }
-
-    /// The account's current XRP balance in drops.
-    fn balance(&self) -> Result<Option<Amount>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::Balance)
-    }
-
-    /// How many total of this account's issued non-fungible tokens have been burned.
-    /// This number is always equal or less than MintedNFTokens.
-    fn burned_nf_tokens(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::BurnedNFTokens)
-    }
-
-    /// A domain associated with this account. In JSON, this is the hexadecimal for the ASCII representation of the
-    /// domain. Cannot be more than 256 bytes in length.
-    fn domain(&self) -> Result<Option<UriBlob>> {
-        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::Domain)
-    }
-
-    /// The MD5 hash of an email address. Clients can use this to look up an avatar through services such as Gravatar.
-    fn email_hash(&self) -> Result<Option<Hash128>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::EmailHash)
-    }
-
-    /// The account's Sequence Number at the time it minted its first non-fungible-token.
-    /// (Added by the fixNFTokenRemint amendment)
-    fn first_nf_token_sequence(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FirstNFTokenSequence)
-    }
-
-    /// The value 0x0061, mapped to the string AccountRoot, indicates that this is an AccountRoot object.
-    fn ledger_entry_type(&self) -> Result<u16> {
-        ledger_object::get_field(self.get_slot_num(), sfield::LedgerEntryType)
-    }
-
-    /// A public key that may be used to send encrypted messages to this account. In JSON, uses hexadecimal.
-    /// Must be exactly 33 bytes, with the first byte indicating the key type: 0x02 or 0x03 for secp256k1 keys,
-    /// 0xED for Ed25519 keys.
-    // TODO: See https://github.com/ripple/xrpl-wasm-stdlib/issues/106
-    fn message_key(&self) -> Result<Option<PublicKeyBlob>> {
-        ledger_object::get_blob_field_optional(self.get_slot_num(), sfield::MessageKey)
-    }
-
-    /// How many total non-fungible tokens have been minted by and on behalf of this account.
-    /// (Added by the NonFungibleTokensV1_1 amendment)
-    fn minted_nf_tokens(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::MintedNFTokens)
-    }
-
-    /// Another account that can mint non-fungible tokens on behalf of this account.
-    /// (Added by the NonFungibleTokensV1_1 amendment)
-    fn nf_token_minter(&self) -> Result<Option<AccountID>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::NFTokenMinter)
-    }
-
-    /// The number of objects this account owns in the ledger, which contributes to its owner reserve.
-    fn owner_count(&self) -> Result<u32> {
-        ledger_object::get_field(self.get_slot_num(), sfield::OwnerCount)
-    }
-
-    /// The identifying hash of the transaction that most recently modified this object.
-    fn previous_txn_id(&self) -> Result<Hash256> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnID)
-    }
-
-    /// The index of the ledger that contains the transaction that most recently modified this object.
-    fn previous_txn_lgr_seq(&self) -> Result<u32> {
-        ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
-    }
-
-    /// The address of a key pair that can be used to sign transactions for this account instead of the master key.
-    /// Use a SetRegularKey transaction to change this value.
-    fn regular_key(&self) -> Result<Option<AccountID>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::RegularKey)
-    }
-
-    /// The sequence number of the next valid transaction for this account.
-    fn sequence(&self) -> Result<u32> {
-        ledger_object::get_field(self.get_slot_num(), sfield::Sequence)
-    }
-
-    /// How many Tickets this account owns in the ledger. This is updated automatically to ensure that
-    /// the account stays within the hard limit of 250 Tickets at a time. This field is omitted if the account has zero
-    /// Tickets. (Added by the TicketBatch amendment.)
-    fn ticket_count(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::TicketCount)
-    }
-
-    /// How many significant digits to use for exchange rates of Offers involving currencies issued by this address.
-    /// Valid values are 3 to 15, inclusive. (Added by the TickSize amendment.)
-    fn tick_size(&self) -> Result<Option<u8>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::TickSize)
-    }
-
-    /// A transfer fee to charge other users for sending currency issued by this account to each other.
-    fn transfer_rate(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::TransferRate)
-    }
-
-    /// An arbitrary 256-bit value that users can set.
-    fn wallet_locator(&self) -> Result<Option<Hash256>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::WalletLocator)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::fields::decoder::FromLedger;
-    use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+    use crate::host::error_codes::{INTERNAL_ERROR, INVALID_FIELD};
     use crate::host::host_bindings_trait::MockHostBindings;
-    use crate::objects::account_root::AccountRoot;
+    use crate::objects::AccountRoot;
     use crate::sfield::SField;
     use mockall::predicate::{always, eq};
 
@@ -449,7 +205,7 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let account = AccountRoot { slot_num: 1 };
+            let account = AccountRoot::new(1);
 
             // All mandatory fields should return Ok
             assert!(account.get_flags().is_ok());
@@ -468,7 +224,7 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let account = AccountRoot { slot_num: 1 };
+            let account = AccountRoot::new(1);
             let result = account.get_flags();
 
             assert!(result.is_err());
@@ -486,7 +242,7 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let account = AccountRoot { slot_num: 1 };
+            let account = AccountRoot::new(1);
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
@@ -505,490 +261,8 @@ mod tests {
 
             let _guard = setup_mock(mock);
 
-            let account = AccountRoot { slot_num: 1 };
+            let account = AccountRoot::new(1);
             let result = account.get_flags();
-
-            assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
-        }
-
-        #[test]
-        fn test_path_roots_a_by_slot_builder() {
-            // `obj.path()` must build against the object's own slot and read through
-            // `le_inner`. SignerEntries[0] is two 4-byte segments = 8 bytes;
-            // the u32 read buffer is 4.
-            let mut mock = MockHostBindings::new();
-            mock.expect_le_inner()
-                .with(eq(1), always(), eq(8usize), always(), eq(4usize))
-                .times(1)
-                .returning(|_, _, _, _, _| 4);
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-            let result = account
-                .path()
-                .field(sfield::SignerEntries)
-                .index(0)
-                .get::<u32>();
-
-            assert!(result.is_ok());
-        }
-    }
-
-    mod escrow_fields {
-        use super::*;
-        use crate::host::setup_mock;
-        use crate::types::blob::{CONDITION_BLOB_SIZE, WASM_BLOB_SIZE};
-
-        struct TestLedgerObject {
-            slot_num: i32,
-        }
-        impl LedgerObjectCommonFields for TestLedgerObject {
-            fn get_slot_num(&self) -> i32 {
-                self.slot_num
-            }
-        }
-        impl EscrowFields for TestLedgerObject {}
-
-        #[test]
-        fn test_mandatory_fields_return_ok() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account
-            expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
-            // get_amount: buffer is AMOUNT_SIZE (48), but the host reports the XRP variant's
-            // 8-byte length; `Amount::decode` validates the reported length against the parsed
-            // variant, so it must be the real wire length, not the buffer size.
-            mock.expect_le_field()
-                .with(eq(1), eq::<i32>(sfield::Amount.into()), always(), eq(48))
-                .times(1)
-                .returning(|_, _, _, _| 8);
-            // get_destination
-            expect_ledger_field(&mut mock, 1, sfield::Destination, 20, 1);
-            // get_owner_node
-            expect_ledger_field(&mut mock, 1, sfield::OwnerNode, 8, 1);
-            // get_previous_txn_id
-            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
-            // get_previous_txn_lgr_seq
-            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
-            // get_data (mandatory for escrow)
-            expect_ledger_field(&mut mock, 1, sfield::Data, XRPL_CONTRACT_DATA_SIZE, 1);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-
-            // All mandatory fields should return Ok
-            assert!(obj.get_account().is_ok());
-            assert!(obj.get_amount().is_ok());
-            assert!(obj.get_destination().is_ok());
-            assert!(obj.get_owner_node().is_ok());
-            assert!(obj.get_previous_txn_id().is_ok());
-            assert!(obj.get_previous_txn_lgr_seq().is_ok());
-            assert!(obj.get_data().is_ok());
-        }
-
-        #[test]
-        fn test_optional_fields_return_some() {
-            let mut mock = MockHostBindings::new();
-
-            // get_cancel_after
-            expect_ledger_field(&mut mock, 1, sfield::CancelAfter, 4, 1);
-            // get_condition
-            expect_ledger_field(&mut mock, 1, sfield::Condition, CONDITION_BLOB_SIZE, 1);
-            // get_destination_node
-            expect_ledger_field(&mut mock, 1, sfield::DestinationNode, 8, 1);
-            // get_destination_tag
-            expect_ledger_field(&mut mock, 1, sfield::DestinationTag, 4, 1);
-            // get_finish_after
-            expect_ledger_field(&mut mock, 1, sfield::FinishAfter, 4, 1);
-            // get_source_tag
-            expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
-            // get_bytecode
-            expect_ledger_field(&mut mock, 1, sfield::Bytecode, WASM_BLOB_SIZE, 1);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-
-            // All optional fields should return Ok(Some(...))
-            assert!(obj.get_cancel_after().unwrap().is_some());
-            assert!(obj.get_condition().unwrap().is_some());
-            assert!(obj.get_destination_node().unwrap().is_some());
-            assert!(obj.get_destination_tag().unwrap().is_some());
-            assert!(obj.get_finish_after().unwrap().is_some());
-            assert!(obj.get_source_tag().unwrap().is_some());
-            assert!(obj.get_bytecode().unwrap().is_some());
-        }
-
-        #[test]
-        fn test_optional_fields_return_none_when_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            // get_cancel_after
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::CancelAfter), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_condition - FIELD_NOT_FOUND yields None
-            mock.expect_le_field()
-                .with(
-                    eq(1),
-                    eq(sfield::Condition),
-                    always(),
-                    eq(CONDITION_BLOB_SIZE),
-                )
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_destination_node
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::DestinationNode), always(), eq(8))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_destination_tag
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::DestinationTag), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_finish_after
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::FinishAfter), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_source_tag
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::SourceTag), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // get_bytecode - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Bytecode), always(), eq(WASM_BLOB_SIZE))
-                .times(1)
-                .returning(|_, _, _, _| 0);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-
-            // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
-            assert!(obj.get_cancel_after().unwrap().is_none());
-            assert!(obj.get_condition().unwrap().is_none());
-            assert!(obj.get_destination_node().unwrap().is_none());
-            assert!(obj.get_destination_tag().unwrap().is_none());
-            assert!(obj.get_finish_after().unwrap().is_none());
-            assert!(obj.get_source_tag().unwrap().is_none());
-
-            // Variable-size optional fields return Some with len=0 when not found
-            let bytecode = obj.get_bytecode().unwrap();
-            assert!(bytecode.is_some());
-            assert_eq!(bytecode.unwrap().len, 0);
-        }
-
-        #[test]
-        fn test_mandatory_fields_return_error_on_internal_error() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account with INTERNAL_ERROR
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INTERNAL_ERROR);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-            let result = obj.get_account();
-
-            assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
-        }
-
-        #[test]
-        fn test_get_data_returns_error_on_internal_error() {
-            let mut mock = MockHostBindings::new();
-
-            mock.expect_le_field()
-                .with(
-                    eq(1),
-                    eq(sfield::Data),
-                    always(),
-                    eq(XRPL_CONTRACT_DATA_SIZE),
-                )
-                .times(1)
-                .returning(|_, _, _, _| INTERNAL_ERROR);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-            let result = obj.get_data();
-
-            assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
-        }
-
-        #[test]
-        fn test_mandatory_fields_return_error_on_invalid_field() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account with INVALID_FIELD
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INVALID_FIELD);
-
-            let _guard = setup_mock(mock);
-
-            let obj = TestLedgerObject { slot_num: 1 };
-            let result = obj.get_account();
-
-            assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
-        }
-    }
-
-    mod account_fields {
-        use super::*;
-        use crate::host::setup_mock;
-        use crate::types::account_id::ACCOUNT_ID_SIZE;
-        use crate::types::blob::{DOMAIN_BLOB_SIZE, PUBLIC_KEY_BLOB_SIZE};
-
-        #[test]
-        fn test_mandatory_fields_return_ok() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account
-            expect_ledger_field(&mut mock, 1, sfield::Account, 20, 1);
-            // owner_count
-            expect_ledger_field(&mut mock, 1, sfield::OwnerCount, 4, 1);
-            // previous_txn_id
-            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnID, 32, 1);
-            // previous_txn_lgr_seq
-            expect_ledger_field(&mut mock, 1, sfield::PreviousTxnLgrSeq, 4, 1);
-            // sequence
-            expect_ledger_field(&mut mock, 1, sfield::Sequence, 4, 1);
-            // ledger_entry_type
-            expect_ledger_field(&mut mock, 1, sfield::LedgerEntryType, 2, 1);
-
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-
-            // All mandatory fields should return Ok
-            assert!(account.get_account().is_ok());
-            assert!(account.owner_count().is_ok());
-            assert!(account.previous_txn_id().is_ok());
-            assert!(account.previous_txn_lgr_seq().is_ok());
-            assert!(account.sequence().is_ok());
-            assert!(account.ledger_entry_type().is_ok());
-        }
-
-        #[test]
-        fn test_optional_fields_return_some() {
-            let mut mock = MockHostBindings::new();
-
-            // account_txn_id
-            expect_ledger_field(&mut mock, 1, sfield::AccountTxnID, 32, 1);
-            // amm_id
-            expect_ledger_field(&mut mock, 1, sfield::AMMID, 32, 1);
-            // balance: buffer is AMOUNT_SIZE (48), host reports the XRP variant's 8-byte length.
-            mock.expect_le_field()
-                .with(eq(1), eq::<i32>(sfield::Balance.into()), always(), eq(48))
-                .times(1)
-                .returning(|_, _, _, _| 8);
-            // burned_nf_tokens
-            expect_ledger_field(&mut mock, 1, sfield::BurnedNFTokens, 4, 1);
-            // domain
-            expect_ledger_field(&mut mock, 1, sfield::Domain, DOMAIN_BLOB_SIZE, 1);
-            // email_hash
-            expect_ledger_field(&mut mock, 1, sfield::EmailHash, 16, 1);
-            // first_nf_token_sequence
-            expect_ledger_field(&mut mock, 1, sfield::FirstNFTokenSequence, 4, 1);
-            // message_key
-            expect_ledger_field(&mut mock, 1, sfield::MessageKey, PUBLIC_KEY_BLOB_SIZE, 1);
-            // minted_nf_tokens
-            expect_ledger_field(&mut mock, 1, sfield::MintedNFTokens, 4, 1);
-            // nf_token_minter
-            expect_ledger_field(&mut mock, 1, sfield::NFTokenMinter, 20, 1);
-            // regular_key
-            expect_ledger_field(&mut mock, 1, sfield::RegularKey, ACCOUNT_ID_SIZE, 1);
-            // ticket_count
-            expect_ledger_field(&mut mock, 1, sfield::TicketCount, 4, 1);
-            // tick_size
-            expect_ledger_field(&mut mock, 1, sfield::TickSize, 1, 1);
-            // transfer_rate
-            expect_ledger_field(&mut mock, 1, sfield::TransferRate, 4, 1);
-            // wallet_locator
-            expect_ledger_field(&mut mock, 1, sfield::WalletLocator, 32, 1);
-
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-
-            // All optional fields should return Ok(Some(...))
-            assert!(account.account_txn_id().unwrap().is_some());
-            assert!(account.amm_id().unwrap().is_some());
-            assert!(account.balance().unwrap().is_some());
-            assert!(account.burned_nf_tokens().unwrap().is_some());
-            assert!(account.domain().unwrap().is_some());
-            assert!(account.email_hash().unwrap().is_some());
-            assert!(account.first_nf_token_sequence().unwrap().is_some());
-            assert!(account.message_key().unwrap().is_some());
-            assert!(account.minted_nf_tokens().unwrap().is_some());
-            assert!(account.nf_token_minter().unwrap().is_some());
-            assert!(account.regular_key().unwrap().is_some());
-            assert!(account.ticket_count().unwrap().is_some());
-            assert!(account.tick_size().unwrap().is_some());
-            assert!(account.transfer_rate().unwrap().is_some());
-            assert!(account.wallet_locator().unwrap().is_some());
-        }
-
-        #[test]
-        fn test_optional_fields_return_none_when_field_not_found() {
-            let mut mock = MockHostBindings::new();
-
-            // account_txn_id
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::AccountTxnID), always(), eq(32))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // amm_id
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::AMMID), always(), eq(32))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // balance - an absent Amount reports FIELD_NOT_FOUND (there is no 0-length Amount)
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Balance), always(), eq(48))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // burned_nf_tokens
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::BurnedNFTokens), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // domain - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Domain), always(), eq(DOMAIN_BLOB_SIZE))
-                .times(1)
-                .returning(|_, _, _, _| 0);
-            // email_hash
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::EmailHash), always(), eq(16))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // first_nf_token_sequence
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::FirstNFTokenSequence), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // message_key - variable size field, returns 0 for empty (Some with len=0)
-            mock.expect_le_field()
-                .with(
-                    eq(1),
-                    eq(sfield::MessageKey),
-                    always(),
-                    eq(PUBLIC_KEY_BLOB_SIZE),
-                )
-                .times(1)
-                .returning(|_, _, _, _| 0);
-            // minted_nf_tokens
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::MintedNFTokens), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // nf_token_minter
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::NFTokenMinter), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // regular_key
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::RegularKey), always(), eq(ACCOUNT_ID_SIZE))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // ticket_count
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::TicketCount), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // tick_size
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::TickSize), always(), eq(1))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // transfer_rate
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::TransferRate), always(), eq(4))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-            // wallet_locator
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::WalletLocator), always(), eq(32))
-                .times(1)
-                .returning(|_, _, _, _| FIELD_NOT_FOUND);
-
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-
-            // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
-            assert!(account.account_txn_id().unwrap().is_none());
-            assert!(account.amm_id().unwrap().is_none());
-            assert!(account.burned_nf_tokens().unwrap().is_none());
-            assert!(account.email_hash().unwrap().is_none());
-            assert!(account.first_nf_token_sequence().unwrap().is_none());
-            assert!(account.minted_nf_tokens().unwrap().is_none());
-            assert!(account.nf_token_minter().unwrap().is_none());
-            assert!(account.regular_key().unwrap().is_none());
-            assert!(account.ticket_count().unwrap().is_none());
-            assert!(account.tick_size().unwrap().is_none());
-            assert!(account.transfer_rate().unwrap().is_none());
-            assert!(account.wallet_locator().unwrap().is_none());
-            assert!(account.balance().unwrap().is_none());
-
-            // Blob-typed optional fields return Some with len=0 when the host writes 0 bytes
-            // (they cannot distinguish between "not present" and "present with 0 bytes")
-            let domain = account.domain().unwrap();
-            assert!(domain.is_some());
-            assert_eq!(domain.unwrap().len, 0);
-            let message_key = account.message_key().unwrap();
-            assert!(message_key.is_some());
-            assert_eq!(message_key.unwrap().len, 0);
-        }
-
-        #[test]
-        fn test_mandatory_fields_return_error_on_internal_error() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account with INTERNAL_ERROR
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INTERNAL_ERROR);
-
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_account();
-
-            assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
-        }
-
-        #[test]
-        fn test_mandatory_fields_return_error_on_invalid_field() {
-            let mut mock = MockHostBindings::new();
-
-            // get_account with INVALID_FIELD
-            mock.expect_le_field()
-                .with(eq(1), eq(sfield::Account), always(), eq(20))
-                .times(1)
-                .returning(|_, _, _, _| INVALID_FIELD);
-
-            let _guard = setup_mock(mock);
-
-            let account = AccountRoot { slot_num: 1 };
-            let result = account.get_account();
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
@@ -1074,23 +348,6 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.err().unwrap().code(), INVALID_FIELD);
-        }
-
-        #[test]
-        fn test_path_roots_a_current_obj_builder() {
-            // `ctx.escrow().path()` must read through the slot-less
-            // `home_le_inner`.
-            let mut mock = MockHostBindings::new();
-            mock.expect_home_le_inner()
-                .with(always(), eq(4usize), always(), eq(4usize))
-                .times(1)
-                .returning(|_, _, _, _| 4);
-            let _guard = setup_mock(mock);
-
-            let escrow = TestCurrentLedgerObject;
-            let result = escrow.path().field(sfield::Flags).get::<u32>();
-
-            assert!(result.is_ok());
         }
     }
 }
