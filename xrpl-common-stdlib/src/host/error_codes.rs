@@ -2,8 +2,8 @@ use crate::host::Error::PointerOutOfBounds;
 use crate::host::trace::trace_num;
 use crate::host::{Error, Result, Result::Err, Result::Ok};
 
-/// Reserved for internal invariant trips, generally unrelated to inputs.
-pub const INTERNAL_ERROR: i32 = -1;
+/// The host function has an empty/stub implementation (not yet implemented by the host).
+pub const UNIMPLEMENTED: i32 = -1;
 /// The requested serialized field could not be found in the specified object.
 pub const FIELD_NOT_FOUND: i32 = -2;
 /// The provided buffer is too small to hold the requested data.
@@ -22,8 +22,8 @@ pub const SLOTS_FULL: i32 = -8;
 pub const EMPTY_SLOT: i32 = -9;
 /// The requested ledger object could not be found.
 pub const LEDGER_OBJ_NOT_FOUND: i32 = -10;
-/// An error occurred while decoding serialized data.
-pub const INVALID_DECODING: i32 = -11;
+/// The operation would exceed the allowed transfer limit.
+pub const OUT_OF_TRANSFER_LIMIT: i32 = -11;
 /// The data field is too large to be processed.
 pub const DATA_FIELD_TOO_LARGE: i32 = -12;
 /// A pointer or buffer length provided as a parameter described memory outside the allowed memory region.
@@ -42,6 +42,16 @@ pub const INDEX_OUT_OF_BOUNDS: i32 = -18;
 pub const INVALID_FLOAT_INPUT: i32 = -19;
 /// An error occurred during floating-point computation.
 pub const INVALID_FLOAT_COMPUTATION: i32 = -20;
+
+// Library-owned error codes, reserved upward from `i32::MIN` so they can't collide with a host
+// code. xrpld reassigned `-1` and `-11`, so these two moved here rather than being dropped.
+
+/// Reserved for internal invariant trips. Currently a reserved slot: the trips the stdlib can
+/// detect eagerly panic instead (see [`match_result_code_with_expected_bytes`]).
+pub const INTERNAL_ERROR: i32 = i32::MIN;
+
+/// A byte slice the host returned could not be decoded into the requested type.
+pub const INVALID_DECODING: i32 = i32::MIN + 1;
 
 /// Evaluates a result code and executes a closure on success (result_code > 0).
 ///
@@ -208,16 +218,16 @@ where
         code if code == FIELD_NOT_FOUND => Ok(None),
         // Handle all positive, unexpected values as an internal error.
         code if code >= 0 => {
-            let _ = trace_num(
+            trace_num(
                 "Byte array was expected to have this many bytes: ",
                 expected_num_bytes as i64,
             );
-            let _ = trace_num("Byte array had this many bytes: ", code as i64);
+            trace_num("Byte array had this many bytes: ", code as i64);
             Err(PointerOutOfBounds)
         }
         // Handle all error values overtly.
         code => {
-            let _ = trace_num("Encountered error_code:", code as i64);
+            trace_num("Encountered error_code:", code as i64);
             Err(Error::from_code(code))
         }
     }
@@ -360,10 +370,10 @@ mod tests {
     fn test_match_result_code_with_expected_bytes_optional_byte_mismatch() {
         let mut mock = MockHostBindings::new();
 
-        // Set up expectations for trace_num calls (2 calls in the error path)
-        mock.expect_trace_num()
-            .with(always(), always(), always())
-            .returning(|_, _, _| 0)
+        // Two traces on the error path, both carrying an Int64 payload.
+        mock.expect_trace()
+            .with(always(), always(), always(), always(), always())
+            .returning(|_, _, _, _, _| ())
             .times(2);
 
         let _guard = setup_mock(mock);
@@ -380,10 +390,10 @@ mod tests {
     fn test_match_result_code_with_expected_bytes_optional_other_error() {
         let mut mock = MockHostBindings::new();
 
-        // Set up expectations for trace_num call (1 call in the error path)
-        mock.expect_trace_num()
-            .with(always(), always(), always())
-            .returning(|_, _, _| 0);
+        // One trace on the error path, carrying an Int64 payload.
+        mock.expect_trace()
+            .with(always(), always(), always(), always(), always())
+            .returning(|_, _, _, _, _| ());
 
         let _guard = setup_mock(mock);
 
@@ -408,7 +418,7 @@ mod tests {
     #[test]
     fn test_all_error_constants_are_negative() {
         let error_codes = [
-            INTERNAL_ERROR,
+            UNIMPLEMENTED,
             FIELD_NOT_FOUND,
             BUFFER_TOO_SMALL,
             NO_ARRAY,
@@ -418,7 +428,7 @@ mod tests {
             SLOTS_FULL,
             EMPTY_SLOT,
             LEDGER_OBJ_NOT_FOUND,
-            INVALID_DECODING,
+            OUT_OF_TRANSFER_LIMIT,
             DATA_FIELD_TOO_LARGE,
             POINTER_OUT_OF_BOUNDS,
             NO_MEM_EXPORTED,
@@ -428,6 +438,8 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
+            INTERNAL_ERROR,
+            INVALID_DECODING,
         ];
 
         for &code in &error_codes {
@@ -438,7 +450,7 @@ mod tests {
     #[test]
     fn test_error_constants_are_unique() {
         let error_codes = [
-            INTERNAL_ERROR,
+            UNIMPLEMENTED,
             FIELD_NOT_FOUND,
             BUFFER_TOO_SMALL,
             NO_ARRAY,
@@ -448,7 +460,7 @@ mod tests {
             SLOTS_FULL,
             EMPTY_SLOT,
             LEDGER_OBJ_NOT_FOUND,
-            INVALID_DECODING,
+            OUT_OF_TRANSFER_LIMIT,
             DATA_FIELD_TOO_LARGE,
             POINTER_OUT_OF_BOUNDS,
             NO_MEM_EXPORTED,
@@ -458,6 +470,8 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
+            INTERNAL_ERROR,
+            INVALID_DECODING,
         ];
 
         // Check that all error codes are unique by comparing each pair
@@ -477,7 +491,7 @@ mod tests {
     #[test]
     fn test_error_from_code_roundtrip() {
         let test_codes = [
-            INTERNAL_ERROR,
+            UNIMPLEMENTED,
             FIELD_NOT_FOUND,
             BUFFER_TOO_SMALL,
             NO_ARRAY,
@@ -487,7 +501,7 @@ mod tests {
             SLOTS_FULL,
             EMPTY_SLOT,
             LEDGER_OBJ_NOT_FOUND,
-            INVALID_DECODING,
+            OUT_OF_TRANSFER_LIMIT,
             DATA_FIELD_TOO_LARGE,
             POINTER_OUT_OF_BOUNDS,
             NO_MEM_EXPORTED,
@@ -497,6 +511,8 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
+            INTERNAL_ERROR,
+            INVALID_DECODING,
         ];
 
         for &code in &test_codes {
