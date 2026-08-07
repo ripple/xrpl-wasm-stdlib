@@ -93,6 +93,33 @@ async function main() {
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
 
+  // XRPL types that deliberately have no Rust type yet. Their fields are still
+  // emitted, as `SField<u8, CODE>` placeholders, so the constant exists and the
+  // field code is available -- but reading one will fail at runtime, because
+  // `u8`'s `FieldDecoder` accepts a 1-byte value and these are all wider.
+  //
+  // Removing a type from this set is how a real Rust type gets wired in: add it
+  // to `typeMap` in sfieldTypeMap.js and drop it from here. Every type in
+  // NEITHER map is a hard error (see below) -- a new rippled type must not
+  // silently acquire a wrong-typed placeholder. `typeMap` and `customFieldTypes`
+  // are the shared mappings imported above; this placeholder policy is
+  // sfield-specific (the ledger-object generator emits raw bytes for the same
+  // unmapped types instead), so it stays local.
+  const untypedTypes = new Set([
+    "INT32",
+    "PATHSET",
+    "VECTOR256",
+    "XCHAIN_BRIDGE",
+    "DATA",
+    "DATATYPE",
+    "JSON",
+    // Pseudo-types tagging whole serialized blobs rather than a single field.
+    "TRANSACTION",
+    "LEDGERENTRY",
+    "VALIDATION",
+    "METADATA",
+  ])
+
   ////////////////////////////////////////////////////////////////////////
   //  SField processing (escrow branch is authoritative; contract branch
   //  only contributes fields escrow doesn't have)
@@ -145,6 +172,7 @@ async function main() {
   })
 
   // Generate all field constants
+  const unmappedTypes = new Set()
   for (const entry of sfieldEntries) {
     const fieldName = entry.fieldName
     const xrplType = entry.xrplType
@@ -164,13 +192,33 @@ async function main() {
           ` ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
         )
       }
-    } else {
-      // This should not happen if typeMap is complete
-      console.warn(`Warning: No Rust type mapping for XRPL type: ${xrplType}`)
+    } else if (untypedTypes.has(xrplType)) {
+      // Known-untyped: emit the documented `SField<u8, CODE>` placeholder.
       addLine(
         `pub const ${fieldName}: SField<u8, ${fieldCode}> = SField::new();`,
       )
+    } else {
+      // Neither mapped nor knowingly untyped: a type rippled has that this
+      // generator has never seen. Emitting `SField<u8, CODE>` here would ship a
+      // constant that looks usable and can never decode, so refuse instead.
+      if (!unmappedTypes.has(xrplType)) {
+        console.error(
+          `No Rust type mapping for XRPL type STI_${xrplType} (first seen on field sf${fieldName}).`,
+        )
+        unmappedTypes.add(xrplType)
+      }
     }
+  }
+
+  if (unmappedTypes.size > 0) {
+    console.error(
+      `\nAdd ${[...unmappedTypes]
+        .map((t) => "STI_" + t)
+        .join(
+          ", ",
+        )} to either typeMap (with a Rust type implementing FieldDecoder) or untypedTypes (as a documented SField<u8, _> placeholder) in tools/generateSFields.js. Aborting without writing output.`,
+    )
+    process.exit(1)
   }
 
   ////////////////////////////////////////////////////////////////////////

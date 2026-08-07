@@ -6,7 +6,7 @@
 const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 
 use crate::host::Result;
-use crate::host::error_codes::{match_result_code, match_result_code_optional};
+use crate::host::error_codes::match_result_code_optional;
 use crate::host::home_le_field;
 use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
@@ -14,6 +14,7 @@ use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
+use crate::types::number::Number;
 use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Loan objects in any ledger.
@@ -55,63 +56,23 @@ pub trait LoanFields: LedgerObjectCommonFields {
     }
 
     /// The amount paid to the _Loan Broker_, taken from the principal loan at creation.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::LoanOriginationFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_origination_fee(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LoanOriginationFee)
     }
 
     /// The amount paid to the _Loan Broker_ with each loan payment.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::LoanServiceFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_service_fee(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LoanServiceFee)
     }
 
     /// The amount paid to the _Loan Broker_ for each late payment.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::LatePaymentFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn late_payment_fee(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LatePaymentFee)
     }
 
     /// The amount paid to the _Loan Broker_ when a full early payment is made.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::ClosePaymentFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn close_payment_fee(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ClosePaymentFee)
     }
 
     /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to
@@ -174,63 +135,23 @@ pub trait LoanFields: LedgerObjectCommonFields {
     }
 
     /// The amount due for each payment interval.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::PeriodicPayment.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code(result_code, || buffer)
+    fn periodic_payment(&self) -> Result<Number> {
+        ledger_object::get_field(self.get_slot_num(), sfield::PeriodicPayment)
     }
 
     /// The principal amount still owed on the loan.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::PrincipalOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn principal_outstanding(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::PrincipalOutstanding)
     }
 
     /// The total amount owed on the loan, including remaining principal and fees.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::TotalValueOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn total_value_outstanding(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::TotalValueOutstanding)
     }
 
     /// The remaining management fee owed to the loan broker.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::ManagementFeeOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn management_fee_outstanding(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ManagementFeeOutstanding)
     }
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal
@@ -289,59 +210,23 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The amount paid to the _Loan Broker_, taken from the principal loan at creation.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loan_origination_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::LoanOriginationFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_origination_fee(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::LoanOriginationFee)
     }
 
     /// The amount paid to the _Loan Broker_ with each loan payment.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loan_service_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::LoanServiceFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_service_fee(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::LoanServiceFee)
     }
 
     /// The amount paid to the _Loan Broker_ for each late payment.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn late_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::LatePaymentFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn late_payment_fee(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::LatePaymentFee)
     }
 
     /// The amount paid to the _Loan Broker_ when a full early payment is made.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn close_payment_fee(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::ClosePaymentFee.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn close_payment_fee(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::ClosePaymentFee)
     }
 
     /// The fee charged on overpayments, in units of 1/10th basis points. Valid values are 0 to
@@ -404,59 +289,23 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The amount due for each payment interval.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn periodic_payment(&self) -> Result<[u8; RAW_UNMAPPED_FIELD_SIZE]> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::PeriodicPayment.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code(result_code, || buffer)
+    fn periodic_payment(&self) -> Result<Number> {
+        current_ledger_object::get_field(sfield::PeriodicPayment)
     }
 
     /// The principal amount still owed on the loan.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn principal_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::PrincipalOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn principal_outstanding(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::PrincipalOutstanding)
     }
 
     /// The total amount owed on the loan, including remaining principal and fees.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn total_value_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::TotalValueOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn total_value_outstanding(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::TotalValueOutstanding)
     }
 
     /// The remaining management fee owed to the loan broker.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn management_fee_outstanding(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::ManagementFeeOutstanding.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn management_fee_outstanding(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::ManagementFeeOutstanding)
     }
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal

@@ -50,6 +50,7 @@ const typeMap = {
   UINT192: "Hash192",
   UINT256: "Hash256",
   AMOUNT: "Amount",
+  NUMBER: "Number",
   ACCOUNT: "AccountID",
   VL: "StandardBlob",
   CURRENCY: "Currency",
@@ -86,8 +87,8 @@ function resolveRustType(fieldName, xrplType) {
 // - "custom": a per-field-name override in customFieldTypes matched.
 // - "typeMap": the XRPL wire type has a real Rust mapping (e.g. UINT8 -> u8).
 // - "none": neither matched; rustType is undefined. The XRPL wire type is not
-//   yet representable in Rust (e.g. VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32,
-//   JSON) and callers must NOT fabricate a u8 getter for it.
+//   yet representable in Rust (e.g. VECTOR256, XCHAIN_BRIDGE, INT32, JSON) and
+//   callers must NOT fabricate a u8 getter for it.
 function resolveRustTypeDetailed(fieldName, xrplType) {
   if (Object.prototype.hasOwnProperty.call(customFieldTypes, fieldName)) {
     return { rustType: customFieldTypes[fieldName], source: "custom" }

@@ -267,6 +267,7 @@ const SIMPLE_TYPE_IMPORTS = {
   Currency: "crate::types::currency::Currency",
   Issue: "crate::types::issue::Issue",
   MptId: "crate::types::mpt_id::MptId",
+  Number: "crate::types::number::Number",
 }
 
 ////////////////////////////////////////////////////////////////////////

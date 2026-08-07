@@ -1,6 +1,5 @@
 //! Fields returned as raw bytes pending a typed Rust representation:
 //!   INT32: Loan.LoanScale
-//!   NUMBER: Loan.ClosePaymentFee, Loan.LatePaymentFee, Loan.LoanOriginationFee, Loan.LoanServiceFee, Loan.ManagementFeeOutstanding, Loan.PeriodicPayment, Loan.PrincipalOutstanding, Loan.TotalValueOutstanding, LoanBroker.CoverAvailable, LoanBroker.DebtMaximum, LoanBroker.DebtTotal, Vault.AssetsAvailable, Vault.AssetsMaximum, Vault.AssetsTotal, Vault.LossUnrealized
 //!   VECTOR256: Amendments.Amendments, DirectoryNode.Indexes, LedgerHashes.Hashes
 //!   XCHAIN_BRIDGE: Bridge.XChainBridge, XChainOwnedClaimID.XChainBridge, XChainOwnedCreateAccountClaimID.XChainBridge
 

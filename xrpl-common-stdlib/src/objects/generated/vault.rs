@@ -1,14 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
-/// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust
-/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return
-/// raw, unparsed bytes; see the summary at the top of `generated/mod.rs`.
-const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
-
 use crate::host::Result;
-use crate::host::error_codes::match_result_code_optional;
-use crate::host::home_le_field;
-use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -16,6 +8,7 @@ use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::blob::StandardBlob;
 use crate::types::issue::Issue;
+use crate::types::number::Number;
 use crate::types::uint::{Hash192, Hash256};
 
 /// Trait providing access to fields specific to Vault objects in any ledger.
@@ -63,65 +56,25 @@ pub trait VaultFields: LedgerObjectCommonFields {
     }
 
     /// The total value of the vault.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::AssetsTotal.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_total(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsTotal)
     }
 
     /// The asset amount that is available in the vault.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::AssetsAvailable.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_available(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsAvailable)
     }
 
     /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
     /// no cap.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::AssetsMaximum.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_maximum(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsMaximum)
     }
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a
     /// protocol connected to the vault can modify this attribute.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::LossUnrealized.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loss_unrealized(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LossUnrealized)
     }
 
     /// The identifier of the share `MPTokenIssuance` object.
@@ -190,61 +143,25 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The total value of the vault.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::AssetsTotal.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_total(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::AssetsTotal)
     }
 
     /// The asset amount that is available in the vault.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::AssetsAvailable.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_available(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::AssetsAvailable)
     }
 
     /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
     /// no cap.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn assets_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::AssetsMaximum.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn assets_maximum(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::AssetsMaximum)
     }
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a
     /// protocol connected to the vault can modify this attribute.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn loss_unrealized(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::LossUnrealized.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loss_unrealized(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::LossUnrealized)
     }
 
     /// The identifier of the share `MPTokenIssuance` object.

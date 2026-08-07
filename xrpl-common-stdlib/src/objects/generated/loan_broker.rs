@@ -1,20 +1,13 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
-/// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust
-/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return
-/// raw, unparsed bytes; see the summary at the top of `generated/mod.rs`.
-const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
-
 use crate::host::Result;
-use crate::host::error_codes::match_result_code_optional;
-use crate::host::home_le_field;
-use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::blob::StandardBlob;
+use crate::types::number::Number;
 use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to LoanBroker objects in any ledger.
@@ -84,49 +77,19 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     }
 
     /// The total asset amount the protocol owes the vault, including interest.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::DebtTotal.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn debt_total(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DebtTotal)
     }
 
     /// The maximum amount the protocol can owe the vault. The default value of `0` means there is
     /// no limit to the debt.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::DebtMaximum.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn debt_maximum(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DebtMaximum)
     }
 
     /// The total amount of first-loss capital deposited into the lending protocol.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::CoverAvailable.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn cover_available(&self) -> Result<Option<Number>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverAvailable)
     }
 
     /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid
@@ -210,41 +173,19 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The total asset amount the protocol owes the vault, including interest.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn debt_total(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code =
-            unsafe { home_le_field(sfield::DebtTotal.into(), buffer.as_mut_ptr(), buffer.len()) };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn debt_total(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::DebtTotal)
     }
 
     /// The maximum amount the protocol can owe the vault. The default value of `0` means there is
     /// no limit to the debt.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn debt_maximum(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::DebtMaximum.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn debt_maximum(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::DebtMaximum)
     }
 
     /// The total amount of first-loss capital deposited into the lending protocol.
-    /// Raw bytes; NUMBER is not yet typed in Rust.
-    fn cover_available(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            home_le_field(
-                sfield::CoverAvailable.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn cover_available(&self) -> Result<Option<Number>> {
+        current_ledger_object::get_field_optional(sfield::CoverAvailable)
     }
 
     /// The 1/10th basis point of the `DebtTotal` that the first-loss capital must cover. Valid
