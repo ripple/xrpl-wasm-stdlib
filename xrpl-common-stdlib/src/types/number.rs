@@ -1,6 +1,8 @@
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger, decode_exact};
 use crate::host;
 use crate::host::error_codes::match_result_code_with_expected_bytes;
 use crate::host::{Error, Result, RoundingMode};
+use crate::types::decode_error::DecodeError;
 
 /// The number of bytes in the serialized STNumber (float) representation.
 const NUMBER_SIZE: usize = 12;
@@ -28,12 +30,12 @@ impl Number {
     /// The value `0`.
     pub const ZERO: Number = Number([0u8; NUMBER_SIZE]);
 
-    /// The value `1` (mantissa = 1,000,000,000,000,000, exponent = -15).
+    /// The value `1` (mantissa = 1,000,000,000,000,000,000, exponent = -18).
     pub const ONE: Number = Number([
         0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE,
     ]);
 
-    /// The value `-1` (mantissa = -1,000,000,000,000,000, exponent = -15).
+    /// The value `-1` (mantissa = -1,000,000,000,000,000,000, exponent = -18).
     pub const NEGATIVE_ONE: Number = Number([
         0xF2, 0x1F, 0x49, 0x4C, 0x58, 0x9C, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE,
     ]);
@@ -278,6 +280,30 @@ impl From<[u8; NUMBER_SIZE]> for Number {
         Number(value)
     }
 }
+
+/// `FieldDecoder` for XRPL `STNumber` fields: decodes the 12-byte serialized value, failing if the
+/// host wrote a different number of bytes.
+///
+/// The bytes are taken as-is rather than routed back through `float_from_stnumber`: the host's float
+/// representation *is* the `STNumber` serialization (rippled's WASM host builds it with
+/// `STNumber::add`), so a value read off a transaction or ledger entry is already a canonical
+/// host-produced `Number`.
+impl FieldDecoder for Number {
+    type Buffer = [u8; NUMBER_SIZE];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; NUMBER_SIZE]
+    }
+
+    #[inline]
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        decode_exact(buf, bytes_written)
+    }
+}
+
+impl FromCurrentTx for Number {}
+impl FromLedger for Number {}
 
 impl PartialOrd for Number {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -564,6 +590,57 @@ mod tests {
             Number(SAMPLE).pow(2, RoundingMode::ToNearest).unwrap(),
             Number(SAMPLE)
         );
+    }
+    // Test-only
+    // Builds the 12-byte `STNumber` wire value for a mantissa/exponent pair the way rippled's
+    // `STNumber::add` does: an 8-byte big-endian `i64` followed by a 4-byte big-endian `i32`.
+    fn wire(mantissa: i64, exponent: i32) -> [u8; NUMBER_SIZE] {
+        let mut bytes = [0u8; NUMBER_SIZE];
+        bytes[0..8].copy_from_slice(&mantissa.to_be_bytes());
+        bytes[8..12].copy_from_slice(&exponent.to_be_bytes());
+        bytes
+    }
+
+    #[test]
+    fn test_decode_matches_declared_constants() {
+        assert_eq!(
+            Number::decode(wire(0, 0), NUMBER_SIZE).unwrap(),
+            Number::ZERO
+        );
+        assert_eq!(
+            Number::decode(wire(1_000_000_000_000_000_000, -18), NUMBER_SIZE).unwrap(),
+            Number::ONE
+        );
+        assert_eq!(
+            Number::decode(wire(-1_000_000_000_000_000_000, -18), NUMBER_SIZE).unwrap(),
+            Number::NEGATIVE_ONE
+        );
+    }
+
+    #[test]
+    fn test_decode_roundtrips_wire_bytes() {
+        // Negative mantissa with a positive exponent, a positive mantissa with a negative one, and
+        // both extremes, to cover the sign bit of each half of the buffer.
+        for (mantissa, exponent) in [
+            (-7_654_321i64, 12i32),
+            (123i64, -7i32),
+            (i64::MIN, i32::MIN),
+            (i64::MAX, i32::MAX),
+        ] {
+            let bytes = wire(mantissa, exponent);
+            assert_eq!(Number::decode(bytes, NUMBER_SIZE).unwrap(), Number(bytes));
+        }
+    }
+
+    #[test]
+    fn test_decode_rejects_short_write() {
+        assert_eq!(Number::decode(wire(1, 0), 11), Err(DecodeError));
+        assert_eq!(Number::decode(wire(1, 0), 0), Err(DecodeError));
+    }
+
+    #[test]
+    fn test_empty_buffer_is_number_sized() {
+        assert_eq!(<Number as FieldDecoder>::empty_buffer(), [0u8; NUMBER_SIZE]);
     }
 
     #[test]

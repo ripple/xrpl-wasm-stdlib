@@ -106,8 +106,8 @@ async function main() {
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
 
-  // Map XRPL types to Rust types
-  // All types now have FieldGetter implementations
+  // Map XRPL types to Rust types. Every type listed here has a `FieldDecoder`
+  // implementation, so the generated `SField<T, CODE>` can actually be read.
   const typeMap = {
     UINT8: "u8",
     UINT16: "u16",
@@ -118,6 +118,7 @@ async function main() {
     UINT192: "Hash192",
     UINT256: "Hash256",
     AMOUNT: "Amount",
+    NUMBER: "Number",
     ACCOUNT: "AccountID",
     VL: "StandardBlob",
     CURRENCY: "Currency",
@@ -125,6 +126,30 @@ async function main() {
     ARRAY: "Array",
     OBJECT: "Object",
   }
+
+  // XRPL types that deliberately have no Rust type yet. Their fields are still
+  // emitted, as `SField<u8, CODE>` placeholders, so the constant exists and the
+  // field code is available -- but reading one will fail at runtime, because
+  // `u8`'s `FieldDecoder` accepts a 1-byte value and these are all wider.
+  //
+  // Removing a type from this set is how a real Rust type gets wired in: add it
+  // to `typeMap` above and drop it from here. Every type in NEITHER map is a
+  // hard error (see below) -- a new rippled type must not silently acquire a
+  // wrong-typed placeholder.
+  const untypedTypes = new Set([
+    "INT32",
+    "PATHSET",
+    "VECTOR256",
+    "XCHAIN_BRIDGE",
+    "DATA",
+    "DATATYPE",
+    "JSON",
+    // Pseudo-types tagging whole serialized blobs rather than a single field.
+    "TRANSACTION",
+    "LEDGERENTRY",
+    "VALIDATION",
+    "METADATA",
+  ])
 
   // Custom type overrides for specific field names
   // These override the default type mapping from typeMap
@@ -193,6 +218,7 @@ async function main() {
   })
 
   // Generate all field constants
+  const unmappedTypes = new Set()
   for (const entry of sfieldEntries) {
     const fieldName = entry.fieldName
     const xrplType = entry.xrplType
@@ -212,13 +238,33 @@ async function main() {
           ` ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
         )
       }
-    } else {
-      // This should not happen if typeMap is complete
-      console.warn(`Warning: No Rust type mapping for XRPL type: ${xrplType}`)
+    } else if (untypedTypes.has(xrplType)) {
+      // Known-untyped: emit the documented `SField<u8, CODE>` placeholder.
       addLine(
         `pub const ${fieldName}: SField<u8, ${fieldCode}> = SField::new();`,
       )
+    } else {
+      // Neither mapped nor knowingly untyped: a type rippled has that this
+      // generator has never seen. Emitting `SField<u8, CODE>` here would ship a
+      // constant that looks usable and can never decode, so refuse instead.
+      if (!unmappedTypes.has(xrplType)) {
+        console.error(
+          `No Rust type mapping for XRPL type STI_${xrplType} (first seen on field sf${fieldName}).`,
+        )
+        unmappedTypes.add(xrplType)
+      }
     }
+  }
+
+  if (unmappedTypes.size > 0) {
+    console.error(
+      `\nAdd ${[...unmappedTypes]
+        .map((t) => "STI_" + t)
+        .join(
+          ", ",
+        )} to either typeMap (with a Rust type implementing FieldDecoder) or untypedTypes (as a documented SField<u8, _> placeholder) in tools/generateSFields.js. Aborting without writing output.`,
+    )
+    process.exit(1)
   }
 
   ////////////////////////////////////////////////////////////////////////
