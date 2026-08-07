@@ -81,12 +81,16 @@ pub trait RippleStateFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HighQualityOut)
     }
 
-    /// The HighSponsor field (Optional).
+    /// The sponsor paying the reserve on behalf of the _high account_ on the trust line. This is
+    /// separate from `LowSponsor` because bidirectional trust lines may have the reserve held by
+    /// two accounts.
     fn high_sponsor(&self) -> Result<Option<AccountID>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HighSponsor)
     }
 
-    /// The LowSponsor field (Optional).
+    /// The sponsor paying the reserve on behalf of the _low account_ on the trust line. This is
+    /// separate from `HighSponsor` because bidirectional trust lines may have the reserve held by
+    /// two accounts.
     fn low_sponsor(&self) -> Result<Option<AccountID>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LowSponsor)
     }
@@ -164,12 +168,16 @@ pub trait CurrentRippleStateFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::HighQualityOut)
     }
 
-    /// The HighSponsor field (Optional).
+    /// The sponsor paying the reserve on behalf of the _high account_ on the trust line. This is
+    /// separate from `LowSponsor` because bidirectional trust lines may have the reserve held by
+    /// two accounts.
     fn high_sponsor(&self) -> Result<Option<AccountID>> {
         current_ledger_object::get_field_optional(sfield::HighSponsor)
     }
 
-    /// The LowSponsor field (Optional).
+    /// The sponsor paying the reserve on behalf of the _low account_ on the trust line. This is
+    /// separate from `HighSponsor` because bidirectional trust lines may have the reserve held by
+    /// two accounts.
     fn low_sponsor(&self) -> Result<Option<AccountID>> {
         current_ledger_object::get_field_optional(sfield::LowSponsor)
     }

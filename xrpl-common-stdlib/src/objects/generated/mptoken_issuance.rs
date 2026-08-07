@@ -30,7 +30,8 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
     /// 0.001%, allowing transfer rates between 0% and 50%. A `TransferFee` of 50,000 corresponds to
     /// 50%. The default value for this field is 0. Any decimals in the transfer fee are rounded
     /// down. The fee can be rounded down to zero if the payment is small. Issuers should make sure
-    /// that their MPT's `AssetScale` is large enough.
+    /// that their MPT's `AssetScale` is large enough. <br><br>This field is mutable by default, but
+    /// can be made immutable.
     fn transfer_fee(&self) -> Result<Option<u16>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::TransferFee)
     }
@@ -70,7 +71,7 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
     }
 
     /// Arbitrary metadata about this issuance, in hex format. The limit for this field is 1024
-    /// bytes.
+    /// bytes. <br><br>This field is mutable by default, but can be made immutable.
     fn mptoken_metadata(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::MPTokenMetadata)
     }
@@ -86,7 +87,8 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
-    /// The DomainID field (Optional).
+    /// The ledger entry ID of a permissioned domain that grants access to the MPT. This field is
+    /// _always_ mutable.
     fn domain_id(&self) -> Result<Option<Hash256>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DomainID)
     }
@@ -101,17 +103,17 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ReferenceHolding)
     }
 
-    /// The IssuerEncryptionKey field (Optional).
+    /// A 33-byte compressed ElGamal public key for the issuer.
     fn issuer_encryption_key(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerEncryptionKey)
     }
 
-    /// The AuditorEncryptionKey field (Optional).
+    /// A 33-byte compressed ElGamal public key for an optional on-chain auditor.
     fn auditor_encryption_key(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptionKey)
     }
 
-    /// The ConfidentialOutstandingAmount field (Optional).
+    /// The total amount of this token that is currently held in confidential balances.
     fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(
             self.get_slot_num(),
@@ -141,7 +143,8 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
     /// 0.001%, allowing transfer rates between 0% and 50%. A `TransferFee` of 50,000 corresponds to
     /// 50%. The default value for this field is 0. Any decimals in the transfer fee are rounded
     /// down. The fee can be rounded down to zero if the payment is small. Issuers should make sure
-    /// that their MPT's `AssetScale` is large enough.
+    /// that their MPT's `AssetScale` is large enough. <br><br>This field is mutable by default, but
+    /// can be made immutable.
     fn transfer_fee(&self) -> Result<Option<u16>> {
         current_ledger_object::get_field_optional(sfield::TransferFee)
     }
@@ -181,7 +184,7 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
     }
 
     /// Arbitrary metadata about this issuance, in hex format. The limit for this field is 1024
-    /// bytes.
+    /// bytes. <br><br>This field is mutable by default, but can be made immutable.
     fn mptoken_metadata(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::MPTokenMetadata)
     }
@@ -197,7 +200,8 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
-    /// The DomainID field (Optional).
+    /// The ledger entry ID of a permissioned domain that grants access to the MPT. This field is
+    /// _always_ mutable.
     fn domain_id(&self) -> Result<Option<Hash256>> {
         current_ledger_object::get_field_optional(sfield::DomainID)
     }
@@ -212,17 +216,17 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::ReferenceHolding)
     }
 
-    /// The IssuerEncryptionKey field (Optional).
+    /// A 33-byte compressed ElGamal public key for the issuer.
     fn issuer_encryption_key(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::IssuerEncryptionKey)
     }
 
-    /// The AuditorEncryptionKey field (Optional).
+    /// A 33-byte compressed ElGamal public key for an optional on-chain auditor.
     fn auditor_encryption_key(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::AuditorEncryptionKey)
     }
 
-    /// The ConfidentialOutstandingAmount field (Optional).
+    /// The total amount of this token that is currently held in confidential balances.
     fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::ConfidentialOutstandingAmount)
     }

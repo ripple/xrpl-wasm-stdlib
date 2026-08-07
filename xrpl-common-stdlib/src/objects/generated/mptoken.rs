@@ -49,32 +49,41 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::PreviousTxnLgrSeq)
     }
 
-    /// The ConfidentialBalanceInbox field (Optional).
+    /// Encrypted inbox balance that receives incoming confidential transfers. Before it can be
+    /// spent, the holder must merge it into their spending balance using the
+    /// ConfidentialMPTMergeInbox transaction. Present when the holder has a confidential balance.
     fn confidential_balance_inbox(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceInbox)
     }
 
-    /// The ConfidentialBalanceSpending field (Optional).
+    /// Encrypted spending balance used to generate proofs for outgoing transactions. Present when
+    /// the holder has a confidential balance.
     fn confidential_balance_spending(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceSpending)
     }
 
-    /// The ConfidentialBalanceVersion field (Optional).
+    /// Version number that increments each time the spending balance changes. This version is
+    /// cryptographically bound to ZKPs in outgoing transactions to prevent replay attacks and
+    /// ensure proof validity. If the version changes between proof generation and submission, the
+    /// transaction will fail.
     fn confidential_balance_version(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ConfidentialBalanceVersion)
     }
 
-    /// The IssuerEncryptedBalance field (Optional).
+    /// Copy of the holder's total confidential balance encrypted for the issuer to audit supply.
+    /// Present when the holder has a confidential balance.
     fn issuer_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerEncryptedBalance)
     }
 
-    /// The AuditorEncryptedBalance field (Optional).
+    /// The holder's total confidential balance encrypted under the auditor's key for independent
+    /// auditing. Only present if an auditor is configured.
     fn auditor_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptedBalance)
     }
 
-    /// The HolderEncryptionKey field (Optional).
+    /// The holder's ElGamal public key for confidential balances. Present when the holder has a
+    /// confidential balance.
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HolderEncryptionKey)
     }
@@ -120,32 +129,41 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::PreviousTxnLgrSeq)
     }
 
-    /// The ConfidentialBalanceInbox field (Optional).
+    /// Encrypted inbox balance that receives incoming confidential transfers. Before it can be
+    /// spent, the holder must merge it into their spending balance using the
+    /// ConfidentialMPTMergeInbox transaction. Present when the holder has a confidential balance.
     fn confidential_balance_inbox(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::ConfidentialBalanceInbox)
     }
 
-    /// The ConfidentialBalanceSpending field (Optional).
+    /// Encrypted spending balance used to generate proofs for outgoing transactions. Present when
+    /// the holder has a confidential balance.
     fn confidential_balance_spending(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::ConfidentialBalanceSpending)
     }
 
-    /// The ConfidentialBalanceVersion field (Optional).
+    /// Version number that increments each time the spending balance changes. This version is
+    /// cryptographically bound to ZKPs in outgoing transactions to prevent replay attacks and
+    /// ensure proof validity. If the version changes between proof generation and submission, the
+    /// transaction will fail.
     fn confidential_balance_version(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::ConfidentialBalanceVersion)
     }
 
-    /// The IssuerEncryptedBalance field (Optional).
+    /// Copy of the holder's total confidential balance encrypted for the issuer to audit supply.
+    /// Present when the holder has a confidential balance.
     fn issuer_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::IssuerEncryptedBalance)
     }
 
-    /// The AuditorEncryptedBalance field (Optional).
+    /// The holder's total confidential balance encrypted under the auditor's key for independent
+    /// auditing. Only present if an auditor is configured.
     fn auditor_encrypted_balance(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::AuditorEncryptedBalance)
     }
 
-    /// The HolderEncryptionKey field (Optional).
+    /// The holder's ElGamal public key for confidential balances. Present when the holder has a
+    /// confidential balance.
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::HolderEncryptionKey)
     }

@@ -126,17 +126,17 @@ pub trait AccountRootFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::FirstNFTokenSequence)
     }
 
-    /// The SponsoredOwnerCount field (Optional).
+    /// The number of objects this account owns that are sponsored by another account.
     fn sponsored_owner_count(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoredOwnerCount)
     }
 
-    /// The SponsoringOwnerCount field (Optional).
+    /// The number of objects this account is sponsoring the reserve for.
     fn sponsoring_owner_count(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoringOwnerCount)
     }
 
-    /// The SponsoringAccountCount field (Optional).
+    /// The number of accounts this account is sponsoring the account reserve for.
     fn sponsoring_account_count(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::SponsoringAccountCount)
     }
@@ -277,17 +277,17 @@ pub trait CurrentAccountRootFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::FirstNFTokenSequence)
     }
 
-    /// The SponsoredOwnerCount field (Optional).
+    /// The number of objects this account owns that are sponsored by another account.
     fn sponsored_owner_count(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::SponsoredOwnerCount)
     }
 
-    /// The SponsoringOwnerCount field (Optional).
+    /// The number of objects this account is sponsoring the reserve for.
     fn sponsoring_owner_count(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::SponsoringOwnerCount)
     }
 
-    /// The SponsoringAccountCount field (Optional).
+    /// The number of accounts this account is sponsoring the account reserve for.
     fn sponsoring_account_count(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::SponsoringAccountCount)
     }
