@@ -580,6 +580,9 @@
       }
 
       function loadAccounts() {
+        // Reset first so switching to a network with no saved accounts can't
+        // leave the previous network's accounts in memory (network scoping).
+        accounts = []
         try {
           const stored = localStorage.getItem(storageKey("accounts"))
           if (!stored) return
@@ -681,13 +684,17 @@
         const existingToasts = document.querySelectorAll(".toast")
         existingToasts.forEach((toast) => toast.remove())
 
-        // Create new toast
+        // Create new toast. The message is rendered as text (never HTML) so a
+        // dynamic error string can't inject markup; the close button is added
+        // as a real element.
         const toast = document.createElement("div")
         toast.className = `toast ${type}`
-        toast.innerHTML = `
-          ${message}
-          <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-        `
+        toast.textContent = message
+        const closeBtn = document.createElement("button")
+        closeBtn.className = "toast-close"
+        closeBtn.innerHTML = "&times;"
+        closeBtn.onclick = () => toast.remove()
+        toast.appendChild(closeBtn)
 
         document.body.appendChild(toast)
 

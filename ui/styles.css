@@ -592,7 +592,9 @@ body {
   padding: 15px 20px;
   border-radius: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  /* Above the modal overlay (1100) so toasts fired from an open modal
+     (e.g. an invalid-seed warning) are visible rather than hidden behind it. */
+  z-index: 1200;
   opacity: 0;
   transform: translateX(100%);
   transition: all 0.3s ease;
