@@ -1,31 +1,21 @@
-use xrpl_common_stdlib::objects::traits::{EscrowFields, LedgerObjectCommonFields};
+//! The slot-based `Escrow` handle.
+//!
+//! `Escrow` and the generic `EscrowFields` trait are generated in
+//! `xrpl_common_stdlib::objects` (re-exported here for a stable path). Every field — including
+//! `Data`, which reads as a `StandardBlob` via `EscrowFields::data()` — is available through the
+//! generated trait. Only the escrow-only, host-mutable *write* of `Data` (`set_data`) is
+//! hand-written; see `ctx::EscrowFinishContext` / `ledger_objects::traits`.
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct Escrow {
-    pub(crate) slot_num: i32,
-}
-
-impl LedgerObjectCommonFields for Escrow {
-    fn get_slot_num(&self) -> i32 {
-        self.slot_num
-    }
-}
-
-impl EscrowFields for Escrow {}
-
-impl Escrow {
-    pub fn new(slot_num: i32) -> Self {
-        Self { slot_num }
-    }
-}
+pub use xrpl_common_stdlib::objects::Escrow;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
 
     #[test]
     fn test_new() {
         let escrow = Escrow::new(42);
-        assert_eq!(escrow.slot_num, 42);
+        assert_eq!(escrow.get_slot_num(), 42);
     }
 }

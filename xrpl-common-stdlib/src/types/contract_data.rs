@@ -1,21 +1,17 @@
-pub const XRPL_CONTRACT_DATA_SIZE: usize = 1024;
+//! `ContractData` — the value type of an escrow's `Data` field.
+//!
+//! An escrow's contract data is a plain fixed-max byte buffer, structurally identical to a
+//! [`StandardBlob`] (`Blob<DEFAULT_BLOB_SIZE>`). It is therefore defined as a transparent alias
+//! rather than a distinct struct: existing `ContractData` references stay valid, and because the
+//! generic ledger-object getters decode any `Blob<N>`, the `Data` field can be read through the
+//! generated `EscrowFields::data()` getter like any other field. The escrow-only *write*
+//! (`set_data`) still lives in `xrpl-escrow-stdlib`.
 
-/// A 4096-byte buffer for contract data on the XRP Ledger.
-///
-/// This type holds arbitrary contract data with a tracked length field
-/// to indicate the actual amount of data stored (which may be less than
-/// the full buffer capacity).
-///
-/// ## Derived Traits
-///
-/// - `PartialEq, Eq`: Enable comparisons
-/// - `Debug, Clone`: Standard traits for development and consistency
-///
-/// Note: `Copy` is intentionally not derived due to the struct's size (4096+ bytes).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractData {
-    pub data: [u8; XRPL_CONTRACT_DATA_SIZE],
+use crate::types::blob::{DEFAULT_BLOB_SIZE, StandardBlob};
 
-    /// The actual length of this contract data, if less than data.len()
-    pub len: usize,
-}
+/// Maximum size, in bytes, of an escrow's contract data. Tied to [`DEFAULT_BLOB_SIZE`] so it can
+/// never drift from the [`StandardBlob`] buffer that backs [`ContractData`].
+pub const XRPL_CONTRACT_DATA_SIZE: usize = DEFAULT_BLOB_SIZE;
+
+/// A fixed-max byte buffer holding an escrow's `Data` field. Alias for [`StandardBlob`].
+pub type ContractData = StandardBlob;
