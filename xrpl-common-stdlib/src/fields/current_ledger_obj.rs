@@ -116,7 +116,7 @@ pub fn get_blob_field_optional<const N: usize, const CODE: i32>(
 #[cfg(test)]
 mod tests {
     use super::{get_blob_field, get_blob_field_optional, get_field, get_field_optional};
-    use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR};
+    use crate::host::error_codes::{FIELD_NOT_FOUND, SOME_ERROR};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
     use crate::sfield;
@@ -196,12 +196,12 @@ mod tests {
         mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Flags.into()), always(), eq(4))
             .times(1)
-            .returning(|_, _, _| INTERNAL_ERROR);
+            .returning(|_, _, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         let result = get_field::<u32, _>(sfield::Flags);
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]
@@ -270,12 +270,12 @@ mod tests {
         mock.expect_home_le_field()
             .with(eq::<i32>(sfield::Condition.into()), always(), eq(128))
             .times(1)
-            .returning(|_, _, _| INTERNAL_ERROR);
+            .returning(|_, _, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         let result = get_blob_field(sfield::Condition);
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]

@@ -1126,7 +1126,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::host::error_codes::INTERNAL_ERROR;
+    use crate::host::error_codes::SOME_ERROR;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
 
@@ -1160,17 +1160,17 @@ mod tests {
         };
     }
 
-    /// Generates a mock `returning` closure that returns INTERNAL_ERROR.
+    /// Generates a mock `returning` closure that returns SOME_ERROR.
     /// Pass the total number of parameters of the host function.
     macro_rules! error_returning {
         (4) => {
-            |_, _, _, _| INTERNAL_ERROR
+            |_, _, _, _| SOME_ERROR
         };
         (6) => {
-            |_, _, _, _, _, _| INTERNAL_ERROR
+            |_, _, _, _, _, _| SOME_ERROR
         };
         (8) => {
-            |_, _, _, _, _, _, _, _| INTERNAL_ERROR
+            |_, _, _, _, _, _, _, _| SOME_ERROR
         };
     }
 
@@ -1210,7 +1210,7 @@ mod tests {
 
                     let result = $call_block;
                     assert!(result.is_err());
-                    assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+                    assert_eq!(result.err().unwrap().code(), SOME_ERROR);
                 }
             }
         };

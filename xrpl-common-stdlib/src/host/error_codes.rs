@@ -44,14 +44,18 @@ pub const INVALID_FLOAT_INPUT: i32 = -19;
 pub const INVALID_FLOAT_COMPUTATION: i32 = -20;
 
 // Library-owned error codes, reserved upward from `i32::MIN` so they can't collide with a host
-// code. xrpld reassigned `-1` and `-11`, so these two moved here rather than being dropped.
-
-/// Reserved for internal invariant trips. Currently a reserved slot: the trips the stdlib can
-/// detect eagerly panic instead (see [`match_result_code_with_expected_bytes`]).
-pub const INTERNAL_ERROR: i32 = i32::MIN;
+// code.
 
 /// A byte slice the host returned could not be decoded into the requested type.
-pub const INVALID_DECODING: i32 = i32::MIN + 1;
+pub const INVALID_DECODING: i32 = i32::MIN;
+
+/// Stand-in for "the host returned some error", for tests that assert an error propagates rather
+/// than any particular code. The value is arbitrary; it only has to be a real host code the stdlib
+/// never constructs itself, so a passing test can't be explained by the code under test producing
+/// it independently. [`FIELD_NOT_FOUND`] cannot be used — the optional getters turn it into
+/// `Ok(None)`.
+#[cfg(any(test, feature = "test-host-bindings"))]
+pub const SOME_ERROR: i32 = NO_MEM_EXPORTED;
 
 /// Evaluates a result code and executes a closure on success (result_code > 0).
 ///
@@ -257,9 +261,8 @@ mod tests {
 
     #[test]
     fn test_match_result_code_error_negative() {
-        let result = match_result_code(INTERNAL_ERROR, || "should_not_execute");
-        assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        let result = match_result_code(SOME_ERROR, || "should_not_execute");
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]
@@ -438,7 +441,6 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
-            INTERNAL_ERROR,
             INVALID_DECODING,
         ];
 
@@ -470,7 +472,6 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
-            INTERNAL_ERROR,
             INVALID_DECODING,
         ];
 
@@ -511,7 +512,6 @@ mod tests {
             INDEX_OUT_OF_BOUNDS,
             INVALID_FLOAT_INPUT,
             INVALID_FLOAT_COMPUTATION,
-            INTERNAL_ERROR,
             INVALID_DECODING,
         ];
 
@@ -544,7 +544,7 @@ mod tests {
             execution_count += 1;
             "should_not_execute"
         };
-        let _result = match_result_code(INTERNAL_ERROR, closure);
+        let _result = match_result_code(SOME_ERROR, closure);
         assert_eq!(execution_count, 0);
     }
 

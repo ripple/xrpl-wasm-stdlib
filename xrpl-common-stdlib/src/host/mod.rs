@@ -307,17 +307,9 @@ pub enum Error {
     /// This may indicate overflow, underflow, or other arithmetic errors.
     InvalidFloatComputation = error_codes::INVALID_FLOAT_COMPUTATION,
 
-    /// Reserved for internal invariant trips in the stdlib, generally unrelated to inputs.
-    /// This is NOT a host ABI code: it would be produced by the stdlib itself on detecting a
-    /// bug. The invariant trips the stdlib detects eagerly panic instead, so this is currently
-    /// a reserved slot rather than one any library code returns. Should be reported as an issue
-    /// if it ever surfaces.
-    InternalError = error_codes::INTERNAL_ERROR,
-
     /// A byte slice the host returned could not be decoded into the requested type.
-    /// This is NOT a host ABI code either: the host reported success, and the stdlib's own
-    /// decoder rejected the bytes. Distinct from [`Error::InternalError`] — no invariant was
-    /// violated, the data just didn't parse.
+    /// This is NOT a host ABI code: the host reported success, and the stdlib's own decoder
+    /// rejected the bytes.
     InvalidDecoding = error_codes::INVALID_DECODING,
 }
 
