@@ -150,7 +150,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     let counterpart_data = match counterpart_escrow.data() {
         Ok(Some(data)) => data,
         Ok(None) => {
-            let _ = trace_num("Counterpart escrow has no data field", 0);
+            trace_num("Counterpart escrow has no data field", 0);
             return VALIDATION_FAILED;
         }
         Err(e) => {
