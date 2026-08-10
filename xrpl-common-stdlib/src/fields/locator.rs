@@ -38,6 +38,7 @@
 use crate::fields::decoder::{FromCurrentTx, FromLedger, decode_host_result};
 use crate::host::{
     self, Result, home_le_inner, home_le_inner_arr_len, le_inner, le_inner_arr_len, tx_inner,
+    tx_inner_arr_len,
 };
 use crate::sfield::SField;
 
@@ -144,6 +145,28 @@ impl Locator {
 /// A path longer than the 64-byte buffer (more than 16 segments) can hold is not silently
 /// truncated: the overflow is remembered and surfaced as [`host::Error::LocatorMalformed`] from
 /// [`get`](Self::get), rather than sending the host a shorter path than the author wrote.
+///
+/// ```no_run
+/// use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+/// use xrpl_common_stdlib::host::Result;
+/// use xrpl_common_stdlib::sfield;
+/// use xrpl_common_stdlib::types::blob::StandardBlob;
+/// # fn demo(tx: &impl TransactionCommonFields) {
+/// // Walk every entry of an array field.
+/// if let Result::Ok(count) = tx.path().field(sfield::Memos).array_len() {
+///     for i in 0..count {
+///         let memo_type = tx
+///             .path()
+///             .field(sfield::Memos)
+///             .index(i)
+///             .field(sfield::Memo)
+///             .field(sfield::MemoType)
+///             .get::<StandardBlob>();
+///         # let _ = memo_type;
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TxPathBuilder {
     locator: Locator,
@@ -214,6 +237,27 @@ impl TxPathBuilder {
         }
     }
 
+    /// Ask the host how many entries the array at this path holds, so it can be iterated.
+    ///
+    /// Named `array_len` rather than `len` because [`Locator::len`] already means "bytes packed into
+    /// the path"; this is the length of the array the path points *at*. Returns `Ok(0)` for a
+    /// present-but-empty array, and [`host::Error::LocatorMalformed`] without calling the host if
+    /// the path overflowed the buffer while being built.
+    ///
+    /// A single-segment path — one [`field`](Self::field) and no [`index`](Self::index) — is the
+    /// length of a top-level array such as `Memos`, so top-level arrays need no separate accessor.
+    pub fn array_len(&self) -> Result<u32> {
+        if self.overflowed {
+            return Result::Err(host::Error::LocatorMalformed);
+        }
+        let n = unsafe { tx_inner_arr_len(self.locator.as_ptr(), self.locator.num_packed_bytes()) };
+        if n < 0 {
+            return Result::Err(host::Error::from_code(n));
+        }
+        // A zero-length array is a legitimate answer, not an error.
+        Result::Ok(n as u32)
+    }
+
     /// Run the built path through `tx_inner` into a fresh `T` buffer, returning that
     /// buffer and the raw byte count the host reported (negative on error).
     fn read<T: FromCurrentTx>(&self) -> (T::Buffer, i32) {
@@ -282,7 +326,7 @@ impl LedgerSource {
 /// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for the
 /// current one. Any object type works, including ones with no bespoke wrapper: reach for
 /// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle around a raw slot
-/// from `cache_le`.
+/// from [`cache_ledger_entry`](crate::objects::cache_ledger_entry).
 ///
 /// Mirrors [`TxPathBuilder`] — same [`Locator`] buffer, same overflow →
 /// [`host::Error::LocatorMalformed`] guard — with two differences: terminal reads are bounded on
@@ -402,6 +446,10 @@ impl LedgerPathBuilder {
     /// the path"; this is the length of the array the path points *at*. Returns `Ok(0)` for a
     /// present-but-empty array, and [`host::Error::LocatorMalformed`] without calling the host if
     /// the path is malformed.
+    ///
+    /// A single-segment path — one [`field`](Self::field) and no [`index`](Self::index) — is the
+    /// length of a top-level array such as `SignerEntries`, so top-level arrays need no separate
+    /// accessor.
     pub fn array_len(&self) -> Result<u32> {
         if self.overflowed {
             return Result::Err(host::Error::LocatorMalformed);
@@ -565,6 +613,7 @@ mod tests {
     use crate::host::error_codes::FIELD_NOT_FOUND;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
+    use crate::types::blob::StandardBlob;
     use mockall::predicate::{always, eq};
 
     /// The bytes a `TxPathBuilder` has packed so far, for asserting on the encoded path.
@@ -732,6 +781,99 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_tx_array_len_returns_count() {
+        let mut mock = MockHostBindings::new();
+        // A top-level array is a single 4-byte segment of path.
+        mock.expect_tx_inner_arr_len()
+            .with(always(), eq(4usize))
+            .times(1)
+            .returning(|_, _| 3);
+        let _guard = setup_mock(mock);
+
+        let result = TxPathBuilder::for_current_tx()
+            .field(sfield::Memos)
+            .array_len();
+
+        assert_eq!(result.unwrap(), 3);
+    }
+
+    #[test]
+    fn test_tx_array_len_zero_is_ok_not_an_error() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner_arr_len().times(1).returning(|_, _| 0);
+        let _guard = setup_mock(mock);
+
+        let result = TxPathBuilder::for_current_tx()
+            .field(sfield::Memos)
+            .array_len();
+
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[test]
+    fn test_tx_array_len_propagates_host_error() {
+        use crate::host::error_codes::NO_ARRAY;
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner_arr_len()
+            .times(1)
+            .returning(|_, _| NO_ARRAY);
+        let _guard = setup_mock(mock);
+
+        let result = TxPathBuilder::for_current_tx()
+            .field(sfield::Sequence)
+            .array_len();
+
+        assert_eq!(result.err().unwrap().code(), NO_ARRAY);
+    }
+
+    #[test]
+    fn test_tx_array_len_returns_locator_malformed_when_overflowed_without_calling_host() {
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner_arr_len().times(0);
+        let _guard = setup_mock(mock);
+
+        let mut builder = TxPathBuilder::for_current_tx();
+        for i in 0..17 {
+            builder = builder.index(i);
+        }
+
+        assert_eq!(
+            builder.array_len().err().unwrap().code(),
+            host::Error::LocatorMalformed.code()
+        );
+    }
+
+    #[test]
+    fn test_tx_array_len_then_index_walks_every_entry() {
+        // The pattern `array_len()` exists for: count, then read each element.
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner_arr_len()
+            .with(always(), eq(4usize))
+            .times(1)
+            .returning(|_, _| 2);
+        // Two reads of Memos[i].Memo.MemoType -> 16 bytes of path.
+        mock.expect_tx_inner()
+            .with(always(), eq(16usize), always(), always())
+            .times(2)
+            .returning(|_, _, _, out_buff_len| out_buff_len as i32);
+        let _guard = setup_mock(mock);
+
+        let tx = TxPathBuilder::for_current_tx();
+        let count = tx.clone().field(sfield::Memos).array_len().unwrap();
+        assert_eq!(count, 2);
+        for i in 0..count {
+            let memo_type = tx
+                .clone()
+                .field(sfield::Memos)
+                .index(i)
+                .field(sfield::Memo)
+                .field(sfield::MemoType)
+                .get::<StandardBlob>();
+            assert!(memo_type.is_ok());
+        }
     }
 
     // ---- Fluent path builder (`obj.path()` / `ctx.escrow().path()`) ----

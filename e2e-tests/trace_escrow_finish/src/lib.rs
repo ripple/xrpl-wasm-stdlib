@@ -138,12 +138,26 @@ pub extern "C" fn escrow_finish() -> i32 {
         }
 
         // Memos array (optional) - require at least one memo for testing
-        let array_len = unsafe { host::tx_arr_len(sfield::Memos.into()) };
+        let array_len = match escrow_finish.path().field(sfield::Memos).array_len() {
+            host::Result::Ok(len) => len as i32,
+            host::Result::Err(e) => {
+                let _ = trace_num("  Error getting Memos array len, error_code = ", e as i64);
+                e.code()
+            }
+        };
         test_utils::assert!(
             array_len > 0,
             "At least one Memo should be present for testing"
         );
         let _ = trace_num("  Memos array len:", array_len as i64);
+
+        // A one-segment locator counts a top-level array, so it agrees with the host's dedicated
+        // top-level call — which is why contracts need no separate top-level accessor.
+        test_utils::assert_eq!(
+            array_len,
+            unsafe { host::tx_arr_len(sfield::Memos.into()) },
+            "Locator array_len should match tx_arr_len for a top-level array"
+        );
 
         for i in 0..array_len {
             let mut memo_buf = [0u8; 1024];

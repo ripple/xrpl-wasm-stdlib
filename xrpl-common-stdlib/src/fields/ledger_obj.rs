@@ -1,7 +1,8 @@
 //! # Ledger Object Field Retrieval Module (by slot)
 //!
 //! Typed accessors for reading fields from a ledger object that has been cached into a slot (via
-//! `cache_le`). `get_field` and `get_field_optional` are generic over any type
+//! [`cache_ledger_entry`](crate::objects::cache_ledger_entry)). `get_field` and
+//! `get_field_optional` are generic over any type
 //! implementing [`crate::fields::decoder::FromLedger`] — see [`crate::fields::decoder`] for
 //! how a type opts into that.
 

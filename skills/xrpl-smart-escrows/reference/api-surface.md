@@ -126,11 +126,10 @@ Two-step pattern for any object besides the current escrow:
 
 ```rust
 use xrpl_common_stdlib::ledger_entry_ids::escrow_id;   // or accountroot_id, oracle_id, credential_id, ...
-use xrpl_common_stdlib::host;
+use xrpl_common_stdlib::objects::cache_ledger_entry;
 
 let id = escrow_id(&owner, sequence)?;
-let slot = unsafe { host::cache_le(id.as_ptr(), id.len(), 0) };
-if slot < 0 { return FinishResult::reject(); }
+let slot = cache_ledger_entry(&id)?;   // Err on LedgerObjNotFound / SlotsFull
 ```
 
 Then wrap the slot:
@@ -148,6 +147,21 @@ let price: u64 = oracle.path()
     .index(0)
     .field(sfield::AssetPrice)
     .get::<u64>()?;
+```
+
+`array_len()` on a path counts the array it points at, so an array field can be walked instead of
+guessed at. It works the same on a transaction path (`ctx.tx().path()`) and a ledger-object path,
+including a single-segment path naming a top-level array:
+
+```rust
+let count = oracle.path().field(sfield::PriceDataSeries).array_len()?;
+for i in 0..count {
+    let price = oracle.path()
+        .field(sfield::PriceDataSeries)
+        .index(i)
+        .field(sfield::AssetPrice)
+        .get::<u64>()?;
+}
 ```
 
 Convenience one-shot for the common case of "just give me this account's XRP/token balance":
