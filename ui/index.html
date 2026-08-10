@@ -545,6 +545,10 @@
       let selectedAccount = null
       let lastOfferSequence = null
       let ledgerInterval = null
+      // The network we are actually connected to, set on a successful connect.
+      // Storage keys derive from this — not the radio buttons — so changing the
+      // radio without reconnecting can't write accounts under the wrong network.
+      let connectedNetwork = null
 
       // ---------------------------------------------------------------------
       // Persistence (localStorage)
@@ -561,7 +565,8 @@
       }
 
       function storageKey(kind) {
-        const network = getSelectedNetwork() || "unknown"
+        // Key off the connected network, not the (transient) radio selection.
+        const network = connectedNetwork || "unknown"
         // Sanitize so the key is a stable, readable identifier per network.
         const suffix = network.replace(/[^a-zA-Z0-9]/g, "_")
         return `${STORAGE_PREFIX}_${kind}_${suffix}`
@@ -871,6 +876,9 @@
 
           await client.connect()
 
+          // Pin storage to the network we actually connected to.
+          connectedNetwork = selectedNetwork
+
           // Start ledger acceptance for local nodes
           if (
             selectedNetwork.includes("localhost") ||
@@ -910,6 +918,7 @@
           accounts = []
           escrows = []
           selectedAccount = null
+          connectedNetwork = null
 
           // Update UI to reflect cleared state
           await updateAccountsList()
