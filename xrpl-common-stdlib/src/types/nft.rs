@@ -185,7 +185,7 @@ impl NFToken {
     /// * `Err(Error)` - If the host function fails
     ///
     pub fn flags(&self) -> Result<NftFlags> {
-        let result = unsafe { host::get_nft_flags(self.as_ptr(), self.len()) };
+        let result = unsafe { host::nft_flags(self.as_ptr(), self.len()) };
 
         match result {
             code if code >= 0 => Result::Ok(NftFlags::new(code as u16)),
@@ -207,7 +207,7 @@ impl NFToken {
     /// * `Err(Error)` - If the host function fails
     ///
     pub fn transfer_fee(&self) -> Result<u16> {
-        let result = unsafe { host::get_nft_transfer_fee(self.as_ptr(), self.len()) };
+        let result = unsafe { host::nft_xfer_fee(self.as_ptr(), self.len()) };
 
         match result {
             code if code >= 0 => Result::Ok(code as u16),
@@ -227,7 +227,7 @@ impl NFToken {
     pub fn issuer(&self) -> Result<AccountID> {
         let mut account_buf = [0u8; ACCOUNT_ID_SIZE];
         let result = unsafe {
-            host::get_nft_issuer(
+            host::nft_issuer(
                 self.as_ptr(),
                 self.len(),
                 account_buf.as_mut_ptr(),
@@ -252,7 +252,7 @@ impl NFToken {
     pub fn taxon(&self) -> Result<u32> {
         let mut taxon_buf = [0u8; 4];
         let result = unsafe {
-            host::get_nft_taxon(
+            host::nft_taxon(
                 self.as_ptr(),
                 self.len(),
                 taxon_buf.as_mut_ptr(),
@@ -284,7 +284,7 @@ impl NFToken {
     pub fn token_sequence(&self) -> Result<u32> {
         let mut serial_buf = [0u8; 4];
         let result = unsafe {
-            host::get_nft_serial(
+            host::nft_serial(
                 self.as_ptr(),
                 self.len(),
                 serial_buf.as_mut_ptr(),
@@ -317,7 +317,7 @@ impl NFToken {
     pub fn uri(&self, owner: &AccountID) -> Result<UriBlob> {
         let mut uri_buf = [0u8; URI_BLOB_SIZE];
         let result = unsafe {
-            host::get_nft(
+            host::nft_uri(
                 owner.0.as_ptr(),
                 owner.0.len(),
                 self.as_ptr(),
@@ -529,7 +529,7 @@ mod tests {
     fn test_nft_host_method_error() {
         let mut mock = MockHostBindings::new();
 
-        mock.expect_get_nft_flags()
+        mock.expect_nft_flags()
             .with(always(), eq(NFT_ID_SIZE))
             .returning(|_, _| crate::host::error_codes::INTERNAL_ERROR);
 
@@ -551,7 +551,7 @@ mod tests {
         let expected_flags = 0x0001u16; // BURNABLE flag
 
         // Set up expectations
-        mock.expect_get_nft_flags()
+        mock.expect_nft_flags()
             .with(always(), eq(NFT_ID_SIZE))
             .returning(move |_, _| expected_flags as i32);
 
@@ -570,7 +570,7 @@ mod tests {
         let expected_fee = 1000u16;
 
         // Set up expectations
-        mock.expect_get_nft_transfer_fee()
+        mock.expect_nft_xfer_fee()
             .with(always(), eq(NFT_ID_SIZE))
             .returning(move |_, _| expected_fee as i32);
 
@@ -588,7 +588,7 @@ mod tests {
         let nft_id = [0u8; 32];
 
         // Set up expectations
-        mock.expect_get_nft_issuer()
+        mock.expect_nft_issuer()
             .with(always(), eq(NFT_ID_SIZE), always(), eq(ACCOUNT_ID_SIZE))
             .returning(|_, _, _, _| ACCOUNT_ID_SIZE as i32);
 
@@ -607,7 +607,7 @@ mod tests {
         let nft_id = [0u8; 32];
 
         // Set up expectations - taxon is a u32 (4 bytes)
-        mock.expect_get_nft_taxon()
+        mock.expect_nft_taxon()
             .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
             .returning(|_, _, _, _| 4);
 
@@ -625,7 +625,7 @@ mod tests {
         let nft_id = [0u8; 32];
 
         // Set up expectations - serial is a u32 (4 bytes)
-        mock.expect_get_nft_serial()
+        mock.expect_nft_serial()
             .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
             .returning(|_, _, _, _| 4);
 
@@ -645,7 +645,7 @@ mod tests {
         let expected_uri_len = 10;
 
         // Set up expectations
-        mock.expect_get_nft()
+        mock.expect_nft_uri()
             .with(
                 always(),
                 eq(ACCOUNT_ID_SIZE),

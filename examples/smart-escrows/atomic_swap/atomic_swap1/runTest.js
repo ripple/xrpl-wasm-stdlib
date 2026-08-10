@@ -30,30 +30,30 @@ async function test(testContext) {
   // Deploy atomic_swap1 escrow (Alice → Bob)
   const swap1Result = await deploy(sourceWallet, destWallet, finish)
 
-  // Deploy atomic_swap2 escrow (Bob → Alice) with atomic_swap1's keylet in data field
+  // Deploy atomic_swap2 escrow (Bob → Alice) with atomic_swap1's ledger entry ID in data field
   const swap2Result = await deploy(
     destWallet,
     sourceWallet,
     atomicSwap2Wasm,
-    swap1Result.escrowKeylet,
+    swap1Result.escrowId,
   )
 
   // Phase 1: Execute atomic_swap2 Phase 1 - Initialize timing
-  // Phase 1 should return tecWASM_REJECTED (contract returns 0) but data update persists
+  // Phase 1 should return tecBYTECODE_REJECTED (contract returns 0) but data update persists
   const txSwap2Phase1 = {
     TransactionType: "EscrowFinish",
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(swap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseSwap2Phase1 = await submit(txSwap2Phase1, destWallet)
   if (
-    responseSwap2Phase1.result.meta.TransactionResult !== "tecWASM_REJECTED"
+    responseSwap2Phase1.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
   ) {
     console.error(
-      "atomic_swap2 Phase 1 expected tecWASM_REJECTED, got:",
+      "atomic_swap2 Phase 1 expected tecBYTECODE_REJECTED, got:",
       responseSwap2Phase1.result.meta.TransactionResult,
     )
     process.exit(1)
@@ -74,7 +74,7 @@ async function test(testContext) {
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(swap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseSwap2Phase2 = await submit(txSwap2Phase2, destWallet)
@@ -103,19 +103,19 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(swap1Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Memos: [
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("counterpart_escrow"),
-          MemoData: swap2Result.escrowKeylet,
+          MemoData: swap2Result.escrowId,
         },
       },
     ],
   }
 
   const responseSwap1 = await submit(txSwap1, sourceWallet)
-  if (responseSwap1.result.meta.TransactionResult !== "tecWASM_REJECTED") {
+  if (responseSwap1.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
     console.error(
       "Expected atomic_swap1 to fail after counterpart finished, but got:",
       responseSwap1.result.meta.TransactionResult,
@@ -132,7 +132,7 @@ async function test(testContext) {
     destWallet,
     sourceWallet,
     atomicSwap2Wasm,
-    finalSwap1Result.escrowKeylet,
+    finalSwap1Result.escrowId,
   )
 
   // Execute atomic_swap2 Phase 1
@@ -141,17 +141,17 @@ async function test(testContext) {
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(finalSwap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseFinalSwap2Phase1 = await submit(txFinalSwap2Phase1, destWallet)
-  // Phase 1 should return tecWASM_REJECTED (contract returns 0) but data update persists
+  // Phase 1 should return tecBYTECODE_REJECTED (contract returns 0) but data update persists
   if (
     responseFinalSwap2Phase1.result.meta.TransactionResult !==
-    "tecWASM_REJECTED"
+    "tecBYTECODE_REJECTED"
   ) {
     console.error(
-      "Final atomic_swap2 Phase 1 expected tecWASM_REJECTED, got:",
+      "Final atomic_swap2 Phase 1 expected tecBYTECODE_REJECTED, got:",
       responseFinalSwap2Phase1.result.meta.TransactionResult,
     )
     process.exit(1)
@@ -163,12 +163,12 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(finalSwap1Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Memos: [
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("counterpart_escrow"),
-          MemoData: finalSwap2Result.escrowKeylet,
+          MemoData: finalSwap2Result.escrowId,
         },
       },
     ],
@@ -178,13 +178,13 @@ async function test(testContext) {
     txFinalSwap1Phase1,
     sourceWallet,
   )
-  // Phase 1 should return tecWASM_REJECTED (contract returns 0) but data update persists
+  // Phase 1 should return tecBYTECODE_REJECTED (contract returns 0) but data update persists
   if (
     responseFinalSwap1Phase1.result.meta.TransactionResult !==
-    "tecWASM_REJECTED"
+    "tecBYTECODE_REJECTED"
   ) {
     console.error(
-      "Final atomic_swap1 Phase 1 expected tecWASM_REJECTED, got:",
+      "Final atomic_swap1 Phase 1 expected tecBYTECODE_REJECTED, got:",
       responseFinalSwap1Phase1.result.meta.TransactionResult,
     )
     process.exit(1)
@@ -207,7 +207,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     Owner: sourceWallet.address,
     OfferSequence: parseInt(finalSwap1Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseFinalSwap1Phase2 = await submit(
@@ -239,7 +239,7 @@ async function test(testContext) {
     Account: destWallet.address,
     Owner: destWallet.address,
     OfferSequence: parseInt(finalSwap2Result.sequence),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
   }
 
   const responseFinalSwap2Phase2 = await submit(txFinalSwap2Phase2, destWallet)

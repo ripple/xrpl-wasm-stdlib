@@ -16,7 +16,7 @@ The Rust code demonstrates how to interact with XRPL oracle objects using the XR
 
 ### Core Components
 
-- **Oracle Integration**: Connects to XRPL oracle objects using keylet as address
+- **Oracle Integration**: Connects to XRPL oracle objects using ledger entry ID as address
 - **Price Retrieval**: Extracts `AssetPrice` data from `PriceDataSeries` within oracle objects
 - **Threshold Logic**: Simple escrow unlock condition (price > 1)
 - **Error Handling**: Graceful failure when oracle data is unavailable (e.g., if the oracle does not exist)
@@ -24,7 +24,7 @@ The Rust code demonstrates how to interact with XRPL oracle objects using the XR
 ### Key Functions
 
 - `oracle_finish(ctx: EscrowFinishContext) -> FinishResult`: Main entry point that determines escrow unlock
-  status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn finish() -> i32` export the XRPL
+  status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL
   host calls.
 - `get_price_from_oracle(slot)`: Retrieves price from cached oracle object
 - `get_u64_from_buffer(bytes)`: Converts big-endian bytes to u64 price value
@@ -69,7 +69,7 @@ Artifact:
 
 ### 3. Deploy and test on Devnet
 
-Use the test script to deploy an escrow and test the FinishFunction.
+Use the test script to deploy an escrow and test the contract.
 
 ```shell
 cd ../../..
@@ -81,7 +81,7 @@ This will:
 - Connect to WASM Devnet
 - Create and fund two wallets (Origin and Destination)
 - Create an oracle object with price data
-- Create an EscrowCreate transaction with your compiled `FinishFunction`
+- Create an EscrowCreate transaction with your compiled `Bytecode`
 - Submit an `EscrowFinish` transaction
 - Verify that the escrow unlocks only if the oracle price is greater than 1
 
@@ -104,9 +104,9 @@ The integration test suite covers:
 
 #### Core Functionality
 
-- Oracle keylet (address derivation) generation with known parameters
+- Oracle ledger entry ID (address derivation) generation with known parameters
 - Ledger object caching and retrieval
-- Nested field extraction (`PriceDataSeries` → `AssetPrice`)
+- Inner field extraction (`PriceDataSeries` → `AssetPrice`)
 - Price threshold evaluation logic
 
 #### Data Processing
@@ -151,7 +151,7 @@ The integration test suite covers:
 │  │ ┌─────────────┐ │              │ finish() function:      │   │
 │  │ │ PriceData   │ │◄─────────────┤                         │   │
 │  │ │ Series      │ │              │ 1. Generate Oracle      │   │
-│  │ │             │ │              │    Keylet               │   │
+│  │ │             │ │              │    LedgerEntryId               │   │
 │  │ │ └─AssetPrice│ │              │                         │   │
 │  │ └─────────────┘ │              │ 2. Cache Ledger Object  │   │
 │  └─────────────────┘              │                         │   │

@@ -10,6 +10,7 @@ pub mod issue;
 pub mod message;
 pub mod mpt_id;
 pub mod nft;
+pub mod number;
 pub mod public_key;
 pub mod signature;
 pub mod transaction_type;

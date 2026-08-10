@@ -16,9 +16,3 @@
 /// - `Debug, Clone`: standard traits for development and consistency
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Signature<'a>(pub &'a [u8]);
-
-impl<'a> From<&'a [u8]> for Signature<'a> {
-    fn from(bytes: &'a [u8]) -> Self {
-        Self(bytes)
-    }
-}

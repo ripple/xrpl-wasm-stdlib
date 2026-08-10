@@ -35,7 +35,7 @@ impl FinishResult {
     /// Allow the Smart Feature with a custom positive code.
     ///
     /// `N` must be a positive compile-time constant; passing a non-positive value
-    /// is a compile-time error. The code is recorded in the `WasmReturnCode`
+    /// is a compile-time error. The code is recorded in the `VMReturnCode`
     /// ledger metadata field and can be used for diagnostics.
     ///
     /// ```
@@ -51,7 +51,7 @@ impl FinishResult {
     /// Block the Smart Feature with a custom non-positive error code.
     ///
     /// `N` must be non-positive (≤ 0) at compile time; passing a positive value
-    /// is a compile-time error. The code is recorded in the `WasmReturnCode`
+    /// is a compile-time error. The code is recorded in the `VMReturnCode`
     /// ledger metadata field and can be used for diagnostics.
     ///
     /// ```

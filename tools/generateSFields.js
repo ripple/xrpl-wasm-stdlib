@@ -7,7 +7,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
       " path/to/escrow/rippled path/to/contract/rippled [path/to/pipe/to]",
   )
   console.error(
-    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/smart-escrow",
+    "Both rippled paths may be local dirs or GitHub URLs, e.g. https://github.com/XRPLF/rippled/tree/ripple/se/supported",
   )
   console.error(
     "Escrow-side fields are sourced from (and always trust) the escrow branch, so a rename there is picked up automatically. " +
@@ -22,6 +22,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
 const path = require("path")
 const fs = require("fs/promises")
 const { readSourceFile: read } = require("./rippledSource")
+const { typeMap, customFieldTypes, parseSfields } = require("./sfieldTypeMap")
 
 function parseStypes(sfieldHeaderFile) {
   let stypeHits = [
@@ -40,20 +41,6 @@ function parseStypes(sfieldHeaderFile) {
     stypeMap[key] = value
   })
   return stypeMap
-}
-
-// Returns a Map from field name (without the "sf" prefix) to {xrplType, ordinal}.
-function parseSfields(sfieldMacroFile) {
-  const hits = [
-    ...sfieldMacroFile.matchAll(
-      /^ *[A-Z]*TYPED_SFIELD *\( *sf([^,\n]*),[ \n]*([^, \n]+)[ \n]*,[ \n]*([0-9]+)/gm,
-    ),
-  ]
-  const map = new Map()
-  for (const hit of hits) {
-    map.set(hit[1], { xrplType: hit[2], ordinal: parseInt(hit[3]) })
-  }
-  return map
 }
 
 // Escrow fields are authoritative (a rename/change there is always picked
@@ -106,40 +93,32 @@ async function main() {
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
 
-  // Map XRPL types to Rust types
-  // All types now have FieldGetter implementations
-  const typeMap = {
-    UINT8: "u8",
-    UINT16: "u16",
-    UINT32: "u32",
-    UINT64: "u64",
-    UINT128: "Hash128",
-    UINT160: "Hash160",
-    UINT192: "Hash192",
-    UINT256: "Hash256",
-    AMOUNT: "Amount",
-    ACCOUNT: "AccountID",
-    VL: "StandardBlob",
-    CURRENCY: "Currency",
-    ISSUE: "Issue",
-    ARRAY: "Array",
-    OBJECT: "Object",
-  }
-
-  // Custom type overrides for specific field names
-  // These override the default type mapping from typeMap
-  const customFieldTypes = {
-    TransactionType: "TransactionType",
-    Condition: "ConditionBlob",
-    Fulfillment: "FulfillmentBlob",
-    FinishFunction: "WasmBlob",
-    PublicKey: "PublicKeyBlob",
-    Domain: "UriBlob",
-    MessageKey: "PublicKeyBlob",
-    SigningPubKey: "PublicKeyBlob",
-    TxnSignature: "SignatureBlob",
-    URI: "UriBlob",
-  }
+  // XRPL types that deliberately have no Rust type yet. Their fields are still
+  // emitted, as `SField<u8, CODE>` placeholders, so the constant exists and the
+  // field code is available -- but reading one will fail at runtime, because
+  // `u8`'s `FieldDecoder` accepts a 1-byte value and these are all wider.
+  //
+  // Removing a type from this set is how a real Rust type gets wired in: add it
+  // to `typeMap` in sfieldTypeMap.js and drop it from here. Every type in
+  // NEITHER map is a hard error (see below) -- a new rippled type must not
+  // silently acquire a wrong-typed placeholder. `typeMap` and `customFieldTypes`
+  // are the shared mappings imported above; this placeholder policy is
+  // sfield-specific (the ledger-object generator emits raw bytes for the same
+  // unmapped types instead), so it stays local.
+  const untypedTypes = new Set([
+    "INT32",
+    "PATHSET",
+    "VECTOR256",
+    "XCHAIN_BRIDGE",
+    "DATA",
+    "DATATYPE",
+    "JSON",
+    // Pseudo-types tagging whole serialized blobs rather than a single field.
+    "TRANSACTION",
+    "LEDGERENTRY",
+    "VALIDATION",
+    "METADATA",
+  ])
 
   ////////////////////////////////////////////////////////////////////////
   //  SField processing (escrow branch is authoritative; contract branch
@@ -193,6 +172,7 @@ async function main() {
   })
 
   // Generate all field constants
+  const unmappedTypes = new Set()
   for (const entry of sfieldEntries) {
     const fieldName = entry.fieldName
     const xrplType = entry.xrplType
@@ -212,13 +192,33 @@ async function main() {
           ` ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
         )
       }
-    } else {
-      // This should not happen if typeMap is complete
-      console.warn(`Warning: No Rust type mapping for XRPL type: ${xrplType}`)
+    } else if (untypedTypes.has(xrplType)) {
+      // Known-untyped: emit the documented `SField<u8, CODE>` placeholder.
       addLine(
         `pub const ${fieldName}: SField<u8, ${fieldCode}> = SField::new();`,
       )
+    } else {
+      // Neither mapped nor knowingly untyped: a type rippled has that this
+      // generator has never seen. Emitting `SField<u8, CODE>` here would ship a
+      // constant that looks usable and can never decode, so refuse instead.
+      if (!unmappedTypes.has(xrplType)) {
+        console.error(
+          `No Rust type mapping for XRPL type STI_${xrplType} (first seen on field sf${fieldName}).`,
+        )
+        unmappedTypes.add(xrplType)
+      }
     }
+  }
+
+  if (unmappedTypes.size > 0) {
+    console.error(
+      `\nAdd ${[...unmappedTypes]
+        .map((t) => "STI_" + t)
+        .join(
+          ", ",
+        )} to either typeMap (with a Rust type implementing FieldDecoder) or untypedTypes (as a documented SField<u8, _> placeholder) in tools/generateSFields.js. Aborting without writing output.`,
+    )
+    process.exit(1)
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -274,7 +274,7 @@ async function main() {
 
   const typeCodesFile = path.join(
     __dirname,
-    "../xrpl-wasm-stdlib/src/core/type_codes.rs",
+    "../xrpl-common-stdlib/src/type_codes.rs",
   )
   try {
     await fs.writeFile(typeCodesFile, typeCodeOutput, "utf8")

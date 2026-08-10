@@ -5,7 +5,7 @@ extern crate std;
 
 use xrpl_common_stdlib::host::trace::{trace, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::keylets::oracle_keylet;
+use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
 use xrpl_common_stdlib::objects::LedgerObject;
 use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
 use xrpl_common_stdlib::r_address;
@@ -18,7 +18,7 @@ const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
 const ORACLE_DOCUMENT_ID: u32 = 1;
 
 pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
-    // The Oracle entry has no typed wrapper, so reach its nested fields through the untyped slot
+    // The Oracle entry has no typed wrapper, so reach its inner fields through the untyped slot
     // handle. Check the series is non-empty before indexing into it, rather than relying on the
     // read of [0] to fail.
     let oracle = LedgerObject::new(slot);
@@ -61,21 +61,21 @@ pub fn get_price_from_oracle(slot: i32) -> Result<u64> {
 
 #[smart_escrow]
 fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
-    let oracle_keylet = match oracle_keylet(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
-        Ok(keylet) => keylet,
+    let oracle_id = match oracle_id(&ORACLE_OWNER, ORACLE_DOCUMENT_ID) {
+        Ok(id) => id,
         Err(error) => {
-            let _ = trace_num("finish: oracle_keylet error_code=", error.code() as i64);
+            let _ = trace_num("finish: oracle_id error_code=", error.code() as i64);
             return error.code().into();
         }
     };
 
     let slot: i32;
     unsafe {
-        slot = host::cache_ledger_obj(oracle_keylet.as_ptr(), oracle_keylet.len(), 0);
-        let _ = trace_num("finish: cache_ledger_obj slot=", slot as i64);
+        slot = host::cache_le(oracle_id.as_ptr(), oracle_id.len(), 0);
+        let _ = trace_num("finish: cache_le slot=", slot as i64);
 
         if slot < 0 {
-            let _ = trace_num("finish: cache_ledger_obj failed, returning 0", 0);
+            let _ = trace_num("finish: cache_le failed, returning 0", 0);
             return FinishResult::reject();
         };
     }

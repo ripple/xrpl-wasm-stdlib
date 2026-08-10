@@ -1,5 +1,5 @@
 //! Typed accessors for reading fields from the current transaction and ledger objects, plus the
-//! [`locator::Locator`] builder for nested field paths.
+//! [`locator::Locator`] builder for inner field paths.
 
 pub mod current_ledger_obj;
 pub mod current_tx;

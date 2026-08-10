@@ -40,7 +40,7 @@ async function fundWallet(wallet = undefined) {
   return walletToFund
 }
 
-function getFinishFunctionFromFile(filePath) {
+function getBytecodeFromFile(filePath) {
   if (!filePath) {
     console.error("Please provide a file path as a CLI argument.")
     process.exit(1)
@@ -81,7 +81,7 @@ async function main() {
     }
     const targetDir = args[0]
     const wasmSource = args[1]
-    const finish = getFinishFunctionFromFile(wasmSource)
+    const finish = getBytecodeFromFile(wasmSource)
 
     const { deploy } = require("./deployWasmCode.js")
 

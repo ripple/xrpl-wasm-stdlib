@@ -2,7 +2,7 @@
 edition = "2024"
 name = "keylet_exists"
 version = "0.1.0"
-description = "Smart Escrow example demonstrating keylet generation and ledger object existence verification"
+description = "Smart Escrow example demonstrating ledger entry ID generation and ledger object existence verification"
 license = "ISC"
 
 [lib]

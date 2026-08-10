@@ -29,54 +29,6 @@ impl From<[u8; ACCOUNT_ID_SIZE]> for AccountID {
     }
 }
 
-/// The account being authorized in a keylet that pairs an owner account with an authorized
-/// account (e.g. [`delegate_keylet`](crate::keylets::delegate_keylet) and
-/// [`deposit_preauth_keylet`](crate::keylets::deposit_preauth_keylet)).
-///
-/// Both parameters of those functions are accounts, so wrapping the authorized one in a
-/// distinct type stops a caller from silently swapping owner and authorized account — the
-/// swap becomes a compile error instead of a wrong-but-valid keylet. Mirrors the
-/// `sfield::Authorize` field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-pub struct Authorize(pub AccountID);
-
-impl From<AccountID> for Authorize {
-    fn from(value: AccountID) -> Self {
-        Authorize(value)
-    }
-}
-
-/// The issuer of a credential in [`credential_keylet`](crate::keylets::credential_keylet).
-///
-/// The subject and issuer are both accounts; wrapping the issuer in a distinct type makes an
-/// accidental subject/issuer swap a compile error. Mirrors the `sfield::Issuer` field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-pub struct Issuer(pub AccountID);
-
-impl From<AccountID> for Issuer {
-    fn from(value: AccountID) -> Self {
-        Issuer(value)
-    }
-}
-
-/// The destination account of a payment channel in
-/// [`paychan_keylet`](crate::keylets::paychan_keylet).
-///
-/// The source and destination are both accounts; wrapping the destination in a distinct type
-/// makes an accidental source/destination swap a compile error. Mirrors the
-/// `sfield::Destination` field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-pub struct Destination(pub AccountID);
-
-impl From<AccountID> for Destination {
-    fn from(value: AccountID) -> Self {
-        Destination(value)
-    }
-}
-
 /// `FieldDecoder` for XRPL account identifiers: decodes a 20-byte buffer into an `AccountID`,
 /// failing if the host wrote a different number of bytes.
 impl FieldDecoder for AccountID {

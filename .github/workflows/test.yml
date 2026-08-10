@@ -11,7 +11,7 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  XRPLD_DOCKER_IMAGE: rippleci/xrpld:ripple--se--supported
+  XRPLD_DOCKER_IMAGE: rippleci/xrpld:5fd5839f
 
 jobs:
   pre-commit:
@@ -69,6 +69,19 @@ jobs:
 
       - name: Check WASM contract exports
         run: ./scripts/check-wasm-exports.sh
+
+  check_ledger_objects_generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Use Node.js v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Check generated ledger-object files are up to date
+        run: ./scripts/generate-ledger-objects.sh --check
 
   host_function_audit:
     runs-on: ubuntu-latest

@@ -10,7 +10,7 @@
 ///
 /// This type is a read-only wire representation. Arithmetic MUST be performed through the host's
 /// `Number` (STNumber) type, which uses rippled's `Number` class to stay consensus-exact. The
-/// accessors below expose the raw encoded fields for inspection and for bridging into `Number`.
+/// accessors below expose the raw encoded fields for inspection only.
 ///
 /// # Format Details
 ///
@@ -27,14 +27,13 @@
 ///
 /// ## Derived Traits
 ///
-/// - `Copy`: Efficient for this 8-byte struct, enabling implicit copying
 /// - `PartialEq, Eq`: Enable comparisons (bitwise comparison only)
 /// - `Debug, Clone`: Standard traits for development and consistency
 ///
 /// **Note**: `PartialEq` and `Eq` perform bitwise comparison only. For semantic comparison of
-/// amounts (e.g., handling different representations of zero), convert to `Number` and use the
-/// host `compare`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// amounts (e.g., handling different representations of zero), convert to `Number` and compare
+/// there.
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct IOUNumber(pub [u8; 8]);
 

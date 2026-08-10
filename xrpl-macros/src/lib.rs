@@ -145,7 +145,7 @@ pub fn blob(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Wraps a Smart Escrow finish function in the `extern "C" fn finish()` entry point
+/// Wraps a Smart Escrow finish function in the `extern "C" fn escrow_finish()` entry point
 /// the XRPL host calls when an `EscrowFinish` transaction invokes the feature.
 ///
 /// The annotated function must:

@@ -74,7 +74,7 @@ Allowed types:
 Examples:
 
 - `feat: Add typed accessor for AMM ledger object`
-- `fix: Correct return code for missing keylet`
+- `fix: Correct return code for missing id`
 - `docs: Document hello_world build steps`
 - `ci: Enforce conventional commit PR titles`
 - `example: Add freelancer escrow sample`
@@ -99,25 +99,22 @@ When merging without squashing, individual commits are also checked; commits tha
 
 ### API design: distinct types for order-sensitive parameters
 
-When a public function has **two or more adjacent parameters of the same type** and their
-order matters (the values are semantically distinct), give them **distinct types** with a
-newtype wrapper — following the existing `PublicKey` / `AccountID` / `Hash256` pattern — so a
-caller who swaps them gets a **compile error** instead of a silently wrong result at runtime.
+When a public function takes **two or more adjacent parameters of the same raw type** and their
+order matters, give them **distinct types** with a newtype wrapper — following the existing
+`PublicKey` / `AccountID` / `Hash256` pattern — so a caller who swaps them gets a **compile
+error** instead of a silently wrong result at runtime.
 
-Three rules of thumb keep this from becoming "wrap everything for its own sake":
+This applies to **untyped raw parameters only** — the ones with nothing but a parameter name
+distinguishing them. `crypto::check_sig` takes its message and signature as the distinct
+`Message` and `Signature` newtypes (both wrapping `&[u8]`), so `check_sig(msg, sig, ...)`
+cannot be called with the two swapped.
 
-1. **Two anonymous raw params → promote both to domain newtypes.** `crypto::check_sig` takes
-   its message and signature as the distinct `Message` and `Signature` newtypes (both wrap
-   `&[u8]`), so `check_sig(msg, sig, ...)` cannot be called with the two swapped.
-2. **Params that already share a meaningful base type but play different roles → wrap only the
-   secondary role(s)** so no two adjacent parameters share a type. The keylet helpers keep the
-   owner account as plain `&AccountID` and wrap the other account in a role newtype:
-   `Issuer`, `Authorize`, `Destination` (see `types/account_id.rs`). No redundant
-   `Account(AccountID)` wrapper is introduced.
-3. **Symmetric / interchangeable params → do not wrap.** Where the two arguments have no
-   distinct role and a swap is harmless (e.g. `line_keylet`'s canonically-ordered account pair,
-   `amm_keylet`'s issue pair) or a single param is unambiguous (`sha512_half(data)`), leave the
-   signature as-is.
+Do **not** add role newtypes on top of a type that is already a meaningful domain type. Where
+two parameters are both `&AccountID` playing different roles (`credential_id`'s subject and
+issuer, `paychan_id`'s account and destination), leave them as `&AccountID`: the extra wrapper
+costs every caller a construction step for a swap the type name already documents. Likewise,
+leave symmetric or interchangeable parameters alone — `amm_id`'s issue pair and `trustline_id`'s
+canonically-ordered account pair produce the same result either way.
 
 ## Testing
 
@@ -167,7 +164,7 @@ fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` macro generates the `extern "C" fn finish() -> i32` export; your annotated function can be named anything except `finish` (that name is reserved for the generated export).
+The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` export; your annotated function can be named anything except `escrow_finish` (that name is reserved for the generated export).
 
 **Integration test template (`runTest.js`):**
 
@@ -194,6 +191,7 @@ runTest().catch(console.error)
 xrpl-common-stdlib/
 ├── src/                    # Library source code
 ├── examples/smart-escrows/ # Example smart contracts
+├── skills/                 # Claude Code skills (e.g. xrpl-smart-escrows)
 ├── scripts/                # Development and CI scripts
 ├── ui/                     # Testing web interface
 ├── e2e-tests/              # Integration tests
