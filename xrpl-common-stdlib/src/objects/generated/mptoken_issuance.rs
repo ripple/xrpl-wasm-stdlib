@@ -93,9 +93,10 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DomainID)
     }
 
-    /// The MutableFlags field (Optional).
-    fn mutable_flags(&self) -> Result<Option<u32>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::MutableFlags)
+    /// Indicates which fields and flags are immutable for this MPT issuance. Any field or flag not
+    /// represented here remains mutable. See MPTokenIssuance Immutable Flags.
+    fn immutable_flags(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::ImmutableFlags)
     }
 
     /// The ReferenceHolding field (Optional).
@@ -206,9 +207,10 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::DomainID)
     }
 
-    /// The MutableFlags field (Optional).
-    fn mutable_flags(&self) -> Result<Option<u32>> {
-        current_ledger_object::get_field_optional(sfield::MutableFlags)
+    /// Indicates which fields and flags are immutable for this MPT issuance. Any field or flag not
+    /// represented here remains mutable. See MPTokenIssuance Immutable Flags.
+    fn immutable_flags(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::ImmutableFlags)
     }
 
     /// The ReferenceHolding field (Optional).
@@ -279,7 +281,7 @@ mod tests {
         assert!(obj.locked_amount().is_ok());
         assert!(obj.mptoken_metadata().is_ok());
         assert!(obj.domain_id().is_ok());
-        assert!(obj.mutable_flags().is_ok());
+        assert!(obj.immutable_flags().is_ok());
         assert!(obj.reference_holding().is_ok());
         assert!(obj.issuer_encryption_key().is_ok());
         assert!(obj.auditor_encryption_key().is_ok());
@@ -299,7 +301,7 @@ mod tests {
         assert!(obj.maximum_amount().unwrap().is_none());
         assert!(obj.locked_amount().unwrap().is_none());
         assert!(obj.domain_id().unwrap().is_none());
-        assert!(obj.mutable_flags().unwrap().is_none());
+        assert!(obj.immutable_flags().unwrap().is_none());
         assert!(obj.reference_holding().unwrap().is_none());
         assert!(obj.confidential_outstanding_amount().unwrap().is_none());
     }
