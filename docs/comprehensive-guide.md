@@ -104,7 +104,9 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields};
+use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
+use xrpl_common_stdlib::host::{cache_le, Error};
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
@@ -119,9 +121,17 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
         Err(_) => return FinishResult::reject(), // Invalid transaction
     };
 
-    // Check account balance
-    match get_account_balance(&account) {
-        Ok(Some(Amount::XRP { num_drops })) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
+    // Check account balance: compute the ledger entry ID, cache the object, read balance.
+    let balance = accountroot_id(&account).and_then(|id| {
+        let slot = unsafe { cache_le(id.as_ptr(), id.len(), 0) };
+        if slot < 0 {
+            Err(Error::from_code(slot))
+        } else {
+            AccountRoot::new(slot).balance()
+        }
+    });
+    match balance {
+        Ok(Amount::XRP { num_drops }) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
         _ => FinishResult::reject(), // Keep locked
     }
 }
@@ -255,17 +265,24 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_common_stdlib::objects::account_root::get_account_balance;
+use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields};
+use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
+use xrpl_common_stdlib::host::{cache_le, Error, Result};
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::sfield;
 
 let account = AccountID::from([0u8; 20]); // Replace with real account
 
-// Get XRP balance (in drops) - returns Option<Amount>
-let balance = get_account_balance(&account);
-
-// Use host functions to get account fields directly
-// (Note: Specific helper functions may vary based on current API)
+// Compute the AccountRoot ledger entry ID, cache the object into a host-managed slot,
+// then read its XRP balance (in drops).
+let balance = accountroot_id(&account).and_then(|id| {
+    let slot = unsafe { cache_le(id.as_ptr(), id.len(), 0) };
+    if slot < 0 {
+        Result::Err(Error::from_code(slot))
+    } else {
+        AccountRoot::new(slot).balance()
+    }
+});
+let _ = balance;
 ```
 
 #### NFT Objects
@@ -366,8 +383,8 @@ Low-level host function access through the `host` module.
 
 ```rust
 // Use the high-level trait methods instead of low-level host functions
-use xrpl_common_stdlib::objects::account_root::AccountRoot;
-use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::AccountRootFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::host::cache_le;
@@ -382,8 +399,8 @@ fn main() {
         return;
     }
 
-    let account_root = AccountRoot { slot_num: slot };
-    let balance = account_root.balance();  // Returns Option<Amount>
+    let account_root = AccountRoot::new(slot);
+    let balance = account_root.balance();  // Returns Amount
     let sequence = account_root.sequence(); // Returns u32
 }
 ```
@@ -418,8 +435,8 @@ The library uses custom `Result` types for comprehensive error handling:
 ```rust ignore
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::objects::account_root::{get_account_balance, AccountRoot};
-use xrpl_common_stdlib::objects::traits::AccountFields;
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::AccountRootFields;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
@@ -435,9 +452,8 @@ fn process_escrow() -> Result<i32> {
         Err(e) => return Err(e), // Invalid transaction
     };
 
-    let balance = get_account_balance(&account);
-
-    // Handle specific errors - create AccountRoot to access account fields
+    // Compute the ledger entry ID, cache the object, then read a field. Handle
+    // each fallible step explicitly.
     let accountroot_id = match accountroot_id(&account) {
         Ok(id) => id,
         Err(e) => return Err(e), // Invalid account
@@ -448,7 +464,7 @@ fn process_escrow() -> Result<i32> {
         return Err(Error::from_code(slot));
     }
 
-    let account_root = AccountRoot { slot_num: slot };
+    let account_root = AccountRoot::new(slot);
     match account_root.sequence() {
         Ok(sequence) => {
             // Use sequence
@@ -684,19 +700,16 @@ match operation() {
 ```rust ignore
 // Good: Call once, use cached result
 let account = tx.get_account();
-let balance = get_account_balance(&account);
 // Create AccountRoot to access account fields
 let accountroot_id = accountroot_id(&account);
 let slot = cache_le(&accountroot_id);
-let account_root = AccountRoot { slot_num: slot };
+let account_root = AccountRoot::new(slot);
 let sequence = account_root.sequence();
 
-// Bad: Multiple calls for same data
-let balance = get_account_balance(&tx.get_account());
 // Bad: Multiple calls - should cache the account and id
 let accountroot_id = accountroot_id(&tx.get_account());
 let slot = cache_le(&accountroot_id);
-let account_root = AccountRoot { slot_num: slot };
+let account_root = AccountRoot::new(slot);
 let sequence = account_root.sequence();
 ```
 
@@ -707,10 +720,10 @@ let sequence = account_root.sequence();
 let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 let accountroot_id = accountroot_id(&account).unwrap_or_panic();
 let slot = unsafe { cache_le(accountroot_id.as_ptr(), accountroot_id.len(), 0) };
-let account_root = AccountRoot { slot_num: slot };
+let account_root = AccountRoot::new(slot);
 
 // Use trait methods to access fields efficiently
-let balance = account_root.balance();        // Option<Amount>
+let balance = account_root.balance();        // Amount
 let sequence = account_root.sequence();      // u32
 let owner_count = account_root.owner_count(); // u32
 ```
