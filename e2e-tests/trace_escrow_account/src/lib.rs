@@ -13,8 +13,8 @@ use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::cache_le;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
-use xrpl_common_stdlib::objects::account_root::AccountRoot;
-use xrpl_common_stdlib::objects::traits::{AccountFields, LedgerObjectCommonFields};
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::traits::{AccountRootFields, LedgerObjectCommonFields};
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
 
@@ -53,7 +53,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         }
 
         // We use the trait-bound implementation so as not to duplicate accessor logic.
-        let account = AccountRoot { slot_num: slot };
+        let account = AccountRoot::new(slot);
 
         let _ = trace("### Step #2: Trace AccountRoot Ledger Object");
         let _ = trace("{ ");
@@ -71,7 +71,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let _ = trace_num("  Flags:", flags as i64);
 
         // Trace the `LedgerEntryType`
-        let ledger_entry_type = account.ledger_entry_type().unwrap();
+        let ledger_entry_type = account.get_ledger_entry_type().unwrap();
         test_utils::assert_eq!(ledger_entry_type, 97); // 97 is the code for "AccountRoot"
         let _ = trace_num("  LedgerEntryType (AccountRoot):", ledger_entry_type as i64);
         let _ = trace("} ");
@@ -80,7 +80,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let _ = trace("  -- Account Specific Fields");
 
         // Trace the `Account`
-        let account_id = account.get_account().unwrap();
+        let account_id = account.account().unwrap();
         // Account is the hardcoded ledger entry ID we're looking up - just verify it's 20 bytes
         test_utils::assert_eq!(account_id.0.len(), 20);
         let _ = trace_data("  Account:", &account_id.0, DataRepr::AsHex);
@@ -102,10 +102,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         );
 
         // Trace the `Balance` (required)
-        let balance_amount = account
-            .balance()
-            .unwrap()
-            .expect("Balance should be present");
+        let balance_amount = account.balance().unwrap();
         let _ = trace_amt("Balance of Account Finishing the Escrow:", &balance_amount);
         // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory
         // (whereas locally this returns the bytes 0x00).
@@ -124,7 +121,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         }
 
         // Trace and assert the `BurnedNFTokens` (optional)
-        let burned_nf_tokens_opt = account.burned_nf_tokens().unwrap();
+        let burned_nf_tokens_opt = account.burned_nftokens().unwrap();
         let burned_nf_tokens = burned_nf_tokens_opt.unwrap_or(0);
         let _ = trace_num("  BurnedNFTokens:", burned_nf_tokens as i64);
         test_utils::assert_eq!(burned_nf_tokens, 0, "Expected 0 burned NFTokens");
@@ -160,7 +157,7 @@ pub extern "C" fn escrow_finish() -> i32 {
 
         // Trace the `FirstNFTokenSequence` (optional - required for testing)
         let first_nf_token_sequence = account
-            .first_nf_token_sequence()
+            .first_nftoken_sequence()
             .unwrap()
             .expect("FirstNFTokenSequence should be set for testing");
         let _ = trace_num("  FirstNFTokenSequence:", first_nf_token_sequence as i64);
@@ -188,7 +185,7 @@ pub extern "C" fn escrow_finish() -> i32 {
 
         // Trace the `MintedNFTokens` (optional - required for testing)
         let minted_nf_tokens = account
-            .minted_nf_tokens()
+            .minted_nftokens()
             .unwrap()
             .expect("MintedNFTokens should be set for testing");
         // We minted exactly 1 NFToken in the test
@@ -197,7 +194,7 @@ pub extern "C" fn escrow_finish() -> i32 {
 
         // Trace the `NFTokenMinter` (optional - required for testing)
         let nf_token_minter = account
-            .nf_token_minter()
+            .nftoken_minter()
             .unwrap()
             .expect("NFTokenMinter should be set for testing");
         // NFTokenMinter is an AccountID - verify it's 20 bytes

@@ -19,11 +19,12 @@ start_time=$(date +%s)
 run_script() {
     local script_name="$1"
     local script_path="./scripts/$script_name"
+    shift
     echo "=================================================="
     echo "🔧 Running $script_name..."
     echo "=================================================="
     if [[ -x "$script_path" ]]; then
-        if "$script_path"; then
+        if "$script_path" "$@"; then
             echo "✅ $script_name completed successfully"
         else
             echo "❌ $script_name failed"
@@ -42,6 +43,7 @@ run_script "/clippy.sh"
 run_script "/fmt.sh"
 run_script "/host-function-audit.sh"
 run_script "/check-wasm-exports.sh"
+run_script "/generate-ledger-objects.sh" --check
 run_script "/build-and-test.sh"
 run_script "/run-markdown.sh"
 run_script "/run-tests.sh"
