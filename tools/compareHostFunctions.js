@@ -372,7 +372,7 @@ async function main() {
     // The unit-returning trace stubs can't go through the macro (it coerces the last parameter
     // to i32 as the return value), so they're written out longhand after the invocation.
     const longhandRegex =
-      /pub unsafe fn ([A-Za-z0-9_]+)\(\s*([^)]*?)\s*,?\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*\{/gm
+      /^pub unsafe fn ([A-Za-z0-9_]+)\(\s*([^)]*?)\s*,?\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*\{/gm
     let rustEmptyHits = [
       ...macroContent.matchAll(regex),
       ...rustHostFunctionFile.matchAll(longhandRegex),
