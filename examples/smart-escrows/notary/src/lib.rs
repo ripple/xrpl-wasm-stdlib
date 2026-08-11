@@ -21,7 +21,7 @@ fn notary_finish(ctx: EscrowFinishContext) -> i32 {
     let tx_account = match ctx.tx().get_account() {
         Ok(v) => v,
         Err(e) => {
-            let _ = trace_num("Error in Notary contract", e.code() as i64);
+            trace_num("Error in Notary contract", e.code() as i64);
             return e.code(); // Must return to short circuit.
         }
     };
