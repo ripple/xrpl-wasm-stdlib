@@ -97,8 +97,9 @@ async function main() {
   //  SField processing (escrow branch is authoritative; contract branch
   //  only contributes fields escrow doesn't have)
   ////////////////////////////////////////////////////////////////////////
-  // NOTE: Output below replaces the constants section in sfield.rs
-  // (starting after the impl blocks at line 52)
+  // NOTE: Output below replaces the constants section in sfield.rs -- everything from the
+  // first `pub const Invalid:` line onwards (see the splice below). The header above that
+  // marker is hand-written and preserved verbatim, so it can grow or shrink freely.
 
   addLine("pub const Invalid: SField<u8, -1> = SField::new();")
   addLine("pub const Generic: SField<u8, 0> = SField::new();")
