@@ -106,7 +106,6 @@ async function main() {
   // sfield-specific (the ledger-object generator emits raw bytes for the same
   // unmapped types instead), so it stays local.
   const untypedTypes = new Set([
-    "INT32",
     "PATHSET",
     "VECTOR256",
     "XCHAIN_BRIDGE",

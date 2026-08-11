@@ -1,14 +1,6 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
-/// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust
-/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return
-/// raw, unparsed bytes; see the summary at the top of `generated/mod.rs`.
-const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
-
 use crate::host::Result;
-use crate::host::error_codes::match_result_code_optional;
-use crate::host::home_le_field;
-use crate::host::le_field;
 use crate::objects::traits::CurrentLedgerObjectCommonFields;
 use crate::objects::traits::LedgerObjectCommonFields;
 use crate::objects::{current_ledger_object, ledger_object};
@@ -156,18 +148,8 @@ pub trait LoanFields: LedgerObjectCommonFields {
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal
     /// places. It is based on the total loan value at creation time.
-    /// Raw bytes; INT32 is not yet typed in Rust.
-    fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code = unsafe {
-            le_field(
-                self.get_slot_num(),
-                sfield::LoanScale.into(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_scale(&self) -> Result<Option<i32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LoanScale)
     }
 }
 
@@ -310,12 +292,8 @@ pub trait CurrentLoanFields: CurrentLedgerObjectCommonFields {
 
     /// The scale factor that ensures all computed amounts are rounded to the same number of decimal
     /// places. It is based on the total loan value at creation time.
-    /// Raw bytes; INT32 is not yet typed in Rust.
-    fn loan_scale(&self) -> Result<Option<[u8; RAW_UNMAPPED_FIELD_SIZE]>> {
-        let mut buffer = [0u8; RAW_UNMAPPED_FIELD_SIZE];
-        let result_code =
-            unsafe { home_le_field(sfield::LoanScale.into(), buffer.as_mut_ptr(), buffer.len()) };
-        match_result_code_optional(result_code, || (result_code > 0).then_some(buffer))
+    fn loan_scale(&self) -> Result<Option<i32>> {
+        current_ledger_object::get_field_optional(sfield::LoanScale)
     }
 }
 
@@ -400,5 +378,6 @@ mod tests {
         assert!(obj.previous_payment_due_date().unwrap().is_none());
         assert!(obj.next_payment_due_date().unwrap().is_none());
         assert!(obj.payment_remaining().unwrap().is_none());
+        assert!(obj.loan_scale().unwrap().is_none());
     }
 }

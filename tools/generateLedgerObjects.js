@@ -278,7 +278,7 @@ const BANNER =
   "// GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.\n"
 
 // Fixed-size placeholder capacity for fields whose XRPL wire type has no
-// genuine Rust mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...).
+// genuine Rust mapping yet (VECTOR256, XCHAIN_BRIDGE, PATHSET, ...).
 // These getters return raw, unparsed bytes rather than a semantic type.
 const RAW_UNMAPPED_FIELD_SIZE_CONST = "RAW_UNMAPPED_FIELD_SIZE"
 const RAW_UNMAPPED_FIELD_SIZE = 512
@@ -553,6 +553,7 @@ function buildImports(usedRustTypes, opts) {
 // FIELD_NOT_FOUND doesn't reliably map to `None` for those getters (see the module doc in
 // generated/mod.rs and the semantics captured in match_result_code_optional).
 const FIXED_SIZE_OPTIONAL_TYPES = new Set([
+  "i32",
   "u8",
   "u16",
   "u32",
@@ -693,7 +694,7 @@ function renderEntryFile(entry, resolved, fieldDocsForClass) {
   if (hasRawGetter) {
     lines.push(
       `/// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust`,
-      `/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return`,
+      `/// mapping yet (VECTOR256, XCHAIN_BRIDGE, PATHSET, ...). Such getters return`,
       `/// raw, unparsed bytes; see the summary at the top of \`generated/mod.rs\`.`,
       `const ${RAW_UNMAPPED_FIELD_SIZE_CONST}: usize = ${RAW_UNMAPPED_FIELD_SIZE};`,
       "",
