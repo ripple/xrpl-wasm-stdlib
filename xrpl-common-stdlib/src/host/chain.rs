@@ -40,7 +40,7 @@ pub fn amendment_enabled(hash: &[u8; 32]) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::host::error_codes::INTERNAL_ERROR;
+    use crate::host::error_codes::SOME_ERROR;
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
 
@@ -82,7 +82,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
         mock.expect_ldgr_index()
             .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+            .returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         assert!(ledger_sqn().is_err());
@@ -109,7 +109,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
         mock.expect_parent_ldgr_time()
             .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+            .returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         assert!(parent_ledger_time().is_err());
@@ -136,7 +136,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
         mock.expect_parent_ldgr_hash()
             .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+            .returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         assert!(parent_ledger_hash().is_err());
@@ -161,9 +161,7 @@ mod tests {
     #[test]
     fn test_base_fee_error() {
         let mut mock = MockHostBindings::new();
-        mock.expect_base_fee()
-            .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+        mock.expect_base_fee().times(1).returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         assert!(base_fee().is_err());
@@ -194,7 +192,7 @@ mod tests {
         let mut mock = MockHostBindings::new();
         mock.expect_amendment_enabled()
             .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+            .returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         assert!(amendment_enabled(&[0u8; 32]).is_err());

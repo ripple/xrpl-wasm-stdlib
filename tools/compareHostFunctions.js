@@ -129,6 +129,15 @@ async function main() {
     process.exit(1)
   }
 
+  // Fire-and-forget host functions (the trace family) have no return value. Rust spells that
+  // as either an omitted `->` or an explicit `-> ()`; C++ spells it `void`.
+  function translateReturnType(ret) {
+    if (ret === undefined || ret === "()") {
+      return "void"
+    }
+    return translateParamType(ret)
+  }
+
   function checkHits(fileTitle, rustHostFunctions) {
     console.log(`\n🔍 Comparing ${fileTitle} with C++ host functions...`)
     console.log(`   Found ${rustHostFunctions.length} Rust functions`)
@@ -205,7 +214,7 @@ async function main() {
 
     // Match multiline function declarations - need to match across newlines
     const regex =
-      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*->\s*([A-Za-z0-9]+);/gm
+      /unsafe fn ([A-Za-z0-9_]+)\(\s*&self(?:,\s*([^)]*))?\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*;/gm
     let rustHits = [...rustHostFunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_trait.rs: Regex matched ${rustHits.length} functions`,
@@ -232,7 +241,7 @@ async function main() {
       .map((hit) => {
         return {
           name: hit[0],
-          return: translateParamType(hit[1]),
+          return: translateReturnType(hit[1]),
           params: hit[2].map(translateParamType),
         }
       })
@@ -249,7 +258,7 @@ async function main() {
 
     // Match multiline function declarations
     const regex =
-      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);/gm
+      /pub\(super\) fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*;/gm
     let rustHits = [...rustHostfunctionFile.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_wasm.rs: Regex matched ${rustHits.length} functions`,
@@ -274,7 +283,7 @@ async function main() {
       .map((hit) => {
         return {
           name: hit[0],
-          return: translateParamType(hit[1]),
+          return: translateReturnType(hit[1]),
           params: hit[2].map(translateParamType),
         }
       })
@@ -304,7 +313,7 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*;/gm
     let rustTestHits = [...macroContent.matchAll(regex)]
     console.log(
       `\n📝 host_bindings_test.rs: Regex matched ${rustTestHits.length} functions`,
@@ -329,7 +338,7 @@ async function main() {
       .map((hit) => {
         return {
           name: hit[0],
-          return: translateParamType(hit[1]),
+          return: translateReturnType(hit[1]),
           params: hit[2].map(translateParamType),
         }
       })
@@ -359,8 +368,15 @@ async function main() {
 
     // Match multiline function declarations (inside export_host_functions! macro)
     const regex =
-      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*->\s*([A-Za-z0-9]+);?/gm
-    let rustEmptyHits = [...macroContent.matchAll(regex)]
+      /fn ([A-Za-z0-9_]+)\(\s*([^)]*)\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*;/gm
+    // The unit-returning trace stubs can't go through the macro (it coerces the last parameter
+    // to i32 as the return value), so they're written out longhand after the invocation.
+    const longhandRegex =
+      /pub unsafe fn ([A-Za-z0-9_]+)\(\s*([^)]*?)\s*,?\s*\)\s*(?:->\s*([A-Za-z0-9]+|\(\)))?\s*\{/gm
+    let rustEmptyHits = [
+      ...macroContent.matchAll(regex),
+      ...rustHostFunctionFile.matchAll(longhandRegex),
+    ]
     console.log(
       `\n📝 host_bindings_empty.rs: Regex matched ${rustEmptyHits.length} functions`,
     )
@@ -379,7 +395,7 @@ async function main() {
       .map((hit) => {
         return {
           name: hit[0],
-          return: translateParamType(hit[1]),
+          return: translateReturnType(hit[1]),
           params: hit[2].map(translateParamType),
         }
       })

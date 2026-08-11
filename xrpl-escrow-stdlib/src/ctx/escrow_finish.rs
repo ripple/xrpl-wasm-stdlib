@@ -82,7 +82,9 @@ mod tests {
     #[test]
     fn set_data_returns_err_on_negative_code() {
         let _guard = EscrowScenario::builder()
-            .with_set_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::from_code(
+                xrpl_common_stdlib::host::error_codes::SOME_ERROR,
+            )))
             .install();
 
         let ctx = EscrowFinishContext::default();

@@ -33,7 +33,7 @@ const ITERATIONS: usize = 100;
 /// - Hex decoding (decode_hex_32, decode_hex_20)
 #[unsafe(no_mangle)]
 pub extern "C" fn escrow_finish() -> i32 {
-    let _ = trace("$$$$$ GAS BENCHMARK START $$$$$");
+    trace("$$$$$ GAS BENCHMARK START $$$$$");
 
     // Get the current transaction
     let escrow_finish: EscrowFinish = get_current_escrow_finish();
@@ -43,90 +43,90 @@ pub extern "C" fn escrow_finish() -> i32 {
     let mut accumulator: u64 = 0;
 
     // Locator operation benchmarks
-    let _ = trace("BENCHMARK_SECTION: LOCATOR_OPERATIONS");
-    let _ = trace("BENCHMARK: locator_pack_single");
+    trace("BENCHMARK_SECTION: LOCATOR_OPERATIONS");
+    trace("BENCHMARK: locator_pack_single");
     accumulator = accumulator.wrapping_add(benchmark_locator_pack_single());
 
-    let _ = trace("BENCHMARK: locator_pack_inner");
+    trace("BENCHMARK: locator_pack_inner");
     accumulator = accumulator.wrapping_add(benchmark_locator_pack_inner());
 
-    let _ = trace("BENCHMARK: locator_repack_last");
+    trace("BENCHMARK: locator_repack_last");
     accumulator = accumulator.wrapping_add(benchmark_locator_repack_last());
 
     // Transaction field access benchmarks
-    let _ = trace("BENCHMARK_SECTION: TRANSACTION_FIELD_ACCESS");
-    let _ = trace("BENCHMARK: get_account_id_field");
+    trace("BENCHMARK_SECTION: TRANSACTION_FIELD_ACCESS");
+    trace("BENCHMARK: get_account_id_field");
     accumulator = accumulator.wrapping_add(benchmark_account_id_field(&escrow_finish));
 
-    let _ = trace("BENCHMARK: get_fee_field");
+    trace("BENCHMARK: get_fee_field");
     accumulator = accumulator.wrapping_add(benchmark_fee_field(&escrow_finish));
 
-    let _ = trace("BENCHMARK: get_amount_field");
+    trace("BENCHMARK: get_amount_field");
     accumulator = accumulator.wrapping_add(benchmark_amount_field(&escrow_finish));
 
-    let _ = trace("BENCHMARK: get_hash256_field");
+    trace("BENCHMARK: get_hash256_field");
     accumulator = accumulator.wrapping_add(benchmark_hash256_field(&escrow));
 
-    let _ = trace("BENCHMARK: get_u16_field");
+    trace("BENCHMARK: get_u16_field");
     accumulator = accumulator.wrapping_add(benchmark_u16_field(&escrow_finish));
 
-    let _ = trace("BENCHMARK: get_u64_field");
+    trace("BENCHMARK: get_u64_field");
     accumulator = accumulator.wrapping_add(benchmark_u64_field(&escrow_finish));
 
     // Blob benchmarks
-    let _ = trace("BENCHMARK_SECTION: BLOB_OPERATIONS");
-    let _ = trace("BENCHMARK: blob_creation");
+    trace("BENCHMARK_SECTION: BLOB_OPERATIONS");
+    trace("BENCHMARK: blob_creation");
     accumulator = accumulator.wrapping_add(benchmark_blob_creation());
 
-    let _ = trace("BENCHMARK: blob_field_access");
+    trace("BENCHMARK: blob_field_access");
     accumulator = accumulator.wrapping_add(benchmark_blob_field_access(&escrow_finish));
 
     // Optional field access benchmarks
-    let _ = trace("BENCHMARK_SECTION: OPTIONAL_FIELD_ACCESS");
-    let _ = trace("BENCHMARK: optional_field_some");
+    trace("BENCHMARK_SECTION: OPTIONAL_FIELD_ACCESS");
+    trace("BENCHMARK: optional_field_some");
     accumulator = accumulator.wrapping_add(benchmark_optional_field_some(&escrow_finish));
 
-    let _ = trace("BENCHMARK: optional_field_none");
+    trace("BENCHMARK: optional_field_none");
     accumulator = accumulator.wrapping_add(benchmark_optional_field_none(&escrow_finish));
 
     // Error code matching benchmarks
-    let _ = trace("BENCHMARK_SECTION: ERROR_CODE_MATCHING");
-    let _ = trace("BENCHMARK: match_result_code");
+    trace("BENCHMARK_SECTION: ERROR_CODE_MATCHING");
+    trace("BENCHMARK: match_result_code");
     accumulator = accumulator.wrapping_add(benchmark_match_result_code());
 
-    let _ = trace("BENCHMARK: match_result_code_optional");
+    trace("BENCHMARK: match_result_code_optional");
     accumulator = accumulator.wrapping_add(benchmark_match_result_code_optional());
 
-    let _ = trace("BENCHMARK: match_result_code_with_expected_bytes");
+    trace("BENCHMARK: match_result_code_with_expected_bytes");
     accumulator = accumulator.wrapping_add(benchmark_match_result_code_with_expected_bytes());
 
-    let _ = trace("BENCHMARK: match_result_code_with_expected_bytes_optional");
+    trace("BENCHMARK: match_result_code_with_expected_bytes_optional");
     accumulator =
         accumulator.wrapping_add(benchmark_match_result_code_with_expected_bytes_optional());
 
     // Result type method benchmarks
-    let _ = trace("BENCHMARK_SECTION: RESULT_TYPE_METHODS");
-    let _ = trace("BENCHMARK: is_ok");
+    trace("BENCHMARK_SECTION: RESULT_TYPE_METHODS");
+    trace("BENCHMARK: is_ok");
     accumulator = accumulator.wrapping_add(benchmark_is_ok(&escrow_finish));
 
-    let _ = trace("BENCHMARK: is_err");
+    trace("BENCHMARK: is_err");
     accumulator = accumulator.wrapping_add(benchmark_is_err(&escrow_finish));
 
-    let _ = trace("BENCHMARK: result_ok");
+    trace("BENCHMARK: result_ok");
     accumulator = accumulator.wrapping_add(benchmark_result_ok(&escrow_finish));
 
-    let _ = trace("BENCHMARK: result_err");
+    trace("BENCHMARK: result_err");
     accumulator = accumulator.wrapping_add(benchmark_result_err(&escrow_finish));
 
     // Hex decoding benchmarks
-    let _ = trace("BENCHMARK_SECTION: HEX_DECODING");
-    let _ = trace("BENCHMARK: decode_hex_32");
+    trace("BENCHMARK_SECTION: HEX_DECODING");
+    trace("BENCHMARK: decode_hex_32");
     accumulator = accumulator.wrapping_add(benchmark_decode_hex_32());
 
-    let _ = trace("BENCHMARK: decode_hex_20");
+    trace("BENCHMARK: decode_hex_20");
     accumulator = accumulator.wrapping_add(benchmark_decode_hex_20());
 
-    let _ = trace("$$$$$ GAS BENCHMARK END $$$$$");
+    trace("$$$$$ GAS BENCHMARK END $$$$$");
 
     // Return 1 if accumulator is non-zero (it always will be), preventing optimization
     if accumulator > 0 { 1 } else { 0 }
