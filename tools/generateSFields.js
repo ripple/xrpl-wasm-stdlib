@@ -93,33 +93,6 @@ async function main() {
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
 
-  // XRPL types that deliberately have no Rust type yet. Their fields are still
-  // emitted, as `SField<u8, CODE>` placeholders, so the constant exists and the
-  // field code is available -- but reading one will fail at runtime, because
-  // `u8`'s `FieldDecoder` accepts a 1-byte value and these are all wider.
-  //
-  // Removing a type from this set is how a real Rust type gets wired in: add it
-  // to `typeMap` in sfieldTypeMap.js and drop it from here. Every type in
-  // NEITHER map is a hard error (see below) -- a new rippled type must not
-  // silently acquire a wrong-typed placeholder. `typeMap` and `customFieldTypes`
-  // are the shared mappings imported above; this placeholder policy is
-  // sfield-specific (the ledger-object generator emits raw bytes for the same
-  // unmapped types instead), so it stays local.
-  const untypedTypes = new Set([
-    "INT32",
-    "PATHSET",
-    "VECTOR256",
-    "XCHAIN_BRIDGE",
-    "DATA",
-    "DATATYPE",
-    "JSON",
-    // Pseudo-types tagging whole serialized blobs rather than a single field.
-    "TRANSACTION",
-    "LEDGERENTRY",
-    "VALIDATION",
-    "METADATA",
-  ])
-
   ////////////////////////////////////////////////////////////////////////
   //  SField processing (escrow branch is authoritative; contract branch
   //  only contributes fields escrow doesn't have)
@@ -132,10 +105,19 @@ async function main() {
   addLine("pub const hash: SField<u8, -1> = SField::new();")
   addLine("pub const index: SField<u8, 0> = SField::new();")
   addLine("")
-  addLine("// Placeholder SField constants for array and object types")
   addLine(
-    "// These types don't have FieldGetter implementations but are represented as SField<u8, CODE>",
+    "// Fields whose XRPL wire type has no decodable Rust type are still emitted, so",
   )
+  addLine(
+    "// their field code stays available: STI_ARRAY/STI_OBJECT as SField<Array, CODE>/",
+  )
+  addLine(
+    "// SField<Object, CODE> (Locator navigation only), and every other unmapped wire",
+  )
+  addLine(
+    "// type as SField<Unmapped, CODE>, which cannot be decoded at all -- see the",
+  )
+  addLine("// `Unmapped` docs above.")
 
   const escrowFields = parseSfields(escrowMacroFile)
   const contractFields = parseSfields(contractMacroFile)
@@ -171,8 +153,17 @@ async function main() {
     return aValue - bValue // Ascending order
   })
 
-  // Generate all field constants
-  const unmappedTypes = new Set()
+  // Generate all field constants.
+  //
+  // A field whose XRPL wire type has no Rust mapping still gets a constant, typed
+  // `SField<Unmapped, CODE>`: the field code stays available to callers that only need the
+  // code (a raw `le_field` read, a `Locator` path segment), while `Unmapped` implements no
+  // decoder marker trait, so decoding one is a compile error rather than a read that
+  // type-checks and fails at runtime. That's why no allowlist of "known untyped" wire types
+  // is needed here -- a wire type rippled adds tomorrow lands on the same safe placeholder
+  // instead of a wrong-typed `SField<u8, _>`. Unmapped types are reported below so a new one
+  // is still visible; wire a real type in by adding it to `typeMap` in sfieldTypeMap.js.
+  const unmappedTypes = new Map()
   for (const entry of sfieldEntries) {
     const fieldName = entry.fieldName
     const xrplType = entry.xrplType
@@ -192,33 +183,26 @@ async function main() {
           ` ${fieldName}: ${rustType} (custom mapping from ${xrplType})`,
         )
       }
-    } else if (untypedTypes.has(xrplType)) {
-      // Known-untyped: emit the documented `SField<u8, CODE>` placeholder.
-      addLine(
-        `pub const ${fieldName}: SField<u8, ${fieldCode}> = SField::new();`,
-      )
     } else {
-      // Neither mapped nor knowingly untyped: a type rippled has that this
-      // generator has never seen. Emitting `SField<u8, CODE>` here would ship a
-      // constant that looks usable and can never decode, so refuse instead.
-      if (!unmappedTypes.has(xrplType)) {
-        console.error(
-          `No Rust type mapping for XRPL type STI_${xrplType} (first seen on field sf${fieldName}).`,
-        )
-        unmappedTypes.add(xrplType)
-      }
+      addLine(
+        `pub const ${fieldName}: SField<Unmapped, ${fieldCode}> = SField::new();`,
+      )
+      if (!unmappedTypes.has(xrplType)) unmappedTypes.set(xrplType, [])
+      unmappedTypes.get(xrplType).push(fieldName)
     }
   }
 
   if (unmappedTypes.size > 0) {
-    console.error(
-      `\nAdd ${[...unmappedTypes]
-        .map((t) => "STI_" + t)
-        .join(
-          ", ",
-        )} to either typeMap (with a Rust type implementing FieldDecoder) or untypedTypes (as a documented SField<u8, _> placeholder) in tools/generateSFields.js. Aborting without writing output.`,
+    console.log(
+      `\nFields emitted as SField<Unmapped, _> (wire type has no Rust mapping yet):`,
     )
-    process.exit(1)
+    for (const [xrplType, fields] of [...unmappedTypes].sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      console.log(
+        `  STI_${xrplType}: ${fields.map((f) => "sf" + f).join(", ")}`,
+      )
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////

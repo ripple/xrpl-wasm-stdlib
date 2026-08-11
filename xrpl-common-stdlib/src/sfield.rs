@@ -77,13 +77,35 @@ impl<T, const CODE: i32> Borrow<i32> for SField<T, CODE> {
     }
 }
 
+/// The `T` of a generated [`SField`] constant whose XRPL wire type has no Rust mapping yet
+/// (`VECTOR256`, `PATHSET`, `XCHAIN_BRIDGE`, ...).
+///
+/// The constant still exists, so its field code stays available to callers that only need the
+/// code -- `sfield::Indexes.into()` for a raw `le_field` read, or a
+/// [`Locator`](crate::fields::locator::Locator) path segment. What it can't do is decode:
+/// `Unmapped` deliberately implements neither `FromCurrentTx` nor `FromLedger`, so
+/// `current_tx::get_field(sfield::Indexes)` is a compile error rather than a read that
+/// type-checks and then fails at runtime.
+///
+/// This is an uninhabited enum -- there is no value of this type, only the name, which is all a
+/// `PhantomData` type parameter needs.
+///
+/// Wiring up a real type for one of these wire types (add it to `typeMap` in
+/// `tools/sfieldTypeMap.js`, implement `FieldDecoder`, regenerate) turns every affected constant
+/// into the real type, and any code that was reading it raw keeps compiling.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Unmapped {}
+
 pub const Invalid: SField<u8, -1> = SField::new();
 pub const Generic: SField<u8, 0> = SField::new();
 pub const hash: SField<u8, -1> = SField::new();
 pub const index: SField<u8, 0> = SField::new();
 
-// Placeholder SField constants for array and object types
-// These types don't have FieldGetter implementations but are represented as SField<u8, CODE>
+// Fields whose XRPL wire type has no decodable Rust type are still emitted, so
+// their field code stays available: STI_ARRAY/STI_OBJECT as SField<Array, CODE>/
+// SField<Object, CODE> (Locator navigation only), and every other unmapped wire
+// type as SField<Unmapped, CODE>, which cannot be decoded at all -- see the
+// `Unmapped` docs above.
 pub const LedgerEntryType: SField<u16, 65537> = SField::new();
 pub const TransactionType: SField<TransactionType, 65538> = SField::new();
 pub const SignerWeight: SField<u16, 65539> = SField::new();
@@ -147,7 +169,7 @@ pub const VoteWeight: SField<u32, 131120> = SField::new();
 pub const FirstNFTokenSequence: SField<u32, 131122> = SField::new();
 pub const OracleDocumentID: SField<u32, 131123> = SField::new();
 pub const PermissionValue: SField<u32, 131124> = SField::new();
-pub const MutableFlags: SField<u32, 131125> = SField::new();
+pub const ImmutableFlags: SField<u32, 131125> = SField::new();
 pub const StartDate: SField<u32, 131126> = SField::new();
 pub const PaymentInterval: SField<u32, 131127> = SField::new();
 pub const GracePeriod: SField<u32, 131128> = SField::new();
@@ -277,6 +299,7 @@ pub const MinAccountCreateAmount: SField<Amount, 393246> = SField::new();
 pub const LPTokenBalance: SField<Amount, 393247> = SField::new();
 pub const FeeAmount: SField<Amount, 393248> = SField::new();
 pub const MaxFee: SField<Amount, 393249> = SField::new();
+pub const FeeAmountDelta: SField<Amount, 393250> = SField::new();
 pub const PublicKey: SField<PublicKeyBlob, 458753> = SField::new();
 pub const MessageKey: SField<PublicKeyBlob, 458754> = SField::new();
 pub const SigningPubKey: SField<PublicKeyBlob, 458755> = SField::new();
@@ -369,8 +392,9 @@ pub const PrincipalRequested: SField<Number, 589838> = SField::new();
 pub const TotalValueOutstanding: SField<Number, 589839> = SField::new();
 pub const PeriodicPayment: SField<Number, 589840> = SField::new();
 pub const ManagementFeeOutstanding: SField<Number, 589841> = SField::new();
-pub const LoanScale: SField<u8, 655361> = SField::new();
-pub const VMReturnCode: SField<u8, 655362> = SField::new();
+pub const LoanScale: SField<Unmapped, 655361> = SField::new();
+pub const RemainingOwnerCountDelta: SField<Unmapped, 655362> = SField::new();
+pub const VMReturnCode: SField<Unmapped, 655363> = SField::new();
 pub const TransactionMetaData: SField<Object, 917506> = SField::new();
 pub const CreatedNode: SField<Object, 917507> = SField::new();
 pub const DeletedNode: SField<Object, 917508> = SField::new();
@@ -446,6 +470,7 @@ pub const Method: SField<u8, 1048578> = SField::new();
 pub const TransactionResult: SField<u8, 1048579> = SField::new();
 pub const Scale: SField<u8, 1048580> = SField::new();
 pub const AssetScale: SField<u8, 1048581> = SField::new();
+pub const LEVersion: SField<u8, 1048582> = SField::new();
 pub const TickSize: SField<u8, 1048592> = SField::new();
 pub const UNLModifyDisabling: SField<u8, 1048593> = SField::new();
 pub const HookResult: SField<u8, 1048594> = SField::new();
@@ -456,12 +481,12 @@ pub const TakerPaysCurrency: SField<Hash160, 1114113> = SField::new();
 pub const TakerPaysIssuer: SField<Hash160, 1114114> = SField::new();
 pub const TakerGetsCurrency: SField<Hash160, 1114115> = SField::new();
 pub const TakerGetsIssuer: SField<Hash160, 1114116> = SField::new();
-pub const Paths: SField<u8, 1179649> = SField::new();
-pub const Indexes: SField<u8, 1245185> = SField::new();
-pub const Hashes: SField<u8, 1245186> = SField::new();
-pub const Amendments: SField<u8, 1245187> = SField::new();
-pub const NFTokenOffers: SField<u8, 1245188> = SField::new();
-pub const CredentialIDs: SField<u8, 1245189> = SField::new();
+pub const Paths: SField<Unmapped, 1179649> = SField::new();
+pub const Indexes: SField<Unmapped, 1245185> = SField::new();
+pub const Hashes: SField<Unmapped, 1245186> = SField::new();
+pub const Amendments: SField<Unmapped, 1245187> = SField::new();
+pub const NFTokenOffers: SField<Unmapped, 1245188> = SField::new();
+pub const CredentialIDs: SField<Unmapped, 1245189> = SField::new();
 pub const MPTokenIssuanceID: SField<Hash192, 1376257> = SField::new();
 pub const ShareMPTID: SField<Hash192, 1376258> = SField::new();
 pub const TakerPaysMPT: SField<Hash192, 1376259> = SField::new();
@@ -470,13 +495,13 @@ pub const LockingChainIssue: SField<Issue, 1572865> = SField::new();
 pub const IssuingChainIssue: SField<Issue, 1572866> = SField::new();
 pub const Asset: SField<Issue, 1572867> = SField::new();
 pub const Asset2: SField<Issue, 1572868> = SField::new();
-pub const XChainBridge: SField<u8, 1638401> = SField::new();
+pub const XChainBridge: SField<Unmapped, 1638401> = SField::new();
 pub const BaseAsset: SField<Currency, 1703937> = SField::new();
 pub const QuoteAsset: SField<Currency, 1703938> = SField::new();
-pub const ParameterValue: SField<u8, 1769473> = SField::new();
-pub const ParameterType: SField<u8, 1835009> = SField::new();
-pub const ContractJson: SField<u8, 1900545> = SField::new();
-pub const Transaction: SField<u8, 655425793> = SField::new();
-pub const LedgerEntry: SField<u8, 655491329> = SField::new();
-pub const Validation: SField<u8, 655556865> = SField::new();
-pub const Metadata: SField<u8, 655622401> = SField::new();
+pub const ParameterValue: SField<Unmapped, 1769473> = SField::new();
+pub const ParameterType: SField<Unmapped, 1835009> = SField::new();
+pub const ContractJson: SField<Unmapped, 1900545> = SField::new();
+pub const Transaction: SField<Unmapped, 655425793> = SField::new();
+pub const LedgerEntry: SField<Unmapped, 655491329> = SField::new();
+pub const Validation: SField<Unmapped, 655556865> = SField::new();
+pub const Metadata: SField<Unmapped, 655622401> = SField::new();
