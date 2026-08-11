@@ -132,7 +132,7 @@ pub trait CurrentLedgerObjectCommonFields {
 mod tests {
     use super::*;
     use crate::fields::decoder::FromLedger;
-    use crate::host::error_codes::{INTERNAL_ERROR, INVALID_FIELD};
+    use crate::host::error_codes::{INVALID_FIELD, SOME_ERROR};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::objects::AccountRoot;
     use crate::sfield::SField;
@@ -216,11 +216,11 @@ mod tests {
         fn test_mandatory_fields_return_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // get_flags with INTERNAL_ERROR
+            // get_flags with SOME_ERROR
             mock.expect_le_field()
                 .with(eq(1), eq(sfield::Flags), always(), eq(4))
                 .times(1)
-                .returning(|_, _, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -228,7 +228,7 @@ mod tests {
             let result = account.get_flags();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]
@@ -238,7 +238,7 @@ mod tests {
             mock.expect_le_field()
                 .with(eq(1), eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
-                .returning(|_, _, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -246,7 +246,7 @@ mod tests {
             let result = account.get_ledger_entry_type();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]
@@ -298,11 +298,11 @@ mod tests {
         fn test_mandatory_fields_return_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // get_flags with INTERNAL_ERROR
+            // get_flags with SOME_ERROR
             mock.expect_home_le_field()
                 .with(eq(sfield::Flags), always(), eq(4))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -310,7 +310,7 @@ mod tests {
             let result = escrow.get_flags();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]
@@ -320,7 +320,7 @@ mod tests {
             mock.expect_home_le_field()
                 .with(eq(sfield::LedgerEntryType), always(), eq(2))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -328,7 +328,7 @@ mod tests {
             let result = escrow.get_ledger_entry_type();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]

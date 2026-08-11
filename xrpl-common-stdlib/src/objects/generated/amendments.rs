@@ -1,7 +1,7 @@
 // GENERATED -- do not hand-edit. Run scripts/generate-ledger-objects.sh to regenerate.
 
 /// Placeholder buffer size for fields whose XRPL wire type has no genuine Rust
-/// mapping yet (VECTOR256, XCHAIN_BRIDGE, NUMBER, INT32, ...). Such getters return
+/// mapping yet (VECTOR256, XCHAIN_BRIDGE, PATHSET, ...). Such getters return
 /// raw, unparsed bytes; see the summary at the top of `generated/mod.rs`.
 const RAW_UNMAPPED_FIELD_SIZE: usize = 512;
 

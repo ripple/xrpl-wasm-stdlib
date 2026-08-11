@@ -165,6 +165,26 @@ impl FieldDecoder for u64 {
 impl FromCurrentTx for u64 {}
 impl FromLedger for u64 {}
 
+impl FieldDecoder for i32 {
+    type Buffer = [u8; 4];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; 4]
+    }
+
+    #[inline]
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> Result<Self, DecodeError> {
+        if bytes_written != buf.len() {
+            return Err(DecodeError);
+        }
+        Ok(i32::from_le_bytes(buf))
+    }
+}
+
+impl FromCurrentTx for i32 {}
+impl FromLedger for i32 {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
