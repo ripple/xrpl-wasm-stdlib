@@ -41,6 +41,7 @@ const BLOB_TYPES = [
 // Map XRPL types to Rust types
 // All types now have FieldGetter implementations
 const typeMap = {
+  INT32: "i32",
   UINT8: "u8",
   UINT16: "u16",
   UINT32: "u32",
@@ -87,7 +88,7 @@ function resolveRustType(fieldName, xrplType) {
 // - "custom": a per-field-name override in customFieldTypes matched.
 // - "typeMap": the XRPL wire type has a real Rust mapping (e.g. UINT8 -> u8).
 // - "none": neither matched; rustType is undefined. The XRPL wire type is not
-//   yet representable in Rust (e.g. VECTOR256, XCHAIN_BRIDGE, INT32, JSON) and
+//   yet representable in Rust (e.g. VECTOR256, XCHAIN_BRIDGE, PATHSET, JSON) and
 //   callers must NOT fabricate a u8 getter for it.
 function resolveRustTypeDetailed(fieldName, xrplType) {
   if (Object.prototype.hasOwnProperty.call(customFieldTypes, fieldName)) {
