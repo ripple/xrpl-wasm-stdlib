@@ -8,8 +8,49 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- Import Account Modal -->
+    <div id="importAccountModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Import Account by Seed</h2>
+          <button
+            class="modal-close"
+            onclick="closeImportAccountModal()"
+            title="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="importSeed">Account Seed (family seed):</label>
+          <input
+            type="text"
+            id="importSeed"
+            class="form-control"
+            placeholder="sEd... or s..."
+            autocomplete="off"
+          />
+        </div>
+        <div class="seed-warning">
+          Only import seeds for test accounts. The seed is stored in this
+          browser's localStorage in plain text.
+        </div>
+        <button class="btn btn-success" onclick="executeImportAccount()">
+          Import Account
+        </button>
+      </div>
+    </div>
+
     <div class="container">
       <div class="header">
+        <button
+          id="themeToggle"
+          class="theme-toggle"
+          onclick="toggleTheme()"
+          title="Toggle light/dark theme"
+        >
+          🌙 Dark
+        </button>
         <h1>Smart Escrow Testing UI</h1>
         <p>Deploy and test XRPL Smart Escrows with ease</p>
         <div class="status-bar">
@@ -177,7 +218,13 @@
           <!-- Account Management -->
           <div class="card">
             <h2>Account Management</h2>
-            <div class="form-group">
+            <div class="seed-warning">
+              ⚠️ Test accounts (address + seed) are saved in this browser's
+              localStorage, scoped per network, so they persist across reloads.
+              Use funded test accounts only — never paste a seed that controls
+              real funds.
+            </div>
+            <div class="form-group account-actions">
               <button
                 id="generateBtn"
                 class="btn btn-success"
@@ -186,12 +233,27 @@
                 Generate New Account
               </button>
               <button
+                id="importBtn"
+                class="btn"
+                onclick="openImportAccountModal()"
+              >
+                Import by Seed
+              </button>
+              <button
                 id="fundBtn"
                 class="btn btn-warning"
                 onclick="fundSelectedAccount()"
                 style="display: none"
               >
                 Fund Selected
+              </button>
+              <button
+                id="clearAccountsBtn"
+                class="btn btn-danger"
+                onclick="clearAllAccounts()"
+                style="display: none"
+              >
+                Clear All
               </button>
             </div>
             <div
@@ -281,15 +343,8 @@
             <div class="advanced-options" id="deployAdvancedOptions">
               <button
                 type="button"
-                class="btn btn-secondary"
+                class="btn btn-secondary advanced-toggle"
                 onclick="toggleAdvancedOptions('deploy')"
-                style="
-                  width: 100%;
-                  margin-bottom: 10px;
-                  background: #f8f9fa;
-                  color: #333;
-                  border: 1px solid #ddd;
-                "
               >
                 <span id="deployAdvancedToggleText">Show Advanced Options</span>
                 <span id="deployAdvancedToggleIcon">▼</span>
@@ -490,6 +545,123 @@
       let selectedAccount = null
       let lastOfferSequence = null
       let ledgerInterval = null
+      // The network we are actually connected to, set on a successful connect.
+      // Storage keys derive from this — not the radio buttons — so changing the
+      // radio without reconnecting can't write accounts under the wrong network.
+      let connectedNetwork = null
+
+      // ---------------------------------------------------------------------
+      // Persistence (localStorage)
+      //
+      // NOTE: this is a testing UI. Account seeds are stored in localStorage in
+      // plain text, scoped per network, so test accounts survive page reloads.
+      // Only ever use funded *test* accounts here — never a seed that controls
+      // real funds. localStorage is readable by any script on this origin.
+      // ---------------------------------------------------------------------
+      const STORAGE_PREFIX = "xrpl_wasm_ui"
+
+      function getSelectedNetwork() {
+        return document.querySelector('input[name="network"]:checked')?.value
+      }
+
+      function storageKey(kind) {
+        // Key off the connected network, not the (transient) radio selection.
+        const network = connectedNetwork || "unknown"
+        // Sanitize so the key is a stable, readable identifier per network.
+        const suffix = network.replace(/[^a-zA-Z0-9]/g, "_")
+        return `${STORAGE_PREFIX}_${kind}_${suffix}`
+      }
+
+      function saveAccounts() {
+        // Never write to the "unknown" bucket: without a connected network
+        // there's no key loadAccounts() will ever read the data back from.
+        if (!connectedNetwork) return
+        try {
+          // Persist only what we need to rebuild the wallet: address + seed.
+          const data = accounts
+            .filter((acc) => acc.seed)
+            .map((acc) => ({ address: acc.address, seed: acc.seed }))
+          localStorage.setItem(storageKey("accounts"), JSON.stringify(data))
+        } catch (e) {
+          log(`⚠️ Failed to save accounts: ${e.message}`)
+        }
+      }
+
+      function loadAccounts() {
+        // Reset first so switching to a network with no saved accounts can't
+        // leave the previous network's accounts in memory (network scoping).
+        accounts = []
+        try {
+          const stored = localStorage.getItem(storageKey("accounts"))
+          if (!stored) return
+          const data = JSON.parse(stored)
+          accounts = data
+            .map((entry) => {
+              try {
+                return xrpl.Wallet.fromSeed(entry.seed)
+              } catch (e) {
+                log(
+                  `⚠️ Could not restore account ${entry.address}: ${e.message}`,
+                )
+                return null
+              }
+            })
+            .filter(Boolean)
+          if (accounts.length > 0) {
+            log(`📂 Restored ${accounts.length} account(s) from this browser`)
+          }
+        } catch (e) {
+          log(`⚠️ Failed to load accounts: ${e.message}`)
+        }
+      }
+
+      function saveEscrows() {
+        try {
+          localStorage.setItem(storageKey("escrows"), JSON.stringify(escrows))
+        } catch (e) {
+          log(`⚠️ Failed to save escrows: ${e.message}`)
+        }
+      }
+
+      function loadEscrows() {
+        try {
+          const stored = localStorage.getItem(storageKey("escrows"))
+          escrows = stored ? JSON.parse(stored) : []
+          if (escrows.length > 0) {
+            log(`📂 Restored ${escrows.length} escrow(s) from this browser`)
+          }
+        } catch (e) {
+          log(`⚠️ Failed to load escrows: ${e.message}`)
+          escrows = []
+        }
+      }
+
+      // ---------------------------------------------------------------------
+      // Theme
+      // ---------------------------------------------------------------------
+      function applyTheme(theme) {
+        const toggle = document.getElementById("themeToggle")
+        if (theme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark")
+          if (toggle) toggle.textContent = "☀️ Light"
+        } else {
+          document.documentElement.removeAttribute("data-theme")
+          if (toggle) toggle.textContent = "🌙 Dark"
+        }
+      }
+
+      function toggleTheme() {
+        const current =
+          document.documentElement.getAttribute("data-theme") === "dark"
+            ? "dark"
+            : "light"
+        const next = current === "dark" ? "light" : "dark"
+        localStorage.setItem(`${STORAGE_PREFIX}_theme`, next)
+        applyTheme(next)
+      }
+
+      // Apply the saved theme as early as possible to avoid a flash.
+      applyTheme(localStorage.getItem(`${STORAGE_PREFIX}_theme`) || "light")
 
       // Utility Functions
       function log(message, isHtml = false) {
@@ -520,13 +692,17 @@
         const existingToasts = document.querySelectorAll(".toast")
         existingToasts.forEach((toast) => toast.remove())
 
-        // Create new toast
+        // Create new toast. The message is rendered as text (never HTML) so a
+        // dynamic error string can't inject markup; the close button is added
+        // as a real element.
         const toast = document.createElement("div")
         toast.className = `toast ${type}`
-        toast.innerHTML = `
-          ${message}
-          <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-        `
+        toast.textContent = message
+        const closeBtn = document.createElement("button")
+        closeBtn.className = "toast-close"
+        closeBtn.innerHTML = "&times;"
+        closeBtn.onclick = () => toast.remove()
+        toast.appendChild(closeBtn)
 
         document.body.appendChild(toast)
 
@@ -703,6 +879,9 @@
 
           await client.connect()
 
+          // Pin storage to the network we actually connected to.
+          connectedNetwork = selectedNetwork
+
           // Start ledger acceptance for local nodes
           if (
             selectedNetwork.includes("localhost") ||
@@ -714,6 +893,13 @@
               }
             }, 1000)
           }
+
+          // Restore any accounts/escrows saved for this network.
+          loadAccounts()
+          loadEscrows()
+          selectedAccount = null
+          await updateAccountsList()
+          await updateEscrowsList()
         } catch (error) {
           logError(`Failed to connect: ${error.message}`)
           updateConnectionStatus(false)
@@ -735,6 +921,7 @@
           accounts = []
           escrows = []
           selectedAccount = null
+          connectedNetwork = null
 
           // Update UI to reflect cleared state
           await updateAccountsList()
@@ -940,6 +1127,7 @@
           }
 
           accounts.push(fundedWallet)
+          saveAccounts()
           await updateAccountsList()
           log(`Generated and funded account: ${fundedWallet.address}`)
           showToast("Account generated and funded successfully!", "success")
@@ -1010,6 +1198,7 @@
       async function updateAccountsList() {
         const accountsList = document.getElementById("accountsList")
         const fundBtn = document.getElementById("fundBtn")
+        const clearAccountsBtn = document.getElementById("clearAccountsBtn")
 
         if (accounts.length === 0) {
           accountsList.innerHTML = `
@@ -1018,11 +1207,14 @@
                     </div>
                 `
           fundBtn.style.display = "none"
+          clearAccountsBtn.style.display = "none"
+          updateAccountDropdowns()
           return
         }
 
-        // Show the fund button when there are accounts
+        // Show the fund/clear buttons when there are accounts
         fundBtn.style.display = "inline-block"
+        clearAccountsBtn.style.display = "inline-block"
 
         let html = ""
         for (let i = 0; i < accounts.length; i++) {
@@ -1048,9 +1240,24 @@
                                 <strong>Account ${i + 1}</strong>
                                 <div class="account-balance">${balance}</div>
                             </div>
-                            <button class="btn btn-small" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📋</button>
+                            <div>
+                                <button class="btn btn-small" onclick="copyToClipboard('${account.address}'); event.stopPropagation();" title="Copy address">📋</button>
+                                ${
+                                  account.seed
+                                    ? `<button class="btn btn-small btn-secondary" onclick="toggleSeedVisibility(${i}); event.stopPropagation();" title="Show/hide seed">🔑</button>`
+                                    : ""
+                                }
+                            </div>
                         </div>
                         <div class="account-address">${account.address}</div>
+                        ${
+                          account.seed
+                            ? `<div class="account-seed hidden" id="seed-${i}">
+                                 <span>${account.seed}</span>
+                                 <button class="btn btn-small" onclick="copyToClipboard('${account.seed}'); event.stopPropagation();" title="Copy seed">📋</button>
+                               </div>`
+                            : ""
+                        }
                     </div>
                 `
         }
@@ -1082,6 +1289,88 @@
       // Backwards compatibility
       function copyAddress(address) {
         copyToClipboard(address)
+      }
+
+      // Import account by seed
+      function openImportAccountModal() {
+        document.getElementById("importSeed").value = ""
+        document.getElementById("importAccountModal").classList.remove("hidden")
+        document.getElementById("importSeed").focus()
+      }
+
+      function closeImportAccountModal() {
+        document.getElementById("importAccountModal").classList.add("hidden")
+      }
+
+      async function executeImportAccount() {
+        // Match the other mutating actions: persistence is network-scoped, so
+        // there's nowhere to save an imported account until we're connected.
+        if (!client || !client.isConnected()) {
+          logError("Please connect to a network first", "warning")
+          return
+        }
+
+        const seedInput = document.getElementById("importSeed")
+        const seed = seedInput.value.trim()
+
+        if (!seed) {
+          logError("Please enter an account seed", "warning")
+          return
+        }
+
+        let wallet
+        try {
+          wallet = xrpl.Wallet.fromSeed(seed)
+        } catch (e) {
+          logError(`Invalid seed: ${e.message}`, "warning")
+          return
+        }
+
+        // Guard against duplicates before mutating any state.
+        if (accounts.some((acc) => acc.address === wallet.address)) {
+          logError("This account is already imported", "warning")
+          return
+        }
+
+        accounts.push(wallet)
+        saveAccounts()
+        seedInput.value = ""
+        closeImportAccountModal()
+        await updateAccountsList()
+        log(`Imported account: ${wallet.address}`)
+        showToast("Account imported successfully!", "success")
+      }
+
+      // Toggle visibility of an account's seed
+      function toggleSeedVisibility(index) {
+        const seedEl = document.getElementById(`seed-${index}`)
+        if (seedEl) {
+          seedEl.classList.toggle("hidden")
+        }
+      }
+
+      // Clear all saved accounts for the current network
+      async function clearAllAccounts() {
+        if (accounts.length === 0) return
+
+        if (
+          !confirm(
+            `Clear all ${accounts.length} saved account(s) for this network? ` +
+              `This removes them from this browser only.`,
+          )
+        ) {
+          return
+        }
+
+        accounts = []
+        selectedAccount = null
+        try {
+          localStorage.removeItem(storageKey("accounts"))
+        } catch (e) {
+          log(`⚠️ Failed to clear accounts: ${e.message}`)
+        }
+        await updateAccountsList()
+        log("Cleared all accounts for this network")
       }
 
       function updateAccountDropdowns() {
@@ -1337,6 +1626,7 @@
             escrows = escrows.filter(
               (escrow) => escrow.sequence !== sequenceNum,
             )
+            saveEscrows()
             await updateEscrowsList()
 
             // Clear the finish form
@@ -1581,6 +1871,7 @@
               hash: result.result.hash,
               id: escrowId,
             })
+            saveEscrows()
 
             // Update escrows list
             await updateEscrowsList()
