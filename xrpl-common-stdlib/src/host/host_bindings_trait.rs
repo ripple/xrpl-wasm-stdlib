@@ -1508,19 +1508,15 @@ pub trait HostBindings {
     /// Print to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will see this.
     ///
     /// # Parameters
-    /// - `msg_read_ptr`: A pointer to an array containing text characters (in either utf8).
+    /// - `msg_read_ptr`: A pointer to an array containing text characters (in utf8).
     /// - `msg_read_len`: The byte length of the text to send to the trace log.
-    /// - `data_read_ptr`: A pointer to an array of bytes containing arbitrary data.
-    /// - `data_read_len`: The byte length of the data to send to the trace log.
-    /// - `as_hex`: If 0 treat the data_read_ptr as pointing at a string of text, otherwise treat it
-    ///   as data and print hex.
+    /// - `data_type`: A [`crate::host::trace::TraceDataType`] discriminant selecting how the host
+    ///   reads the data buffer. Note that it sits between the message pair and the data pair.
+    /// - `data_read_ptr`: A pointer to an array of bytes containing the data to print.
+    /// - `data_read_len`: The byte length of that data. Numeric types require an exact width,
+    ///   little-endian.
     ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
+    /// Fire-and-forget: returns nothing and cannot fail from the guest's perspective.
     ///
     /// # Safety
     /// Caller must ensure all pointer parameters point to valid memory
@@ -1528,105 +1524,8 @@ pub trait HostBindings {
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
+        data_type: i32,
         data_read_ptr: *const u8,
         data_read_len: usize,
-        as_hex: i32,
-    ) -> i32;
-
-    /// Print a number to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
-    /// see this.
-    ///
-    /// # Parameters
-    /// * `msg_read_ptr`: A pointer to an array containing text characters (in either utf8).
-    /// * `msg_read_len`: The byte length of the text to send to the trace log.
-    /// * `number`: Any integer you wish to display after the text.
-    ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
-    ///
-    /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-
-    /// Print an account to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
-    /// see this.
-    ///
-    /// # Parameters
-    /// * `msg_read_ptr`: A pointer to an array containing text characters (in either utf8).
-    /// * `msg_read_len`: The byte length of the text to send to the trace log.
-    /// * `account_ptr`: A pointer to an account.
-    /// * `account_len`: The byte length of the account.
-    ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
-    ///
-    /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_acct(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        account_ptr: *const u8,
-        account_len: usize,
-    ) -> i32;
-
-    /// Print an OpaqueFloat number to the trace log on XRPLd. Any XRPLd instance set to \"trace\"
-    /// log level will see this.
-    ///
-    /// # Parameters
-    /// * `msg_read_ptr`: A pointer to an array containing text characters (in either utf8).
-    /// * `msg_read_len`: The byte length of the text to send to the trace log.
-    /// * `opaque_float_ptr`: A pointer to an array of 8 bytes containing the u64 opaque pointer value.
-    /// * `opaque_float_len`: The byte length of the opaque float data.
-    ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
-    ///
-    /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_xfloat(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        opaque_float_ptr: *const u8,
-        opaque_float_len: usize,
-    ) -> i32;
-
-    /// Print an amount to the trace log on XRPLd. Any XRPLd instance set to \"trace\" log level will
-    /// see this.
-    ///
-    /// # Parameters
-    /// * `msg_read_ptr`: A pointer to an array containing text characters (in either utf8).
-    /// * `msg_read_len`: The byte length of the text to send to the trace log.
-    /// * `amount_ptr`: A pointer to an amount.
-    /// * `amount_len`: The byte length of the amount.
-    ///
-    /// # Returns
-    ///
-    /// Returns an integer representing the result of the operation. A value of `0` or higher
-    /// signifies the number of message bytes that were written to the trace function. Non-zero
-    /// values indicate an error that corresponds to a known error code (e.g., incorrect buffer
-    /// sizes).
-    ///
-    /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn trace_amt(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        amount_ptr: *const u8,
-        amount_len: usize,
-    ) -> i32;
+    );
 }

@@ -152,7 +152,7 @@ mod tests {
             use crate::current_tx::traits::EscrowFinishFields;
             use crate::current_tx::traits::tests::expect_tx_field;
             use xrpl_common_stdlib::host::error_codes::{
-                FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
+                FIELD_NOT_FOUND, INVALID_FIELD, SOME_ERROR,
             };
             use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
             use xrpl_common_stdlib::host::setup_mock;
@@ -217,25 +217,25 @@ mod tests {
                 mock.expect_tx_field()
                     .with(eq(sfield::Condition), always(), eq(CONDITION_BLOB_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_fulfillment
                 mock.expect_tx_field()
                     .with(eq(sfield::Fulfillment), always(), eq(FULFILLMENT_BLOB_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
 
                 let _guard = setup_mock(mock);
 
                 let escrow = EscrowFinish;
 
-                // Optional fields should also return Err on INTERNAL_ERROR
+                // Optional fields should also return Err on SOME_ERROR
                 let condition_result = escrow.get_condition();
                 assert!(condition_result.is_err());
-                assert_eq!(condition_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(condition_result.err().unwrap().code(), SOME_ERROR);
 
                 let fulfillment_result = escrow.get_fulfillment();
                 assert!(fulfillment_result.is_err());
-                assert_eq!(fulfillment_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(fulfillment_result.err().unwrap().code(), SOME_ERROR);
             }
 
             #[test]
@@ -303,7 +303,7 @@ mod tests {
             use crate::current_tx::traits::tests::expect_tx_field;
             use mockall::predicate::{always, eq};
             use xrpl_common_stdlib::host::error_codes::{
-                FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD,
+                FIELD_NOT_FOUND, INVALID_FIELD, SOME_ERROR,
             };
             use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
             use xrpl_common_stdlib::host::setup_mock;
@@ -402,25 +402,25 @@ mod tests {
                 mock.expect_tx_field()
                     .with(eq(sfield::Owner), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_offer_sequence
                 mock.expect_tx_field()
                     .with(eq(sfield::OfferSequence), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
 
                 let _guard = setup_mock(mock);
 
                 let escrow = EscrowFinish;
 
-                // All mandatory fields should return Err on INTERNAL_ERROR
+                // All mandatory fields should return Err on SOME_ERROR
                 let owner_result = escrow.get_owner();
                 assert!(owner_result.is_err());
-                assert_eq!(owner_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(owner_result.err().unwrap().code(), SOME_ERROR);
 
                 let offer_seq_result = escrow.get_offer_sequence();
                 assert!(offer_seq_result.is_err());
-                assert_eq!(offer_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(offer_seq_result.err().unwrap().code(), SOME_ERROR);
             }
 
             #[test]

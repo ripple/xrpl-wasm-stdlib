@@ -96,6 +96,11 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn scale(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Scale)
     }
+
+    /// The LEVersion field (Optional).
+    fn le_version(&self) -> Result<Option<u8>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::LEVersion)
+    }
 }
 
 /// Trait providing access to fields specific to the current Vault object.
@@ -183,6 +188,11 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn scale(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::Scale)
     }
+
+    /// The LEVersion field (Optional).
+    fn le_version(&self) -> Result<Option<u8>> {
+        current_ledger_object::get_field_optional(sfield::LEVersion)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -235,6 +245,7 @@ mod tests {
         assert!(obj.assets_maximum().is_ok());
         assert!(obj.loss_unrealized().is_ok());
         assert!(obj.scale().is_ok());
+        assert!(obj.le_version().is_ok());
     }
 
     #[test]
@@ -246,5 +257,6 @@ mod tests {
         let obj = Vault::new(0);
 
         assert!(obj.scale().unwrap().is_none());
+        assert!(obj.le_version().unwrap().is_none());
     }
 }
