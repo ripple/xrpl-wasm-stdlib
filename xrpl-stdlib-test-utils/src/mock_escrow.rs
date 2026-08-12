@@ -195,12 +195,17 @@ mod tests {
     #[test]
     fn with_set_data_returns_err_reports_the_error_code_through_the_real_host_call() {
         let _guard = EscrowScenario::builder()
-            .with_set_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::from_code(
+                xrpl_common_stdlib::host::error_codes::SOME_ERROR,
+            )))
             .install();
 
         let payload = b"payload";
         let code = unsafe { xrpl_common_stdlib::host::set_data(payload.as_ptr(), payload.len()) };
-        assert_eq!(code, Error::InternalError.code());
+        assert_eq!(
+            code,
+            Error::from_code(xrpl_common_stdlib::host::error_codes::SOME_ERROR).code()
+        );
         assert!(code < 0);
     }
 

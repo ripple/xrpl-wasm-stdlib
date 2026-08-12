@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -30,7 +30,7 @@ jobs:
 
       - name: Upload documentation files as artifact
         id: docs-artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: target/doc
           retention-days: 10
@@ -47,4 +47,4 @@ jobs:
     steps:
       - name: Deploy to Documentation to GitHub Pages
         id: docs-artifact
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

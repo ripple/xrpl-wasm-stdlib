@@ -97,6 +97,25 @@ When merging without squashing, individual commits are also checked; commits tha
 - Add unit tests where applicable
 - Include performance considerations
 
+### API design: distinct types for order-sensitive parameters
+
+When a public function takes **two or more adjacent parameters of the same raw type** and their
+order matters, give them **distinct types** with a newtype wrapper — following the existing
+`PublicKey` / `AccountID` / `Hash256` pattern — so a caller who swaps them gets a **compile
+error** instead of a silently wrong result at runtime.
+
+This applies to **untyped raw parameters only** — the ones with nothing but a parameter name
+distinguishing them. `crypto::check_sig` takes its message and signature as the distinct
+`Message` and `Signature` newtypes (both wrapping `&[u8]`), so `check_sig(msg, sig, ...)`
+cannot be called with the two swapped.
+
+Do **not** add role newtypes on top of a type that is already a meaningful domain type. Where
+two parameters are both `&AccountID` playing different roles (`credential_id`'s subject and
+issuer, `paychan_id`'s account and destination), leave them as `&AccountID`: the extra wrapper
+costs every caller a construction step for a swap the type name already documents. Likewise,
+leave symmetric or interchangeable parameters alone — `amm_id`'s issue pair and `trustline_id`'s
+canonically-ordered account pair produce the same result either way.
+
 ## Testing
 
 ### Test Networks
@@ -124,15 +143,15 @@ cargo build --target wasm32v1-none --release
 These debugging statements will show up in the `debug.log` for rippled.
 
 ```rust
-use xrpl_common_stdlib::host::trace::{trace, trace_data, DataRepr};
+use xrpl_common_stdlib::host::trace::{trace, trace_hex};
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {
-    trace("Contract starting").ok();
+    trace("Contract starting");
 
     let account = match ctx.tx().get_account() {
         Ok(acc) => {
-            trace_data("Account", &acc.0, DataRepr::AsHex).ok();
+            trace_hex("Account", &acc.0);
             acc
         },
         Err(e) => {

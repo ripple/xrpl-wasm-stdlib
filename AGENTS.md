@@ -58,6 +58,9 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 
 # Regenerate src/tx_flags.rs (tf*/asf*/tmf* constants) from rippled (requires Node.js)
 ./scripts/generate-tx-flags.sh
+
+# Regenerate objects/generated/ (per-entry ledger-object field traits) from rippled (requires Node.js)
+./scripts/generate-ledger-objects.sh
 ```
 
 Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`.
@@ -108,7 +111,7 @@ src/
 ├── current_tx/        # EscrowFinish marker + traits → typed access to the current TX's fields
 ├── fields/            # Field decoding traits/helpers shared across XRPL field types, incl. locator.rs (nested-field locator paths)
 ├── host/              # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
-├── objects/            # Cached ledger entry access (AccountRoot, ArrayObject, AnyObject, traits)
+├── objects/            # Cached ledger entry access: generated/ (per-entry <Entry>Fields traits + structs), ArrayObject, AnyObject, traits
 ├── ledger_entry_ids.rs # Compute ledger entry IDs (escrow_id, oracle_id, credential_id, accountroot_id, amm_id, ...)
 ├── types/             # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, Number, constants.rs, etc.
 ├── sfield.rs          # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
@@ -119,11 +122,15 @@ There is no `core/` module — everything above lives directly under `src/`. `Cu
 
 `SField<T, CODE>` encodes the field's Rust type as a const-generic phantom, so `current_tx::get_field(sfield::Account)` infers `AccountID`, `ledger_object::get_field(slot, sfield::Balance)` infers `Amount`, etc. Adding a new field means regenerating `sfield.rs` (see `tools/generateSFields.js` for custom type overrides like `TransactionType`, `ConditionBlob`, `FulfillmentBlob`).
 
-The generator maps every XRPL type through one of two tables in `tools/generateSFields.js`: `typeMap` (types with a real Rust type and a `FieldDecoder` impl) or `untypedTypes` (types deliberately still emitted as `SField<u8, CODE>` placeholders — reading one fails at runtime). A type in neither table is a **hard error**: the generator exits non-zero rather than silently emit a wrong-typed constant. Wiring up a new type means adding it to `typeMap` and removing it from `untypedTypes`. The `use` statements at the top of `sfield.rs` are _not_ generated — everything above the first `pub const` is preserved verbatim, so a new type's import is added by hand.
+XRPL wire types are mapped to Rust types by `tools/sfieldTypeMap.js`, shared with the ledger-object generator: `typeMap` keys off the wire type, and `customFieldTypes` holds per-field-name overrides that take priority (like `Condition` → `ConditionBlob`). A wire type in neither table needs no registration: its fields are emitted as `SField<Unmapped, CODE>`, where `Unmapped` (defined in `sfield.rs`'s hand-written header) is an uninhabited marker implementing no decoder marker trait — the field code stays usable (raw `le_field` reads, `Locator` segments) while `get_field` on it is a **compile error**, not a runtime failure. The generator lists these fields on stdout each run so a newly-added rippled type stays visible. Wiring one up means adding it to `typeMap` and giving the Rust type a `FieldDecoder` + `FromCurrentTx`/`FromLedger` impl. The `use` statements at the top of `sfield.rs` are _not_ generated — everything above the first `pub const` is preserved verbatim, so a new type's import is added by hand.
 
 `tx_flags.rs` is merged from two rippled branches (see `tools/generateTxFlags.js`): a **base branch** (authoritative) plus a **contract branch** that only adds flags for new transaction types the base branch lacks (never redefining a base flag, so the merge is purely additive). Only individual flags are emitted — rippled's validity masks (`tf*Mask`) are intentionally omitted, since contracts check individual flags rather than validate flag combinations. The constants are `pub(crate)` — crate-internal backing behind a typed flags API, not a public surface.
 
 `xrpl-escrow-stdlib/src/ctx/escrow_finish.rs` shows the pattern for a feature context: a struct holding a `current_tx` marker type (`EscrowFinish`) plus a ledger-object helper (`CurrentEscrow`), implementing `SmartFeatureContext`, with feature-unique host calls as inherent methods (all `unsafe` FFI stays inside the context type — user contract code stays fully safe).
+
+## Ledger-object field accessors (generated)
+
+`xrpl-common-stdlib/src/objects/generated/` holds one file per XRPL ledger-entry type (`oracle.rs`, `account_root.rs`, `bridge.rs`, ...) plus `mod.rs` (private per-entry `mod`s, with a flat `pub use` block as the sole public path — `objects::AccountRoot`, not `objects::generated::account_root::...` — and a `//!` header listing every field whose XRPL wire type has no typed Rust mapping yet, grouped by wire type). All of it — including a `#[cfg(test)] mod tests` block per entry — is produced by `tools/generateLedgerObjects.js` from rippled's `ledger_entries.macro`/`sfields.macro`, invoked via `./scripts/generate-ledger-objects.sh`. Any entry can be configured **slot-only** (`SLOT_ONLY_ENTRIES`) with individual fields excluded (`PER_ENTRY_EXCLUDED_FIELDS`) in the generator: the slot-based `<Entry>Fields` trait + `<Entry>` struct are still emitted (so contracts can read instances of that object), while the entry's current-object accessors and any host-mutable fields stay hand-written in the owning domain crate. Escrow is currently the only such entry — its `Data` (`ContractData`) field is excluded, and its `CurrentEscrowFields` + the `EscrowContractData` extension trait (for `Data`) live in `xrpl-escrow-stdlib`. No `load()` constructor is generated (ledger-entry-ID inputs vary per entry — construct with `new(slot)` after caching a ledger entry ID from `ledger_entry_ids.rs`). Do not hand-edit anything under `generated/` — `./scripts/generate-ledger-objects.sh --check` regenerates and diffs it in CI; fix drift by changing the generator, not the output.
 
 ## WASM build profile (matters for size and panic behavior)
 
@@ -153,14 +160,14 @@ use xrpl_macros::smart_escrow;
 
 #[smart_escrow]
 fn run(_ctx: EscrowFinishContext) -> FinishResult {
-    let _ = trace("Hello World");
+    trace("Hello World");
     FinishResult::succeed()
 }
 ```
 
 The `Cargo.toml` must set `crate-type = ["cdylib"]` and depend on `xrpl-common-stdlib`, `xrpl-macros`, and `xrpl-escrow-stdlib` as separate path dependencies. New examples must be added to `examples/Cargo.toml`'s `[workspace] members`.
 
-Trace output (`trace`, `trace_data`, `trace_num`) shows up in rippled's `debug.log`.
+Trace output (`trace`, `trace_hex`, `trace_num`) shows up in rippled's `debug.log`.
 
 ## Integration test pattern
 
@@ -176,4 +183,4 @@ Build with `cargo build --target wasm32v1-none --release`, then upload the `.was
 
 ## Claude Code skill (`skills/`)
 
-`skills/xrpl-smart-escrows/` is a packaged Claude Code skill (`SKILL.md` + `reference/*.md`) that teaches an AI assistant how to build, test, and debug Smart Escrow contracts against this library. It's referenced by `.claude-plugin/plugin.json` at the repo root, which makes the whole repo installable as a skill/plugin source (`/plugin marketplace add`). It lives outside `docs/` deliberately — `scripts/run-markdown.sh` extracts and executes ` ```bash ` fenced code blocks from files under `docs/`/`examples/`/`scripts/`/`README.md`, and the skill's reference docs contain illustrative shell snippets that must not be executed by CI. It's also outside the Cargo `[workspace] members` list, so it has no effect on `cargo build`/clippy/fmt. Keep its `reference/api-surface.md` and `reference/patterns.md` in sync with the actual public API if crate names, entry-point macros, or example contracts change.
+`skills/xrpl-smart-escrows/` is a packaged Claude Code skill (`SKILL.md` + `reference/*.md`) that teaches an AI assistant how to build, test, and debug Smart Escrow contracts against this library. It's referenced by `.claude-plugin/plugin.json` at the repo root, which makes the repo itself a Claude Code plugin — loadable straight from a checkout with `claude --plugin-dir .`, no install step. `.claude-plugin/marketplace.json` sits alongside it and catalogs that same plugin with `"source": "./"`, so the repo also acts as its own single-plugin marketplace: `/plugin marketplace add ripple/xrpl-wasm-stdlib` followed by `/plugin install xrpl-wasm-stdlib@xrpl-wasm-stdlib`. Either path namespaces the skill as `/xrpl-wasm-stdlib:xrpl-smart-escrows`. Validate both manifests with `claude plugin validate .`. It lives outside `docs/` deliberately — `scripts/run-markdown.sh` extracts and executes ` ```bash ` fenced code blocks from files under `docs/`/`examples/`/`scripts/`/`README.md`, and the skill's reference docs contain illustrative shell snippets that must not be executed by CI. It's also outside the Cargo `[workspace] members` list, so it has no effect on `cargo build`/clippy/fmt. Keep its `reference/api-surface.md` and `reference/patterns.md` in sync with the actual public API if crate names, entry-point macros, or example contracts change.
