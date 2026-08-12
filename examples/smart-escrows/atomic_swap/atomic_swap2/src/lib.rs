@@ -3,11 +3,11 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::host;
-use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
+use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
+use xrpl_common_stdlib::objects::cache_ledger_entry;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_escrow_stdlib::EscrowFinishContext;
@@ -127,15 +127,13 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
 
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
-        let first_escrow_slot =
-            unsafe { host::cache_le(first_escrow_id.as_ptr(), first_escrow_id.len(), 0) };
-        if first_escrow_slot < 0 {
-            let _ = trace_num(
-                "Failed to cache first escrow, error:",
-                first_escrow_slot as i64,
-            );
-            return VALIDATION_FAILED;
-        }
+        let first_escrow_slot = match cache_ledger_entry(&first_escrow_id) {
+            Ok(slot) => slot,
+            Err(e) => {
+                let _ = trace_num("Failed to cache first escrow, error:", e.code() as i64);
+                return VALIDATION_FAILED;
+            }
+        };
 
         let first_escrow = Escrow::new(first_escrow_slot);
 
@@ -312,13 +310,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         let _ = trace_num("Extracted CancelAfter:", cancel_after as i64);
 
         // Get current ledger time for deadline comparison
-        let mut time_buffer = [0u8; 4];
-        let time_result =
-            unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
-
-        let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
-            u32::from_le_bytes(time_buffer)
-        }) {
+        let current_time = match parent_ledger_time() {
             Ok(time) => time,
             Err(e) => {
                 let _ = trace_num("Failed to get parent ledger time:", e.code() as i64);

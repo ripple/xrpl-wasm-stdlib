@@ -6,6 +6,7 @@ extern crate std;
 use xrpl_common_stdlib::host::trace::{DataRepr, trace_data, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::credential_id;
+use xrpl_common_stdlib::objects::cache_ledger_entry;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
@@ -25,11 +26,11 @@ fn kyc_finish(ctx: EscrowFinishContext) -> FinishResult {
         Ok(id) => {
             let _ = trace_data("cred_id", &id, DataRepr::AsHex);
 
-            let slot = unsafe { xrpl_common_stdlib::host::cache_le(id.as_ptr(), id.len(), 0) };
-            if slot < 0 {
-                let _ = trace_num("CACHE ERROR", i64::from(slot));
+            // Caching only has to succeed — the credential existing is the whole check here.
+            if let Err(e) = cache_ledger_entry(&id) {
+                let _ = trace_num("CACHE ERROR", i64::from(e.code()));
                 return FinishResult::reject();
-            };
+            }
             FinishResult::succeed() // <-- Finish the escrow to indicate a successful outcome
         }
         Err(e) => {
