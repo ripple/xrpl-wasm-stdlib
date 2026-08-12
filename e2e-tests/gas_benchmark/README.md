@@ -62,7 +62,7 @@ fn benchmark_my_new_function() -> u64 {
 Add a call in the `finish()` function:
 
 ```rust
-let _ = trace("BENCHMARK: my_new_function");
+trace("BENCHMARK: my_new_function");
 accumulator = accumulator.wrapping_add(benchmark_my_new_function());
 ```
 

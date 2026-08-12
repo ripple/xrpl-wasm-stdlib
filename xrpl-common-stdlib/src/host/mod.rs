@@ -131,7 +131,7 @@ impl<T> Result<T> {
             Result::Err(error) => {
                 #[cfg(target_arch = "wasm32")]
                 {
-                    let _ = trace::trace_num("error_code=", error.code() as i64);
+                    trace::trace_num("error_code=", error.code() as i64);
                 }
                 #[cfg(not(target_arch = "wasm32"))]
                 {
@@ -177,7 +177,7 @@ impl<T> Result<T> {
             let location = core::panic::Location::caller();
             #[cfg(target_arch = "wasm32")]
             {
-                let _ = trace::trace_num("error_code=", error.code() as i64);
+                trace::trace_num("error_code=", error.code() as i64);
             }
             #[cfg(not(target_arch = "wasm32"))]
             {
@@ -227,9 +227,8 @@ impl From<i64> for Result<u64> {
 #[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub enum Error {
-    /// Reserved for internal invariant trips, generally unrelated to inputs.
-    /// These should be reported with an issue.
-    InternalError = error_codes::INTERNAL_ERROR,
+    /// The host function has an empty/stub implementation (not yet implemented by the host).
+    Unimplemented = error_codes::UNIMPLEMENTED,
 
     /// The requested serialized field could not be found in the specified object.
     /// This error is returned when attempting to access a field that doesn't exist
@@ -269,9 +268,8 @@ pub enum Error {
     /// This may occur if the object doesn't exist or the ledger entry ID is invalid.
     LedgerObjNotFound = error_codes::LEDGER_OBJ_NOT_FOUND,
 
-    /// An error occurred while decoding serialized data.
-    /// This typically indicates corrupted or invalidly formatted data.
-    InvalidDecoding = error_codes::INVALID_DECODING,
+    /// The operation would exceed the allowed transfer limit.
+    OutOfTransferLimit = error_codes::OUT_OF_TRANSFER_LIMIT,
 
     /// The data field is too large to be processed.
     /// Consider reducing the size of the data or splitting it into smaller chunks.
@@ -308,6 +306,11 @@ pub enum Error {
     /// An error occurred during floating-point computation.
     /// This may indicate overflow, underflow, or other arithmetic errors.
     InvalidFloatComputation = error_codes::INVALID_FLOAT_COMPUTATION,
+
+    /// A byte slice the host returned could not be decoded into the requested type.
+    /// This is NOT a host ABI code: the host reported success, and the stdlib's own decoder
+    /// rejected the bytes.
+    InvalidDecoding = error_codes::INVALID_DECODING,
 }
 
 impl Error {

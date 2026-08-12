@@ -22,7 +22,7 @@ fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
         .unwrap();
 
         let ledger_sequence = u32::from_be_bytes(ledger_sqn_buffer);
-        let _ = trace_num("Ledger Sequence", ledger_sequence as i64);
+        trace_num("Ledger Sequence", ledger_sequence as i64);
         (ledger_sequence >= 5) as i32 // Return 1 if true (successful outcome), 0 if false (failed outcome)
     }
 }

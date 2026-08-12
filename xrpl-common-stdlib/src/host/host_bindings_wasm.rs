@@ -360,29 +360,10 @@ mod host_defined_functions {
         pub(super) fn trace(
             msg_read_ptr: *const u8,
             msg_read_len: usize,
+            data_type: i32,
             data_read_ptr: *const u8,
             data_read_len: usize,
-            as_hex: i32,
-        ) -> i32;
-        pub(super) fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-        pub(super) fn trace_acct(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            account_ptr: *const u8,
-            account_len: usize,
-        ) -> i32;
-        pub(super) fn trace_xfloat(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            opaque_float_ptr: *const u8,
-            opaque_float_len: usize,
-        ) -> i32;
-        pub(super) fn trace_amt(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            amount_ptr: *const u8,
-            amount_len: usize,
-        ) -> i32;
+        );
     }
 }
 
@@ -1277,63 +1258,18 @@ impl HostBindings for WasmHostBindings {
         &self,
         msg_read_ptr: *const u8,
         msg_read_len: usize,
+        data_type: i32,
         data_read_ptr: *const u8,
         data_read_len: usize,
-        as_hex: i32,
-    ) -> i32 {
+    ) {
         unsafe {
             host_defined_functions::trace(
                 msg_read_ptr,
                 msg_read_len,
+                data_type,
                 data_read_ptr,
                 data_read_len,
-                as_hex,
             )
-        }
-    }
-
-    unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32 {
-        unsafe { host_defined_functions::trace_num(msg_read_ptr, msg_read_len, number) }
-    }
-
-    unsafe fn trace_acct(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        account_ptr: *const u8,
-        account_len: usize,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::trace_acct(msg_read_ptr, msg_read_len, account_ptr, account_len)
-        }
-    }
-
-    unsafe fn trace_xfloat(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        opaque_float_ptr: *const u8,
-        opaque_float_len: usize,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::trace_xfloat(
-                msg_read_ptr,
-                msg_read_len,
-                opaque_float_ptr,
-                opaque_float_len,
-            )
-        }
-    }
-
-    unsafe fn trace_amt(
-        &self,
-        msg_read_ptr: *const u8,
-        msg_read_len: usize,
-        amount_ptr: *const u8,
-        amount_len: usize,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::trace_amt(msg_read_ptr, msg_read_len, amount_ptr, amount_len)
         }
     }
 }
@@ -1429,10 +1365,6 @@ export_host_functions! {
     fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_read_ptr: *const u8, data_read_len: usize, as_hex: i32) -> i32;
-    fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-    fn trace_acct(msg_read_ptr: *const u8, msg_read_len: usize, account_ptr: *const u8, account_len: usize) -> i32;
-    fn trace_xfloat(msg_read_ptr: *const u8, msg_read_len: usize, opaque_float_ptr: *const u8, opaque_float_len: usize) -> i32;
-    fn trace_amt(msg_read_ptr: *const u8, msg_read_len: usize, amount_ptr: *const u8, amount_len: usize) -> i32;
+    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();
 
 }
