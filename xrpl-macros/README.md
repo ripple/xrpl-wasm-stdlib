@@ -1,14 +1,13 @@
 # xrpl-macros
 
-⚠️ **INTERNAL CRATE - DO NOT USE DIRECTLY** ⚠️
+The compile-time macros for XRPL WebAssembly contracts: typed constants (`r_address!`, `hash256!`,
+`pubkey!`, `currency!`, `blob!`) and the entry-point attributes (`#[smart_escrow]`,
+`#[smart_contract]`).
 
-This is an internal procedural macro crate for `xrpl-common-stdlib`.
-
-**Users should add `xrpl-common-stdlib` to their dependencies, NOT this crate.**
-
-Due to Rust's requirement that procedural macros must be in a separate crate, this is published
-alongside `xrpl-common-stdlib` but is not intended for direct use. The macro is re-exported from
-`xrpl-common-stdlib` for your convenience.
+**You normally do not need to depend on this crate directly.** Rust requires procedural macros to
+live in their own crate, so this is published alongside `xrpl-common-stdlib`, which re-exports every
+macro defined here. Name it explicitly only if you prefer importing macros from their own crate — the
+contracts under `examples/` do exactly that.
 
 ## For Users
 
@@ -23,10 +22,11 @@ use xrpl_common_stdlib::types::account_id::AccountID;
 const ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
 ```
 
-This crate also provides the `smart_escrow` and `smart_contract` entry-point attribute macros. Those are
-re-exported from `xrpl-wasm-stdlib` too, but you should import `smart_escrow` from `xrpl-escrow-stdlib` instead —
-its generated code references types (`EscrowFinishContext`, `FinishResult`) that live there. See
-[`xrpl-escrow-stdlib`'s README](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for usage.
+This crate also provides the `smart_escrow` and `smart_contract` entry-point attribute macros, both
+re-exported from `xrpl-common-stdlib` as well. `smart_escrow` generates code referencing
+`EscrowFinishContext` and `FinishResult`, so a contract using it must also depend on
+[`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) —
+see that crate's README for usage.
 
 ---
 

@@ -1,18 +1,23 @@
 [package]
 name = "xrpl-escrow-stdlib"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2024"
 description = "Smart Escrow types, entry-point context, and host-function wrappers for XRPL WebAssembly contracts"
 license.workspace = true
 repository.workspace = true
+homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
+readme = "README.md"
 keywords = ["xrpl", "wasm", "smart-escrow", "no-std"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
+include = ["src/", "README.md"]
 
 [lib]
 crate-type = ["lib"]
 
 [dependencies]
-xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
+# `version` is what the published manifest expresses; `path` is what in-workspace builds resolve
+# against. Cargo swaps to the registry range at package time, so both keys are required.
+xrpl-common-stdlib = { version = "0.9.0", path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]
 xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }

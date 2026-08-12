@@ -1,0 +1,119 @@
+name: Publish
+
+# Publishes the crate set to crates.io on a version tag, using crates.io Trusted
+# Publishing (OIDC) — no long-lived CARGO_REGISTRY_TOKEN secret.
+#
+# The four published crates are versioned in lockstep (see adrs/0004 in the design vault
+# and CONTRIBUTING.md). This workflow enforces that: the tag must match every crate's
+# version, and the crates publish in dependency order.
+#
+# The `deprecated/xrpl-wasm-stdlib` signpost is intentionally NOT handled here — it is a
+# one-time manual publish (see CONTRIBUTING.md).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Package and verify every crate but do not upload to crates.io"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # create the GitHub Release (with auto-generated notes) on a tag
+  id-token: write # required for crates.io Trusted Publishing (OIDC token exchange)
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # No `toolchain:` input → honors rust-toolchain.toml (1.89.0 + wasm32v1-none).
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      # Needed by the host-function audit and the ledger-object codegen check, both of which
+      # run the Node tools under tools/. Matches the version the Test workflow uses.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      # Lockstep guard (D2): the tag must equal every published crate's version. A tag push
+      # that drifts from the manifests fails here before anything is built or uploaded.
+      - name: Check tag matches crate versions
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          for crate in xrpl-macros xrpl-common-stdlib xrpl-stdlib-test-utils xrpl-escrow-stdlib; do
+            version="$(grep -m1 '^version = ' "$crate/Cargo.toml" | sed -E 's/^version = "(.+)"/\1/')"
+            if [ "$version" != "$TAG" ]; then
+              echo "::error::$crate is at $version but the tag is v$TAG — bump all crates in lockstep before tagging"
+              exit 1
+            fi
+          done
+          echo "All four crates are at $TAG ✅"
+
+      # Pre-publish gate — the local half of run-all.sh, in the same order.
+      # The rippled-backed e2e suite (run-tests.sh) is the one step NOT re-run here: a release
+      # tag points at a commit already merged to main, where the full Test workflow (including
+      # e2e) has gated it, so we keep the release path off that flaky network dependency.
+      - name: Clippy
+        run: ./scripts/clippy.sh
+      - name: Formatting
+        run: ./scripts/fmt.sh
+      # Compares the HostBindings trait against rippled's exported host functions. A publish
+      # must not ship an ABI that has drifted from the node it targets.
+      - name: Host function audit
+        run: ./scripts/host-function-audit.sh
+      - name: WASM exports
+        run: ./scripts/check-wasm-exports.sh
+      # Fails if objects/generated/ is stale versus the generator — never publish hand-drifted
+      # generated code.
+      - name: Ledger objects up to date
+        run: ./scripts/generate-ledger-objects.sh --check
+      - name: Build and unit test
+        run: ./scripts/build-and-test.sh
+
+      # ---- Dry run (manual dispatch only) --------------------------------------------------
+      # A full workspace dry-run resolves each crate against the others as it packages them,
+      # which requires `cargo publish --workspace` (stable, cargo >= 1.90). The pinned 1.89
+      # can only dry-run crates individually, and the dependents fail because their siblings
+      # aren't on the real index yet. So install stable just for this verification path.
+      - name: Publish (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          cargo +stable publish --workspace --dry-run
+
+      # ---- Real publish (tag push, or manual dispatch with dry-run unchecked) --------------
+      - name: Authenticate to crates.io
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
+        uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Publish to crates.io
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          set -euo pipefail
+          # Dependency order: macros → common → test-utils → escrow. cargo waits for each
+          # crate to land in the index before the next resolves it as a registry dependency.
+          cargo publish -p xrpl-macros
+          cargo publish -p xrpl-common-stdlib
+          cargo publish -p xrpl-stdlib-test-utils
+          cargo publish -p xrpl-escrow-stdlib
+
+      # Stands in for a hand-maintained changelog while pre-1.0: notes are generated from the
+      # merged PRs since the previous tag. Only on a real tag push (a dispatch has no tag).
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag

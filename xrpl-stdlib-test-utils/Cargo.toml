@@ -1,11 +1,21 @@
 [package]
 name = "xrpl-stdlib-test-utils"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2024"
 description = "Test harness for XRPL WebAssembly smart contracts: MockHostBindings plus escrow scenario builders"
 license.workspace = true
 repository.workspace = true
+homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
+readme = "README.md"
+keywords = ["xrpl", "wasm", "testing", "mock", "no-std"]
+categories = ["development-tools::testing", "cryptography::cryptocurrencies"]
+include = ["src/", "README.md"]
 
 [dependencies]
-xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }
+# Enabling `test-host-bindings` here is what makes `MockHostBindings` exist. It is a normal (not dev)
+# dependency because this crate *is* the harness — consumers gate it out of WASM builds by declaring
+# this crate under `[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]` instead.
+xrpl-common-stdlib = { version = "0.9.0", path = "../xrpl-common-stdlib", features = [
+  "test-host-bindings",
+] }
 mockall.workspace = true

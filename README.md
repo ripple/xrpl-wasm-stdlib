@@ -15,6 +15,65 @@ There is an interface available at <https://ripple.github.io/xrpl-wasm-stdlib/ui
 - **[nft_owner](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/nft_owner/)** - NFT ownership verification
 - **[ledger_sqn](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/ledger_sqn/)** - Sequence-based release
 
+## Installation
+
+A Smart Escrow needs two crates:
+
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+```
+
+| Crate                | Provides                                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `xrpl-common-stdlib` | Host bindings, transaction and ledger-object field access, XRPL types, and every macro re-exported from `xrpl-macros` |
+| `xrpl-escrow-stdlib` | `EscrowFinishContext`, `FinishResult`, and the escrow-only host functions                                             |
+
+Both are needed: `xrpl-escrow-stdlib` deliberately does not re-export `xrpl-common-stdlib`, so the
+general layer stays usable on its own and the dependency direction stays visible in every contract's
+manifest.
+
+You do not need to depend on `xrpl-macros` directly — `xrpl-common-stdlib` re-exports
+`#[smart_escrow]`, `#[smart_contract]`, and the typed-constant macros (`r_address!`, `hash256!`,
+`pubkey!`, `currency!`, `blob!`). Add it only if you prefer importing macros from their own crate, as
+the in-repo examples do.
+
+All four published crates are versioned in lockstep, so use matching `0.9.x` versions of whichever
+ones you name.
+
+Contracts target `wasm32v1-none` and set `crate-type = ["cdylib"]`; see
+[hello_world](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world/)
+for a complete manifest, and the [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html)
+for the release profile a size-constrained contract wants.
+
+### Testing a contract
+
+`xrpl-stdlib-test-utils` stands in for the XRPL host so contract logic can be unit-tested with plain
+`cargo test` — no node, no WASM. Gate it to non-WASM targets: it pulls in `mockall`, which is not
+`no_std` and will not build for `wasm32v1-none`.
+
+```toml
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+xrpl-stdlib-test-utils = "0.9"
+```
+
+```rust,ignore
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_stdlib_test_utils::EscrowScenario;
+
+#[test]
+fn releases_above_ten_xrp() {
+    let _guard = EscrowScenario::builder()
+        .with_amount(Amount::XRP { num_drops: 20_000_000 })
+        .install();
+    // ... call your contract's logic and assert on the result
+}
+```
+
+Unset scenario facts fall back to defaults; see
+[the crate's README](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-stdlib-test-utils) for
+the full builder. If you only want the raw mock, enable `xrpl-common-stdlib`'s `test-host-bindings`
+feature directly under the same `cfg` gate.
+
 ## Documentation
 
 | Section                                                                                                       | Description                                     |
