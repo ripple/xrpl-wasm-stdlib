@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "xrpl-wasm-stdlib",
+  "description": "Claude Code plugins for building XRPL smart features with xrpl-wasm-stdlib",
+  "owner": {
+    "name": "Ripple",
+    "url": "https://github.com/ripple"
+  },
+  "plugins": [
+    {
+      "name": "xrpl-wasm-stdlib",
+      "source": "./",
+      "description": "Skill for writing, building, testing, and debugging XRPL Smart Escrow contracts against xrpl-wasm-stdlib",
+      "homepage": "https://ripple.github.io/xrpl-wasm-stdlib/",
+      "repository": "https://github.com/ripple/xrpl-wasm-stdlib",
+      "keywords": [
+        "xrpl",
+        "smart-escrow",
+        "smart-contracts",
+        "wasm",
+        "rust",
+        "no_std"
+      ]
+    }
+  ]
+}
