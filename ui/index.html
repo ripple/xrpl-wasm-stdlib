@@ -573,6 +573,9 @@
       }
 
       function saveAccounts() {
+        // Never write to the "unknown" bucket: without a connected network
+        // there's no key loadAccounts() will ever read the data back from.
+        if (!connectedNetwork) return
         try {
           // Persist only what we need to rebuild the wallet: address + seed.
           const data = accounts
@@ -1300,6 +1303,13 @@
       }
 
       async function executeImportAccount() {
+        // Match the other mutating actions: persistence is network-scoped, so
+        // there's nowhere to save an imported account until we're connected.
+        if (!client || !client.isConnected()) {
+          logError("Please connect to a network first", "warning")
+          return
+        }
+
         const seedInput = document.getElementById("importSeed")
         const seed = seedInput.value.trim()
 
