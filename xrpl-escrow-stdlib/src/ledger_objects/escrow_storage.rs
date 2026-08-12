@@ -36,7 +36,7 @@ mod tests {
     use super::*;
     use mockall::predicate::{always, eq};
     use xrpl_common_stdlib::host::Error;
-    use xrpl_common_stdlib::host::error_codes::INTERNAL_ERROR;
+    use xrpl_common_stdlib::host::error_codes::SOME_ERROR;
     use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
     use xrpl_common_stdlib::host::setup_mock;
     use xrpl_common_stdlib::sfield;
@@ -56,7 +56,7 @@ mod tests {
 
         fn decode(bytes: &[u8]) -> Result<Self> {
             if bytes.len() < 4 {
-                return Result::Err(Error::InternalError);
+                return Result::Err(Error::InvalidDecoding);
             }
             let mut header = [0u8; 4];
             header.copy_from_slice(&bytes[..4]);
@@ -110,13 +110,13 @@ mod tests {
     #[test]
     fn load_data_propagates_host_error() {
         let mut mock = MockHostBindings::new();
-        expect_get_data(&mut mock, INTERNAL_ERROR, None);
+        expect_get_data(&mut mock, SOME_ERROR, None);
         let _guard = setup_mock(mock);
 
         let ctx = EscrowFinishContext::default();
         let result: Result<Option<TestPayload>> = load_data(&ctx);
 
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]
@@ -154,12 +154,17 @@ mod tests {
     #[test]
     fn save_data_propagates_host_error_without_swallowing_it() {
         let _guard = EscrowScenario::builder()
-            .with_set_data_returns(Err(Error::InternalError))
+            .with_set_data_returns(Err(Error::from_code(
+                xrpl_common_stdlib::host::error_codes::SOME_ERROR,
+            )))
             .install();
 
         let ctx = EscrowFinishContext::default();
         let result = save_data(&ctx, &TestPayload(42));
 
-        assert_eq!(result.err().unwrap().code(), Error::InternalError.code());
+        assert_eq!(
+            result.err().unwrap().code(),
+            Error::from_code(xrpl_common_stdlib::host::error_codes::SOME_ERROR).code()
+        );
     }
 }

@@ -22,6 +22,7 @@ if (process.argv.length != 4 && process.argv.length != 5) {
 const path = require("path")
 const fs = require("fs/promises")
 const { readSourceFile: read } = require("./rippledSource")
+const { typeMap, customFieldTypes, parseSfields } = require("./sfieldTypeMap")
 
 function parseStypes(sfieldHeaderFile) {
   let stypeHits = [
@@ -40,20 +41,6 @@ function parseStypes(sfieldHeaderFile) {
     stypeMap[key] = value
   })
   return stypeMap
-}
-
-// Returns a Map from field name (without the "sf" prefix) to {xrplType, ordinal}.
-function parseSfields(sfieldMacroFile) {
-  const hits = [
-    ...sfieldMacroFile.matchAll(
-      /^ *[A-Z]*TYPED_SFIELD *\( *sf([^,\n]*),[ \n]*([^, \n]+)[ \n]*,[ \n]*([0-9]+)/gm,
-    ),
-  ]
-  const map = new Map()
-  for (const hit of hits) {
-    map.set(hit[1], { xrplType: hit[2], ordinal: parseInt(hit[3]) })
-  }
-  return map
 }
 
 // Escrow fields are authoritative (a rename/change there is always picked
@@ -106,38 +93,19 @@ async function main() {
   // strictly-superset source -- no merge needed here.
   const stypeMap = parseStypes(contractHeaderFile)
 
-  // Map XRPL types to Rust types. Every type listed here has a `FieldDecoder`
-  // implementation, so the generated `SField<T, CODE>` can actually be read.
-  const typeMap = {
-    UINT8: "u8",
-    UINT16: "u16",
-    UINT32: "u32",
-    UINT64: "u64",
-    UINT128: "Hash128",
-    UINT160: "Hash160",
-    UINT192: "Hash192",
-    UINT256: "Hash256",
-    AMOUNT: "Amount",
-    NUMBER: "Number",
-    ACCOUNT: "AccountID",
-    VL: "StandardBlob",
-    CURRENCY: "Currency",
-    ISSUE: "Issue",
-    ARRAY: "Array",
-    OBJECT: "Object",
-  }
-
   // XRPL types that deliberately have no Rust type yet. Their fields are still
   // emitted, as `SField<u8, CODE>` placeholders, so the constant exists and the
   // field code is available -- but reading one will fail at runtime, because
   // `u8`'s `FieldDecoder` accepts a 1-byte value and these are all wider.
   //
   // Removing a type from this set is how a real Rust type gets wired in: add it
-  // to `typeMap` above and drop it from here. Every type in NEITHER map is a
-  // hard error (see below) -- a new rippled type must not silently acquire a
-  // wrong-typed placeholder.
+  // to `typeMap` in sfieldTypeMap.js and drop it from here. Every type in
+  // NEITHER map is a hard error (see below) -- a new rippled type must not
+  // silently acquire a wrong-typed placeholder. `typeMap` and `customFieldTypes`
+  // are the shared mappings imported above; this placeholder policy is
+  // sfield-specific (the ledger-object generator emits raw bytes for the same
+  // unmapped types instead), so it stays local.
   const untypedTypes = new Set([
-    "INT32",
     "PATHSET",
     "VECTOR256",
     "XCHAIN_BRIDGE",
@@ -150,21 +118,6 @@ async function main() {
     "VALIDATION",
     "METADATA",
   ])
-
-  // Custom type overrides for specific field names
-  // These override the default type mapping from typeMap
-  const customFieldTypes = {
-    TransactionType: "TransactionType",
-    Condition: "ConditionBlob",
-    Fulfillment: "FulfillmentBlob",
-    Bytecode: "WasmBlob",
-    PublicKey: "PublicKeyBlob",
-    Domain: "UriBlob",
-    MessageKey: "PublicKeyBlob",
-    SigningPubKey: "PublicKeyBlob",
-    TxnSignature: "SignatureBlob",
-    URI: "UriBlob",
-  }
 
   ////////////////////////////////////////////////////////////////////////
   //  SField processing (escrow branch is authoritative; contract branch

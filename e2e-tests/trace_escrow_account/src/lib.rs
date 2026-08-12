@@ -11,10 +11,10 @@
 
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::cache_le;
-use xrpl_common_stdlib::host::trace::{DataRepr, trace, trace_amt, trace_data, trace_num};
+use xrpl_common_stdlib::host::trace::{trace, trace_amt, trace_hex, trace_num};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
-use xrpl_common_stdlib::objects::account_root::AccountRoot;
-use xrpl_common_stdlib::objects::traits::{AccountFields, LedgerObjectCommonFields};
+use xrpl_common_stdlib::objects::AccountRoot;
+use xrpl_common_stdlib::objects::traits::{AccountRootFields, LedgerObjectCommonFields};
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
 
@@ -25,8 +25,8 @@ use xrpl_common_stdlib::types::amount::Amount;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn escrow_finish() -> i32 {
-    let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
-    let _ = trace("");
+    trace("$$$$$ STARTING WASM EXECUTION $$$$$");
+    trace("");
 
     // The transaction prompting execution of this contract.
     let escrow_finish: EscrowFinish = get_current_escrow_finish();
@@ -46,18 +46,18 @@ pub extern "C" fn escrow_finish() -> i32 {
         // Try to cache the ledger object inside rippled
         let slot = unsafe { cache_le(accountroot_id.as_ptr(), 32, 0) };
         if slot < 0 {
-            let _ = trace_num("Error slotting Account object", slot as i64);
+            trace_num("Error slotting Account object", slot as i64);
             panic!()
         } else {
-            let _ = trace_num("Account object slotted at", slot as i64);
+            trace_num("Account object slotted at", slot as i64);
         }
 
         // We use the trait-bound implementation so as not to duplicate accessor logic.
-        let account = AccountRoot { slot_num: slot };
+        let account = AccountRoot::new(slot);
 
-        let _ = trace("### Step #2: Trace AccountRoot Ledger Object");
-        let _ = trace("{ ");
-        let _ = trace("  -- Common Fields");
+        trace("### Step #2: Trace AccountRoot Ledger Object");
+        trace("{ ");
+        trace("  -- Common Fields");
 
         // Trace the `Flags`
         let flags = account.get_flags().unwrap();
@@ -68,22 +68,22 @@ pub extern "C" fn escrow_finish() -> i32 {
             65536,
             "Expected flags to be 0x00010000 (lsfPasswordSpent)"
         );
-        let _ = trace_num("  Flags:", flags as i64);
+        trace_num("  Flags:", flags as i64);
 
         // Trace the `LedgerEntryType`
-        let ledger_entry_type = account.ledger_entry_type().unwrap();
+        let ledger_entry_type = account.get_ledger_entry_type().unwrap();
         test_utils::assert_eq!(ledger_entry_type, 97); // 97 is the code for "AccountRoot"
-        let _ = trace_num("  LedgerEntryType (AccountRoot):", ledger_entry_type as i64);
-        let _ = trace("} ");
+        trace_num("  LedgerEntryType (AccountRoot):", ledger_entry_type as i64);
+        trace("} ");
 
-        let _ = trace("{ ");
-        let _ = trace("  -- Account Specific Fields");
+        trace("{ ");
+        trace("  -- Account Specific Fields");
 
         // Trace the `Account`
-        let account_id = account.get_account().unwrap();
+        let account_id = account.account().unwrap();
         // Account is the hardcoded ledger entry ID we're looking up - just verify it's 20 bytes
         test_utils::assert_eq!(account_id.0.len(), 20);
-        let _ = trace_data("  Account:", &account_id.0, DataRepr::AsHex);
+        trace_hex("  Account:", &account_id.0);
 
         // Trace the `AccountTxnID` (optional - required for testing)
         let account_txn_id_opt = account.account_txn_id().unwrap();
@@ -91,7 +91,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             account_txn_id_opt.expect("AccountTxnID should be present for testing");
         // AccountTxnID is system-generated - just verify it's 32 bytes
         test_utils::assert_eq!(account_txn_id.0.len(), 32);
-        let _ = trace_data("  AccountTxnID:", &account_txn_id.0, DataRepr::AsHex);
+        trace_hex("  AccountTxnID:", &account_txn_id.0);
 
         // Trace `AMMID` (optional - only present on AMM AccountRoot entries)
         // Note: This is a regular account, not an AMM account, so AMMID should be None
@@ -102,18 +102,15 @@ pub extern "C" fn escrow_finish() -> i32 {
         );
 
         // Trace the `Balance` (required)
-        let balance_amount = account
-            .balance()
-            .unwrap()
-            .expect("Balance should be present");
-        let _ = trace_amt("Balance of Account Finishing the Escrow:", &balance_amount);
+        let balance_amount = account.balance().unwrap();
+        trace_amt("Balance of Account Finishing the Escrow:", &balance_amount);
         // NOTE: This is only available on WASM targets because in CI, the coverage test returns random memory
         // (whereas locally this returns the bytes 0x00).
         #[cfg(target_arch = "wasm32")]
         match balance_amount {
             Amount::XRP { num_drops } => {
                 // Balance is system-generated, just verify it's reasonable
-                let _ = trace_num("  Balance of Account Finishing the Escrow:", num_drops);
+                trace_num("  Balance of Account Finishing the Escrow:", num_drops);
             }
             Amount::IOU { .. } => {
                 panic!("IOU Balance encountered, but should have been XRP.")
@@ -124,9 +121,9 @@ pub extern "C" fn escrow_finish() -> i32 {
         }
 
         // Trace and assert the `BurnedNFTokens` (optional)
-        let burned_nf_tokens_opt = account.burned_nf_tokens().unwrap();
+        let burned_nf_tokens_opt = account.burned_nftokens().unwrap();
         let burned_nf_tokens = burned_nf_tokens_opt.unwrap_or(0);
-        let _ = trace_num("  BurnedNFTokens:", burned_nf_tokens as i64);
+        trace_num("  BurnedNFTokens:", burned_nf_tokens as i64);
         test_utils::assert_eq!(burned_nf_tokens, 0, "Expected 0 burned NFTokens");
 
         // Trace the `Domain` (optional - required for testing)
@@ -140,7 +137,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             &expected_domain[..],
             "Domain should be 'example.com'"
         );
-        let _ = trace_data("  Domain:", &domain.data[..domain.len], DataRepr::AsHex);
+        trace_hex("  Domain:", &domain.data[..domain.len]);
 
         // Trace the `EmailHash` (optional - required for testing)
         let email_hash_opt = account.email_hash().unwrap();
@@ -156,14 +153,14 @@ pub extern "C" fn escrow_finish() -> i32 {
             expected_email_hash,
             "EmailHash should be MD5 of 'hello'"
         );
-        let _ = trace_data("  EmailHash:", &email_hash.0, DataRepr::AsHex);
+        trace_hex("  EmailHash:", &email_hash.0);
 
         // Trace the `FirstNFTokenSequence` (optional - required for testing)
         let first_nf_token_sequence = account
-            .first_nf_token_sequence()
+            .first_nftoken_sequence()
             .unwrap()
             .expect("FirstNFTokenSequence should be set for testing");
-        let _ = trace_num("  FirstNFTokenSequence:", first_nf_token_sequence as i64);
+        trace_num("  FirstNFTokenSequence:", first_nf_token_sequence as i64);
 
         // Trace the `MessageKey` (optional - required for testing)
         let message_key_opt = account.message_key().unwrap();
@@ -180,45 +177,41 @@ pub extern "C" fn escrow_finish() -> i32 {
             &expected_message_key,
             "MessageKey mismatch"
         );
-        let _ = trace_data(
-            "  MessageKey:",
-            &message_key.data[..message_key.len],
-            DataRepr::AsHex,
-        );
+        trace_hex("  MessageKey:", &message_key.data[..message_key.len]);
 
         // Trace the `MintedNFTokens` (optional - required for testing)
         let minted_nf_tokens = account
-            .minted_nf_tokens()
+            .minted_nftokens()
             .unwrap()
             .expect("MintedNFTokens should be set for testing");
         // We minted exactly 1 NFToken in the test
         test_utils::assert_eq!(minted_nf_tokens, 1, "Expected 1 minted NFToken");
-        let _ = trace_num("  MintedNFTokens:", minted_nf_tokens as i64);
+        trace_num("  MintedNFTokens:", minted_nf_tokens as i64);
 
         // Trace the `NFTokenMinter` (optional - required for testing)
         let nf_token_minter = account
-            .nf_token_minter()
+            .nftoken_minter()
             .unwrap()
             .expect("NFTokenMinter should be set for testing");
         // NFTokenMinter is an AccountID - verify it's 20 bytes
         test_utils::assert_eq!(nf_token_minter.0.len(), 20);
-        let _ = trace_data("  NFTokenMinter:", &nf_token_minter.0, DataRepr::AsHex);
+        trace_hex("  NFTokenMinter:", &nf_token_minter.0);
 
         // Trace the `OwnerCount` (required)
         let owner_count = account.owner_count().unwrap();
         // OwnerCount is system-generated based on owned objects
-        let _ = trace_num("  OwnerCount:", owner_count as i64);
+        trace_num("  OwnerCount:", owner_count as i64);
 
         // Trace the `PreviousTxnID` (required)
         let previous_txn_id = account.previous_txn_id().unwrap();
         // PreviousTxnID is system-generated - just verify it's 32 bytes
         test_utils::assert_eq!(previous_txn_id.0.len(), 32);
-        let _ = trace_data("  PreviousTxnID:", &previous_txn_id.0, DataRepr::AsHex);
+        trace_hex("  PreviousTxnID:", &previous_txn_id.0);
 
         // Trace the `PreviousTxnLgrSeq` (required)
         let previous_txn_lgr_seq = account.previous_txn_lgr_seq().unwrap();
         // PreviousTxnLgrSeq is system-generated
-        let _ = trace_num("  PreviousTxnLgrSeq:", previous_txn_lgr_seq as i64);
+        trace_num("  PreviousTxnLgrSeq:", previous_txn_lgr_seq as i64);
 
         // Trace the `RegularKey` (optional - required for testing)
         let regular_key = account
@@ -227,12 +220,12 @@ pub extern "C" fn escrow_finish() -> i32 {
             .expect("RegularKey should be set for testing");
         // RegularKey is an AccountID - verify it's 20 bytes
         test_utils::assert_eq!(regular_key.0.len(), 20);
-        let _ = trace_data("  RegularKey:", &regular_key.0, DataRepr::AsHex);
+        trace_hex("  RegularKey:", &regular_key.0);
 
         // Trace the `Sequence` (required)
         let sequence = account.sequence().unwrap();
         // Sequence is system-generated
-        let _ = trace_num("  Sequence:", sequence as i64);
+        trace_num("  Sequence:", sequence as i64);
 
         // Trace the `TicketCount` (optional - required for testing)
         let ticket_count = account
@@ -241,7 +234,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .expect("TicketCount should be set for testing");
         // We created 5 tickets in the test
         test_utils::assert_eq!(ticket_count, 5, "Expected 5 tickets");
-        let _ = trace_num("  TicketCount:", ticket_count as i64);
+        trace_num("  TicketCount:", ticket_count as i64);
 
         // Trace the `TickSize` (optional - required for testing)
         let tick_size = account
@@ -250,7 +243,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             .expect("TickSize should be set for testing");
         // TickSize was set to 5 in the test
         test_utils::assert_eq!(tick_size, 5, "Expected TickSize to be 5");
-        let _ = trace_num("  TickSize:", tick_size as i64);
+        trace_num("  TickSize:", tick_size as i64);
 
         // Trace the `TransferRate` (optional - required for testing)
         let transfer_rate = account
@@ -263,7 +256,7 @@ pub extern "C" fn escrow_finish() -> i32 {
             1002000000,
             "Expected TransferRate to be 1002000000"
         );
-        let _ = trace_num("  TransferRate:", transfer_rate as i64);
+        trace_num("  TransferRate:", transfer_rate as i64);
 
         // Trace the `WalletLocator` (optional - required for testing)
         let wallet_locator = account
@@ -278,13 +271,13 @@ pub extern "C" fn escrow_finish() -> i32 {
             expected_wallet_locator,
             "WalletLocator should be all 0xAA bytes"
         );
-        let _ = trace_data("  WalletLocator:", &wallet_locator.0, DataRepr::AsHex);
+        trace_hex("  WalletLocator:", &wallet_locator.0);
 
-        let _ = trace("}");
-        let _ = trace("");
+        trace("}");
+        trace("");
     }
 
-    let _ = trace("$$$$$ WASM EXECUTION COMPLETE $$$$$");
+    trace("$$$$$ WASM EXECUTION COMPLETE $$$$$");
     1 // <-- Finish the escrow to indicate a successful outcome
 }
 

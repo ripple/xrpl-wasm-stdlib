@@ -143,7 +143,7 @@ mod tests {
     use super::*;
     use mockall::predicate::{always, eq};
     use xrpl_common_stdlib::fields::decoder::FromLedger;
-    use xrpl_common_stdlib::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+    use xrpl_common_stdlib::host::error_codes::{FIELD_NOT_FOUND, INVALID_FIELD, SOME_ERROR};
     use xrpl_common_stdlib::host::host_bindings_trait::MockHostBindings;
     use xrpl_common_stdlib::sfield::SField;
 
@@ -301,11 +301,11 @@ mod tests {
         fn test_mandatory_fields_return_error_on_internal_error() {
             let mut mock = MockHostBindings::new();
 
-            // get_account with INTERNAL_ERROR
+            // get_account with SOME_ERROR
             mock.expect_home_le_field()
                 .with(eq(sfield::Account), always(), eq(20))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -313,7 +313,7 @@ mod tests {
             let result = escrow.get_account();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]
@@ -323,7 +323,7 @@ mod tests {
             mock.expect_home_le_field()
                 .with(eq(sfield::Data), always(), eq(XRPL_CONTRACT_DATA_SIZE))
                 .times(1)
-                .returning(|_, _, _| INTERNAL_ERROR);
+                .returning(|_, _, _| SOME_ERROR);
 
             let _guard = setup_mock(mock);
 
@@ -331,7 +331,7 @@ mod tests {
             let result = escrow.get_data();
 
             assert!(result.is_err());
-            assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+            assert_eq!(result.err().unwrap().code(), SOME_ERROR);
         }
 
         #[test]
