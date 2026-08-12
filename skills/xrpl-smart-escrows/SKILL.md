@@ -44,7 +44,7 @@ fn run(_ctx: EscrowFinishContext) -> FinishResult {
 - Execution must be deterministic — no wall-clock time, no randomness; use `parent_ldgr_time`/`ldgr_index` for time/sequence, not host-side clocks.
 - Compare token amounts via the `Amount`/`Number`/`IOUNumber` types (host-delegated decimal math), never raw floats.
 - Minimize host calls (`cache_ledger_entry`, ledger entry ID computation, field reads) — cache results instead of repeating identical calls; `NoFreeSlots` and execution budget (`Gas`) are real limits.
-- Debug via `trace`/`trace_num`/`trace_data`/`trace_acct`/`trace_amt` — output lands in rippled's `debug.log`. Convention: on every error path, `trace_num("<context>", e.code() as i64)` before returning.
+- Debug via `trace`/`trace_num`/`trace_hex`/`trace_acct`/`trace_amt` — output lands in rippled's `debug.log`. Convention: on every error path, `trace_num("<context>", e.code() as i64)` before returning.
 
 ## Reference
 

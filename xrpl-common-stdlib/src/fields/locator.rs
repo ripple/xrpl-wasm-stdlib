@@ -620,7 +620,7 @@ mod tests {
 
     // ---- Fluent path builder (`ctx.tx().path()`) ----
 
-    use crate::host::error_codes::FIELD_NOT_FOUND;
+    use crate::host::error_codes::{FIELD_NOT_FOUND, SOME_ERROR};
     use crate::host::host_bindings_trait::MockHostBindings;
     use crate::host::setup_mock;
     use crate::types::blob::StandardBlob;
@@ -761,12 +761,11 @@ mod tests {
 
     #[test]
     fn test_get_propagates_host_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
         mock.expect_tx_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
-            .returning(|_, _, _, _| INTERNAL_ERROR);
+            .returning(|_, _, _, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         let result = TxPathBuilder::for_current_tx()
@@ -774,7 +773,7 @@ mod tests {
             .get::<u32>();
 
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]
@@ -1039,12 +1038,11 @@ mod tests {
 
     #[test]
     fn test_ledger_get_propagates_host_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
         mock.expect_home_le_inner()
             .with(always(), eq(4usize), always(), eq(4usize))
             .times(1)
-            .returning(|_, _, _, _| INTERNAL_ERROR);
+            .returning(|_, _, _, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         let result = LedgerPathBuilder::for_current_ledger_obj()
@@ -1052,7 +1050,7 @@ mod tests {
             .get::<u32>();
 
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]
@@ -1170,18 +1168,17 @@ mod tests {
 
     #[test]
     fn test_array_len_propagates_host_error() {
-        use crate::host::error_codes::INTERNAL_ERROR;
         let mut mock = MockHostBindings::new();
         mock.expect_home_le_inner_arr_len()
             .times(1)
-            .returning(|_, _| INTERNAL_ERROR);
+            .returning(|_, _| SOME_ERROR);
         let _guard = setup_mock(mock);
 
         let result = LedgerPathBuilder::for_current_ledger_obj()
             .field(sfield::SignerEntries)
             .array_len();
 
-        assert_eq!(result.err().unwrap().code(), INTERNAL_ERROR);
+        assert_eq!(result.err().unwrap().code(), SOME_ERROR);
     }
 
     #[test]

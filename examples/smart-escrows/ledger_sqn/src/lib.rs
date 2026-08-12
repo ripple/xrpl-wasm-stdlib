@@ -13,6 +13,6 @@ fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
     // `ledger_sqn` owns the buffer, the byte count check and the decode, so the contract sees a
     // `u32` or an error. Panicking on that error is this example's documented behavior.
     let ledger_sequence = ledger_sqn().unwrap_or_panic();
-    let _ = trace_num("Ledger Sequence", ledger_sequence as i64);
+    trace_num("Ledger Sequence", ledger_sequence as i64);
     (ledger_sequence >= 5) as i32 // Return 1 if true (successful outcome), 0 if false (failed outcome)
 }

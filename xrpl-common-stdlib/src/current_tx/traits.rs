@@ -376,7 +376,7 @@ mod tests {
             use crate::current_tx::traits::TransactionCommonFields;
             use crate::current_tx::traits::tests::TestTransaction;
             use crate::current_tx::traits::tests::expect_tx_field;
-            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INVALID_FIELD, SOME_ERROR};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
@@ -518,61 +518,61 @@ mod tests {
                 mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_flags
                 mock.expect_tx_field()
                     .with(eq(sfield::Flags), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_last_ledger_sequence
                 mock.expect_tx_field()
                     .with(eq(sfield::LastLedgerSequence), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_network_id
                 mock.expect_tx_field()
                     .with(eq(sfield::NetworkID), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_source_tag
                 mock.expect_tx_field()
                     .with(eq(sfield::SourceTag), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_ticket_sequence
                 mock.expect_tx_field()
                     .with(eq(sfield::TicketSequence), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
 
                 let _guard = setup_mock(mock);
 
                 let tx = TestTransaction;
 
-                // Optional fields should return Err on INTERNAL_ERROR
+                // Optional fields should return Err on SOME_ERROR
                 let account_txn_id_result = tx.get_account_txn_id();
                 assert!(account_txn_id_result.is_err());
-                assert_eq!(account_txn_id_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(account_txn_id_result.err().unwrap().code(), SOME_ERROR);
 
                 let flags_result = tx.get_flags();
                 assert!(flags_result.is_err());
-                assert_eq!(flags_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(flags_result.err().unwrap().code(), SOME_ERROR);
 
                 let last_ledger_seq_result = tx.get_last_ledger_sequence();
                 assert!(last_ledger_seq_result.is_err());
-                assert_eq!(last_ledger_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(last_ledger_seq_result.err().unwrap().code(), SOME_ERROR);
 
                 let network_id_result = tx.get_network_id();
                 assert!(network_id_result.is_err());
-                assert_eq!(network_id_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(network_id_result.err().unwrap().code(), SOME_ERROR);
 
                 let source_tag_result = tx.get_source_tag();
                 assert!(source_tag_result.is_err());
-                assert_eq!(source_tag_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(source_tag_result.err().unwrap().code(), SOME_ERROR);
 
                 let ticket_seq_result = tx.get_ticket_sequence();
                 assert!(ticket_seq_result.is_err());
-                assert_eq!(ticket_seq_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(ticket_seq_result.err().unwrap().code(), SOME_ERROR);
             }
 
             #[test]
@@ -645,7 +645,7 @@ mod tests {
             use crate::current_tx::traits::TransactionCommonFields;
             use crate::current_tx::traits::tests::TestTransaction;
             use crate::current_tx::traits::tests::expect_tx_field;
-            use crate::host::error_codes::{FIELD_NOT_FOUND, INTERNAL_ERROR, INVALID_FIELD};
+            use crate::host::error_codes::{FIELD_NOT_FOUND, INVALID_FIELD, SOME_ERROR};
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
@@ -929,27 +929,27 @@ mod tests {
                 mock.expect_tx_field()
                     .with(eq(sfield::Account), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_transaction_type
                 mock.expect_tx_field()
                     .with(eq(sfield::TransactionType), always(), eq(2))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_gas
                 mock.expect_tx_field()
                     .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_fee
                 mock.expect_tx_field()
                     .with(eq(sfield::Fee), always(), eq(AMOUNT_SIZE))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_sequence
                 mock.expect_tx_field()
                     .with(eq(sfield::Sequence), always(), eq(4))
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
                 // get_signing_pub_key
                 mock.expect_tx_field()
                     .with(
@@ -958,36 +958,36 @@ mod tests {
                         eq(PUBLIC_KEY_BUFFER_SIZE),
                     )
                     .times(1)
-                    .returning(|_, _, _| INTERNAL_ERROR);
+                    .returning(|_, _, _| SOME_ERROR);
 
                 let _guard = setup_mock(mock);
 
                 let tx = TestTransaction;
 
-                // All mandatory fields should return Err on INTERNAL_ERROR
+                // All mandatory fields should return Err on SOME_ERROR
                 let account_result = tx.get_account();
                 assert!(account_result.is_err());
-                assert_eq!(account_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(account_result.err().unwrap().code(), SOME_ERROR);
 
                 let tx_type_result = tx.get_transaction_type();
                 assert!(tx_type_result.is_err());
-                assert_eq!(tx_type_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(tx_type_result.err().unwrap().code(), SOME_ERROR);
 
                 let comp_allow_result = tx.get_gas();
                 assert!(comp_allow_result.is_err());
-                assert_eq!(comp_allow_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(comp_allow_result.err().unwrap().code(), SOME_ERROR);
 
                 let fee_result = tx.get_fee();
                 assert!(fee_result.is_err());
-                assert_eq!(fee_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(fee_result.err().unwrap().code(), SOME_ERROR);
 
                 let seq_result = tx.get_sequence();
                 assert!(seq_result.is_err());
-                assert_eq!(seq_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(seq_result.err().unwrap().code(), SOME_ERROR);
 
                 let signing_key_result = tx.get_signing_pub_key();
                 assert!(signing_key_result.is_err());
-                assert_eq!(signing_key_result.err().unwrap().code(), INTERNAL_ERROR);
+                assert_eq!(signing_key_result.err().unwrap().code(), SOME_ERROR);
             }
 
             #[test]

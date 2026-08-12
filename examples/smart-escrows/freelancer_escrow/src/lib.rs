@@ -24,7 +24,7 @@ macro_rules! try_or_trace {
         match $e {
             Ok(v) => v,
             Err(e) => {
-                let _ = trace_num($label, e.code() as i64);
+                trace_num($label, e.code() as i64);
                 return e.code().into();
             }
         }

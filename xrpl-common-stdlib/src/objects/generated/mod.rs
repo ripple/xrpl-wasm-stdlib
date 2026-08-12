@@ -1,5 +1,4 @@
 //! Fields returned as raw bytes pending a typed Rust representation:
-//!   INT32: Loan.LoanScale
 //!   VECTOR256: Amendments.Amendments, DirectoryNode.Indexes, LedgerHashes.Hashes
 //!   XCHAIN_BRIDGE: Bridge.XChainBridge, XChainOwnedClaimID.XChainBridge, XChainOwnedCreateAccountClaimID.XChainBridge
 

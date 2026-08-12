@@ -531,7 +531,7 @@ mod tests {
 
         mock.expect_nft_flags()
             .with(always(), eq(NFT_ID_SIZE))
-            .returning(|_, _| crate::host::error_codes::INTERNAL_ERROR);
+            .returning(|_, _| crate::host::error_codes::SOME_ERROR);
 
         let _guard = setup_mock(mock);
 
@@ -540,7 +540,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().code(),
-            crate::host::error_codes::INTERNAL_ERROR
+            crate::host::error_codes::SOME_ERROR
         );
     }
 
