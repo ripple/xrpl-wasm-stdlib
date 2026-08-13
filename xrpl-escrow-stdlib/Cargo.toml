@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-escrow-stdlib"
-version = "0.9.0"
+version = "0.1.0"
 edition = "2024"
 description = "Smart Escrow types, entry-point context, and host-function wrappers for XRPL WebAssembly contracts"
 license.workspace = true
@@ -17,7 +17,7 @@ crate-type = ["lib"]
 [dependencies]
 # `version` is what the published manifest expresses; `path` is what in-workspace builds resolve
 # against. Cargo swaps to the registry range at package time, so both keys are required.
-xrpl-common-stdlib = { version = "0.9.0", path = "../xrpl-common-stdlib" }
+xrpl-common-stdlib = { version = "0.8.0", path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]
 xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }

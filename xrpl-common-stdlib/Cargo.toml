@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-common-stdlib"
-version = "0.9.0"
+version = "0.8.0"
 edition = "2024"
 description = "Standard library for XRPL WebAssembly smart contracts"
 license.workspace = true
@@ -24,7 +24,7 @@ crate-type = ["lib"]
 test-host-bindings = ["dep:mockall"]
 
 [dependencies]
-xrpl-macros = { version = "0.9.0", path = "../xrpl-macros" }
+xrpl-macros = { version = "0.1.0", path = "../xrpl-macros" }
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]

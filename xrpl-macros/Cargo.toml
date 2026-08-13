@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-macros"
-version = "0.9.0"
+version = "0.1.0"
 edition = "2024"
 description = "Compile-time typed-constant macros and entry-point attributes for XRPL WebAssembly contracts"
 license.workspace = true

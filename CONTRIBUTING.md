@@ -242,64 +242,79 @@ even if only one changed. `xrpl-stdlib-test-utils` in particular must match `xrp
 exactly — its mocks are generated from that crate's `HostBindings` trait, so a mismatched pair
 will not compile.
 
+Publishing is **entirely manual**. There is no release workflow: neither a merge to `main` nor a
+`v*` tag uploads anything, and an owner runs the `cargo publish` commands by hand. That keeps an
+irreversible action behind a deliberate human step — but it also means nothing but this checklist
+enforces the pre-publish gate or the lockstep invariant, so work through the steps in order.
+
 ### Cutting a release
 
-1. Bump the `version` field in all four crate manifests to the new `0.9.x`, in a PR.
+1. Bump the `version` field in all four crate manifests to the new `0.9.x`, in a PR, and merge it
+   to `main`. Each in-workspace dependency on a published crate carries both `version` and `path` —
+   bump those `version` keys too, or the release ships a range pointing at the previous version.
 
    ```shell
    vim xrpl-macros/Cargo.toml xrpl-common-stdlib/Cargo.toml \
        xrpl-stdlib-test-utils/Cargo.toml xrpl-escrow-stdlib/Cargo.toml
-   ./scripts/run-all.sh
    ```
 
-2. Merge the PR to `main`.
-
-3. Tag the merged commit and push the tag. The tag drives the release:
+2. From the merged commit, run the full gate. Nothing downstream re-runs it.
 
    ```shell
    git checkout main && git pull
-   git tag v0.9.x && git push origin v0.9.x
+   ./scripts/run-all.sh
    ```
 
-The `Publish` workflow (`.github/workflows/publish.yml`) fires on the `v*` tag: it verifies the
-tag matches every crate's version, re-runs the build/lint/test gate, publishes the four crates in
-dependency order via crates.io Trusted Publishing (OIDC — no API-token secret), then cuts a GitHub
-Release whose notes are auto-generated from the merged PRs since the previous tag. Use the
-workflow's **`workflow_dispatch` → dry-run** option to rehearse the whole packaging step without
-uploading.
+3. Publish the four crates in dependency order, one at a time. Each must land in the index before
+   the next resolves it as a registry dependency, so let each command finish before starting the
+   next.
 
-There is no hand-maintained changelog while the library is pre-1.0 — the auto-generated release
-notes serve that role, and the Conventional-Commits PR titles keep them readable. Revisit a
-curated changelog at 1.0, when API stability makes migration notes worth writing by hand.
+   ```shell
+   cargo login          # once per machine, with a crates.io token scoped to publish-update
+   cargo publish -p xrpl-macros
+   cargo publish -p xrpl-common-stdlib
+   cargo publish -p xrpl-stdlib-test-utils
+   cargo publish -p xrpl-escrow-stdlib
+   ```
+
+   `--dry-run` packages and verifies without uploading. Under the 1.89 toolchain pin a dependent's
+   dry run fails until its siblings are on the real index. To rehearse the whole set at once, use
+   cargo 1.90 or newer: `cargo +stable publish --workspace --dry-run`.
+
+4. Tag the published commit and cut a GitHub Release from it. The tag is a record of what shipped,
+   not a trigger — pushing it publishes nothing.
+
+   ```shell
+   git tag v0.9.x && git push origin v0.9.x
+   gh release create v0.9.x --generate-notes --verify-tag
+   ```
+
+There is no hand-maintained changelog while the library is pre-1.0 — `--generate-notes` builds the
+notes from the merged PRs since the previous tag, and the Conventional-Commits PR titles keep them
+readable. Revisit a curated changelog at 1.0, when API stability makes migration notes worth
+writing by hand.
 
 **A published version is permanent** — it can be yanked but never replaced. A bad release burns
 the number; the fix is the next patch (`0.9.x+1`), never a re-push of the same version.
 
-### One-time setup (before the first-ever publish of a new crate name)
+### The first publish of a new crate name
 
-Trusted Publishing can only be configured on a crate that already exists on crates.io, so the very
-first `0.9.0` of the three new names (`xrpl-common-stdlib`, `xrpl-escrow-stdlib`,
-`xrpl-stdlib-test-utils`) must be published **manually** by an owner, in dependency order:
+The first-ever publish of a name both creates the crate and makes the publishing account its sole
+owner, so the initial `0.9.0` of the three new names (`xrpl-common-stdlib`, `xrpl-escrow-stdlib`,
+`xrpl-stdlib-test-utils`) should come from an account that should hold that ownership. Add the
+other maintainers afterwards, or releases stay blocked on one person:
 
 ```shell
-cargo login                              # or an existing owner runs it
-cargo publish -p xrpl-macros
-cargo publish -p xrpl-common-stdlib
-cargo publish -p xrpl-stdlib-test-utils
-cargo publish -p xrpl-escrow-stdlib
-git tag v0.9.0 && git push origin v0.9.0
+cargo owner --add <crates-io-user-or-team> xrpl-common-stdlib
 ```
-
-Then, on crates.io, add this repository as a Trusted Publisher for each crate (Settings →
-Trusted Publishing → GitHub, workflow `publish.yml`). Every release after that is just the tag
-push in the section above.
 
 ### The deprecated `xrpl-wasm-stdlib` name
 
-`xrpl-wasm-stdlib` is the library's old pre-split name (published through `0.8.0`). It is **not**
-handled by the publish workflow. A one-time doc-only `0.9.0` signpost is published manually to
-point users at the new crate set. Never yank `0.7.x`/`0.8.0` (an external crate depends on
-`^0.8`), and never publish a `0.8.x` signpost (it would land inside that range and break them).
+`xrpl-wasm-stdlib` is the library's old pre-split name (published through `0.8.0`). It is not part
+of the crate set above and is not bumped with it: a one-time doc-only `0.9.0` signpost is published
+from `deprecated/xrpl-wasm-stdlib` to point users at the new crates. Never yank `0.7.x`/`0.8.0` (an
+external crate depends on `^0.8`), and never publish a `0.8.x` signpost (it would land inside that
+range and break them).
 
 ## Getting Help
 
