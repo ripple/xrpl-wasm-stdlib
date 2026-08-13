@@ -110,7 +110,7 @@ use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
-use xrpl_macros::smart_escrow;
+use xrpl_common_stdlib::smart_escrow;
 
 #[smart_escrow]
 fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
@@ -137,17 +137,13 @@ _(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-
 
 **Configure `Cargo.toml`:**
 
-Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo
-add` pick the versions — it writes whatever is current, and because the crates release in lockstep
-the same range applies to both:
+Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo add` pick the versions — it writes whatever is current, and because the crates release in lockstep the same range applies to both:
 
 ```shell
 cargo add xrpl-common-stdlib xrpl-escrow-stdlib
 ```
 
-`xrpl-common-stdlib` re-exports every macro from `xrpl-macros`, so naming `xrpl-macros` yourself is
-optional. The rest of the manifest is what makes the crate a contract rather than an ordinary
-library:
+Those two are all you need — `xrpl-common-stdlib` re-exports every macro from the internal `xrpl-macros` crate, so you never name it yourself. The rest of the manifest is what makes the crate a contract rather than an ordinary library:
 
 ```toml
 [package]
@@ -769,7 +765,7 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_macros::smart_escrow;
+use xrpl_common_stdlib::smart_escrow;
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {

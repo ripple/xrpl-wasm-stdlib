@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
 readme = "README.md"
-keywords = ["xrpl", "wasm", "smart-escrow", "no-std"]
+keywords = ["xrpl", "xrp", "wasm", "blockchain", "web3"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 include = ["src/", "README.md"]
 
@@ -15,8 +15,11 @@ include = ["src/", "README.md"]
 crate-type = ["lib"]
 
 [dependencies]
-# `version` is what the published manifest expresses; `path` is what in-workspace builds resolve
-# against. Cargo swaps to the registry range at package time, so both keys are required.
+# Both keys are required, and each applies at a different time. Local builds use `path`, so an edit
+# in ../xrpl-common-stdlib takes effect immediately. `cargo publish` swaps in `version` instead,
+# because a crate on crates.io cannot point at a directory on the author's machine. Keep `version`
+# equal to xrpl-common-stdlib's own version; omitting it fails packaging with "all dependencies must
+# have a version specified".
 xrpl-common-stdlib = { version = "0.8.0", path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]

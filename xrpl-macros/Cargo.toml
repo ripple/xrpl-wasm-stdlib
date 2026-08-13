@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
 readme = "README.md"
-keywords = ["xrpl", "macro", "address", "codec"]
+keywords = ["xrpl", "xrp", "wasm", "blockchain", "web3"]
 categories = ["cryptography", "no-std", "encoding"]
 # The trybuild tree under tests/ is a contributor-only fixture set; consumers don't need it.
 include = ["src/", "README.md"]

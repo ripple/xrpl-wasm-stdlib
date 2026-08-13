@@ -1,32 +1,26 @@
 # xrpl-stdlib-test-utils
 
-Test harness for XRPL Smart Escrow contracts: mock host bindings plus scenario builders that let a
-test state escrow facts instead of wiring individual host-function expectations.
+Test harness for XRPL Smart Escrow contracts: mock host bindings plus scenario builders, so a test
+states escrow facts instead of wiring up individual host-function expectations.
 
-Contracts normally read the ledger through host functions that only exist inside `rippled`. This
-crate stands in for the host on your development machine, so contract logic can be unit-tested with
-plain `cargo test` — no node, no WASM, no integration harness.
+Contracts read the ledger through host functions that only exist inside `rippled`. This crate stands
+in for the host, so you can test contract logic with `cargo test` — no node, no WASM.
 
 ## Installation
-
-Declare it as a **dev-dependency gated to non-WASM targets**, alongside the two crates the contract
-itself needs:
 
 ```shell
 cargo add xrpl-common-stdlib xrpl-escrow-stdlib
 cargo add --dev --target 'cfg(not(target_arch = "wasm32"))' xrpl-stdlib-test-utils
 ```
 
-The second command lands it under `[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]`
-rather than plain `[dev-dependencies]`.
-
-The `cfg` gate matters. This crate pulls in `mockall`, which is not `no_std` and cannot build for
-`wasm32v1-none`. Gating it keeps the harness entirely out of the target your contract actually ships
-to, so `cargo build --target wasm32v1-none --release` never sees it.
+The `--target` flag matters: it puts this crate under
+`[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]` instead of plain
+`[dev-dependencies]`. This crate depends on `mockall`, which is not `no_std` and cannot build for
+`wasm32v1-none`, so without that gate `cargo build --target wasm32v1-none` fails.
 
 ## Usage
 
-`EscrowScenario` builds a mock pre-wired with sensible defaults, overriding only the facts your test
+`EscrowScenario` builds a mock with defaults already wired up, so a test overrides only the facts it
 cares about. `install()` returns a guard that keeps the mock active for the rest of the scope:
 
 ```rust,ignore

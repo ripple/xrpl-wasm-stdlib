@@ -211,10 +211,7 @@ xrpl-common-stdlib/
    ```
 
 3. **Essential files:**
-   - `Cargo.toml` - Package configuration with proper WASM settings. In-repo examples depend on
-     `xrpl-common-stdlib`, `xrpl-escrow-stdlib`, and `xrpl-macros` by `path`, not by version, so they
-     build against the working tree rather than the last release. Copying `hello_world` gets this
-     right; adjust the `../` depth if your example nests deeper.
+   - `Cargo.toml` - Package configuration with proper WASM settings
    - `src/lib.rs` - Contract implementation with `#![no_std]` and `#![no_main]`
    - `README.md` - Comprehensive documentation (see other examples for a template)
    - `runTest.js` - Integration test
@@ -245,16 +242,15 @@ even if only one changed. `xrpl-stdlib-test-utils` in particular must match `xrp
 exactly — its mocks are generated from that crate's `HostBindings` trait, so a mismatched pair
 will not compile.
 
-Publishing is **entirely manual**. There is no release workflow: neither a merge to `main` nor a
-`v*` tag uploads anything, and an owner runs the `cargo publish` commands by hand. That keeps an
-irreversible action behind a deliberate human step — but it also means nothing but this checklist
-enforces the pre-publish gate or the lockstep invariant, so work through the steps in order.
+Publishing is **entirely manual**. There is no release workflow: neither a merge to `main` nor a `v*`
+tag uploads anything. An owner runs the `cargo publish` commands by hand. Nothing in CI checks the
+pre-publish gate or the lockstep invariant, so work through these steps in order.
 
 ### Cutting a release
 
-1. Bump the `version` field in all four crate manifests to the new `0.9.x`, in a PR, and merge it
-   to `main`. Each in-workspace dependency on a published crate carries both `version` and `path` —
-   bump those `version` keys too, or the release ships a range pointing at the previous version.
+1. In a PR, bump the `version` field in all four crate manifests to the new `0.9.x` and merge it to
+   `main`. Bump the `version` key on each in-workspace dependency too, or the release ships a range
+   pointing at the previous version.
 
    ```shell
    vim xrpl-macros/Cargo.toml xrpl-common-stdlib/Cargo.toml \
@@ -268,9 +264,8 @@ enforces the pre-publish gate or the lockstep invariant, so work through the ste
    ./scripts/run-all.sh
    ```
 
-3. Publish the four crates in dependency order, one at a time. Each must land in the index before
-   the next resolves it as a registry dependency, so let each command finish before starting the
-   next.
+3. Publish in dependency order, one at a time. Let each command finish before starting the next: a
+   crate must be in the index before the following one can resolve it.
 
    ```shell
    cargo login          # once per machine, with a crates.io token scoped to publish-update
@@ -281,31 +276,30 @@ enforces the pre-publish gate or the lockstep invariant, so work through the ste
    ```
 
    `--dry-run` packages and verifies without uploading. Under the 1.89 toolchain pin a dependent's
-   dry run fails until its siblings are on the real index. To rehearse the whole set at once, use
+   dry run fails until its siblings are on the real index; to rehearse the whole set at once, use
    cargo 1.90 or newer: `cargo +stable publish --workspace --dry-run`.
 
-4. Tag the published commit and cut a GitHub Release from it. The tag is a record of what shipped,
-   not a trigger — pushing it publishes nothing.
+4. Tag the published commit and cut a GitHub Release. The tag records what shipped; pushing it
+   publishes nothing.
 
    ```shell
    git tag v0.9.x && git push origin v0.9.x
    gh release create v0.9.x --generate-notes --verify-tag
    ```
 
-There is no hand-maintained changelog while the library is pre-1.0 — `--generate-notes` builds the
+There is no hand-maintained changelog while the library is pre-1.0. `--generate-notes` builds the
 notes from the merged PRs since the previous tag, and the Conventional-Commits PR titles keep them
-readable. Revisit a curated changelog at 1.0, when API stability makes migration notes worth
-writing by hand.
+readable. Revisit a curated changelog at 1.0.
 
-**A published version is permanent** — it can be yanked but never replaced. A bad release burns
-the number; the fix is the next patch (`0.9.x+1`), never a re-push of the same version.
+**A published version is permanent** — it can be yanked but never replaced. A bad release burns the
+number; the fix is the next patch (`0.9.x+1`), never a re-push of the same version.
 
 ### The first publish of a new crate name
 
-The first-ever publish of a name both creates the crate and makes the publishing account its sole
-owner, so the initial `0.9.0` of the three new names (`xrpl-common-stdlib`, `xrpl-escrow-stdlib`,
-`xrpl-stdlib-test-utils`) should come from an account that should hold that ownership. Add the
-other maintainers afterwards, or releases stay blocked on one person:
+Publishing a name for the first time creates the crate and makes that account its sole owner. So the
+initial `0.9.0` of the three new names (`xrpl-common-stdlib`, `xrpl-escrow-stdlib`,
+`xrpl-stdlib-test-utils`) should come from an account that should hold ownership. Add the other
+maintainers afterwards, or releases stay blocked on one person:
 
 ```shell
 cargo owner --add <crates-io-user-or-team> xrpl-common-stdlib
