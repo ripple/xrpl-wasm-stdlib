@@ -6,11 +6,11 @@ extern crate std;
 use xrpl_common_stdlib::host::trace::{trace, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
-use xrpl_common_stdlib::objects::LedgerObject;
 use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
+use xrpl_common_stdlib::objects::{LedgerObject, cache_le};
 use xrpl_common_stdlib::r_address;
+use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
-use xrpl_common_stdlib::{host, sfield};
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 
@@ -69,16 +69,19 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
         }
     };
 
-    let slot: i32;
-    unsafe {
-        slot = host::cache_le(oracle_id.as_ptr(), oracle_id.len(), 0);
-        trace_num("finish: cache_le slot=", slot as i64);
-
-        if slot < 0 {
-            trace_num("finish: cache_le failed, returning 0", 0);
+    let slot = match cache_le(&oracle_id) {
+        Ok(slot) => {
+            trace_num("finish: cached oracle at slot=", slot as i64);
+            slot
+        }
+        Err(error) => {
+            trace_num(
+                "finish: caching oracle failed, error_code=",
+                error.code() as i64,
+            );
             return FinishResult::reject();
-        };
-    }
+        }
+    };
 
     let price = match get_price_from_oracle(slot) {
         Ok(v) => v,

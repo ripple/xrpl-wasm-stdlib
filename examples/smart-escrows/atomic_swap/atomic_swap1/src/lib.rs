@@ -4,12 +4,12 @@
 extern crate std;
 
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host;
-use xrpl_common_stdlib::host::error_codes::match_result_code_with_expected_bytes;
+use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
@@ -128,20 +128,16 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     trace_hex("Counterpart escrow ID from memo:", &counterpart_escrow_id);
 
     // Load the counterpart escrow from the ledger
-    let counterpart_slot = unsafe {
-        host::cache_le(
-            counterpart_escrow_id.as_ptr(),
-            counterpart_escrow_id.len(),
-            0,
-        )
+    let counterpart_slot = match cache_le(&counterpart_escrow_id) {
+        Ok(slot) => slot,
+        Err(e) => {
+            trace_num(
+                "Failed to cache counterpart escrow, error:",
+                e.code() as i64,
+            );
+            return VALIDATION_FAILED;
+        }
     };
-    if counterpart_slot < 0 {
-        trace_num(
-            "Failed to cache counterpart escrow, error:",
-            counterpart_slot as i64,
-        );
-        return VALIDATION_FAILED;
-    }
 
     let counterpart_escrow = Escrow::new(counterpart_slot);
     trace_num("Starting counterpart security validation", 0);
@@ -303,13 +299,7 @@ fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::Cont
     trace_num("Extracted CancelAfter:", cancel_after as i64);
 
     // Get current ledger time for deadline comparison
-    let mut time_buffer = [0u8; 4];
-    let time_result =
-        unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
-
-    let current_time = match match_result_code_with_expected_bytes(time_result, 4, || {
-        u32::from_le_bytes(time_buffer)
-    }) {
+    let current_time = match parent_ledger_time() {
         Ok(time) => time,
         Err(e) => {
             trace_num("Failed to get parent ledger time:", e.code() as i64);

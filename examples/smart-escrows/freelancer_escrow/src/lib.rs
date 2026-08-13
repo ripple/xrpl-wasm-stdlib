@@ -6,7 +6,7 @@ extern crate std;
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::parent_ldgr_time;
+use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::trace_num;
 use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
@@ -249,12 +249,11 @@ fn deadline_release(state: &State) -> Result<bool> {
     if !state.freelancer_confirmed() {
         return Ok(false);
     }
-    let mut buf = [0u8; 4];
-    let code = unsafe { parent_ldgr_time(buf.as_mut_ptr(), buf.len()) };
-    if code < 0 {
-        return Err(Error::from_code(code));
-    }
-    Ok(u32::from_le_bytes(buf) > state.deadline())
+    let now = match parent_ledger_time() {
+        Ok(now) => now,
+        Err(e) => return Err(e),
+    };
+    Ok(now > state.deadline())
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────

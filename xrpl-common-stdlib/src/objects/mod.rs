@@ -8,7 +8,7 @@
 //!
 //! Two entry points, mirroring the transaction side:
 //!
-//! - [`ledger_object`] — read from a ledger object cached into a slot (via `cache_le`).
+//! - [`ledger_object`] — read from a ledger object cached into a slot (via [`cache_le`]).
 //! - [`current_ledger_object`] — read from the current ledger object, without a slot.
 //!
 //! Both are the generic `FieldDecoder`-based accessors re-exported from [`crate::fields`]; see
@@ -31,6 +31,7 @@
 
 pub mod any_object;
 pub mod array_object;
+pub mod cache;
 // Crate-internal: the flat `pub use generated::{...}` below is the public path
 // to each type (`objects::AccountRoot`), not `objects::generated::...`.
 pub(crate) mod generated;
@@ -45,6 +46,8 @@ pub use crate::fields::current_ledger_obj as current_ledger_object;
 pub use crate::fields::ledger_obj as ledger_object;
 /// Untyped handle to a slot-cached ledger object, for object types with no typed wrapper.
 pub use any_object::LedgerObject;
+/// Load a ledger entry into a host cache slot. See [`crate::objects::cache`].
+pub use cache::cache_le;
 
 pub use generated::{
     AMM, AMMFields, AccountRoot, AccountRootFields, Amendments, AmendmentsFields, Bridge,
