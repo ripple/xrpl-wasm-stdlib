@@ -32,13 +32,14 @@ Both are needed: `xrpl-escrow-stdlib` deliberately does not re-export `xrpl-comm
 general layer stays usable on its own and the dependency direction stays visible in every contract's
 manifest.
 
-You do not need to depend on `xrpl-macros` directly — `xrpl-common-stdlib` re-exports
+You never need to depend on `xrpl-macros` directly. It is an internal crate, published only because
+Rust requires procedural macros to live in their own crate, and the code it generates refers to
+`xrpl_common_stdlib` paths — so it is not usable on its own. `xrpl-common-stdlib` re-exports
 `#[smart_escrow]`, `#[smart_contract]`, and the typed-constant macros (`r_address!`, `hash256!`,
-`pubkey!`, `currency!`, `blob!`). Add it only if you prefer importing macros from their own crate, as
-the in-repo examples do.
+`pubkey!`, `currency!`, `blob!`).
 
-All four published crates are versioned in lockstep, so use matching `0.9.x` versions of whichever
-ones you name.
+All four published crates are versioned in lockstep, so keep whichever ones you name on matching
+versions — `cargo add` does that for you on a fresh contract.
 
 Contracts target `wasm32v1-none` and set `crate-type = ["cdylib"]`; see
 [hello_world](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world/)
@@ -51,10 +52,11 @@ for the release profile a size-constrained contract wants.
 `cargo test` — no node, no WASM. Gate it to non-WASM targets: it pulls in `mockall`, which is not
 `no_std` and will not build for `wasm32v1-none`.
 
-```toml
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-xrpl-stdlib-test-utils = "0.9"
+```shell
+cargo add --dev --target 'cfg(not(target_arch = "wasm32"))' xrpl-stdlib-test-utils
 ```
+
+That lands it under `[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]`.
 
 ```rust,ignore
 use xrpl_common_stdlib::types::amount::Amount;

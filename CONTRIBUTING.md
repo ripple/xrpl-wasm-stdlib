@@ -211,7 +211,10 @@ xrpl-common-stdlib/
    ```
 
 3. **Essential files:**
-   - `Cargo.toml` - Package configuration with proper WASM settings
+   - `Cargo.toml` - Package configuration with proper WASM settings. In-repo examples depend on
+     `xrpl-common-stdlib`, `xrpl-escrow-stdlib`, and `xrpl-macros` by `path`, not by version, so they
+     build against the working tree rather than the last release. Copying `hello_world` gets this
+     right; adjust the `../` depth if your example nests deeper.
    - `src/lib.rs` - Contract implementation with `#![no_std]` and `#![no_main]`
    - `README.md` - Comprehensive documentation (see other examples for a template)
    - `runTest.js` - Integration test

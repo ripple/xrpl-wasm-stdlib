@@ -1,13 +1,18 @@
 # xrpl-macros
 
-The compile-time macros for XRPL WebAssembly contracts: typed constants (`r_address!`, `hash256!`,
-`pubkey!`, `currency!`, `blob!`) and the entry-point attributes (`#[smart_escrow]`,
-`#[smart_contract]`).
+⚠️ **INTERNAL CRATE - DO NOT USE DIRECTLY** ⚠️
 
-**You normally do not need to depend on this crate directly.** Rust requires procedural macros to
-live in their own crate, so this is published alongside `xrpl-common-stdlib`, which re-exports every
-macro defined here. Name it explicitly only if you prefer importing macros from their own crate — the
-contracts under `examples/` do exactly that.
+This is an internal procedural macro crate for `xrpl-common-stdlib`.
+
+**Users should add `xrpl-common-stdlib` to their dependencies, NOT this crate.**
+
+Rust requires procedural macros to live in their own crate, so this is published alongside
+`xrpl-common-stdlib` but is not intended for direct use. Every macro here is re-exported from
+`xrpl-common-stdlib` for your convenience, and the code these macros generate refers to
+`xrpl_common_stdlib` paths — so this crate cannot be used on its own regardless.
+
+It provides the compile-time typed constants (`r_address!`, `hash256!`, `pubkey!`, `currency!`,
+`blob!`) and the entry-point attributes (`#[smart_escrow]`, `#[smart_contract]`).
 
 ## For Users
 

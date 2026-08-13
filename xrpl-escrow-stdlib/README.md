@@ -29,18 +29,16 @@ fn run(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` entry-point macro lives in `xrpl-macros` and is re-exported from
-`xrpl-common-stdlib` — this crate does not re-export it, so import it from either of those. It
-constructs the context via `EscrowFinishContext::default()` and passes it to your function
-automatically, then converts your `FinishResult` (or `i32`) into the
-`extern "C" fn escrow_finish() -> i32` the XRPL host calls.
+The `#[smart_escrow]` entry-point macro is re-exported from `xrpl-common-stdlib` — this crate does not
+re-export it, so import it from there. It constructs the context via
+`EscrowFinishContext::default()` and passes it to your function automatically, then converts your
+`FinishResult` (or `i32`) into the `extern "C" fn escrow_finish() -> i32` the XRPL host calls.
 
-A Smart Escrow depends on two crates, versioned in lockstep:
+A Smart Escrow depends on two crates, released in lockstep — so let `cargo add` pick the version and
+keep them matching:
 
-```toml
-[dependencies]
-xrpl-common-stdlib = "0.9"
-xrpl-escrow-stdlib = "0.9"
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
 ```
 
 ## Crate layout

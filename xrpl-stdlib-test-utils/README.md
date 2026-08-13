@@ -9,16 +9,16 @@ plain `cargo test` — no node, no WASM, no integration harness.
 
 ## Installation
 
-Declare it as a **dev-dependency gated to non-WASM targets**:
+Declare it as a **dev-dependency gated to non-WASM targets**, alongside the two crates the contract
+itself needs:
 
-```toml
-[dependencies]
-xrpl-common-stdlib = "0.9"
-xrpl-escrow-stdlib = "0.9"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-xrpl-stdlib-test-utils = "0.9"
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+cargo add --dev --target 'cfg(not(target_arch = "wasm32"))' xrpl-stdlib-test-utils
 ```
+
+The second command lands it under `[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]`
+rather than plain `[dev-dependencies]`.
 
 The `cfg` gate matters. This crate pulls in `mockall`, which is not `no_std` and cannot build for
 `wasm32v1-none`. Gating it keeps the harness entirely out of the target your contract actually ships
@@ -57,6 +57,6 @@ directly when you want no scenario defaults at all.
 
 ## Versioning
 
-Released in lockstep with `xrpl-common-stdlib`, `xrpl-escrow-stdlib`, and `xrpl-macros` — use
-matching `0.9.x` versions. Because the mocks are generated from `xrpl-common-stdlib`'s
-`HostBindings` trait, a mismatched pair will not compile.
+Released in lockstep with `xrpl-common-stdlib`, `xrpl-escrow-stdlib`, and `xrpl-macros` — always use
+matching versions. Because the mocks are generated from `xrpl-common-stdlib`'s `HostBindings` trait,
+a mismatched pair will not compile.

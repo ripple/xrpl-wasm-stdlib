@@ -137,19 +137,23 @@ _(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-
 
 **Configure `Cargo.toml`:**
 
-Put the contract code above in `src/lib.rs`, then depend on the two crates a contract needs.
+Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo
+add` pick the versions — it writes whatever is current, and because the crates release in lockstep
+the same range applies to both:
+
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+```
+
 `xrpl-common-stdlib` re-exports every macro from `xrpl-macros`, so naming `xrpl-macros` yourself is
-optional. The crates are released in lockstep, so one `0.9` range applies to all of them:
+optional. The rest of the manifest is what makes the crate a contract rather than an ordinary
+library:
 
 ```toml
 [package]
 name = "my-escrow"
 version = "0.1.0"
 edition = "2024"
-
-[dependencies]
-xrpl-common-stdlib = "0.9"
-xrpl-escrow-stdlib = "0.9"
 
 [lib]
 crate-type = ["cdylib"]
@@ -158,17 +162,6 @@ crate-type = ["cdylib"]
 opt-level = "s"
 lto = true
 panic = "abort"
-```
-
-Contracts living inside this repository use path dependencies instead, so they build against the
-working tree rather than the last release. The examples also name `xrpl-macros` explicitly and import
-macros from it, which is why their manifests list three:
-
-```toml
-[dependencies]
-xrpl-common-stdlib = { path = "../../../xrpl-common-stdlib" }
-xrpl-escrow-stdlib = { path = "../../../xrpl-escrow-stdlib" }
-xrpl-macros = { path = "../../../xrpl-macros" }
 ```
 
 **Build and test:**
