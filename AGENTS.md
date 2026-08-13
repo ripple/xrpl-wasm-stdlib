@@ -111,7 +111,7 @@ src/
 ├── current_tx/        # EscrowFinish marker + traits → typed access to the current TX's fields
 ├── fields/            # Field decoding traits/helpers shared across XRPL field types, incl. locator.rs (nested-field locator paths)
 ├── host/              # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
-├── objects/            # Cached ledger entry access: generated/ (per-entry <Entry>Fields traits + structs), ArrayObject, AnyObject, traits
+├── objects/            # Cached ledger entry access: generated/ (per-entry <Entry>Fields traits + structs), ArrayObject, AnyObject, cache.rs (cache_le), traits
 ├── ledger_entry_ids.rs # Compute ledger entry IDs (escrow_id, oracle_id, credential_id, accountroot_id, amm_id, ...)
 ├── types/             # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, Number, constants.rs, etc.
 ├── sfield.rs          # GENERATED — type-safe SField<T, CODE> constants. Do not hand-edit; rerun generate-sfields.sh
