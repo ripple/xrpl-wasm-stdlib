@@ -79,7 +79,7 @@ Build release, then upload the `.wasm` at `https://ripple.github.io/xrpl-wasm-st
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `FieldNotFound`                                  | Reading an optional field that isn't set on this tx/object, or a typo'd `sfield` constant / wrong nesting via `Locator`                |
 | Buffer overflow / truncated read                 | Destination buffer smaller than the field's actual size (check `Blob<N>` capacity, `ContractData` is 1024 bytes)                       |
-| `NoFreeSlots`                                    | Too many `cache_ledger_entry` calls in one execution — cache the slot and reuse it instead of re-resolving the same ledger entry ID    |
+| `NoFreeSlots`                                    | Too many `cache_le` calls in one execution — cache the slot and reuse it instead of re-resolving the same ledger entry ID              |
 | Escrow finishes when it shouldn't, or vice versa | Check the actual `i32` returned — `FinishResult`/`i32` boolean coercion (`(cond as i32)`) is easy to get backwards; positive = release |
 
 Add `trace`/`trace_num` calls on both success and failure paths during development (see [api-surface.md](api-surface.md)); they show up in rippled's `debug.log`. Always create a **fresh escrow per test run** — an already-finished or already-cancelled escrow can't be re-tested.

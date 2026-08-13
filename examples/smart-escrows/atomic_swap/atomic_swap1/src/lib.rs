@@ -9,7 +9,7 @@ use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
@@ -128,7 +128,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     trace_hex("Counterpart escrow ID from memo:", &counterpart_escrow_id);
 
     // Load the counterpart escrow from the ledger
-    let counterpart_slot = match cache_ledger_entry(&counterpart_escrow_id) {
+    let counterpart_slot = match cache_le(&counterpart_escrow_id) {
         Ok(slot) => slot,
         Err(e) => {
             trace_num(

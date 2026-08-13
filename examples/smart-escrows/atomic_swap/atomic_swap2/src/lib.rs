@@ -7,7 +7,7 @@ use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_escrow_stdlib::EscrowFinishContext;
@@ -119,7 +119,7 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
 
         // Verify the referenced first escrow exists on the ledger
         // This ensures we're referencing a valid counterpart for the atomic swap
-        let first_escrow_slot = match cache_ledger_entry(&first_escrow_id) {
+        let first_escrow_slot = match cache_le(&first_escrow_id) {
             Ok(slot) => slot,
             Err(e) => {
                 trace_num("Failed to cache first escrow, error:", e.code() as i64);

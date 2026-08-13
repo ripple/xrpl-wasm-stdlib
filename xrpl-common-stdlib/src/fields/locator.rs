@@ -351,7 +351,7 @@ impl LedgerSource {
 /// or [`ctx.escrow().path()`](crate::objects::traits::CurrentLedgerObjectCommonFields::path) for the
 /// current one. Any object type works, including ones with no bespoke wrapper: reach for
 /// [`LedgerObject::new(slot)`](crate::objects::LedgerObject::new) to build a handle around a raw slot
-/// from [`cache_ledger_entry`](crate::objects::cache_ledger_entry).
+/// from [`cache_le`](crate::objects::cache_le).
 ///
 /// Mirrors [`TxPathBuilder`] — same [`Locator`] buffer, same overflow →
 /// [`host::Error::LocatorMalformed`] guard — with two differences: terminal reads are bounded on

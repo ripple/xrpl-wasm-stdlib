@@ -13,7 +13,7 @@ use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::{trace, trace_amt, trace_hex, trace_num};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::objects::traits::{AccountRootFields, LedgerObjectCommonFields};
-use xrpl_common_stdlib::objects::{AccountRoot, cache_ledger_entry};
+use xrpl_common_stdlib::objects::{AccountRoot, cache_le};
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
 
@@ -43,7 +43,7 @@ pub extern "C" fn escrow_finish() -> i32 {
         let accountroot_id = accountroot_id(&account_id).unwrap();
 
         // Try to cache the ledger object inside rippled
-        let slot = cache_ledger_entry(&accountroot_id).unwrap_or_else(|error| {
+        let slot = cache_le(&accountroot_id).unwrap_or_else(|error| {
             trace_num("Error slotting Account object", error.code() as i64);
             panic!()
         });

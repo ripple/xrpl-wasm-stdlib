@@ -4,7 +4,7 @@
 //! object-specific named accessors (`AccountFields`, `EscrowFields`). Object types that have no such
 //! wrapper — Oracle, SignerList, NFTokenPage, RippleState — still need the common fields and, above
 //! all, inner-field paths. [`LedgerObject`] is that door: wrap the raw slot
-//! [`cache_ledger_entry`](crate::objects::cache_ledger_entry) handed back and get everything on
+//! [`cache_le`](crate::objects::cache_le) handed back and get everything on
 //! [`LedgerObjectCommonFields`](crate::objects::traits::LedgerObjectCommonFields), including
 //! [`path()`](crate::objects::traits::LedgerObjectCommonFields::path).
 //!
@@ -35,7 +35,7 @@ pub struct LedgerObject {
 }
 
 impl LedgerObject {
-    /// Wrap a slot returned by [`cache_ledger_entry`](crate::objects::cache_ledger_entry).
+    /// Wrap a slot returned by [`cache_le`](crate::objects::cache_le).
     ///
     /// The slot is not validated here — a negative slot means the caching call failed, and the
     /// caller is expected to have checked that before building a handle. Field reads through an

@@ -38,7 +38,7 @@ Release based on data in an unrelated ledger object, looked up by ledger entry I
 ```rust
 use xrpl_common_stdlib::host::{self, Error, Result, Result::{Err, Ok}};
 use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
-use xrpl_common_stdlib::objects::{LedgerObject, cache_ledger_entry};
+use xrpl_common_stdlib::objects::{LedgerObject, cache_le};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_macros::r_address;
@@ -63,7 +63,7 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
         Ok(k) => k,
         Err(_) => return FinishResult::reject(),
     };
-    let slot = match cache_ledger_entry(&id) {
+    let slot = match cache_le(&id) {
         Ok(s) => s,
         Err(_) => return FinishResult::reject(),
     };
@@ -78,7 +78,7 @@ Release only if the destination holds a specific credential or NFT. Existence of
 
 ```rust
 use xrpl_common_stdlib::ledger_entry_ids::credential_id;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
@@ -95,7 +95,7 @@ fn kyc_finish(ctx: EscrowFinishContext) -> FinishResult {
         Err(_) => return FinishResult::reject(),
     };
     // Existence is the check: a missing credential is an Err, not a zero-valued read.
-    if cache_ledger_entry(&id).is_err() { return FinishResult::reject(); }
+    if cache_le(&id).is_err() { return FinishResult::reject(); }
     FinishResult::succeed()
 }
 ```
@@ -182,7 +182,7 @@ Two escrows, each finished separately, each checking the _other's_ state via a l
 ```rust
 use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::tx_inner;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::sfield;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
@@ -200,7 +200,7 @@ let rc = unsafe {
 if rc < 0 { return xrpl_escrow_stdlib::FinishResult::reject(); }
 
 // Load the counterpart escrow and read its fields
-let counterpart_slot = match cache_ledger_entry(&counterpart_id) {
+let counterpart_slot = match cache_le(&counterpart_id) {
     xrpl_common_stdlib::host::Result::Ok(s) => s,
     xrpl_common_stdlib::host::Result::Err(_) => return xrpl_escrow_stdlib::FinishResult::reject(),
 };

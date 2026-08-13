@@ -126,10 +126,10 @@ Two-step pattern for any object besides the current escrow:
 
 ```rust
 use xrpl_common_stdlib::ledger_entry_ids::escrow_id;   // or accountroot_id, oracle_id, credential_id, ...
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 
 let id = escrow_id(&owner, sequence)?;
-let slot = cache_ledger_entry(&id)?;   // Err on LedgerObjNotFound / SlotsFull
+let slot = cache_le(&id)?;   // Err on LedgerObjNotFound / SlotsFull
 ```
 
 Then wrap the slot:

@@ -7,7 +7,7 @@ use xrpl_common_stdlib::host::trace::{trace, trace_num};
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::oracle_id;
 use xrpl_common_stdlib::objects::traits::LedgerObjectCommonFields;
-use xrpl_common_stdlib::objects::{LedgerObject, cache_ledger_entry};
+use xrpl_common_stdlib::objects::{LedgerObject, cache_le};
 use xrpl_common_stdlib::r_address;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
@@ -69,7 +69,7 @@ fn oracle_finish(_ctx: EscrowFinishContext) -> FinishResult {
         }
     };
 
-    let slot = match cache_ledger_entry(&oracle_id) {
+    let slot = match cache_le(&oracle_id) {
         Ok(slot) => {
             trace_num("finish: cached oracle at slot=", slot as i64);
             slot

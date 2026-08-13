@@ -104,7 +104,7 @@ Let's create a simple escrow that releases funds when an account balance exceeds
 
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields, cache_ledger_entry};
+use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields, cache_le};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
@@ -122,7 +122,7 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
 
     // Check account balance: compute the ledger entry ID, cache the object, read balance.
     let balance = accountroot_id(&account)
-        .and_then(|id| cache_ledger_entry(&id))
+        .and_then(|id| cache_le(&id))
         .and_then(|slot| AccountRoot::new(slot).balance());
     match balance {
         Ok(Amount::XRP { num_drops }) if num_drops > 10_000_000 => FinishResult::succeed(), // Release (>10 XRP)
@@ -259,7 +259,7 @@ Access current ledger state through the `ledger_objects` module.
 #### Account Information
 
 ```rust
-use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields, cache_ledger_entry};
+use xrpl_common_stdlib::objects::{AccountRoot, AccountRootFields, cache_le};
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::types::account_id::AccountID;
 
@@ -268,7 +268,7 @@ let account = AccountID::from([0u8; 20]); // Replace with real account
 // Compute the AccountRoot ledger entry ID, cache the object into a host-managed slot,
 // then read its XRP balance (in drops).
 let balance = accountroot_id(&account)
-    .and_then(|id| cache_ledger_entry(&id))
+    .and_then(|id| cache_le(&id))
     .and_then(|slot| AccountRoot::new(slot).balance());
 let _ = balance;
 ```
@@ -373,7 +373,7 @@ Low-level host function access through the `host` module.
 // Use the high-level trait methods instead of low-level host functions
 use xrpl_common_stdlib::objects::AccountRoot;
 use xrpl_common_stdlib::objects::AccountRootFields;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
 use xrpl_common_stdlib::host::Result;
@@ -382,7 +382,7 @@ use xrpl_common_stdlib::host::Result;
 fn main() {
     let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
     let accountroot_id = accountroot_id(&account).unwrap_or_panic();
-    let slot = match cache_ledger_entry(&accountroot_id) {
+    let slot = match cache_le(&accountroot_id) {
         Result::Ok(slot) => slot,
         Result::Err(_) => return,
     };
@@ -425,7 +425,7 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::objects::AccountRoot;
 use xrpl_common_stdlib::objects::AccountRootFields;
-use xrpl_common_stdlib::objects::cache_ledger_entry;
+use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::ledger_entry_ids::accountroot_id;
@@ -448,7 +448,7 @@ fn process_escrow() -> Result<i32> {
         Err(e) => return Err(e), // Invalid account
     };
 
-    let slot = match cache_ledger_entry(&accountroot_id) {
+    let slot = match cache_le(&accountroot_id) {
         Ok(slot) => slot,
         Err(e) => return Err(e), // Object not in the ledger, or the cache is full
     };
@@ -691,13 +691,13 @@ match operation() {
 let account = tx.get_account();
 // Create AccountRoot to access account fields
 let accountroot_id = accountroot_id(&account);
-let slot = cache_ledger_entry(&accountroot_id).unwrap_or_panic();
+let slot = cache_le(&accountroot_id).unwrap_or_panic();
 let account_root = AccountRoot::new(slot);
 let sequence = account_root.sequence();
 
 // Bad: Multiple calls - should cache the account and id
 let accountroot_id = accountroot_id(&tx.get_account());
-let slot = cache_ledger_entry(&accountroot_id).unwrap_or_panic();
+let slot = cache_le(&accountroot_id).unwrap_or_panic();
 let account_root = AccountRoot::new(slot);
 let sequence = account_root.sequence();
 ```
@@ -708,7 +708,7 @@ let sequence = account_root.sequence();
 // Cache ledger objects for multiple field access using traits
 let account = AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
 let accountroot_id = accountroot_id(&account).unwrap_or_panic();
-let slot = cache_ledger_entry(&accountroot_id).unwrap_or_panic();
+let slot = cache_le(&accountroot_id).unwrap_or_panic();
 let account_root = AccountRoot::new(slot);
 
 // Use trait methods to access fields efficiently
@@ -747,7 +747,7 @@ let len2 = unsafe { tx_field(sfield::Destination, buffer[20..40].as_mut_ptr(), 2
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
 | Function not found      | WASM export missing     | Check `#[smart_escrow]` on your entry function (or `#[unsafe(no_mangle)]` if hand-writing the export) |
 | Memory access violation | Buffer overflow         | Verify buffer sizes and bounds                                                                        |
-| Cache full (SlotsFull)  | Too many cached objects | Minimize `cache_ledger_entry` calls                                                                   |
+| Cache full (SlotsFull)  | Too many cached objects | Minimize `cache_le` calls                                                                             |
 | Field not found         | Missing ledger field    | Handle `FieldNotFound` errors                                                                         |
 | Invalid field data      | Malformed field         | Validate input data                                                                                   |
 
