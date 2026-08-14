@@ -278,8 +278,8 @@ pre-publish gate, so work through these steps in order.
    publishes nothing.
 
    ```shell
-   git tag v0.9.x && git push origin v0.9.x
-   gh release create v0.9.x --generate-notes --verify-tag
+   git tag v0.x.y && git push origin v0.x.y
+   gh release create v0.x.y --generate-notes --verify-tag
    ```
 
 There is no hand-maintained changelog while the library is pre-1.0. `--generate-notes` builds the

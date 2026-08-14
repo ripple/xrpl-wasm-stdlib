@@ -133,7 +133,7 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
 
 The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
 
-_(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-escrow-stdlib`, a separate crate this guide's own doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
+_(This snippet is marked `ignore` because it depends on `xrpl-escrow-stdlib` types (`EscrowFinishContext`, `FinishResult`) and the `#[smart_escrow]` macro expansion references that crate, which this guide's doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
 
 **Configure `Cargo.toml`:**
 
