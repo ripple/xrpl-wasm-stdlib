@@ -210,21 +210,21 @@ checksum = "f63a545481291138910575129486daeaf8ac54aee4387fe7906919f7830c7d9d"
 
 [[package]]
 name = "xrpl-common-stdlib"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "xrpl-macros",
 ]
 
 [[package]]
 name = "xrpl-escrow-stdlib"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "xrpl-common-stdlib",
 ]
 
 [[package]]
 name = "xrpl-macros"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "bs58",
  "proc-macro2",
