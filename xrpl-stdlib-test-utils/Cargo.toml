@@ -15,9 +15,7 @@ include = ["src/", "README.md"]
 # Enabling `test-host-bindings` here is what makes `MockHostBindings` exist. It is a normal (not dev)
 # dependency because this crate *is* the harness — consumers gate it out of WASM builds by declaring
 # this crate under `[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]` instead.
-# Both `version` and `path` are required — see xrpl-escrow-stdlib/Cargo.toml for why. This crate's
-# version must match xrpl-common-stdlib's exactly, since its mocks are generated from that crate's
-# `HostBindings` trait.
+# Both `version` and `path` are required — see xrpl-escrow-stdlib/Cargo.toml for why.
 xrpl-common-stdlib = { version = "0.8.0", path = "../xrpl-common-stdlib", features = [
   "test-host-bindings",
 ] }

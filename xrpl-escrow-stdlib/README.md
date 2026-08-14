@@ -33,8 +33,7 @@ re-export it, so import it from there. It constructs the context via
 `EscrowFinishContext::default()` and passes it to your function automatically, then converts your
 `FinishResult` (or `i32`) into the `extern "C" fn escrow_finish() -> i32` the XRPL host calls.
 
-A Smart Escrow depends on two crates. Use matching versions; all four published crates share a single
-version number.
+A Smart Escrow depends on two crates:
 
 ```shell
 cargo add xrpl-common-stdlib xrpl-escrow-stdlib

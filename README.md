@@ -28,8 +28,6 @@ cargo add xrpl-common-stdlib xrpl-escrow-stdlib
 | `xrpl-common-stdlib` | Host bindings, transaction and ledger-object field access, and XRPL types |
 | `xrpl-escrow-stdlib` | `EscrowFinishContext`, `FinishResult`, and the escrow-only host functions |
 
-Use matching versions: all four published crates share a single version number.
-
 Do not add `xrpl-macros`. It is internal, and `xrpl-common-stdlib` re-exports everything from it: `#[smart_escrow]`, `#[smart_contract]`, `r_address!`, `hash256!`, `pubkey!`, `currency!`, and `blob!`.
 
 Contracts target `wasm32v1-none` and set `crate-type = ["cdylib"]`. See [hello_world](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world/) for a full manifest, and the [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html) for the release profile.

@@ -228,7 +228,7 @@ xrpl-common-stdlib/
 
 ## Release Process (Maintainers)
 
-The library publishes **four crates to crates.io, versioned in lockstep**:
+The library publishes **four crates to crates.io**:
 
 | Crate                    | Published | Notes                                                        |
 | ------------------------ | --------- | ------------------------------------------------------------ |
@@ -237,19 +237,14 @@ The library publishes **four crates to crates.io, versioned in lockstep**:
 | `xrpl-stdlib-test-utils` | yes       | Contract test harness. Depends on `xrpl-common-stdlib` only. |
 | `xrpl-escrow-stdlib`     | yes       | Smart Escrow layer. Publishes last.                          |
 
-Lockstep means all four always carry the **same** version, and every release bumps all four
-even if only one changed. `xrpl-stdlib-test-utils` in particular must match `xrpl-common-stdlib`
-exactly — its mocks are generated from that crate's `HostBindings` trait, so a mismatched pair
-will not compile.
-
 Publishing is **entirely manual**. There is no release workflow: neither a merge to `main` nor a `v*`
 tag uploads anything. An owner runs the `cargo publish` commands by hand. Nothing in CI checks the
-pre-publish gate or the lockstep invariant, so work through these steps in order.
+pre-publish gate, so work through these steps in order.
 
 ### Cutting a release
 
-1. In a PR, bump the `version` field in all four crate manifests to the new `0.9.x` and merge it to
-   `main`. Bump the `version` key on each in-workspace dependency too, or the release ships a range
+1. In a PR, bump the `version` field of each crate being released and merge it to `main`. Bump the
+   `version` key on any in-workspace dependency on a bumped crate too, or the release ships a range
    pointing at the previous version.
 
    ```shell

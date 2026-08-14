@@ -25,7 +25,7 @@ test-host-bindings = ["dep:mockall"]
 
 [dependencies]
 # Both `version` and `path` are required on a published sibling crate — see
-# xrpl-escrow-stdlib/Cargo.toml for why, and keep the two crates' versions in lockstep.
+# xrpl-escrow-stdlib/Cargo.toml for why.
 xrpl-macros = { version = "0.1.0", path = "../xrpl-macros" }
 mockall = { workspace = true, optional = true }
 

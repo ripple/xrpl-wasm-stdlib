@@ -48,9 +48,3 @@ Builder methods:
 Anything left unset falls back to `apply_default_expectations`. Use `build()` instead of `install()`
 to get the `MockHostBindings` and add expectations by hand, and `mock_common::MockHostBindings`
 directly when you want no scenario defaults at all.
-
-## Versioning
-
-Released in lockstep with `xrpl-common-stdlib`, `xrpl-escrow-stdlib`, and `xrpl-macros` — always use
-matching versions. Because the mocks are generated from `xrpl-common-stdlib`'s `HostBindings` trait,
-a mismatched pair will not compile.

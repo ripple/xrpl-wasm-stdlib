@@ -137,7 +137,7 @@ _(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-
 
 **Configure `Cargo.toml`:**
 
-Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo add` pick the versions — it writes whatever is current, and because the crates release in lockstep the same range applies to both:
+Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo add` pick the versions, so the manifest gets whatever is current:
 
 ```shell
 cargo add xrpl-common-stdlib xrpl-escrow-stdlib
