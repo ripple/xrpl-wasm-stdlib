@@ -3,19 +3,19 @@
 Smart Escrow types, entry-point context, and host-function wrappers for writing XRPL Smart Escrows
 in Rust.
 
-This crate is part of the `xrpl-common-stdlib` workspace. Generic XRPL primitives (`AccountID`,
-`Locator`, host bindings, trace, etc.) live in [`xrpl_common_stdlib`]; this crate hosts only what is
-tied specifically to escrows: the `EscrowFinish` transaction wrapper, the `Escrow`/`CurrentEscrow`
-ledger objects, the escrow-specific field-accessor traits, and [`EscrowFinishContext`] — the control
-surface a Smart Escrow author interacts with. Safe, scoped access to escrow-unique host functions
-(e.g., `set_data`) is exposed as inherent methods; all unsafe FFI is contained here, so user code
-stays fully safe.
+Generic XRPL primitives (`AccountID`, `Locator`, host bindings, trace, etc.) live in
+[`xrpl_common_stdlib`]; this crate hosts only what is tied specifically to escrows: the
+`EscrowFinish` transaction wrapper, the `Escrow`/`CurrentEscrow` ledger objects, the escrow-specific
+field-accessor traits, and [`EscrowFinishContext`] — the control surface a Smart Escrow author
+interacts with. Safe, scoped access to escrow-unique host functions (e.g., `set_data`) is exposed as
+inherent methods; all unsafe FFI is contained here, so user code stays fully safe.
 
 ## Usage
 
 ```rust,ignore
-use xrpl_escrow_stdlib::*;
-use xrpl_common_stdlib::core::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_common_stdlib::smart_escrow;
+use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 
 #[smart_escrow]
 fn run(ctx: EscrowFinishContext) -> FinishResult {
@@ -28,9 +28,16 @@ fn run(ctx: EscrowFinishContext) -> FinishResult {
 }
 ```
 
-The `#[smart_escrow]` entry-point macro (in `xrpl-macros`, re-exported here) constructs the context via
-`EscrowFinishContext::default()` and passes it to your function automatically, then converts your `FinishResult`
-(or `i32`) into the `extern "C" fn escrow_finish() -> i32` the XRPL host calls.
+The `#[smart_escrow]` entry-point macro is re-exported from `xrpl-common-stdlib` — this crate does not
+re-export it, so import it from there. It constructs the context via
+`EscrowFinishContext::default()` and passes it to your function automatically, then converts your
+`FinishResult` (or `i32`) into the `extern "C" fn escrow_finish() -> i32` the XRPL host calls.
+
+A Smart Escrow depends on two crates:
+
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+```
 
 ## Crate layout
 

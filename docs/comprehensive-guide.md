@@ -110,7 +110,7 @@ use xrpl_common_stdlib::types::amount::Amount;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
-use xrpl_macros::smart_escrow;
+use xrpl_common_stdlib::smart_escrow;
 
 #[smart_escrow]
 fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
@@ -133,23 +133,23 @@ fn my_escrow(ctx: EscrowFinishContext) -> FinishResult {
 
 The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32` entry point the XRPL host actually calls — it invokes your annotated function (which can be named anything) and converts its `FinishResult` (or `i32`, if you'd rather work in raw return codes) into that ABI. See [`xrpl-escrow-stdlib`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-escrow-stdlib) for the full `FinishResult` API.
 
-_(This snippet is marked `ignore` only because `#[smart_escrow]` lives in `xrpl-escrow-stdlib`, a separate crate this guide's own doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
+_(This snippet is marked `ignore` because it depends on `xrpl-escrow-stdlib` types (`EscrowFinishContext`, `FinishResult`) and the `#[smart_escrow]` macro expansion references that crate, which this guide's doctest doesn't depend on — not because the API shown is unverified. It mirrors the real, building [`freelancer_escrow`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/freelancer_escrow) and [`hello_world`](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world) examples.)_
 
-**Build and test:**
+**Configure `Cargo.toml`:**
+
+Put the contract code above in `src/lib.rs`, then add the two crates a contract needs. Let `cargo add` pick the versions, so the manifest gets whatever is current:
 
 ```shell
-# Add the contract code above to src/lib.rs
-# Configure Cargo.toml:
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+```
 
+Those two are all you need — `xrpl-common-stdlib` re-exports every macro from the internal `xrpl-macros` crate, so you never name it yourself. The rest of the manifest is what makes the crate a contract rather than an ordinary library:
+
+```toml
 [package]
 name = "my-escrow"
 version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-xrpl-common-stdlib = { path = "../xrpl-common-stdlib" }
-xrpl-escrow-stdlib = { path = "../xrpl-escrow-stdlib" }
-xrpl-macros = { path = "../xrpl-macros" }
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib"]
@@ -158,7 +158,11 @@ crate-type = ["cdylib"]
 opt-level = "s"
 lto = true
 panic = "abort"
+```
 
+**Build and test:**
+
+```shell
 # Build the contract
 cargo build --target wasm32v1-none --release
 
@@ -761,7 +765,7 @@ use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::Result::{Ok, Err};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
-use xrpl_macros::smart_escrow;
+use xrpl_common_stdlib::smart_escrow;
 
 #[smart_escrow]
 fn finish_impl(ctx: EscrowFinishContext) -> FinishResult {

@@ -228,17 +228,85 @@ xrpl-common-stdlib/
 
 ## Release Process (Maintainers)
 
+The library publishes **four crates to crates.io**:
+
+| Crate                    | Published | Notes                                                        |
+| ------------------------ | --------- | ------------------------------------------------------------ |
+| `xrpl-macros`            | yes       | Publishes first — the others depend on it.                   |
+| `xrpl-common-stdlib`     | yes       | The general layer.                                           |
+| `xrpl-stdlib-test-utils` | yes       | Contract test harness. Depends on `xrpl-common-stdlib` only. |
+| `xrpl-escrow-stdlib`     | yes       | Smart Escrow layer. Publishes last.                          |
+
+Publishing is **entirely manual**. There is no release workflow: neither a merge to `main` nor a `v*`
+tag uploads anything. An owner runs the `cargo publish` commands by hand. Nothing in CI checks the
+pre-publish gate, so work through these steps in order.
+
+### Cutting a release
+
+1. In a PR, bump the `version` field of each crate being released and merge it to `main`. Bump the
+   `version` key on any in-workspace dependency on a bumped crate too, or the release ships a range
+   pointing at the previous version.
+
+   ```shell
+   vim xrpl-macros/Cargo.toml xrpl-common-stdlib/Cargo.toml \
+       xrpl-stdlib-test-utils/Cargo.toml xrpl-escrow-stdlib/Cargo.toml
+   ```
+
+2. From the merged commit, run the full gate. Nothing downstream re-runs it.
+
+   ```shell
+   git checkout main && git pull
+   ./scripts/run-all.sh
+   ```
+
+3. Publish in dependency order, one at a time. Let each command finish before starting the next: a
+   crate must be in the index before the following one can resolve it.
+
+   ```shell
+   cargo login          # once per machine, with a crates.io token scoped to publish-update
+   cargo publish -p xrpl-macros
+   cargo publish -p xrpl-common-stdlib
+   cargo publish -p xrpl-stdlib-test-utils
+   cargo publish -p xrpl-escrow-stdlib
+   ```
+
+   `--dry-run` packages and verifies without uploading. Under the 1.89 toolchain pin a dependent's
+   dry run fails until its siblings are on the real index; to rehearse the whole set at once, use
+   cargo 1.90 or newer: `cargo +stable publish --workspace --dry-run`.
+
+4. Tag the published commit and cut a GitHub Release. The tag records what shipped; pushing it
+   publishes nothing.
+
+   ```shell
+   git tag v0.x.y && git push origin v0.x.y
+   gh release create v0.x.y --generate-notes --verify-tag
+   ```
+
+There is no hand-maintained changelog while the library is pre-1.0. `--generate-notes` builds the
+notes from the merged PRs since the previous tag, and the Conventional-Commits PR titles keep them
+readable. Revisit a curated changelog at 1.0.
+
+**A published version is permanent** — it can be yanked but never replaced. A bad release burns the
+number; the fix is the next patch (`0.9.x+1`), never a re-push of the same version.
+
+### The first publish of a new crate name
+
+Publishing a name for the first time creates the crate and makes that account its sole owner. So the
+initial `0.9.0` of the three new names (`xrpl-common-stdlib`, `xrpl-escrow-stdlib`,
+`xrpl-stdlib-test-utils`) should come from an account that should hold ownership. Add the other
+maintainers afterwards, or releases stay blocked on one person:
+
 ```shell
-# Update version and changelog
-vim Cargo.toml CHANGELOG.md
-
-# Full test suite
-./scripts/run-all.sh
-
-# Tag and release
-git tag v0.x.y
-git push origin v0.x.y
+cargo owner --add <crates-io-user-or-team> xrpl-common-stdlib
 ```
+
+### The deprecated `xrpl-wasm-stdlib` name
+
+`xrpl-wasm-stdlib` is the library's old pre-split name (published through `0.8.0`). It is not part
+of the crate set above and is not bumped with it: a one-time doc-only `0.9.0` signpost is published
+from `deprecated/xrpl-wasm-stdlib` to point users at the new crates. Never yank `0.7.x`/`0.8.0` (an
+external crate depends on `^0.8`), and never publish a `0.8.x` signpost (it would land inside that
+range and break them).
 
 ## Getting Help
 

@@ -15,6 +15,46 @@ There is an interface available at <https://ripple.github.io/xrpl-wasm-stdlib/ui
 - **[nft_owner](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/nft_owner/)** - NFT ownership verification
 - **[ledger_sqn](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/ledger_sqn/)** - Sequence-based release
 
+## Installation
+
+A Smart Escrow needs two crates:
+
+```shell
+cargo add xrpl-common-stdlib xrpl-escrow-stdlib
+```
+
+| Crate                | Provides                                                                  |
+| -------------------- | ------------------------------------------------------------------------- |
+| `xrpl-common-stdlib` | Host bindings, transaction and ledger-object field access, and XRPL types |
+| `xrpl-escrow-stdlib` | `EscrowFinishContext`, `FinishResult`, and the escrow-only host functions |
+
+Do not add `xrpl-macros`. It is internal, and `xrpl-common-stdlib` re-exports everything from it: `#[smart_escrow]`, `#[smart_contract]`, `r_address!`, `hash256!`, `pubkey!`, `currency!`, and `blob!`.
+
+Contracts target `wasm32v1-none` and set `crate-type = ["cdylib"]`. See [hello_world](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/examples/smart-escrows/hello_world/) for a full manifest, and the [Complete Developer Guide](https://ripple.github.io/xrpl-wasm-stdlib/xrpl_common_stdlib/guide/index.html) for the release profile.
+
+### Testing a contract
+
+`xrpl-stdlib-test-utils` mocks the XRPL host, so you can test contract logic with `cargo test` — no node, no WASM. It depends on `mockall`, which is not `no_std`, so gate it to non-WASM targets:
+
+```shell
+cargo add --dev --target 'cfg(not(target_arch = "wasm32"))' xrpl-stdlib-test-utils
+```
+
+```rust,ignore
+use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_stdlib_test_utils::EscrowScenario;
+
+#[test]
+fn releases_above_ten_xrp() {
+    let _guard = EscrowScenario::builder()
+        .with_amount(Amount::XRP { num_drops: 20_000_000 })
+        .install();
+    // ... call your contract's logic and assert on the result
+}
+```
+
+Anything you leave unset gets a default. See [the crate's README](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-stdlib-test-utils) for the full builder.
+
 ## Documentation
 
 | Section                                                                                                       | Description                                     |

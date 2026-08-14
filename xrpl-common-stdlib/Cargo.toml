@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
 readme = "README.md"
-keywords = ["xrpl", "wasm", "smart-contracts", "no-std"]
+keywords = ["xrpl", "xrp", "wasm", "smart-contracts", "web3"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 include = ["src/", "README.md", "docs/**/*"]
 
@@ -24,6 +24,8 @@ crate-type = ["lib"]
 test-host-bindings = ["dep:mockall"]
 
 [dependencies]
+# Both `version` and `path` are required on a published sibling crate — see
+# xrpl-escrow-stdlib/Cargo.toml for why.
 xrpl-macros = { version = "0.1.0", path = "../xrpl-macros" }
 mockall = { workspace = true, optional = true }
 
