@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 homepage = "https://github.com/ripple/xrpl-wasm-stdlib"
 readme = "README.md"
-keywords = ["xrpl", "xrp", "wasm", "blockchain", "web3"]
+keywords = ["xrpl", "xrp", "wasm", "smart-contracts", "web3"]
 categories = ["no-std", "embedded", "cryptography::cryptocurrencies"]
 include = ["src/", "README.md", "docs/**/*"]
 
