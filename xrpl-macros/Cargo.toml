@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-macros"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2024"
 description = "Internal proc macro for xrpl-common-stdlib - use xrpl-common-stdlib instead"
 license.workspace = true

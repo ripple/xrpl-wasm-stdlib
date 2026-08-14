@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-escrow-stdlib"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2024"
 description = "Smart Escrow types, entry-point context, and host-function wrappers for XRPL WebAssembly contracts"
 license.workspace = true
@@ -19,7 +19,7 @@ crate-type = ["lib"]
 # in ../xrpl-common-stdlib takes effect immediately. `cargo publish` swaps in `version` instead,
 # because a crate on crates.io cannot point at a directory on the author's machine. Omitting
 # `version` fails packaging with "all dependencies must have a version specified".
-xrpl-common-stdlib = { version = "0.8.0", path = "../xrpl-common-stdlib" }
+xrpl-common-stdlib = { version = "0.9.0", path = "../xrpl-common-stdlib" }
 
 [dev-dependencies]
 xrpl-common-stdlib = { path = "../xrpl-common-stdlib", features = ["test-host-bindings"] }
