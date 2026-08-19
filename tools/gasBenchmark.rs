@@ -33,12 +33,8 @@ fn current_branch() -> String {
 }
 
 fn now_iso8601() -> String {
-    // Minimal ISO-8601 timestamp using SystemTime; avoids pulling in chrono.
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
-    let secs = now.as_secs();
-    format!("{secs}Z")
+    // Matches JS's new Date().toISOString() format: YYYY-MM-DDTHH:MM:SS.sssZ
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 
 fn benchmark_dir() -> PathBuf {
