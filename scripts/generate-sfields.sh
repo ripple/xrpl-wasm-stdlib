@@ -21,17 +21,17 @@ echo "📦 Source: $RIPPLED_SOURCE"
 echo "📝 Output: $OUTPUT_FILE"
 echo ""
 
-# Check if Node.js is available
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js to run this script."
+# Check if cargo is available
+if ! command -v cargo &> /dev/null; then
+    echo "❌ cargo is not installed. Please install Rust to run this script."
     exit 1
 fi
 
 # Run the generator
 echo "🔍 Fetching field definitions from rippled..."
-node tools/generateSFields.js "$RIPPLED_SOURCE" "$OUTPUT_FILE"
+cargo run --release --quiet --bin generate-sfields -- "$RIPPLED_SOURCE" "$OUTPUT_FILE"
 
 echo ""
 echo "✅ SField constants generated successfully!"
 echo ""
-echo "💡 To add more custom type mappings, edit the customFieldTypes object in tools/generateSFields.js"
+echo "💡 To add more custom type mappings, edit the customFieldTypes map in tools/generateSFields.rs"

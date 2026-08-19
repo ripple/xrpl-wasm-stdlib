@@ -16,13 +16,13 @@
 #   ./scripts/benchmark-gas.sh my_contract  # Benchmark specific contract
 #   ./scripts/benchmark-gas.sh all          # Benchmark all contracts in e2e-tests
 #   ./scripts/benchmark-gas.sh c1 c2 c3     # Benchmark multiple contracts
-#   node tools/compareGasResults.js       # Generate comparison report
+#   cargo run --release --bin compare-gas-results  # Generate comparison report
 #
 # To compare branches:
 #   1. Run benchmark on current branch: ./scripts/benchmark-gas.sh
 #   2. Switch to other branch: git checkout main
 #   3. Run benchmark again: ./scripts/benchmark-gas.sh
-#   4. Generate comparison: node tools/compareGasResults.js
+#   4. Generate comparison: cargo run --release --bin compare-gas-results
 #
 # Results are stored in .benchmark/ (gitignored)
 #
@@ -59,13 +59,13 @@ echo ""
 
 # Phase 1: Measure gas for optimizations branch
 echo -e "${BLUE}Phase 1: Measuring gas...${NC}"
-node "$TOOLS_DIR/gasBenchmark.js" "$@"
+cargo run --release --quiet --bin gas-benchmark -- "$@"
 echo -e "${GREEN}✓ Phase 1 complete${NC}"
 echo ""
 
 # Phase 2: Generate comparison report
 echo -e "${BLUE}Phase 2: Generating comparison report...${NC}"
-node "$TOOLS_DIR/compareGasResults.js"
+cargo run --release --quiet --bin compare-gas-results
 echo -e "${GREEN}✓ Phase 2 complete${NC}"
 echo ""
 
