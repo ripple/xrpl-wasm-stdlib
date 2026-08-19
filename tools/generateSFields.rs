@@ -130,16 +130,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut sfields = parse_sfields(&sfield_macro)?;
     println!("Parsed {} SFields", sfields.len());
 
-    // Sort key: stype_id * 65536 + code, ascending
+    // Sort key: stype_id * 65536 + code, ascending. Widen to i64 so large STYPE IDs can't wrap.
     sfields.sort_by_key(|(_name, xrpl_type, code)| {
-        let stype_id = stype_map.get(xrpl_type.as_str()).copied().unwrap_or(0);
-        stype_id * 65536 + *code
+        let stype_id = stype_map.get(xrpl_type.as_str()).copied().unwrap_or(0) as i64;
+        stype_id * 65536 + *code as i64
     });
 
     // Emit a constant per field
     for (field_name, xrpl_type, code) in &sfields {
-        let stype_id = stype_map.get(xrpl_type.as_str()).copied().unwrap_or(0);
-        let field_code = stype_id * 65536 + code;
+        let stype_id = stype_map.get(xrpl_type.as_str()).copied().unwrap_or(0) as i64;
+        let field_code = stype_id * 65536 + *code as i64;
 
         // Custom name override wins over generic type map
         let rust_type = custom_field_types

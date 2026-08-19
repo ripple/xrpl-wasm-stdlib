@@ -233,7 +233,7 @@ async fn execute_escrow(
 
     let gas_used = result["result"]["meta"]["GasUsed"]
         .as_u64()
-        .unwrap_or(0);
+        .ok_or("GasUsed missing from transaction meta")?;
     Ok(gas_used)
 }
 
