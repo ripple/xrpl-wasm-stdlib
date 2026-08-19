@@ -1,0 +1,39 @@
+[package]
+name = "xrpl-wasm-tools"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "compare-gas-results"
+path = "compareGasResults.rs"
+
+[[bin]]
+name = "copy-rippled-fixture"
+path = "copyRippledFixture.rs"
+
+[[bin]]
+name = "compare-host-functions"
+path = "compareHostFunctions.rs"
+
+[[bin]]
+name = "generate-sfields"
+path = "generateSFields.rs"
+
+[[bin]]
+name = "generate-test-host-bindings"
+path = "generateTestHostBindings.rs"
+
+[[bin]]
+name = "gas-benchmark"
+path = "gasBenchmark.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hex = "0.4.3"
+regex = "1"
+ureq = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+tokio-tungstenite = "0.21"
+futures-util = "0.3"

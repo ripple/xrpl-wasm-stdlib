@@ -4,6 +4,7 @@ members = [
     "xrpl-wasm-stdlib",
     "xrpl-macros",
     "xrpl-escrow-stdlib",
+    "tools",
 ]
 exclude = [
     "examples",
