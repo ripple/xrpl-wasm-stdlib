@@ -155,7 +155,6 @@ export_host_functions! {
     fn float_mult(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_div(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _pow: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
 
 }
 

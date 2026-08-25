@@ -1478,29 +1478,6 @@ pub trait HostBindings {
         rounding_mode: i32,
     ) -> i32;
 
-    /// Calculates the nth root of an opaque float value
-    /// # Parameters
-    /// * `in_buff` - Pointer to input float value
-    /// * `in_buff_len` - The length of the input float value in bytes
-    /// * `root` - The root to calculate (e.g., 2 for square root)
-    /// * `out_buff` - Pointer to output buffer where result will be written
-    /// * `out_buff_len` - The length of the output buffer in bytes
-    /// * `rounding_mode` - Rounding mode to use for the operation
-    /// # Returns
-    /// 8 on success, error code otherwise
-    ///
-    /// # Safety
-    /// Caller must ensure all pointer parameters point to valid memory
-    unsafe fn float_root(
-        &self,
-        in_buff: *const u8,
-        in_buff_len: usize,
-        root: i32,
-        out_buff: *mut u8,
-        out_buff_len: usize,
-        rounding_mode: i32,
-    ) -> i32;
-
     // #############################
     // Host Function Category: TRACE
     // #############################
