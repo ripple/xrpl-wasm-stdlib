@@ -180,6 +180,21 @@ pub trait TransactionCommonFields {
         get_field_optional(sfield::AccountTxnID)
     }
 
+    /// Retrieves the delegate account from the current transaction.
+    ///
+    /// This optional field identifies a delegate account that is sending the transaction on behalf
+    /// of the Account. Requires the PermissionDelegation amendment.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result<Option<AccountID>>` where:
+    /// * `Ok(Some(AccountID))` - The 20-byte account identifier of the delegate
+    /// * `Ok(None)` - If no delegate is specified (the `Account` is sending directly)
+    /// * `Err(Error)` - If an error occurred during field retrieval
+    fn get_delegate(&self) -> Result<Option<AccountID>> {
+        get_field_optional(sfield::Delegate)
+    }
+
     /// Retrieves the `flags` field from the current transaction.
     ///
     /// This optional field contains a bitfield of transaction-specific flags that modify
@@ -380,6 +395,7 @@ mod tests {
             use crate::host::host_bindings_trait::MockHostBindings;
             use crate::host::setup_mock;
             use crate::sfield;
+            use crate::types::account_id::ACCOUNT_ID_SIZE;
             use crate::types::uint::HASH256_SIZE;
             use mockall::predicate::{always, eq};
 
@@ -389,6 +405,8 @@ mod tests {
 
                 // get_account_txn_id
                 expect_tx_field(&mut mock, sfield::AccountTxnID, HASH256_SIZE, 1);
+                // get_delegate
+                expect_tx_field(&mut mock, sfield::Delegate, ACCOUNT_ID_SIZE, 1);
                 // get_flags
                 expect_tx_field(&mut mock, sfield::Flags, 4, 1);
                 // get_last_ledger_sequence
@@ -406,6 +424,7 @@ mod tests {
 
                 // All optional fields should return Ok(Some(...))
                 assert!(tx.get_account_txn_id().unwrap().is_some());
+                assert!(tx.get_delegate().unwrap().is_some());
                 assert!(tx.get_flags().unwrap().is_some());
                 assert!(tx.get_last_ledger_sequence().unwrap().is_some());
                 assert!(tx.get_network_id().unwrap().is_some());
@@ -420,6 +439,11 @@ mod tests {
                 // get_account_txn_id
                 mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| FIELD_NOT_FOUND);
+                // get_delegate
+                mock.expect_tx_field()
+                    .with(eq(sfield::Delegate), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_flags
@@ -454,6 +478,7 @@ mod tests {
 
                 // Fixed-size optional fields should return Ok(None) when FIELD_NOT_FOUND
                 assert!(tx.get_account_txn_id().unwrap().is_none());
+                assert!(tx.get_delegate().unwrap().is_none());
                 assert!(tx.get_flags().unwrap().is_none());
                 assert!(tx.get_last_ledger_sequence().unwrap().is_none());
                 assert!(tx.get_network_id().unwrap().is_none());
@@ -468,6 +493,11 @@ mod tests {
                 // get_account_txn_id - returns 0 (zero length)
                 mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| 0);
+                // get_delegate - returns 0 (zero length)
+                mock.expect_tx_field()
+                    .with(eq(sfield::Delegate), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_flags - returns 0 (zero length)
@@ -503,6 +533,7 @@ mod tests {
                 // Fixed-size optional fields return Err (InvalidDecoding) on a zero-length read:
                 // decode's length check rejects the byte-count mismatch.
                 assert!(tx.get_account_txn_id().is_err());
+                assert!(tx.get_delegate().is_err());
                 assert!(tx.get_flags().is_err());
                 assert!(tx.get_last_ledger_sequence().is_err());
                 assert!(tx.get_network_id().is_err());
@@ -517,6 +548,11 @@ mod tests {
                 // get_account_txn_id
                 mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| SOME_ERROR);
+                // get_delegate
+                mock.expect_tx_field()
+                    .with(eq(sfield::Delegate), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| SOME_ERROR);
                 // get_flags
@@ -554,6 +590,10 @@ mod tests {
                 assert!(account_txn_id_result.is_err());
                 assert_eq!(account_txn_id_result.err().unwrap().code(), SOME_ERROR);
 
+                let delegate_result = tx.get_delegate();
+                assert!(delegate_result.is_err());
+                assert_eq!(delegate_result.err().unwrap().code(), SOME_ERROR);
+
                 let flags_result = tx.get_flags();
                 assert!(flags_result.is_err());
                 assert_eq!(flags_result.err().unwrap().code(), SOME_ERROR);
@@ -582,6 +622,11 @@ mod tests {
                 // get_account_txn_id
                 mock.expect_tx_field()
                     .with(eq(sfield::AccountTxnID), always(), eq(HASH256_SIZE))
+                    .times(1)
+                    .returning(|_, _, _| INVALID_FIELD);
+                // get_delegate
+                mock.expect_tx_field()
+                    .with(eq(sfield::Delegate), always(), eq(ACCOUNT_ID_SIZE))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_flags
@@ -618,6 +663,10 @@ mod tests {
                 let account_txn_id_result = tx.get_account_txn_id();
                 assert!(account_txn_id_result.is_err());
                 assert_eq!(account_txn_id_result.err().unwrap().code(), INVALID_FIELD);
+
+                let delegate_result = tx.get_delegate();
+                assert!(delegate_result.is_err());
+                assert_eq!(delegate_result.err().unwrap().code(), INVALID_FIELD);
 
                 let flags_result = tx.get_flags();
                 assert!(flags_result.is_err());
