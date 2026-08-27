@@ -4,6 +4,8 @@ version = "0.8.0"
 edition = "2024"
 description = "End-to-end test that validates EscrowFinish transaction field access and tracing functionality"
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]

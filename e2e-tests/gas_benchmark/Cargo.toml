@@ -4,6 +4,8 @@ version = "0.8.0"
 edition = "2024"
 description = "Gas benchmark contract for measuring optimization impact"
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]

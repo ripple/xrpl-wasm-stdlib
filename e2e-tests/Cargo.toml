@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+# Probe/test crates only; each member sets `publish = false`.
 members = [
     "float_tests",
     "gas_benchmark",

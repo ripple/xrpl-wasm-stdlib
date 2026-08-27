@@ -4,6 +4,8 @@ name = "keylet_exists"
 version = "0.1.0"
 description = "Smart Escrow example demonstrating ledger entry ID generation and ledger object existence verification"
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
