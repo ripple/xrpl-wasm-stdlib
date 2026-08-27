@@ -207,6 +207,20 @@ async function test(testContext) {
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "",
+        },
+      },
+    ],
+    "atomic_swap1 empty MemoData",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
           MemoData: "deadbeef",
         },
       },

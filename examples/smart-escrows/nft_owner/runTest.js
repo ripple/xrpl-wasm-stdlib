@@ -56,6 +56,20 @@ async function test(testContext) {
       {
         Memo: {
           MemoType: xrpl.convertStringToHex("nft_id"),
+          MemoData: "",
+        },
+      },
+    ],
+    "empty MemoData",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    escrowResult,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("nft_id"),
           MemoData: "deadbeef",
         },
       },
