@@ -8,6 +8,9 @@ use crate::types::mpt_id::{MPT_ID_SIZE, MptId};
 /// Serialized XRP issue length (20 zero bytes, same width as a currency code).
 pub const XRP_ISSUE_SIZE: usize = CURRENCY_SIZE;
 
+/// Serialized MPT issue length (same as [`MPT_ID_SIZE`]: sequence number + issuer).
+pub const MPT_ISSUE_SIZE: usize = MPT_ID_SIZE;
+
 /// Serialized IOU issue length: currency followed by issuer.
 pub const IOU_ISSUE_SIZE: usize = CURRENCY_SIZE + ACCOUNT_ID_SIZE;
 
@@ -61,7 +64,7 @@ impl IouIssue {
 ///
 /// ## Derived Traits
 ///
-/// - `Copy`: Efficient for this 24-byte struct, enabling implicit copying
+/// - `Copy`: Efficient for this [`MPT_ISSUE_SIZE`]-byte struct, enabling implicit copying
 /// - `PartialEq, Eq`: Enable comparisons
 /// - `Debug, Clone`: Standard traits for development and consistency
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -120,17 +123,17 @@ impl Issue {
     ///
     /// Returns `Result<Issue>` where:
     /// * `Ok(Issue::XRP(...))` - If len is [`XRP_ISSUE_SIZE`]
-    /// * `Ok(Issue::MPT(...))` - If len is [`MPT_ID_SIZE`]
+    /// * `Ok(Issue::MPT(...))` - If len is [`MPT_ISSUE_SIZE`]
     /// * `Ok(Issue::IOU(...))` - If len is [`IOU_ISSUE_SIZE`]
     /// * `Err(Error)` - If len is not one of the expected values
     #[inline]
     pub fn from_buffer(buffer: [u8; IOU_ISSUE_SIZE], len: usize) -> Result<Self> {
         match len {
             XRP_ISSUE_SIZE => Result::Ok(Issue::XRP(XrpIssue {})),
-            MPT_ID_SIZE => {
-                let mpt_bytes: [u8; MPT_ID_SIZE] = buffer[..MPT_ID_SIZE]
+            MPT_ISSUE_SIZE => {
+                let mpt_bytes: [u8; MPT_ISSUE_SIZE] = buffer[..MPT_ISSUE_SIZE]
                     .try_into()
-                    .unwrap_or([0u8; MPT_ID_SIZE]);
+                    .unwrap_or([0u8; MPT_ISSUE_SIZE]);
                 let mpt_id = MptId::from(mpt_bytes);
                 Result::Ok(Issue::MPT(MptIssue::new(mpt_id)))
             }
@@ -151,7 +154,7 @@ impl Issue {
 }
 
 /// `FieldDecoder` for XRPL issues. The host writes a variable number of bytes into the fixed
-/// [`IOU_ISSUE_SIZE`]-byte buffer — [`XRP_ISSUE_SIZE`] for XRP, [`MPT_ID_SIZE`] for MPT,
+/// [`IOU_ISSUE_SIZE`]-byte buffer — [`XRP_ISSUE_SIZE`] for XRP, [`MPT_ISSUE_SIZE`] for MPT,
 /// [`IOU_ISSUE_SIZE`] for IOU — and the variant is detected from `bytes_written` (see
 /// [`Issue::from_buffer`]); a count that matches none of those is a decode error.
 impl FieldDecoder for Issue {
@@ -183,6 +186,8 @@ mod tests {
         assert_eq!(IOU_ISSUE_SIZE, 40);
         assert_eq!(XRP_ISSUE_SIZE, CURRENCY_SIZE);
         assert_eq!(XRP_ISSUE_SIZE, 20);
+        assert_eq!(MPT_ISSUE_SIZE, MPT_ID_SIZE);
+        assert_eq!(MPT_ISSUE_SIZE, 24);
     }
 
     // Test IouIssue byte layout
@@ -244,9 +249,9 @@ mod tests {
     fn test_issue_from_buffer_mpt() {
         let mut buffer = [0u8; IOU_ISSUE_SIZE];
         buffer[0..4].copy_from_slice(&12345u32.to_be_bytes());
-        buffer[4..MPT_ID_SIZE].copy_from_slice(&[0xAB; ACCOUNT_ID_SIZE]);
+        buffer[4..MPT_ISSUE_SIZE].copy_from_slice(&[0xAB; ACCOUNT_ID_SIZE]);
 
-        let result = Issue::from_buffer(buffer, MPT_ID_SIZE);
+        let result = Issue::from_buffer(buffer, MPT_ISSUE_SIZE);
         match result {
             Result::Ok(Issue::MPT(mpt)) => {
                 assert_eq!(mpt.mpt_id().get_sequence_num(), 12345);
