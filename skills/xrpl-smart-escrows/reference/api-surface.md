@@ -69,6 +69,7 @@ pub trait TransactionCommonFields {
 Variable-length data (Memos, arrays) isn't exposed as a typed method — walk it with `tx.path()`:
 
 ```rust
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::blob::StandardBlob;

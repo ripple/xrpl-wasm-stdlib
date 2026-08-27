@@ -17,19 +17,17 @@ use xrpl_macros::smart_escrow;
 /// Extracts the first memo from the transaction.
 ///
 /// `Memos[0].MemoData` is a `StandardBlob`, not escrow contract data. An empty
-/// or absent memo is returned as `Ok(None)` so the caller can reject it.
+/// or absent memo is `Ok(None)` so the caller can reject it. A missing `Memos`
+/// field used to surface as `FieldNotFound` (a negative host code from this
+/// helper); it is now treated the same as empty, so `escrow_finish` returns `0`
+/// rather than that error code.
 fn get_first_memo(tx: &impl TransactionCommonFields) -> Result<Option<StandardBlob>> {
-    match tx
-        .path()
+    tx.path()
         .field(sfield::Memos)
         .index(0)
         .field(sfield::MemoData)
         .get_optional::<StandardBlob>()
-    {
-        Ok(Some(data)) if !data.is_empty() => Ok(Some(data)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e),
-    }
+        .map(|opt| opt.filter(|data| !data.is_empty()))
 }
 
 #[smart_escrow]
@@ -47,11 +45,11 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
         }
     };
 
-    // Extract NFT ID from memo (first 32 bytes) and create NFToken
-    let nft_id_bytes: [u8; NFT_ID_SIZE] = match memo.as_slice().get(..NFT_ID_SIZE) {
-        Some(bytes) => bytes.try_into().unwrap(),
-        None => return FinishResult::reject(),
-    };
+    // MemoData must be exactly the 32-byte NFT ID — extra bytes are rejected.
+    if memo.len() != NFT_ID_SIZE {
+        return FinishResult::reject();
+    }
+    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.as_slice().try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
     trace_hex("NFT ID from memo:", nft_token.as_bytes());
 

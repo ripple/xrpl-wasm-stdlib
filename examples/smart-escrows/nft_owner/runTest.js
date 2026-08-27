@@ -1,10 +1,67 @@
 const xrpl = require("xrpl")
 
+async function expectFinishRejected(
+  submit,
+  sourceWallet,
+  escrowResult,
+  memos,
+  label,
+) {
+  const tx = {
+    TransactionType: "EscrowFinish",
+    Account: sourceWallet.address,
+    Owner: sourceWallet.address,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
+  }
+  if (memos !== undefined) {
+    tx.Memos = memos
+  }
+  const response = await submit(tx, sourceWallet)
+  if (response.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
+    console.error(
+      `\n${label}: expected tecBYTECODE_REJECTED, got:`,
+      response.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+}
+
 async function test(testContext) {
   const { deploy, finish, client, submit, sourceWallet, destWallet } =
     testContext
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
+
+  // Reject before an NFT exists: missing / empty / short / oversize MemoData
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    escrowResult,
+    undefined,
+    "absent memo",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    escrowResult,
+    [{ Memo: { MemoType: xrpl.convertStringToHex("nft_id") } }],
+    "memo without MemoData",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    escrowResult,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("nft_id"),
+          MemoData: "deadbeef",
+        },
+      },
+    ],
+    "short memo",
+  )
 
   // Mint NFT
   const nftMint = {
@@ -23,6 +80,21 @@ async function test(testContext) {
     process.exit(1)
   }
   const nftId = mintResponse.result.meta.nftoken_id
+
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    escrowResult,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("nft_id"),
+          MemoData: nftId + "ffff",
+        },
+      },
+    ],
+    "oversized memo",
+  )
 
   // This EscrowFinish should fail because the destinationWallet is not the owner of the NFT
   const txFail = {

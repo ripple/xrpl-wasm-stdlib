@@ -53,19 +53,17 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// Extracts the first memo from the transaction.
 ///
 /// `Memos[0].MemoData` is a `StandardBlob`, not escrow `ContractData`. An empty
-/// or absent memo is returned as `Ok(None)` so the caller can reject it.
+/// or absent memo is `Ok(None)` so the caller can reject it. A missing `Memos`
+/// field used to surface as `FieldNotFound` (a negative host code from this
+/// helper); it is now treated the same as empty, so `escrow_finish` returns `0`
+/// rather than that error code.
 fn get_first_memo(tx: &impl TransactionCommonFields) -> Result<Option<StandardBlob>> {
-    match tx
-        .path()
+    tx.path()
         .field(sfield::Memos)
         .index(0)
         .field(sfield::MemoData)
         .get_optional::<StandardBlob>()
-    {
-        Ok(Some(data)) if !data.is_empty() => Ok(Some(data)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e),
-    }
+        .map(|opt| opt.filter(|data| !data.is_empty()))
 }
 
 /// Phase 1: Initialization - validate counterpart escrow and set timing deadline.
