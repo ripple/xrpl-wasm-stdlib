@@ -120,10 +120,28 @@ canonically-ordered account pair produce the same result either way.
 
 ### Test Networks
 
-| Network         | Endpoint                                 | Purpose             |
-| --------------- | ---------------------------------------- | ------------------- |
-| **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing |
-| **Local Node**  | `ws://localhost:6006`                    | Development         |
+| Network         | Endpoint                                 | Purpose               |
+| --------------- | ---------------------------------------- | --------------------- |
+| **Local Node**  | `ws://localhost:6006`                    | Development (default) |
+| **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing   |
+
+`./scripts/run-tests.sh` (and therefore `./scripts/run-all.sh`) targets the local node by default, and manages it for you: it starts a rippled node in Docker via `./scripts/docker-rippled.sh`, pinned to the exact `XRPLD_DOCKER_IMAGE` tag CI uses (see `.github/workflows/test.yml`). This matters because the npm packages in `package.json` (`xrpl`, `ripple-binary-codec`) are built against a specific rippled field/transaction definition set — testing against a rippled build that has drifted from that pin (e.g. a locally-built binary from a different branch or commit) can fail with cryptic errors like `Field 'X' found in disallowed location`, because field codes shifted underneath the JS encoder.
+
+Override the default with an environment variable:
+
+```shell
+./scripts/run-tests.sh                    # default: Docker rippled pinned to CI's image
+NO_DOCKER=true ./scripts/run-tests.sh     # use a rippled you're already running yourself
+DEVNET=true ./scripts/run-tests.sh        # use WASM Devnet instead
+```
+
+The Docker container (`xrpld-service`) is left running between invocations for faster iteration. Manage it directly with:
+
+```shell
+./scripts/docker-rippled.sh start   # idempotent - reuses a healthy container if one exists
+./scripts/docker-rippled.sh status
+./scripts/docker-rippled.sh stop
+```
 
 ### Debugging and Development
 

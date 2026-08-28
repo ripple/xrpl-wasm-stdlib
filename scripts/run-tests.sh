@@ -11,6 +11,21 @@ cd "$REPO_ROOT"
 
 echo "🔧 Running end-to-end tests..."
 
+# Keep node_modules in sync with package-lock.json (e.g. after a package.json bump)
+npm ls --silent > /dev/null 2>&1 || npm ci
+
+# By default, tests run against a local rippled started in Docker, pinned to the
+# same image CI uses (see scripts/docker-rippled.sh). Override with:
+#   DEVNET=true      - test against wss://wasm.devnet.rippletest.net:51233 instead
+#   NO_DOCKER=true   - test against a rippled you're already running yourself on ws://localhost:6006
+if [[ "${DEVNET:-}" == "true" || -n "${DEVNET:-}" ]]; then
+    echo "🌐 DEVNET set - skipping local Docker rippled."
+elif [[ "${NO_DOCKER:-false}" == "true" ]]; then
+    echo "⚙️  NO_DOCKER set - assuming rippled is already running on ws://localhost:6006."
+else
+    scripts/docker-rippled.sh start
+fi
+
 # Ensure wasm32 target is available
 echo "📦 Ensuring wasm32v1-none target is installed..."
 rustup target add wasm32v1-none
