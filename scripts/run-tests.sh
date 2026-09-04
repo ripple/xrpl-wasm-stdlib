@@ -19,7 +19,7 @@ npm ls --silent > /dev/null 2>&1 || npm ci
 # the same image CI uses. Override with:
 if [[ "${DEVNET:-}" == "true" ]]; then
 #   NO_DOCKER=true   - force-skip Docker; test against a rippled you're already running yourself
-if [[ "${DEVNET:-}" == "true" || -n "${DEVNET:-}" ]]; then
+if [[ "${DEVNET:-}" == "true" ]]; then
     echo "🌐 DEVNET set - skipping local Docker rippled."
 elif [[ "${NO_DOCKER:-false}" == "true" ]]; then
     echo "⚙️  NO_DOCKER set - assuming rippled is already running on ws://localhost:6006."
