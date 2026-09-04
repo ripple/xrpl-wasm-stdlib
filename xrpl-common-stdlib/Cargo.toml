@@ -1,6 +1,6 @@
 [package]
 name = "xrpl-common-stdlib"
-version = "0.9.0"
+version = "0.10.0-dev"
 edition = "2024"
 description = "Standard library for XRPL WebAssembly smart contracts"
 license.workspace = true
@@ -26,7 +26,7 @@ test-host-bindings = ["dep:mockall"]
 [dependencies]
 # Both `version` and `path` are required on a published sibling crate — see
 # xrpl-escrow-stdlib/Cargo.toml for why.
-xrpl-macros = { version = "0.9.0", path = "../xrpl-macros" }
+xrpl-macros = { version = "0.10.0-dev", path = "../xrpl-macros" }
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
