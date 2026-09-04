@@ -63,7 +63,7 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 ./scripts/generate-ledger-objects.sh
 ```
 
-Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`.
+Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`, `scripts/cargo-deny.sh` (RustSec advisories on the library workspace; advisory-only in CI until the first clean run).
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -Dclippy::all` on staged Rust files, plus prettier with `--no-semi --tab-width 2` for JS/MD/YAML.
 
