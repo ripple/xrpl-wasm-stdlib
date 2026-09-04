@@ -33,10 +33,20 @@ use xrpl_common_stdlib::host::trace::{
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::amount::Amount;
+use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_common_stdlib::types::currency::Currency;
 use xrpl_common_stdlib::types::iou_number::IOUNumber;
 use xrpl_common_stdlib::types::mpt_id::MptId;
+use xrpl_common_stdlib::types::nft::{NFT_ID_SIZE, NFToken, flags as nftoken_flags};
 use xrpl_escrow_stdlib::current_tx::escrow_finish::EscrowFinish;
+
+/// Values `runTest.js` puts on the minted NFToken so this contract can check the typed getters
+/// against a real host, not just that they return *something*.
+const EXPECTED_NFT_TAXON: u32 = 12345;
+const EXPECTED_NFT_TRANSFER_FEE: u16 = 1000;
+const EXPECTED_NFT_FLAGS: u16 =
+    nftoken_flags::BURNABLE | nftoken_flags::ONLY_XRP | nftoken_flags::TRANSFERABLE;
+const EXPECTED_NFT_URI: &[u8] = b"https://example.com/nft-metadata.json";
 
 #[unsafe(no_mangle)]
 pub extern "C" fn escrow_finish() -> i32 {
@@ -665,31 +675,10 @@ fn test_utility_functions() -> i32 {
     trace_hex("Input data:", test_data);
     trace_hex("SHA512 half hash:", &hash_output);
 
-    // Test 6.2: nft_uri() - NFT data retrieval
-    let escrow_finish = EscrowFinish;
-    let account_id = escrow_finish.get_account().unwrap();
-    let nft_id = [0u8; 32]; // Dummy NFT ID for testing
-    let mut nft_buffer = [0u8; 256];
-    let nft_result = unsafe {
-        host::nft_uri(
-            account_id.0.as_ptr(),
-            account_id.0.len(),
-            nft_id.as_ptr(),
-            nft_id.len(),
-            nft_buffer.as_mut_ptr(),
-            nft_buffer.len(),
-        )
-    };
-
-    if nft_result <= 0 {
-        trace_num(
-            "INFO: nft_uri failed (expected - no such NFT):",
-            nft_result as i64,
-        );
-        // This is expected - test account likely doesn't own the dummy NFT
-    } else {
-        trace_num("NFT data length:", nft_result as i64);
-        trace_hex("NFT data:", &nft_buffer[..nft_result as usize]);
+    // Test 6.2: NFToken field access via the typed stdlib API
+    match test_nft_fields() {
+        0 => (),
+        err => return err,
     }
 
     // Test 6.3: trace() - Debug logging with data
@@ -717,6 +706,143 @@ fn test_utility_functions() -> i32 {
     }
 
     trace("SUCCESS: Utility functions");
+    0
+}
+
+/// Trace every NFToken field the stdlib exposes, using the NFT minted by `runTest.js`
+/// (ID passed as EscrowFinish `Memos[0].MemoData`).
+///
+/// Error range: -621 to -632.
+fn test_nft_fields() -> i32 {
+    trace("--- NFT fields (typed NFToken API) ---");
+
+    let escrow_finish = EscrowFinish;
+    let memo = match escrow_finish
+        .path()
+        .field(sfield::Memos)
+        .index(0)
+        .field(sfield::MemoData)
+        .get::<StandardBlob>()
+    {
+        host::Result::Ok(blob) => blob,
+        host::Result::Err(e) => {
+            trace_num("ERROR: reading NFT ID memo:", e.code() as i64);
+            return -621;
+        }
+    };
+
+    if memo.len() < NFT_ID_SIZE {
+        trace_num("ERROR: NFT ID memo too short:", memo.len() as i64);
+        return -621;
+    }
+
+    let mut nft_id_bytes = [0u8; NFT_ID_SIZE];
+    nft_id_bytes.copy_from_slice(&memo.as_slice()[..NFT_ID_SIZE]);
+    let nft = NFToken::new(nft_id_bytes);
+    trace_hex("NFT ID:", nft.as_bytes());
+
+    let flags = match nft.flags() {
+        host::Result::Ok(flags) => flags,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.flags():", e.code() as i64);
+            return -622;
+        }
+    };
+    trace_num("NFT Flags:", flags.as_u16() as i64);
+    if flags.is_burnable() {
+        trace_num("  - BURNABLE:", 1);
+    }
+    if flags.is_only_xrp() {
+        trace_num("  - ONLY_XRP:", 1);
+    }
+    if flags.is_trust_line() {
+        trace_num("  - TRUST_LINE:", 1);
+    }
+    if flags.is_transferable() {
+        trace_num("  - TRANSFERABLE:", 1);
+    }
+
+    let transfer_fee = match nft.transfer_fee() {
+        host::Result::Ok(fee) => fee,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.transfer_fee():", e.code() as i64);
+            return -623;
+        }
+    };
+    trace_num("NFT Transfer Fee:", transfer_fee as i64);
+
+    let issuer = match nft.issuer() {
+        host::Result::Ok(issuer) => issuer,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.issuer():", e.code() as i64);
+            return -624;
+        }
+    };
+    trace_acct_buf("NFT Issuer:", &issuer.0);
+
+    let taxon = match nft.taxon() {
+        host::Result::Ok(taxon) => taxon,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.taxon():", e.code() as i64);
+            return -625;
+        }
+    };
+    trace_num("NFT Taxon:", taxon as i64);
+
+    let token_sequence = match nft.token_sequence() {
+        host::Result::Ok(seq) => seq,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.token_sequence():", e.code() as i64);
+            return -626;
+        }
+    };
+    trace_num("NFT Token Sequence:", token_sequence as i64);
+
+    let owner = escrow_finish.get_account().unwrap();
+    let uri = match nft.uri(&owner) {
+        host::Result::Ok(uri) => uri,
+        host::Result::Err(e) => {
+            trace_num("ERROR: nft.uri():", e.code() as i64);
+            return -627;
+        }
+    };
+    let uri_end = uri
+        .data
+        .iter()
+        .rposition(|&b| b != 0)
+        .map(|i| i + 1)
+        .unwrap_or(0);
+    trace_hex("NFT URI:", &uri.data[..uri_end]);
+
+    // Native coverage runs against empty/mock host stubs, which do not reproduce the minted
+    // token. Value checks are only meaningful against rippled.
+    if cfg!(target_arch = "wasm32") {
+        if flags.as_u16() != EXPECTED_NFT_FLAGS {
+            trace_num("ERROR: NFT flags mismatch, got:", flags.as_u16() as i64);
+            return -628;
+        }
+        if transfer_fee != EXPECTED_NFT_TRANSFER_FEE {
+            trace_num(
+                "ERROR: NFT transfer fee mismatch, got:",
+                transfer_fee as i64,
+            );
+            return -629;
+        }
+        if issuer.0 != owner.0 {
+            trace("ERROR: NFT issuer does not match EscrowFinish Account");
+            return -630;
+        }
+        if taxon != EXPECTED_NFT_TAXON {
+            trace_num("ERROR: NFT taxon mismatch, got:", taxon as i64);
+            return -631;
+        }
+        if uri.data[..EXPECTED_NFT_URI.len()] != *EXPECTED_NFT_URI {
+            trace("ERROR: NFT URI mismatch");
+            return -632;
+        }
+    }
+
+    trace("SUCCESS: NFT fields");
     0
 }
 
