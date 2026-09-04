@@ -101,6 +101,21 @@ pub trait VaultFields: LedgerObjectCommonFields {
     fn le_version(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LEVersion)
     }
+
+    /// The VaultKind field (Optional).
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::VaultKind)
+    }
+
+    /// The SubscriptionDate field (Optional).
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SubscriptionDate)
+    }
+
+    /// The RedemptionDate field (Optional).
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::RedemptionDate)
+    }
 }
 
 /// Trait providing access to fields specific to the current Vault object.
@@ -193,6 +208,21 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     fn le_version(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::LEVersion)
     }
+
+    /// The VaultKind field (Optional).
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        current_ledger_object::get_field_optional(sfield::VaultKind)
+    }
+
+    /// The SubscriptionDate field (Optional).
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SubscriptionDate)
+    }
+
+    /// The RedemptionDate field (Optional).
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::RedemptionDate)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -246,6 +276,9 @@ mod tests {
         assert!(obj.loss_unrealized().is_ok());
         assert!(obj.scale().is_ok());
         assert!(obj.le_version().is_ok());
+        assert!(obj.vault_kind().is_ok());
+        assert!(obj.subscription_date().is_ok());
+        assert!(obj.redemption_date().is_ok());
     }
 
     #[test]
@@ -258,5 +291,8 @@ mod tests {
 
         assert!(obj.scale().unwrap().is_none());
         assert!(obj.le_version().unwrap().is_none());
+        assert!(obj.vault_kind().unwrap().is_none());
+        assert!(obj.subscription_date().unwrap().is_none());
+        assert!(obj.redemption_date().unwrap().is_none());
     }
 }

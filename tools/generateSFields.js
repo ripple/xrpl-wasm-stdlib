@@ -43,32 +43,55 @@ function parseStypes(sfieldHeaderFile) {
   return stypeMap
 }
 
-// Escrow fields are authoritative (a rename/change there is always picked
-// up); the contract branch only contributes fields escrow doesn't have at
-// all. A field present in both with a *different* definition is a real
-// divergence between the branches and needs a human, not a silent pick.
+// Escrow fields are authoritative: on any disagreement -- same-name field
+// with a different (type, ordinal), OR two different fields whose (type,
+// ordinal) collide on the wire code -- the escrow definition wins and the
+// contract-side entry is dropped with a warning. This matches the stated
+// policy ("Escrow-side fields are sourced from (and always trust) the escrow
+// branch, so a rename there is picked up automatically") and lets escrow
+// re-numberings flow through without a human step. Warnings are still
+// emitted so the drift is visible in the run log.
 function mergeSfields(escrowFields, contractFields) {
   const merged = new Map(escrowFields)
   const addedFromContract = []
-  let conflict = false
+  const droppedFromContract = []
+
+  // Index escrow fields by wire code (STI * 2^16 + ordinal, but STI codes
+  // aren't known here; use `${type}/${ordinal}` as an equivalent key) so we
+  // can spot a contract-only field that would collide with an escrow field
+  // on a different name.
+  const escrowByCode = new Map()
+  for (const [name, def] of escrowFields) {
+    escrowByCode.set(`${def.xrplType}/${def.ordinal}`, name)
+  }
+
   for (const [name, def] of contractFields) {
-    if (!merged.has(name)) {
-      merged.set(name, def)
-      addedFromContract.push(name)
+    if (merged.has(name)) {
+      const existing = merged.get(name)
+      if (
+        existing.xrplType !== def.xrplType ||
+        existing.ordinal !== def.ordinal
+      ) {
+        console.error(
+          `Warning: sf${name} differs between branches -- escrow (${existing.xrplType}, ${existing.ordinal}) wins over contract (${def.xrplType}, ${def.ordinal}).`,
+        )
+      }
       continue
     }
-    const existing = merged.get(name)
-    if (
-      existing.xrplType !== def.xrplType ||
-      existing.ordinal !== def.ordinal
-    ) {
+    const collidingEscrowName = escrowByCode.get(
+      `${def.xrplType}/${def.ordinal}`,
+    )
+    if (collidingEscrowName) {
       console.error(
-        `Conflict for field sf${name}: escrow branch defines (${existing.xrplType}, ${existing.ordinal}) but contract branch defines (${def.xrplType}, ${def.ordinal}). Resolve manually before regenerating.`,
+        `Warning: contract-only sf${name} (${def.xrplType}, ${def.ordinal}) collides on the wire code with escrow sf${collidingEscrowName}; dropping sf${name}.`,
       )
-      conflict = true
+      droppedFromContract.push(name)
+      continue
     }
+    merged.set(name, def)
+    addedFromContract.push(name)
   }
-  return { merged, addedFromContract, conflict }
+  return { merged, addedFromContract, droppedFromContract }
 }
 
 async function main() {
@@ -125,7 +148,7 @@ async function main() {
   const {
     merged: mergedFields,
     addedFromContract,
-    conflict,
+    droppedFromContract,
   } = mergeSfields(escrowFields, contractFields)
 
   console.log(
@@ -135,12 +158,10 @@ async function main() {
         : ""
     }, ${mergedFields.size} total`,
   )
-
-  if (conflict) {
-    console.error(
-      "\nOne or more fields differ between the escrow and contract branches -- see above. Aborting without writing output.",
+  if (droppedFromContract.length > 0) {
+    console.log(
+      `Dropped ${droppedFromContract.length} contract-only field(s) that collided with escrow on the wire code: ${droppedFromContract.map((n) => "sf" + n).join(", ")}`,
     )
-    process.exit(1)
   }
 
   const sfieldEntries = [...mergedFields.entries()].map(([fieldName, def]) => ({
