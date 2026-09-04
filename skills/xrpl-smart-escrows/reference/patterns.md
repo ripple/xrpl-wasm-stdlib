@@ -177,27 +177,34 @@ Key idea: every `EscrowFinish` call re-enters this function from scratch — sta
 
 ## 6. Cross-escrow atomic swap — `atomic_swap`
 
-Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `Locator` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
+Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `tx.path()` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
 
 ```rust
-use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::tx_inner;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::objects::cache_le;
+use xrpl_common_stdlib::objects::traits::EscrowFields;
 use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
-use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
 // Read Memos[0].MemoData from the current EscrowFinish tx (e.g. the counterpart's ledger entry ID)
-let mut locator = Locator::new();
-locator.pack(sfield::Memos);
-locator.pack(0);
-locator.pack(sfield::MemoData);
-let mut counterpart_id = [0u8; 32];
-let rc = unsafe {
-    tx_inner(locator.as_ptr(), locator.num_packed_bytes(),
-        counterpart_id.as_mut_ptr(), counterpart_id.len())
+let memo = match ctx
+    .tx()
+    .path()
+    .field(sfield::Memos)
+    .index(0)
+    .field(sfield::MemoData)
+    .get_optional::<StandardBlob>()
+{
+    xrpl_common_stdlib::host::Result::Ok(Some(data)) if !data.is_empty() => data,
+    _ => return xrpl_escrow_stdlib::FinishResult::reject(),
 };
-if rc < 0 { return xrpl_escrow_stdlib::FinishResult::reject(); }
+// try_into returns core::result::Result, not host::Result
+let counterpart_id: [u8; 32] = match memo.as_slice().try_into() {
+    Ok(id) => id,
+    Err(_) => return xrpl_escrow_stdlib::FinishResult::reject(),
+};
 
 // Load the counterpart escrow and read its fields
 let counterpart_slot = match cache_le(&counterpart_id) {
@@ -205,7 +212,10 @@ let counterpart_slot = match cache_le(&counterpart_id) {
     xrpl_common_stdlib::host::Result::Err(_) => return xrpl_escrow_stdlib::FinishResult::reject(),
 };
 let counterpart_escrow = Escrow::new(counterpart_slot);
-let counterpart_account = counterpart_escrow.get_account().unwrap_or_default();
+let counterpart_account = match counterpart_escrow.account() {
+    xrpl_common_stdlib::host::Result::Ok(account) => account,
+    xrpl_common_stdlib::host::Result::Err(_) => return xrpl_escrow_stdlib::FinishResult::reject(),
+};
 ```
 
 Each side of the swap is a separate contract deployed on a separate escrow; the integration test (`runTest.js`) deploys and finishes both in the correct order — see [testing.md](testing.md).

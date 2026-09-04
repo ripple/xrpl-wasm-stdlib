@@ -2,6 +2,33 @@ const xrpl = require("xrpl")
 const path = require("path")
 const fs = require("fs")
 
+async function expectFinishRejected(
+  submit,
+  wallet,
+  escrowResult,
+  memos,
+  label,
+) {
+  const tx = {
+    TransactionType: "EscrowFinish",
+    Account: wallet.address,
+    Owner: wallet.address,
+    OfferSequence: parseInt(escrowResult.sequence),
+    Gas: 1000000,
+  }
+  if (memos !== undefined) {
+    tx.Memos = memos
+  }
+  const response = await submit(tx, wallet)
+  if (response.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
+    console.error(
+      `${label}: expected tecBYTECODE_REJECTED, got:`,
+      response.result.meta.TransactionResult,
+    )
+    process.exit(1)
+  }
+}
+
 async function test(testContext) {
   const { deploy, finish, submit, sourceWallet, destWallet } = testContext
 
@@ -156,6 +183,64 @@ async function test(testContext) {
     )
     process.exit(1)
   }
+
+  // Malformed memos must reject without persisting Phase 1 state
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    undefined,
+    "atomic_swap1 absent memo",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    [{ Memo: { MemoType: xrpl.convertStringToHex("counterpart_escrow") } }],
+    "atomic_swap1 memo without MemoData",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "",
+        },
+      },
+    ],
+    "atomic_swap1 empty MemoData",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "deadbeef",
+        },
+      },
+    ],
+    "atomic_swap1 short memo",
+  )
+  await expectFinishRejected(
+    submit,
+    sourceWallet,
+    finalSwap1Result,
+    [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: finalSwap2Result.escrowId + "ffff",
+        },
+      },
+    ],
+    "atomic_swap1 oversized memo",
+  )
 
   // Execute atomic_swap1 Phase 1 BEFORE atomic_swap2 Phase 2 (while counterpart still exists)
   const txFinalSwap1Phase1 = {

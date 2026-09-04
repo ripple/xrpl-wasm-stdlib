@@ -3,50 +3,36 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::fields::locator::Locator;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
-use xrpl_common_stdlib::host::tx_inner;
-use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::sfield;
-use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_common_stdlib::types::nft::{NFT_ID_SIZE, NFToken};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub fn get_first_memo() -> Result<Option<ContractData>> {
-    let mut data: ContractData = ContractData {
-        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
-        len: 0,
-    };
-    let mut locator = Locator::new();
-    locator.pack(sfield::Memos);
-    locator.pack(0);
-    locator.pack(sfield::MemoData);
-    let result_code = unsafe {
-        tx_inner(
-            locator.as_ptr(),
-            locator.num_packed_bytes(),
-            data.data.as_mut_ptr(),
-            data.data.len(),
-        )
-    };
-
-    match result_code {
-        result_code if result_code > 0 => {
-            Ok(Some(data)) // <-- Move the buffer into an AccountID
-        }
-        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
-        // same as an absent field and let the caller decide.
-        0 => Ok(None),
-        result_code => Err(Error::from_code(result_code)),
-    }
+/// Extracts the first memo from the transaction.
+///
+/// `Memos[0].MemoData` is a `StandardBlob`, not escrow contract data. An empty
+/// or absent memo is `Ok(None)` so the caller can reject it. A missing `Memos`
+/// field used to surface as `FieldNotFound` (a negative host code from this
+/// helper); it is now treated the same as empty, so `escrow_finish` returns `0`
+/// rather than that error code.
+fn get_first_memo(tx: &impl TransactionCommonFields) -> Result<Option<StandardBlob>> {
+    tx.path()
+        .field(sfield::Memos)
+        .index(0)
+        .field(sfield::MemoData)
+        .get_optional::<StandardBlob>()
+        .map(|opt| opt.filter(|data| !data.is_empty()))
 }
 
 #[smart_escrow]
 fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
-    let memo: ContractData = match get_first_memo() {
+    let memo = match get_first_memo(ctx.tx()) {
         Ok(v) => {
             match v {
                 Some(v) => v,
@@ -59,8 +45,11 @@ fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
         }
     };
 
-    // Extract NFT ID from memo (first 32 bytes) and create NFToken
-    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..32].try_into().unwrap();
+    // MemoData must be exactly the 32-byte NFT ID — extra bytes are rejected.
+    if memo.len() != NFT_ID_SIZE {
+        return FinishResult::reject();
+    }
+    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.as_slice().try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
     trace_hex("NFT ID from memo:", nft_token.as_bytes());
 
