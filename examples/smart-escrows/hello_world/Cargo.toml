@@ -4,6 +4,8 @@ version = "1.0.0"
 edition = "2024"
 description = "A Smart Escrow that simply emits 'Hello World' into the trace log and then releases the escrow."
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]

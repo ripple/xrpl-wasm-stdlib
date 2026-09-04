@@ -4,6 +4,8 @@ version = "0.8.0"
 edition = "2024"
 description = "Test suite for XRPL floating-point operations including arithmetic, comparison, and mathematical functions"
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]

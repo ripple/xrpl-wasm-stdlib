@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 description = "Smart Escrow example that implements atomic swaps using data field-based two-phase execution"
 license = "ISC"
+# Do not publish this crate
+publish = false
 
 
 [lib]

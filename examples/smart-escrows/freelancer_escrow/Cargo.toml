@@ -2,6 +2,8 @@
 name = "freelancer_escrow"
 version = "0.1.0"
 edition = "2024"
+# Do not publish this crate
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
