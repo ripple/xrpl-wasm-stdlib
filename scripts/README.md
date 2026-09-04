@@ -36,8 +36,8 @@ You can also run individual test suites:
 - **`clippy.sh`** - Run Clippy linting on both native and WASM workspaces
 - **`fmt.sh`** - Check Rust code formatting
 - **`run-markdown.sh`** - Execute bash code blocks in Markdown files
-- **`run-tests.sh`** - Run integration tests for examples and end-to-end tests (starts a local Docker rippled by default; see below)
-- **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses (`start`/`stop`/`status`)
+- **`run-tests.sh`** - Run integration tests for examples and end-to-end tests (reuses a running rippled, else starts one in Docker; see below)
+- **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses; also used by CI itself, so this is the only place the container's `docker run`/health-check/logs logic lives (`start`/`stop`/`status`/`logs`)
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
@@ -60,7 +60,7 @@ You can also run individual test suites:
 # Run only clippy checks
 ./scripts/clippy.sh
 
-# Run only integration tests (auto-starts a local Docker rippled)
+# Run only integration tests (reuses a running rippled, else auto-starts one in Docker)
 ./scripts/run-tests.sh
 
 # Run integration tests against a rippled you're already running yourself
@@ -70,8 +70,9 @@ NO_DOCKER=true ./scripts/run-tests.sh
 DEVNET=true ./scripts/run-tests.sh
 
 # Manage the local Docker rippled directly
-./scripts/docker-rippled.sh start
+./scripts/docker-rippled.sh start   # no-op if rippled is already reachable on port 6006
 ./scripts/docker-rippled.sh status
+./scripts/docker-rippled.sh logs
 ./scripts/docker-rippled.sh stop
 
 # Run gas benchmarks (requires local rippled instance)

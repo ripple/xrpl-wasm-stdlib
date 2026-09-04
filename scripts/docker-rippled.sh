@@ -11,9 +11,10 @@ cd "$REPO_ROOT"
 
 CONTAINER_NAME="xrpld-service"
 WORKFLOW_FILE=".github/workflows/test.yml"
+RIPPLED_WS_PORT=6006
 
 usage() {
-    echo "Usage: $0 {start|stop|status}"
+    echo "Usage: $0 {start|stop|status|logs}"
     exit 1
 }
 
@@ -38,13 +39,25 @@ is_healthy() {
     docker inspect --format="{{.State.Health.Status}}" "$CONTAINER_NAME" 2>/dev/null | grep -q "healthy"
 }
 
-start() {
-    require_docker
+# True if something is already accepting connections on the rippled WS port,
+# whether that's our own container, a manually-run rippled, or a native build.
+# Checked with a bare TCP dial (bash's /dev/tcp) so this works even without Docker installed.
+is_port_open() {
+    (: < "/dev/tcp/127.0.0.1/$RIPPLED_WS_PORT") 2>/dev/null
+}
 
+start() {
     if is_healthy; then
         echo "✅ $CONTAINER_NAME is already running and healthy."
         return 0
     fi
+
+    if is_port_open; then
+        echo "✅ Something is already listening on ws://localhost:$RIPPLED_WS_PORT - assuming rippled is already running; skipping Docker."
+        return 0
+    fi
+
+    require_docker
 
     # A stopped/unhealthy container from a previous run shouldn't block a fresh start.
     docker rm -f "$CONTAINER_NAME" &> /dev/null || true
@@ -93,9 +106,17 @@ status() {
     fi
 }
 
+logs() {
+    echo "=== Docker container logs ==="
+    docker logs "$CONTAINER_NAME" 2>&1 || echo "Could not get logs"
+    echo "=== Docker container status ==="
+    docker inspect "$CONTAINER_NAME" 2>&1 || echo "Could not inspect container"
+}
+
 case "${1:-}" in
     start) start ;;
     stop) stop ;;
     status) status ;;
+    logs) logs ;;
     *) usage ;;
 esac

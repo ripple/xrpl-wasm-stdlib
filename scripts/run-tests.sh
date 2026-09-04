@@ -14,10 +14,11 @@ echo "🔧 Running end-to-end tests..."
 # Keep node_modules in sync with package-lock.json (e.g. after a package.json bump)
 npm ls --silent > /dev/null 2>&1 || npm ci
 
-# By default, tests run against a local rippled started in Docker, pinned to the
-# same image CI uses (see scripts/docker-rippled.sh). Override with:
+# By default, tests run against a local rippled. scripts/docker-rippled.sh reuses one
+# that's already running on ws://localhost:6006, or else starts one in Docker, pinned to
+# the same image CI uses. Override with:
 #   DEVNET=true      - test against wss://wasm.devnet.rippletest.net:51233 instead
-#   NO_DOCKER=true   - test against a rippled you're already running yourself on ws://localhost:6006
+#   NO_DOCKER=true   - force-skip Docker; test against a rippled you're already running yourself
 if [[ "${DEVNET:-}" == "true" || -n "${DEVNET:-}" ]]; then
     echo "🌐 DEVNET set - skipping local Docker rippled."
 elif [[ "${NO_DOCKER:-false}" == "true" ]]; then
