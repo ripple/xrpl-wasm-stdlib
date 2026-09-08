@@ -4,7 +4,8 @@ members = [
     "xrpl-common-stdlib",
     "xrpl-macros",
     "xrpl-escrow-stdlib",
-    "xrpl-stdlib-test-utils"
+    "xrpl-stdlib-test-utils",
+    "tools",
 ]
 exclude = [
     "examples",
