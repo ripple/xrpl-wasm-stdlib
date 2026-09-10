@@ -25,7 +25,8 @@ The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they
 All scripts assume you have run `./scripts/setup.sh` once. They mirror the GitHub Actions workflow in `.github/workflows/test.yml` and set `RUSTFLAGS="-Dwarnings"`.
 
 ```shell
-# Full CI suite locally (clippy, fmt, host-function audit, wasm-exports check, build+test, markdown, e2e)
+# Full CI suite locally (clippy, fmt, host-function audit, wasm-exports check, build+test,
+# wasm version-metadata check, markdown, e2e)
 ./scripts/run-all.sh
 
 # Build everything (native + wasm32v1-none for both examples/ and e2e-tests/, debug + release)
@@ -64,6 +65,8 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 ```
 
 Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`.
+
+`scripts/check-wasm-version-sections.sh` is unusual in that it inspects **built artifacts** rather than source, so unlike `check-wasm-exports.sh` it must run _after_ a release build. `run-all.sh` calls it directly after `build-and-test.sh`, and in `.github/workflows/test.yml` it is a step inside the `build_and_test` job rather than its own job — artifacts don't persist across jobs.
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -Dclippy::all` on staged Rust files, plus prettier with `--no-semi --tab-width 2` for JS/MD/YAML.
 
@@ -150,6 +153,14 @@ panic = "abort"     # no_std can't unwind; also avoids pulling in a panic handle
 ```
 
 The library defines a custom `#[panic_handler]` for `target_arch = "wasm32"` (in `xrpl-common-stdlib/src/lib.rs`) that calls `core::arch::wasm32::unreachable()`. Dev profile uses `panic = "unwind"` so unit tests can run on the host.
+
+## Version metadata embedded in the module
+
+`xrpl-common-stdlib` and `xrpl-escrow-stdlib` each emit a WASM **custom section** naming the crate version they were built at — `xrpl-common-stdlib-version` and `xrpl-escrow-stdlib-version`, payload e.g. `0.9.0`. The mechanism is a `#[used]` static with `#[unsafe(link_section = "<crate>-version")]` at the top of each crate's `lib.rs`, holding `env!("CARGO_PKG_VERSION")` reinterpreted as a fixed-size byte array (a `static` can't hold a `&str` of runtime-unknown length). All of it is `#[cfg(target_arch = "wasm32")]`, so native builds and `cargo test` are unaffected.
+
+This gives any compiled contract readable provenance — which stdlib versions it was built against — without executing the module (`llvm-objdump --headers <file>.wasm`, or `strings`). A contract only carries a section for a crate it actually depends on: e2e contracts that skip `xrpl-escrow-stdlib` have just the common one.
+
+Because `#[used]` resists but does not absolutely guarantee survival of dead-data elimination under the release profile's `lto = true` / `codegen-units = 1`, `scripts/check-wasm-version-sections.sh` asserts on every built artifact that the section is present _and_ its payload matches the crate's current `Cargo.toml` version (catching both a dropped section and a stale rebuild). `xrpl-macros` deliberately has no such section — it's a `proc-macro = true` crate compiled for the host, never linked into the module; the same is true of `xrpl-stdlib-test-utils`, which is gated out of WASM builds.
 
 ## Writing a contract
 

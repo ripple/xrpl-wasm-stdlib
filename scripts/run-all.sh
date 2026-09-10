@@ -45,6 +45,7 @@ run_script "/host-function-audit.sh"
 run_script "/check-wasm-exports.sh"
 run_script "/generate-ledger-objects.sh" --check
 run_script "/build-and-test.sh"
+run_script "/check-wasm-version-sections.sh"
 run_script "/run-markdown.sh"
 run_script "/run-tests.sh"
 

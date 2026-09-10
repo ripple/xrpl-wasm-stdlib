@@ -118,6 +118,11 @@ jobs:
       - name: Run build and test
         run: ./scripts/build-and-test.sh
 
+      # Runs in this job rather than its own because it inspects the release WASM
+      # artifacts produced by the step above.
+      - name: Check WASM version metadata sections
+        run: ./scripts/check-wasm-version-sections.sh
+
   run-markdown:
     runs-on: ubuntu-latest
     steps:
