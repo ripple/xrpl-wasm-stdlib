@@ -25,11 +25,16 @@ crate_version() {
 }
 
 # examples/target/.../release/hello_world.wasm -> the manifest of the crate named hello_world
+#
+# Cargo replaces hyphens with underscores in artifact filenames, so a package named
+# `my-contract` builds to `my_contract.wasm`. The filename alone can't tell us which
+# separator the manifest used, so each `_` in the stem matches either form.
 contract_manifest() {
-    local stem root
+    local stem root pattern
     stem="$(basename "$1" .wasm)"
     root="${1%%/target/*}"
-    grep -rl "^name *= *\"${stem}\"" "$root" --include=Cargo.toml | head -1
+    pattern="${stem//_/[-_]}"
+    grep -rlE "^name *= *\"${pattern}\"" "$root" --include=Cargo.toml | head -1
 }
 
 echo "🔍 Checking WASM version metadata sections..."
@@ -43,9 +48,12 @@ for wasm in examples/target/wasm32v1-none/release/*.wasm \
     found_any=1
     echo "🔧 Checking $wasm"
 
+    # A contract we can't resolve to a manifest is a hard failure, not a skip — silently
+    # skipping would let a renamed or newly-added contract go unchecked forever.
     manifest="$(contract_manifest "$wasm")"
     if [[ -z "$manifest" ]]; then
-        echo "   ⚠️  No manifest found for $(basename "$wasm"), skipping"
+        echo "   ❌ No Cargo.toml declares a package matching $(basename "$wasm")"
+        failed=1
         continue
     fi
 
