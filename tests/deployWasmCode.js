@@ -1,6 +1,4 @@
 const xrpl = require("xrpl")
-const fs = require("fs")
-const path = require("path")
 
 const client =
   process.argv.length > 4
@@ -18,7 +16,23 @@ async function submit(tx, wallet, debug = false) {
   return txResult
 }
 
-async function deploy(sourceWallet, destWallet, finish, data = null) {
+/**
+ * Deploy a smart-escrow by submitting an `EscrowCreate` transaction.
+ *
+ * `opts` follows the harness convention: any PascalCase XRPL transaction
+ * field (`Amount`, `Data`, `FinishAfter`, `Condition`, `SourceTag`,
+ * `DestinationTag`, ...) is spread verbatim onto the tx, so new fields
+ * work without touching this helper.
+ *
+ * The only camelCase key is `cancelAfterOffset` — a harness convenience
+ * that's added to the most-recent validated `close_time` to compute
+ * `CancelAfter`. Pass `CancelAfter` directly to override it entirely.
+ *
+ * Defaults:
+ *   - `Amount`:            `"100000"`
+ *   - `cancelAfterOffset`: `2000` (seconds)
+ */
+async function deploy(sourceWallet, destWallet, finish, opts = {}) {
   await client.connect()
   console.log("connected")
 
@@ -29,18 +43,24 @@ async function deploy(sourceWallet, destWallet, finish, data = null) {
     })
   ).result.ledger.close_time
 
-  const response1 = await submit(
-    {
-      TransactionType: "EscrowCreate",
-      Account: sourceWallet.address,
-      Amount: "100000",
-      Destination: destWallet.address,
-      CancelAfter: close_time + 2000,
-      Bytecode: finish,
-      Data: data,
-    },
-    sourceWallet,
-  )
+  const {
+    cancelAfterOffset = 2000,
+    Amount = "100000",
+    CancelAfter = close_time + cancelAfterOffset,
+    ...fields
+  } = opts
+
+  const tx = {
+    TransactionType: "EscrowCreate",
+    Account: sourceWallet.address,
+    Destination: destWallet.address,
+    Bytecode: finish,
+    Amount,
+    CancelAfter,
+    ...fields,
+  }
+
+  const response1 = await submit(tx, sourceWallet)
 
   if (response1.result.meta.TransactionResult !== "tesSUCCESS") process.exit(1)
   const sequence = response1.result.tx_json.Sequence
