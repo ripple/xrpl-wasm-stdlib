@@ -111,7 +111,7 @@ fn test_ledger_header_functions() -> i32 {
         trace_num("ERROR: ldgr_index failed:", sqn_result as i64);
         return -101; // Ledger sequence number test failed
     }
-    let ledger_sqn = u32::from_be_bytes(sqn_buffer);
+    let ledger_sqn = u32::from_le_bytes(sqn_buffer);
     trace_num("Ledger sequence number:", ledger_sqn as i64);
 
     // Test 1.2: parent_ldgr_time() - should return parent ledger timestamp
@@ -123,7 +123,7 @@ fn test_ledger_header_functions() -> i32 {
         trace_num("ERROR: parent_ldgr_time failed:", time_result as i64);
         return -102; // Parent ledger time test failed
     }
-    let parent_ledger_time = u32::from_be_bytes(time_buffer);
+    let parent_ledger_time = u32::from_le_bytes(time_buffer);
     trace_num("Parent ledger time:", parent_ledger_time as i64);
 
     // Test 1.3: parent_ldgr_hash() - should return parent ledger hash (32 bytes)
@@ -598,7 +598,7 @@ fn test_id_generation_functions() -> i32 {
     // Test 5.3: escrow_id() - Generate ledger entry ID for escrow
     let mut escrow_id_buffer = [0u8; 32];
     let seq: i32 = 1000;
-    let seq_bytes = seq.to_be_bytes();
+    let seq_bytes = seq.to_le_bytes();
     let escrow_id_result = unsafe {
         host::escrow_id(
             account_id.0.as_ptr(),
@@ -619,7 +619,7 @@ fn test_id_generation_functions() -> i32 {
     // Test 5.4: oracle_id() - Generate ledger entry ID for oracle
     let mut oracle_id_buffer = [0u8; 32];
     let document_id: i32 = 42;
-    let document_id_bytes = document_id.to_be_bytes();
+    let document_id_bytes = document_id.to_le_bytes();
     let oracle_id_result = unsafe {
         host::oracle_id(
             account_id.0.as_ptr(),

@@ -120,7 +120,7 @@ fn check_ledger_sqn(_ctx: EscrowFinishContext) -> i32 {
         if match_result_code_with_expected_bytes(rc, 4, || Some(rc)).is_err() {
             return rc;
         }
-        let ledger_sequence = u32::from_be_bytes(buf);
+        let ledger_sequence = u32::from_le_bytes(buf);
         (ledger_sequence >= 5) as i32
     }
 }
