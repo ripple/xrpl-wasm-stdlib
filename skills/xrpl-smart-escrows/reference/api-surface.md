@@ -54,6 +54,7 @@ pub trait TransactionCommonFields {
     fn get_fee(&self) -> Result<Amount>;
     fn get_sequence(&self) -> Result<u32>;
     fn get_account_txn_id(&self) -> Result<Option<Hash256>>;
+    fn get_delegate(&self) -> Result<Option<AccountID>>;
     fn get_flags(&self) -> Result<Option<u32>>;
     fn get_last_ledger_sequence(&self) -> Result<Option<u32>>;
     fn get_network_id(&self) -> Result<Option<u32>>;

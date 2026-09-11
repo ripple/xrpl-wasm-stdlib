@@ -186,8 +186,6 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
         .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
     mock.expect_float_pow()
         .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
-    mock.expect_float_root()
-        .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
 
     // Trace
     mock.expect_trace().returning(|_, _, _, _, _| ());
@@ -313,7 +311,6 @@ export_host_functions! {
     fn float_mult(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_div(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
     fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();

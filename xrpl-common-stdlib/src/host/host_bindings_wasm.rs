@@ -349,14 +349,6 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
-        pub(super) fn float_root(
-            in_buff: *const u8,
-            in_buff_len: usize,
-            root: i32,
-            out_buff: *mut u8,
-            out_buff_len: usize,
-            rounding_mode: i32,
-        ) -> i32;
         pub(super) fn trace(
             msg_read_ptr: *const u8,
             msg_read_len: usize,
@@ -1233,27 +1225,6 @@ impl HostBindings for WasmHostBindings {
         }
     }
 
-    unsafe fn float_root(
-        &self,
-        in_buff: *const u8,
-        in_buff_len: usize,
-        root: i32,
-        out_buff: *mut u8,
-        out_buff_len: usize,
-        rounding_mode: i32,
-    ) -> i32 {
-        unsafe {
-            host_defined_functions::float_root(
-                in_buff,
-                in_buff_len,
-                root,
-                out_buff,
-                out_buff_len,
-                rounding_mode,
-            )
-        }
-    }
-
     unsafe fn trace(
         &self,
         msg_read_ptr: *const u8,
@@ -1362,7 +1333,6 @@ export_host_functions! {
     fn float_mult(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_div(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
     fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();

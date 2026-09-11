@@ -257,22 +257,6 @@ impl Number {
         };
         match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
     }
-
-    /// Returns the `n`th root of `self` (e.g. `n = 2` for the square root), rounding per `rounding`.
-    pub fn root(&self, n: i32, rounding: RoundingMode) -> Result<Number> {
-        let mut out = [0u8; NUMBER_SIZE];
-        let rescode = unsafe {
-            host::float_root(
-                self.0.as_ptr(),
-                self.0.len(),
-                n,
-                out.as_mut_ptr(),
-                NUMBER_SIZE,
-                rounding.into(),
-            )
-        };
-        match_result_code_with_expected_bytes(rescode, NUMBER_SIZE, || Number(out))
-    }
 }
 
 impl From<[u8; NUMBER_SIZE]> for Number {
@@ -641,22 +625,5 @@ mod tests {
     #[test]
     fn test_empty_buffer_is_number_sized() {
         assert_eq!(<Number as FieldDecoder>::empty_buffer(), [0u8; NUMBER_SIZE]);
-    }
-
-    #[test]
-    fn test_float_root_success() {
-        let mut mock = MockHostBindings::new();
-        mock.expect_float_root()
-            .times(1)
-            .returning(|_, _, _, out, out_len, _| {
-                unsafe { out.copy_from_nonoverlapping(SAMPLE.as_ptr(), NUMBER_SIZE) }
-                out_len as i32
-            });
-        let _guard = setup_mock(mock);
-
-        assert_eq!(
-            Number(SAMPLE).root(2, RoundingMode::ToNearest).unwrap(),
-            Number(SAMPLE)
-        );
     }
 }
