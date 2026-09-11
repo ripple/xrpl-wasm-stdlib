@@ -55,18 +55,17 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on loan`.
     fn assets_total(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsMaximum)
     }
@@ -162,18 +161,17 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on loan`.
     fn assets_total(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsMaximum)
     }
