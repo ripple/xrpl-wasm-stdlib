@@ -1,0 +1,41 @@
+# cargo-deny configuration for the published library workspace.
+#
+# Issue #126 is an advisory-only experiment: CI and `scripts/cargo-deny.sh` run
+# `cargo deny check advisories` against the root Cargo.toml. examples/ and
+# e2e-tests/ are unpublished cdylibs that only path-depend on these crates.
+# licenses/bans/sources are filled in so a later `cargo deny check` (all lint
+# types) has a starting policy, but they are not enforced yet.
+
+[graph]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "wasm32v1-none",
+]
+all-features = true
+
+[advisories]
+yanked = "warn"
+
+[licenses]
+confidence-threshold = 0.8
+allow = [
+    "ISC",
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "warn"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
