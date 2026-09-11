@@ -1,9 +1,18 @@
 use crate::fields::decoder::{FieldDecoder, FromLedger};
 use crate::host::Result;
-use crate::types::account_id::AccountID;
-use crate::types::currency::Currency;
+use crate::types::account_id::{ACCOUNT_ID_SIZE, AccountID};
+use crate::types::currency::{CURRENCY_SIZE, Currency};
 use crate::types::decode_error::DecodeError;
-use crate::types::mpt_id::MptId;
+use crate::types::mpt_id::{MPT_ID_SIZE, MptId};
+
+/// Serialized XRP issue length (20 zero bytes, same width as a currency code).
+pub const XRP_ISSUE_SIZE: usize = CURRENCY_SIZE;
+
+/// Serialized MPT issue length (same as [`MPT_ID_SIZE`]: sequence number + issuer).
+pub const MPT_ISSUE_SIZE: usize = MPT_ID_SIZE;
+
+/// Serialized IOU issue length: currency followed by issuer.
+pub const IOU_ISSUE_SIZE: usize = CURRENCY_SIZE + ACCOUNT_ID_SIZE;
 
 /// Struct to represent an Issue of type XRP. Exists so that other structs can restrict type
 /// information to XRP in their declarations (this is not possible with just the `Issue` enum below).
@@ -17,27 +26,27 @@ use crate::types::mpt_id::MptId;
 #[repr(C)]
 pub struct XrpIssue {}
 
-/// Defines an issue for IOUs (40 bytes: 20-byte currency + 20-byte issuer).
+/// Defines an issue for IOUs ([`IOU_ISSUE_SIZE`] bytes: currency then issuer).
 ///
 /// ## Derived Traits
 ///
 /// - `PartialEq, Eq`: Enable comparisons and use in collections
 /// - `Debug, Clone`: Standard traits for development and consistency
 ///
-/// Note: `Copy` is intentionally not derived due to the struct's size (40 bytes).
+/// Note: `Copy` is intentionally not derived due to the struct's size ([`IOU_ISSUE_SIZE`] bytes).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct IouIssue {
     issuer: AccountID,
     currency: Currency,
-    _bytes: [u8; 40],
+    _bytes: [u8; IOU_ISSUE_SIZE],
 }
 
 impl IouIssue {
     pub fn new(issuer: AccountID, currency: Currency) -> Self {
-        let mut bytes = [0u8; 40];
-        bytes[..20].copy_from_slice(currency.as_bytes());
-        bytes[20..].copy_from_slice(&issuer.0);
+        let mut bytes = [0u8; IOU_ISSUE_SIZE];
+        bytes[..CURRENCY_SIZE].copy_from_slice(currency.as_bytes());
+        bytes[CURRENCY_SIZE..].copy_from_slice(&issuer.0);
         Self {
             issuer,
             currency,
@@ -55,7 +64,7 @@ impl IouIssue {
 ///
 /// ## Derived Traits
 ///
-/// - `Copy`: Efficient for this 24-byte struct, enabling implicit copying
+/// - `Copy`: Efficient for this [`MPT_ISSUE_SIZE`]-byte struct, enabling implicit copying
 /// - `PartialEq, Eq`: Enable comparisons
 /// - `Debug, Clone`: Standard traits for development and consistency
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,7 +91,7 @@ impl MptIssue {
 /// - `PartialEq, Eq`: Enable comparisons and use in collections
 /// - `Debug, Clone`: Standard traits for development and consistency
 ///
-/// Note: `Copy` is intentionally not derived because the `IOU` variant is 40 bytes.
+/// Note: `Copy` is intentionally not derived because the `IOU` variant is [`IOU_ISSUE_SIZE`] bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub enum Issue {
@@ -95,7 +104,7 @@ impl Issue {
     pub fn as_bytes(&self) -> &[u8] {
         match self {
             Issue::XRP(_) => {
-                static XRP_BUF: [u8; 20] = [0; 20];
+                static XRP_BUF: [u8; XRP_ISSUE_SIZE] = [0; XRP_ISSUE_SIZE];
                 &XRP_BUF
             }
             Issue::IOU(iou) => iou.as_bytes(),
@@ -107,28 +116,34 @@ impl Issue {
     ///
     /// # Arguments
     ///
-    /// * `buffer` - A 40-byte buffer containing the issue data
+    /// * `buffer` - An [`IOU_ISSUE_SIZE`]-byte buffer containing the issue data
     /// * `len` - The actual number of bytes written to the buffer
     ///
     /// # Returns
     ///
     /// Returns `Result<Issue>` where:
-    /// * `Ok(Issue::XRP(...))` - If len is 20 (XRP issue)
-    /// * `Ok(Issue::MPT(...))` - If len is 24 (MPT issue)
-    /// * `Ok(Issue::IOU(...))` - If len is 40 (IOU issue)
+    /// * `Ok(Issue::XRP(...))` - If len is [`XRP_ISSUE_SIZE`]
+    /// * `Ok(Issue::MPT(...))` - If len is [`MPT_ISSUE_SIZE`]
+    /// * `Ok(Issue::IOU(...))` - If len is [`IOU_ISSUE_SIZE`]
     /// * `Err(Error)` - If len is not one of the expected values
     #[inline]
-    pub fn from_buffer(buffer: [u8; 40], len: usize) -> Result<Self> {
+    pub fn from_buffer(buffer: [u8; IOU_ISSUE_SIZE], len: usize) -> Result<Self> {
         match len {
-            20 => Result::Ok(Issue::XRP(XrpIssue {})),
-            24 => {
-                let mpt_bytes: [u8; 24] = buffer[..24].try_into().unwrap_or([0u8; 24]);
+            XRP_ISSUE_SIZE => Result::Ok(Issue::XRP(XrpIssue {})),
+            MPT_ISSUE_SIZE => {
+                let mpt_bytes: [u8; MPT_ISSUE_SIZE] = buffer[..MPT_ISSUE_SIZE]
+                    .try_into()
+                    .unwrap_or([0u8; MPT_ISSUE_SIZE]);
                 let mpt_id = MptId::from(mpt_bytes);
                 Result::Ok(Issue::MPT(MptIssue::new(mpt_id)))
             }
-            40 => {
-                let currency_bytes: [u8; 20] = buffer[..20].try_into().unwrap_or([0u8; 20]);
-                let issuer_bytes: [u8; 20] = buffer[20..40].try_into().unwrap_or([0u8; 20]);
+            IOU_ISSUE_SIZE => {
+                let currency_bytes: [u8; CURRENCY_SIZE] = buffer[..CURRENCY_SIZE]
+                    .try_into()
+                    .unwrap_or([0u8; CURRENCY_SIZE]);
+                let issuer_bytes: [u8; ACCOUNT_ID_SIZE] = buffer[CURRENCY_SIZE..IOU_ISSUE_SIZE]
+                    .try_into()
+                    .unwrap_or([0u8; ACCOUNT_ID_SIZE]);
                 let currency = Currency::from(currency_bytes);
                 let issuer = AccountID::from(issuer_bytes);
                 Result::Ok(Issue::IOU(IouIssue::new(issuer, currency)))
@@ -139,15 +154,15 @@ impl Issue {
 }
 
 /// `FieldDecoder` for XRPL issues. The host writes a variable number of bytes into the fixed
-/// 40-byte buffer — 20 for XRP, 24 for MPT, 40 for IOU — and the variant is detected from
-/// `bytes_written` (see [`Issue::from_buffer`]); a count that matches none of those is a decode
-/// error.
+/// [`IOU_ISSUE_SIZE`]-byte buffer — [`XRP_ISSUE_SIZE`] for XRP, [`MPT_ISSUE_SIZE`] for MPT,
+/// [`IOU_ISSUE_SIZE`] for IOU — and the variant is detected from `bytes_written` (see
+/// [`Issue::from_buffer`]); a count that matches none of those is a decode error.
 impl FieldDecoder for Issue {
-    type Buffer = [u8; 40];
+    type Buffer = [u8; IOU_ISSUE_SIZE];
 
     #[inline]
     fn empty_buffer() -> Self::Buffer {
-        [0u8; 40]
+        [0u8; IOU_ISSUE_SIZE]
     }
 
     #[inline]
@@ -165,38 +180,46 @@ impl FromLedger for Issue {}
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_iou_issue_size_is_currency_plus_issuer() {
+        assert_eq!(IOU_ISSUE_SIZE, CURRENCY_SIZE + ACCOUNT_ID_SIZE);
+        assert_eq!(IOU_ISSUE_SIZE, 40);
+        assert_eq!(XRP_ISSUE_SIZE, CURRENCY_SIZE);
+        assert_eq!(XRP_ISSUE_SIZE, 20);
+        assert_eq!(MPT_ISSUE_SIZE, MPT_ID_SIZE);
+        assert_eq!(MPT_ISSUE_SIZE, 24);
+    }
+
     // Test IouIssue byte layout
     #[test]
     fn test_iou_issue_creation() {
-        let issuer = AccountID::from([1u8; 20]);
-        let currency = Currency::from([2u8; 20]);
+        let issuer = AccountID::from([1u8; ACCOUNT_ID_SIZE]);
+        let currency = Currency::from([2u8; CURRENCY_SIZE]);
         let iou = IouIssue::new(issuer, currency);
 
         // Verify bytes structure (currency first, then issuer)
         let bytes = iou.as_bytes();
-        assert_eq!(bytes.len(), 40);
-        assert_eq!(&bytes[..20], currency.as_bytes());
-        assert_eq!(&bytes[20..], &issuer.0);
+        assert_eq!(bytes.len(), IOU_ISSUE_SIZE);
+        assert_eq!(&bytes[..CURRENCY_SIZE], currency.as_bytes());
+        assert_eq!(&bytes[CURRENCY_SIZE..], &issuer.0);
     }
 
     #[test]
     fn test_iou_issue_with_standard_currency() {
-        let issuer = AccountID::from([0xAB; 20]);
+        let issuer = AccountID::from([0xAB; ACCOUNT_ID_SIZE]);
         let currency = Currency::from(*b"USD");
         let iou = IouIssue::new(issuer, currency);
 
         let bytes = iou.as_bytes();
-        // First 20 bytes are currency
-        assert_eq!(&bytes[..20], currency.as_bytes());
-        // Last 20 bytes are issuer
-        assert_eq!(&bytes[20..], &issuer.0);
+        assert_eq!(&bytes[..CURRENCY_SIZE], currency.as_bytes());
+        assert_eq!(&bytes[CURRENCY_SIZE..], &issuer.0);
     }
 
     #[test]
     fn test_iou_issue_different_issuers_not_equal() {
-        let issuer1 = AccountID::from([1u8; 20]);
-        let issuer2 = AccountID::from([3u8; 20]);
-        let currency = Currency::from([2u8; 20]);
+        let issuer1 = AccountID::from([1u8; ACCOUNT_ID_SIZE]);
+        let issuer2 = AccountID::from([3u8; ACCOUNT_ID_SIZE]);
+        let currency = Currency::from([2u8; CURRENCY_SIZE]);
 
         let iou1 = IouIssue::new(issuer1, currency);
         let iou2 = IouIssue::new(issuer2, currency);
@@ -207,7 +230,7 @@ mod tests {
     // Test MptIssue accessor
     #[test]
     fn test_mpt_issue_creation() {
-        let issuer = AccountID::from([1u8; 20]);
+        let issuer = AccountID::from([1u8; ACCOUNT_ID_SIZE]);
         let mpt_id = MptId::new(12345, issuer);
         let mpt = MptIssue::new(mpt_id);
 
@@ -217,25 +240,25 @@ mod tests {
     // Test Issue::from_buffer parsing logic
     #[test]
     fn test_issue_from_buffer_xrp() {
-        let buffer = [0u8; 40];
-        let result = Issue::from_buffer(buffer, 20);
+        let buffer = [0u8; IOU_ISSUE_SIZE];
+        let result = Issue::from_buffer(buffer, XRP_ISSUE_SIZE);
         assert!(matches!(result, Result::Ok(Issue::XRP(_))));
     }
 
     #[test]
     fn test_issue_from_buffer_mpt() {
-        // MPT buffer: 4 bytes sequence + 20 bytes issuer = 24 bytes
-        let mut buffer = [0u8; 40];
-        // Set sequence number (first 4 bytes, big-endian)
+        let mut buffer = [0u8; IOU_ISSUE_SIZE];
         buffer[0..4].copy_from_slice(&12345u32.to_be_bytes());
-        // Set issuer (next 20 bytes)
-        buffer[4..24].copy_from_slice(&[0xAB; 20]);
+        buffer[4..MPT_ISSUE_SIZE].copy_from_slice(&[0xAB; ACCOUNT_ID_SIZE]);
 
-        let result = Issue::from_buffer(buffer, 24);
+        let result = Issue::from_buffer(buffer, MPT_ISSUE_SIZE);
         match result {
             Result::Ok(Issue::MPT(mpt)) => {
                 assert_eq!(mpt.mpt_id().get_sequence_num(), 12345);
-                assert_eq!(mpt.mpt_id().get_issuer(), AccountID::from([0xAB; 20]));
+                assert_eq!(
+                    mpt.mpt_id().get_issuer(),
+                    AccountID::from([0xAB; ACCOUNT_ID_SIZE])
+                );
             }
             _ => panic!("Expected MPT issue"),
         }
@@ -243,19 +266,16 @@ mod tests {
 
     #[test]
     fn test_issue_from_buffer_iou() {
-        // IOU buffer: 20 bytes currency + 20 bytes issuer = 40 bytes
-        let mut buffer = [0u8; 40];
-        // Set currency (first 20 bytes)
-        buffer[..20].copy_from_slice(&[0xCC; 20]);
-        // Set issuer (last 20 bytes)
-        buffer[20..40].copy_from_slice(&[0xDD; 20]);
+        let mut buffer = [0u8; IOU_ISSUE_SIZE];
+        buffer[..CURRENCY_SIZE].copy_from_slice(&[0xCC; CURRENCY_SIZE]);
+        buffer[CURRENCY_SIZE..IOU_ISSUE_SIZE].copy_from_slice(&[0xDD; ACCOUNT_ID_SIZE]);
 
-        let result = Issue::from_buffer(buffer, 40);
+        let result = Issue::from_buffer(buffer, IOU_ISSUE_SIZE);
         match result {
             Result::Ok(Issue::IOU(iou)) => {
                 let bytes = iou.as_bytes();
-                assert_eq!(&bytes[..20], &[0xCC; 20]); // currency
-                assert_eq!(&bytes[20..], &[0xDD; 20]); // issuer
+                assert_eq!(&bytes[..CURRENCY_SIZE], &[0xCC; CURRENCY_SIZE]);
+                assert_eq!(&bytes[CURRENCY_SIZE..], &[0xDD; ACCOUNT_ID_SIZE]);
             }
             _ => panic!("Expected IOU issue"),
         }
@@ -264,22 +284,21 @@ mod tests {
     #[test]
     fn test_issue_as_bytes() {
         let xrp = Issue::XRP(XrpIssue {});
-        assert_eq!(xrp.as_bytes(), &[0u8; 20]);
+        assert_eq!(xrp.as_bytes(), &[0u8; XRP_ISSUE_SIZE]);
 
-        let issuer = AccountID::from([0xAA; 20]);
-        let currency = Currency::from([0xBB; 20]);
+        let issuer = AccountID::from([0xAA; ACCOUNT_ID_SIZE]);
+        let currency = Currency::from([0xBB; CURRENCY_SIZE]);
         let iou = Issue::IOU(IouIssue::new(issuer, currency));
-        assert_eq!(iou.as_bytes().len(), 40);
+        assert_eq!(iou.as_bytes().len(), IOU_ISSUE_SIZE);
 
-        let mpt_id = MptId::new(1, AccountID::from([0xCC; 20]));
+        let mpt_id = MptId::new(1, AccountID::from([0xCC; ACCOUNT_ID_SIZE]));
         let mpt = Issue::MPT(MptIssue::new(mpt_id));
         assert_eq!(mpt.as_bytes(), mpt_id.as_bytes());
     }
 
     #[test]
     fn test_issue_from_buffer_invalid_length() {
-        let buffer = [0u8; 40];
-        // Invalid lengths should return error
+        let buffer = [0u8; IOU_ISSUE_SIZE];
         let result = Issue::from_buffer(buffer, 10);
         assert!(matches!(result, Result::Err(_)));
 
