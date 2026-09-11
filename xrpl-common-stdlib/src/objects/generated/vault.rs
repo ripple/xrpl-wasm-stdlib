@@ -55,18 +55,17 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on loan`.
     fn assets_total(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsMaximum)
     }
@@ -100,6 +99,21 @@ pub trait VaultFields: LedgerObjectCommonFields {
     /// The LEVersion field (Optional).
     fn le_version(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LEVersion)
+    }
+
+    /// The VaultKind field (Optional).
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::VaultKind)
+    }
+
+    /// The SubscriptionDate field (Optional).
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SubscriptionDate)
+    }
+
+    /// The RedemptionDate field (Optional).
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::RedemptionDate)
     }
 }
 
@@ -147,18 +161,17 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on loan`.
     fn assets_total(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsMaximum)
     }
@@ -192,6 +205,21 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     /// The LEVersion field (Optional).
     fn le_version(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::LEVersion)
+    }
+
+    /// The VaultKind field (Optional).
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        current_ledger_object::get_field_optional(sfield::VaultKind)
+    }
+
+    /// The SubscriptionDate field (Optional).
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SubscriptionDate)
+    }
+
+    /// The RedemptionDate field (Optional).
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::RedemptionDate)
     }
 }
 
@@ -246,6 +274,9 @@ mod tests {
         assert!(obj.loss_unrealized().is_ok());
         assert!(obj.scale().is_ok());
         assert!(obj.le_version().is_ok());
+        assert!(obj.vault_kind().is_ok());
+        assert!(obj.subscription_date().is_ok());
+        assert!(obj.redemption_date().is_ok());
     }
 
     #[test]
@@ -258,5 +289,8 @@ mod tests {
 
         assert!(obj.scale().unwrap().is_none());
         assert!(obj.le_version().unwrap().is_none());
+        assert!(obj.vault_kind().unwrap().is_none());
+        assert!(obj.subscription_date().unwrap().is_none());
+        assert!(obj.redemption_date().unwrap().is_none());
     }
 }
