@@ -58,7 +58,7 @@ fn add_thousands_separators(s: &str) -> String {
     let mut result = String::new();
     let len = s.len();
     for (i, c) in s.chars().enumerate() {
-        if i > 0 && (len - i) % 3 == 0 && c.is_ascii_digit() {
+        if i > 0 && (len - i).is_multiple_of(3) && c.is_ascii_digit() {
             result.push(',');
         }
         result.push(c);
