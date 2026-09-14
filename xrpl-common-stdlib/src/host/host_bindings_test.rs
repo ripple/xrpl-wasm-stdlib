@@ -145,6 +145,12 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_vault_id()
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_sponsorship_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_loan_broker_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_loan_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
 
     // NFT functions
     mock.expect_nft_uri()
@@ -288,6 +294,9 @@ export_host_functions! {
     fn signers_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn ticket_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn vault_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn sponsorship_id(sponsor_ptr: *const u8, sponsor_len: usize, sponsee_ptr: *const u8, sponsee_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_broker_id(owner_ptr: *const u8, owner_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_id(loan_broker_id_ptr: *const u8, loan_broker_id_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn nft_uri(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
