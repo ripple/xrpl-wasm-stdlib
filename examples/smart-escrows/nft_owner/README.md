@@ -27,7 +27,8 @@ The Rust code demonstrates how to interact with XRPL NFT objects and escrow data
 - `nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult`: Main entry point that determines escrow unlock
   status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL
   host calls.
-- `get_first_memo()`: Extracts the first memo data from the transaction
+- `ctx.tx().first_memo_data()`: Extracts the first memo data from the transaction (an
+  `xrpl-common-stdlib` helper on `TransactionCommonFields`)
 - NFT ownership verification using `nft_uri()` from the XRPL standard library
 
 ## How it Works
