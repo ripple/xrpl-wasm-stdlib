@@ -1,25 +1,12 @@
 async function test(testContext) {
-  const { deploy, finish, submit, sourceWallet, destWallet } = testContext
+  const { deploy, finish, sourceWallet, destWallet, finishEscrow } = testContext
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
-  const tx = {
-    TransactionType: "EscrowFinish",
-    Account: sourceWallet.address,
+  await finishEscrow(testContext, sourceWallet, {
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(escrowResult.sequence),
-    Gas: 1000000,
-  }
-
-  const response = await submit(tx, sourceWallet)
-
-  if (response.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nFailed to finish escrow:",
-      response.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+    OfferSequence: escrowResult.sequence,
+  })
 }
 
 module.exports = { test }
