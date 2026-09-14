@@ -5,10 +5,13 @@
 # xrpl-common-stdlib/src/type_codes.rs from the contract rippled source.
 #
 # Fields are sourced from two rippled branches: escrow-side fields are always
-# taken from the escrow branch (so a rename there is picked up automatically
-# next time this runs), and the contract branch only contributes fields that
-# don't exist on the escrow branch at all (e.g. sfContractCode,
-# sfInstanceParameter*). See tools/generateSFields.js for the merge logic.
+# taken from the escrow branch (so a rename or re-numbering there is picked up
+# automatically next time this runs), and the contract branch only contributes
+# fields escrow doesn't have at all (e.g. sfContractCode, sfInstanceParameter*).
+# Any disagreement -- same-name field with a different (type, ordinal) OR two
+# different fields whose (type, ordinal) collide on the wire code -- is
+# resolved in favor of escrow with a warning; the contract-side entry is
+# dropped. See tools/generateSFields.js for the merge logic.
 # STI_* type codes are contract-only additions on top of escrow's set (no
 # escrow-side losses), so type_codes.rs is generated from the contract
 # source alone.
