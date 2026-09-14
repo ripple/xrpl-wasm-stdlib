@@ -222,6 +222,30 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        pub(super) fn sponsorship_id(
+            sponsor_ptr: *const u8,
+            sponsor_len: usize,
+            sponsee_ptr: *const u8,
+            sponsee_len: usize,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn loan_broker_id(
+            owner_ptr: *const u8,
+            owner_len: usize,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
+        pub(super) fn loan_id(
+            loan_broker_id_ptr: *const u8,
+            loan_broker_id_len: usize,
+            sequence_ptr: *const u8,
+            sequence_len: usize,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
         pub(super) fn nft_uri(
             account_ptr: *const u8,
             account_len: usize,
@@ -909,6 +933,69 @@ impl HostBindings for WasmHostBindings {
         }
     }
 
+    unsafe fn sponsorship_id(
+        &self,
+        sponsor_ptr: *const u8,
+        sponsor_len: usize,
+        sponsee_ptr: *const u8,
+        sponsee_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::sponsorship_id(
+                sponsor_ptr,
+                sponsor_len,
+                sponsee_ptr,
+                sponsee_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn loan_broker_id(
+        &self,
+        owner_ptr: *const u8,
+        owner_len: usize,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::loan_broker_id(
+                owner_ptr,
+                owner_len,
+                sequence_ptr,
+                sequence_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
+    unsafe fn loan_id(
+        &self,
+        loan_broker_id_ptr: *const u8,
+        loan_broker_id_len: usize,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32 {
+        unsafe {
+            host_defined_functions::loan_id(
+                loan_broker_id_ptr,
+                loan_broker_id_len,
+                sequence_ptr,
+                sequence_len,
+                out_buff_ptr,
+                out_buff_len,
+            )
+        }
+    }
+
     unsafe fn nft_uri(
         &self,
         account_ptr: *const u8,
@@ -1310,6 +1397,9 @@ export_host_functions! {
     fn signers_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn ticket_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn vault_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn sponsorship_id(sponsor_ptr: *const u8, sponsor_len: usize, sponsee_ptr: *const u8, sponsee_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_broker_id(owner_ptr: *const u8, owner_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_id(loan_broker_id_ptr: *const u8, loan_broker_id_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn nft_uri(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
