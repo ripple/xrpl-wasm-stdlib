@@ -7,7 +7,6 @@ use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
 use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_common_stdlib::types::nft::{NFT_ID_SIZE, NFToken};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
@@ -22,10 +21,7 @@ use xrpl_macros::smart_escrow;
 /// helper); it is now treated the same as empty, so `escrow_finish` returns `0`
 /// rather than that error code.
 fn get_first_memo(tx: &impl TransactionCommonFields) -> Result<Option<StandardBlob>> {
-    tx.path()
-        .field(sfield::Memos)
-        .index(0)
-        .field(sfield::MemoData)
+    tx.first_memo_data()
         .get_optional::<StandardBlob>()
         .map(|opt| opt.filter(|data| !data.is_empty()))
 }

@@ -66,21 +66,15 @@ pub trait TransactionCommonFields {
 
 `EscrowFinishFields` adds: `get_owner()`, `get_offer_sequence()`, `get_condition()`, `get_fulfillment()` — the Owner/OfferSequence/Condition/Fulfillment identifying which `EscrowCreate` this finish targets.
 
-Variable-length data (Memos, arrays) isn't exposed as a typed method — walk it with `tx.path()`:
+Variable-length data (Memos, arrays) isn't exposed as a typed method — walk it with `tx.path()`, or use `first_memo_data()` for the common `Memos[0].MemoData` case:
 
 ```rust
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::blob::StandardBlob;
 
-let memo = ctx
-    .tx()
-    .path()
-    .field(sfield::Memos)
-    .index(0)
-    .field(sfield::MemoData)
-    .get_optional::<StandardBlob>();
+// Equivalent to tx.path().field(sfield::Memos).index(0).field(sfield::MemoData)
+let memo = ctx.tx().first_memo_data().get_optional::<StandardBlob>();
 ```
 
 ## Reading the escrow being finished — `ctx.escrow()`

@@ -177,26 +177,18 @@ Key idea: every `EscrowFinish` call re-enters this function from scratch — sta
 
 ## 6. Cross-escrow atomic swap — `atomic_swap`
 
-Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `tx.path()` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
+Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `tx.first_memo_data()` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
 
 ```rust
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
-use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 
 // Read Memos[0].MemoData from the current EscrowFinish tx (e.g. the counterpart's ledger entry ID)
-let memo = match ctx
-    .tx()
-    .path()
-    .field(sfield::Memos)
-    .index(0)
-    .field(sfield::MemoData)
-    .get_optional::<StandardBlob>()
-{
+let memo = match ctx.tx().first_memo_data().get_optional::<StandardBlob>() {
     xrpl_common_stdlib::host::Result::Ok(Some(data)) if !data.is_empty() => data,
     _ => return xrpl_escrow_stdlib::FinishResult::reject(),
 };

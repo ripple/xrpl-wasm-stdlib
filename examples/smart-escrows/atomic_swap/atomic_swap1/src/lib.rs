@@ -11,7 +11,6 @@ use xrpl_common_stdlib::host::{Result, Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
-use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::blob::StandardBlob;
 use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
 use xrpl_escrow_stdlib::EscrowFinishContext;
@@ -58,10 +57,7 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 /// helper); it is now treated the same as empty, so `escrow_finish` returns `0`
 /// rather than that error code.
 fn get_first_memo(tx: &impl TransactionCommonFields) -> Result<Option<StandardBlob>> {
-    tx.path()
-        .field(sfield::Memos)
-        .index(0)
-        .field(sfield::MemoData)
+    tx.first_memo_data()
         .get_optional::<StandardBlob>()
         .map(|opt| opt.filter(|data| !data.is_empty()))
 }
