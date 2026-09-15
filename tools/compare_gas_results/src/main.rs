@@ -105,7 +105,7 @@ fn generate_summary_row(contract_name: &str, results: &Results) -> String {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let benchmark_dir: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.benchmark");
+    let benchmark_dir: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.benchmark");
 
     let args: Vec<String> = env::args().skip(1).collect();
     let result_files = get_result_files(&benchmark_dir, &args);
