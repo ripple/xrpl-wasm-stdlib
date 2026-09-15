@@ -5,7 +5,7 @@ members = [
     "xrpl-macros",
     "xrpl-escrow-stdlib",
     "xrpl-stdlib-test-utils",
-    "tools",
+    "tools/compare_gas_results",
 ]
 exclude = [
     "examples",
@@ -18,6 +18,8 @@ repository = "https://github.com/ripple/xrpl-wasm-stdlib"
 
 [workspace.dependencies]
 mockall = "0.15.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [profile.release]
 opt-level = "s"   # Optimize for size
