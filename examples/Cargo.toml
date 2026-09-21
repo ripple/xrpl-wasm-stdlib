@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+# Example contracts only; each member sets `publish = false`.
 members = [
     "smart-escrows/atomic_swap/atomic_swap1",
     "smart-escrows/atomic_swap/atomic_swap2",

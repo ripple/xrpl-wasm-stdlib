@@ -1035,6 +1035,93 @@ pub trait HostBindings {
         out_buff_len: usize,
     ) -> i32;
 
+    /// Computes the Ledger entry ID for a sponsorship entry in a ledger.
+    ///
+    /// # Parameters
+    ///
+    /// - `sponsor_ptr`: A pointer to the memory location of the sponsor accountID.
+    /// - `sponsor_len`: The length of the sponsor accountID.
+    /// - `sponsee_ptr`: A pointer to the memory location of the sponsee accountID.
+    /// - `sponsee_len`: The length of the sponsee accountID.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
+    /// - `out_buff_len`: The length of the output buffer.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes wrote to an output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   ../core/error_codes.rs
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn sponsorship_id(
+        &self,
+        sponsor_ptr: *const u8,
+        sponsor_len: usize,
+        sponsee_ptr: *const u8,
+        sponsee_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Computes the Ledger entry ID for a loan broker entry in a ledger.
+    ///
+    /// # Parameters
+    ///
+    /// - `owner_ptr`: A pointer to the memory location of the owner accountID.
+    /// - `owner_len`: The length of the owner accountID.
+    /// - `sequence_ptr`: A pointer to the memory location of the account sequence number.
+    /// - `sequence_len`: The length of the sequence data.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
+    /// - `out_buff_len`: The length of the output buffer.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes wrote to an output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   ../core/error_codes.rs
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn loan_broker_id(
+        &self,
+        owner_ptr: *const u8,
+        owner_len: usize,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
+    /// Computes the Ledger entry ID for a loan entry in a ledger.
+    ///
+    /// # Parameters
+    ///
+    /// - `loan_broker_id_ptr`: A pointer to the memory location of the 32-byte loan broker id.
+    /// - `loan_broker_id_len`: The length of the loan broker id.
+    /// - `sequence_ptr`: A pointer to the memory location of the loan sequence number.
+    /// - `sequence_len`: The length of the sequence data.
+    /// - `out_buff_ptr`: A pointer to the output buffer where the derived ledger entry ID will be stored.
+    /// - `out_buff_len`: The length of the output buffer.
+    ///
+    /// # Returns
+    ///
+    /// - Returns a positive number of bytes wrote to an output buffer on success
+    /// - Returns a negative error code on failure. The list of error codes is defined in
+    ///   ../core/error_codes.rs
+    ///
+    /// # Safety
+    /// Caller must ensure all pointer parameters point to valid memory
+    unsafe fn loan_id(
+        &self,
+        loan_broker_id_ptr: *const u8,
+        loan_broker_id_len: usize,
+        sequence_ptr: *const u8,
+        sequence_len: usize,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
     // #############################
     // Host Function Category: NFT
     // #############################
