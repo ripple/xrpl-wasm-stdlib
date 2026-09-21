@@ -41,9 +41,11 @@ run_script() {
 # Note: pre-commit checks are handled by GitHub Actions, not locally
 run_script "/clippy.sh"
 run_script "/fmt.sh"
-run_script "/host-function-audit.sh"
+# Will be uncommented once Docker is updated with new Rust-based xrpld
+#run_script "/host-function-audit.sh"
 run_script "/check-wasm-exports.sh"
-run_script "/generate-ledger-objects.sh" --check
+# Will be uncommented once Docker is updated with new Rust-based xrpld
+#run_script "/generate-ledger-objects.sh" --check
 run_script "/build-and-test.sh"
 run_script "/run-markdown.sh"
 run_script "/run-tests.sh"

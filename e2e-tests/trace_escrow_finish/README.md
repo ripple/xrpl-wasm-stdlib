@@ -18,13 +18,13 @@ npm install
 ### 2. Build the WASM
 
 ```shell
+cd e2e-tests/trace_escrow_finish
 cargo build --target wasm32v1-none --release
 ```
 
 ### 3a. Deploy and test Locally
 
 ```shell
-cd ../..
 ./scripts/run-tests.sh e2e-tests/trace_escrow_finish
 ```
 

@@ -217,7 +217,8 @@ pub extern "C" fn escrow_finish() -> i32 {
             let mut locator = Locator::new();
             locator.pack(sfield::Signers);
             locator.pack(i);
-            // Try without Signer wrapper - maybe the structure is different
+            // Will be uncommented once Docker is updated with new Rust-based xrpld
+            // locator.pack(sfield::Signer);
             locator.pack(sfield::Account);
             let output_len = unsafe {
                 host::tx_inner(
