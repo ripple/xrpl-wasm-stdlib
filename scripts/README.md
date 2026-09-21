@@ -38,6 +38,7 @@ You can also run individual test suites:
 - **`run-markdown.sh`** - Execute bash code blocks in Markdown files
 - **`run-tests.sh`** - Run integration tests for examples and end-to-end tests
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
+- **`cargo-deny.sh`** - Check RustSec advisories on the library workspace (requires `cargo-deny`)
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
 
@@ -67,6 +68,9 @@ You can also run individual test suites:
 
 # Generate SField constants from rippled source
 ./scripts/generate-sfields.sh
+
+# Check RustSec advisories (install cargo-deny first)
+./scripts/cargo-deny.sh
 ```
 
 ## Environment Variables
@@ -167,6 +171,7 @@ setup.sh (run first)
     └── ../build.sh (dependency)
 ├── fmt.sh
 ├── host-function-audit.sh (requires Node.js)
+├── cargo-deny.sh (requires cargo-deny; library workspace only; not in run-all.sh while advisory-only)
 └── run-markdown.sh
 ```
 
