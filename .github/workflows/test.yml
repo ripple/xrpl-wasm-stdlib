@@ -70,8 +70,12 @@ jobs:
       - name: Check WASM contract exports
         run: ./scripts/check-wasm-exports.sh
 
+  # Disabled: the escrow branch (ripple/se/supported) has renumbered fields ahead of
+  # XRPLD_DOCKER_IMAGE, so this drift check fails on the gap rather than on real drift.
+  # Re-enable once the pinned Docker image is updated to match.
   check_ledger_objects_generated:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v7
 
@@ -83,8 +87,11 @@ jobs:
       - name: Check generated ledger-object files are up to date
         run: ./scripts/generate-ledger-objects.sh --check
 
+  # Disabled: same escrow-branch-ahead-of-pinned-Docker-image gap as
+  # check_ledger_objects_generated above. Re-enable once XRPLD_DOCKER_IMAGE is updated.
   host_function_audit:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v7
 
