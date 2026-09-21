@@ -91,6 +91,20 @@ jobs:
       - name: Run host function audit
         run: ./scripts/host-function-audit.sh
 
+  # Advisory-only experiment (issue #126). Left out of run-all.sh so contributors
+  # without cargo-deny can still run the local suite. continue-on-error: the first
+  # CI run is informational; flip this job to required after it stays clean.
+  cargo_deny:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+      - name: Check RustSec advisories
+        run: ./scripts/cargo-deny.sh
+
   validate_ui:
     runs-on: ubuntu-latest
     steps:
