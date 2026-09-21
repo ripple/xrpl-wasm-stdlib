@@ -262,8 +262,7 @@ impl NFToken {
 
         match result {
             code if code > 0 => {
-                // Convert big-endian bytes to u32
-                let taxon = u32::from_be_bytes(taxon_buf);
+                let taxon = u32::from_le_bytes(taxon_buf);
                 Result::Ok(taxon)
             }
             code => Result::Err(Error::from_code(code)),
@@ -294,8 +293,7 @@ impl NFToken {
 
         match result {
             code if code > 0 => {
-                // Convert big-endian bytes to u32
-                let serial = u32::from_be_bytes(serial_buf);
+                let serial = u32::from_le_bytes(serial_buf);
                 Result::Ok(serial)
             }
             code => Result::Err(Error::from_code(code)),
@@ -606,17 +604,23 @@ mod tests {
         let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
 
-        // Set up expectations - taxon is a u32 (4 bytes)
+        // Non-palindromic so a byte-order regression changes the decoded value.
+        const TAXON: u32 = 0x0102_0304;
+
+        // Set up expectations - the host writes the taxon as 4 little-endian bytes
         mock.expect_nft_taxon()
             .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
-            .returning(|_, _, _, _| 4);
+            .returning(|_, _, out_buff_ptr, _| {
+                unsafe { out_buff_ptr.copy_from_nonoverlapping(TAXON.to_le_bytes().as_ptr(), 4) }
+                4
+            });
 
         let _guard = setup_mock(mock);
 
         let nft = NFToken::new(nft_id);
         let result = nft.taxon();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0);
+        assert_eq!(result.unwrap(), TAXON);
     }
 
     #[test]
@@ -624,17 +628,23 @@ mod tests {
         let mut mock = MockHostBindings::new();
         let nft_id = [0u8; 32];
 
-        // Set up expectations - serial is a u32 (4 bytes)
+        // Non-palindromic so a byte-order regression changes the decoded value.
+        const SERIAL: u32 = 0x0102_0304;
+
+        // Set up expectations - the host writes the serial as 4 little-endian bytes
         mock.expect_nft_serial()
             .with(always(), eq(NFT_ID_SIZE), always(), eq(4))
-            .returning(|_, _, _, _| 4);
+            .returning(|_, _, out_buff_ptr, _| {
+                unsafe { out_buff_ptr.copy_from_nonoverlapping(SERIAL.to_le_bytes().as_ptr(), 4) }
+                4
+            });
 
         let _guard = setup_mock(mock);
 
         let nft = NFToken::new(nft_id);
         let result = nft.token_sequence();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0);
+        assert_eq!(result.unwrap(), SERIAL);
     }
 
     #[test]
