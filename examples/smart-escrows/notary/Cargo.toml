@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Smart Escrow example that unlocks when the EscrowFinish transaction is signed by a designated notary account"
 license = "ISC"
+publish = false
 
 
 [lib]
