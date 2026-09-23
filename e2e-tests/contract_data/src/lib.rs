@@ -3,23 +3,17 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::host::trace::{trace, trace_num};
-use xrpl_wasm_stdlib::core::types::account_id::AccountID;
 use xrpl_wasm_stdlib::core::data::codec::{
-    get_data, 
-    set_data, 
-    get_nested_data, 
-    set_nested_data, 
-    get_array_element, 
-    set_array_element, 
-    get_nested_array_element, 
-    set_nested_array_element
+    get_array_element, get_data, get_nested_array_element, get_nested_data, set_array_element,
+    set_data, set_nested_array_element, set_nested_data,
 };
+use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::host::trace::{trace, trace_num};
 
 // Different accounts for different test patterns
 const ACCOUNT: [u8; 20] = [
-    0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91, 0x15, 0x47, 
-    0x11, 0x37, 0x6A, 0xFB, 0x0F, 0x89, 0x4F, 0x83, 0x2B, 0x3D
+    0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91, 0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F, 0x89,
+    0x4F, 0x83, 0x2B, 0x3D,
 ];
 
 // ============================================================================
@@ -86,8 +80,8 @@ pub extern "C" fn object_simple_create() -> i32 {
     // Test AccountID
     let _ = trace("Testing AccountID...");
     const DESTINATION: [u8; 20] = [
-        0x05, 0x96, 0x91, 0x5C, 0xFD, 0xEE, 0xE3, 0xA6, 0x95, 0xB3,
-        0xEF, 0xD6, 0xBD, 0xA9, 0xAC, 0x78, 0x8A, 0x36, 0x8B, 0x7B
+        0x05, 0x96, 0x91, 0x5C, 0xFD, 0xEE, 0xE3, 0xA6, 0x95, 0xB3, 0xEF, 0xD6, 0xBD, 0xA9, 0xAC,
+        0x78, 0x8A, 0x36, 0x8B, 0x7B,
     ];
     let destination = AccountID(DESTINATION);
     if let Err(e) = set_data(&account, "destination", destination) {
@@ -117,7 +111,7 @@ pub extern "C" fn object_simple_create() -> i32 {
 pub extern "C" fn object_simple_update() -> i32 {
     let _ = trace("=== TEST 1: Simple Object Update ===");
     let account = AccountID(ACCOUNT);
-    
+
     // Update u8
     let _ = trace("Updating u8 to 99...");
     if let Err(e) = set_data::<u8>(&account, "value_u8", 99) {
@@ -420,7 +414,7 @@ pub extern "C" fn object_with_nested_arrays_create() -> i32 {
     if let Err(e) = set_nested_array_element::<u8>(&account, "nested_array", 1, "field1", 77) {
         return e;
     }
-    
+
     if let Some(val) = get_nested_array_element::<u8>(&account, "nested_array", 0, "field1") {
         let _ = trace_num("Read nested_array[0].field1:", val.into());
     } else {
@@ -442,10 +436,12 @@ pub extern "C" fn object_with_nested_arrays_create() -> i32 {
 
     // Test nested u32 array
     let _ = trace("Testing nested u32 array...");
-    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 0, "value", 5555) {
+    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 0, "value", 5555)
+    {
         return e;
     }
-    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 1, "value", 6666) {
+    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 1, "value", 6666)
+    {
         return e;
     }
     if let Some(val) = get_nested_array_element::<u32>(&account, "nested_array_u32", 0, "value") {
@@ -517,7 +513,8 @@ pub extern "C" fn object_with_nested_arrays_update() -> i32 {
 
     // Update u32 nested array
     let _ = trace("Updating nested_array_u32[1].value to 8888...");
-    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 1, "value", 8888) {
+    if let Err(e) = set_nested_array_element::<u32>(&account, "nested_array_u32", 1, "value", 8888)
+    {
         return e;
     }
     if let Some(val) = get_nested_array_element::<u32>(&account, "nested_array_u32", 1, "value") {

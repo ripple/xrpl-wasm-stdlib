@@ -1,4 +1,4 @@
-const xrpl = require("xrpl")
+const xrpl = require("@transia/xrpl")
 const fs = require("fs")
 const path = require("path")
 
@@ -8,6 +8,7 @@ const client =
     : new xrpl.Client("ws://127.0.0.1:6006")
 
 async function submit(tx, wallet, debug = false) {
+  console.log("Submitting transaction:", JSON.stringify(tx, null, 2))
   const result = await client.submitAndWait(tx, { autofill: true, wallet })
   console.log(
     "SUBMITTED " + tx.TransactionType + "(" + result.result.hash + ")",
@@ -15,6 +16,42 @@ async function submit(tx, wallet, debug = false) {
   if (debug) console.log(result.result ?? result)
   else console.log("Result code: " + result.result?.meta?.TransactionResult)
   return result
+}
+
+// The published codec's definitions lag behind the server (type codes and
+// field numbers differ), so load them from the server and patch the codec's
+// shared lookup tables in place.
+async function loadServerDefinitions() {
+  const codec = require("@transia/ripple-binary-codec")
+  const { result } = await client.request({ command: "server_definitions" })
+  const fresh = new codec.XrplDefinitions(result, codec.coreTypes)
+  const current = codec.DEFAULT_DEFINITIONS
+  for (const key of [
+    "type",
+    "ledgerEntryType",
+    "transactionType",
+    "transactionResult",
+    "field",
+    "delegatablePermissions",
+  ]) {
+    for (const k of Object.keys(current[key])) delete current[key][k]
+    Object.assign(current[key], fresh[key])
+  }
+  current.transactionNames.splice(0, Infinity, ...fresh.transactionNames)
+
+  // autofill adds the old ComputationAllowance field to any ContractCall that
+  // lacks it; the server now calls that field Gas.
+  const autofill = client.autofill.bind(client)
+  client.autofill = async (tx, ...rest) => {
+    if (tx.TransactionType !== "ContractCall" || tx.Gas == null)
+      return autofill(tx, ...rest)
+    const filled = await autofill(
+      { ...tx, ComputationAllowance: tx.Gas },
+      ...rest,
+    )
+    delete filled.ComputationAllowance
+    return filled
+  }
 }
 
 async function fundWallet(wallet = undefined) {
@@ -60,6 +97,7 @@ async function main() {
   try {
     await client.connect()
     console.log("connected")
+    await loadServerDefinitions()
 
     let interval
     if (client.url.includes("localhost") || client.url.includes("127.0.0.1")) {

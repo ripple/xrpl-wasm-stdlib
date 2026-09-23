@@ -12,40 +12,51 @@ mod host_defined_functions {
 
     #[link(wasm_import_module = "host_lib")]
     unsafe extern "C" {
+        #[link_name = "ldgr_index"]
         pub(super) fn get_ledger_sqn(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+        #[link_name = "parent_ldgr_time"]
         pub(super) fn get_parent_ledger_time(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+        #[link_name = "parent_ldgr_hash"]
         pub(super) fn get_parent_ledger_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+        #[link_name = "base_fee"]
         pub(super) fn get_base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
         pub(super) fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
+        #[link_name = "cache_le"]
         pub(super) fn cache_ledger_obj(
             keylet_ptr: *const u8,
             keylet_len: usize,
             cache_num: i32,
         ) -> i32;
+        #[link_name = "tx_field"]
         pub(super) fn get_tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+        #[link_name = "home_le_field"]
         pub(super) fn get_current_ledger_obj_field(
             field: i32,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "le_field"]
         pub(super) fn get_ledger_obj_field(
             cache_num: i32,
             field: i32,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "tx_inner"]
         pub(super) fn get_tx_nested_field(
             locator_ptr: *const u8,
             locator_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "home_le_inner"]
         pub(super) fn get_current_ledger_obj_nested_field(
             locator_ptr: *const u8,
             locator_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "le_inner"]
         pub(super) fn get_ledger_obj_nested_field(
             cache_num: i32,
             locator_ptr: *const u8,
@@ -53,20 +64,28 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "tx_arr_len"]
         pub(super) fn get_tx_array_len(field: i32) -> i32;
+        #[link_name = "home_le_arr_len"]
         pub(super) fn get_current_ledger_obj_array_len(field: i32) -> i32;
+        #[link_name = "le_arr_len"]
         pub(super) fn get_ledger_obj_array_len(cache_num: i32, field: i32) -> i32;
+        #[link_name = "tx_inner_arr_len"]
         pub(super) fn get_tx_nested_array_len(locator_ptr: *const u8, locator_len: usize) -> i32;
+        #[link_name = "home_le_inner_arr_len"]
         pub(super) fn get_current_ledger_obj_nested_array_len(
             locator_ptr: *const u8,
             locator_len: usize,
         ) -> i32;
+        #[link_name = "le_inner_arr_len"]
         pub(super) fn get_ledger_obj_nested_array_len(
             cache_num: i32,
             locator_ptr: *const u8,
             locator_len: usize,
         ) -> i32;
+        #[link_name = "set_data"]
         pub(super) fn update_data(data_ptr: *const u8, data_len: usize) -> i32;
+        #[link_name = "sha512_half"]
         pub(super) fn compute_sha512_half(
             data_ptr: *const u8,
             data_len: usize,
@@ -81,12 +100,14 @@ mod host_defined_functions {
             pubkey_ptr: *const u8,
             pubkey_len: usize,
         ) -> i32;
+        #[link_name = "accountroot_id"]
         pub(super) fn account_keylet(
             account_ptr: *const u8,
             account_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "amm_id"]
         pub(super) fn amm_keylet(
             issue1_ptr: *const u8,
             issue1_len: usize,
@@ -95,6 +116,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "check_id"]
         pub(super) fn check_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -103,6 +125,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "credential_id"]
         pub(super) fn credential_keylet(
             subject_ptr: *const u8,
             subject_len: usize,
@@ -113,6 +136,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "delegate_id"]
         pub(super) fn delegate_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -121,6 +145,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "deposit_preauth_id"]
         pub(super) fn deposit_preauth_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -129,12 +154,14 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "did_id"]
         pub(super) fn did_keylet(
             account_ptr: *const u8,
             account_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "escrow_id"]
         pub(super) fn escrow_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -143,6 +170,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "trustline_id"]
         pub(super) fn line_keylet(
             account1_ptr: *const u8,
             account1_len: usize,
@@ -153,6 +181,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "mpt_issuance_id"]
         pub(super) fn mpt_issuance_keylet(
             issuer_ptr: *const u8,
             issuer_len: usize,
@@ -161,6 +190,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "mptoken_id"]
         pub(super) fn mptoken_keylet(
             mptid_ptr: *const u8,
             mptid_len: usize,
@@ -169,6 +199,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "nft_offer_id"]
         pub(super) fn nft_offer_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -177,6 +208,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "offer_id"]
         pub(super) fn offer_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -185,6 +217,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "oracle_id"]
         pub(super) fn oracle_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -193,6 +226,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "paychan_id"]
         pub(super) fn paychan_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -203,6 +237,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "permissioned_domain_id"]
         pub(super) fn permissioned_domain_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -211,12 +246,14 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "signers_id"]
         pub(super) fn signers_keylet(
             account_ptr: *const u8,
             account_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "ticket_id"]
         pub(super) fn ticket_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -225,6 +262,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "vault_id"]
         pub(super) fn vault_keylet(
             account_ptr: *const u8,
             account_len: usize,
@@ -233,6 +271,7 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "nft_uri"]
         pub(super) fn get_nft(
             account_ptr: *const u8,
             account_len: usize,
@@ -241,20 +280,25 @@ mod host_defined_functions {
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "nft_issuer"]
         pub(super) fn get_nft_issuer(
             nft_id_ptr: *const u8,
             nft_id_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "nft_taxon"]
         pub(super) fn get_nft_taxon(
             nft_id_ptr: *const u8,
             nft_id_len: usize,
             out_buff_ptr: *mut u8,
             out_buff_len: usize,
         ) -> i32;
+        #[link_name = "nft_flags"]
         pub(super) fn get_nft_flags(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+        #[link_name = "nft_xfer_fee"]
         pub(super) fn get_nft_transfer_fee(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
+        #[link_name = "nft_serial"]
         pub(super) fn get_nft_serial(
             nft_id_ptr: *const u8,
             nft_id_len: usize,
@@ -274,13 +318,15 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        #[link_name = "float_from_mant_exp"]
         pub(super) fn float_set(
-            exponent: i32,
             mantissa: i64,
+            exponent: i32,
             out_buff: *mut u8,
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        #[link_name = "float_cmp"]
         pub(super) fn float_compare(
             in_buff1: *const u8,
             in_buff1_len: usize,
@@ -296,6 +342,7 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        #[link_name = "float_sub"]
         pub(super) fn float_subtract(
             in_buff1: *const u8,
             in_buff1_len: usize,
@@ -305,6 +352,7 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        #[link_name = "float_mult"]
         pub(super) fn float_multiply(
             in_buff1: *const u8,
             in_buff1_len: usize,
@@ -314,6 +362,7 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
+        #[link_name = "float_div"]
         pub(super) fn float_divide(
             in_buff1: *const u8,
             in_buff1_len: usize,
@@ -331,47 +380,13 @@ mod host_defined_functions {
             out_buff_len: usize,
             rounding_mode: i32,
         ) -> i32;
-        pub(super) fn float_root(
-            in_buff: *const u8,
-            in_buff_len: usize,
-            root: i32,
-            out_buff: *mut u8,
-            out_buff_len: usize,
-            rounding_mode: i32,
-        ) -> i32;
-        pub(super) fn float_log(
-            in_buff: *const u8,
-            in_buff_len: usize,
-            out_buff: *mut u8,
-            out_buff_len: usize,
-            rounding_mode: i32,
-        ) -> i32;
         pub(super) fn trace(
             msg_read_ptr: *const u8,
             msg_read_len: usize,
+            data_type: i32,
             data_read_ptr: *const u8,
             data_read_len: usize,
-            as_hex: i32,
-        ) -> i32;
-        pub(super) fn trace_num(msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32;
-        pub(super) fn trace_account(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            account_ptr: *const u8,
-            account_len: usize,
-        ) -> i32;
-        pub(super) fn trace_opaque_float(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            opaque_float_ptr: *const u8,
-            opaque_float_len: usize,
-        ) -> i32;
-        pub(super) fn trace_amount(
-            msg_read_ptr: *const u8,
-            msg_read_len: usize,
-            amount_ptr: *const u8,
-            amount_len: usize,
-        ) -> i32;
+        );
         pub(super) fn instance_param(
             index: i32,
             st_type_id: i32,
@@ -467,8 +482,14 @@ mod host_defined_functions {
             write_ptr: *const u8,
             write_len: usize,
         ) -> i32;
-        pub(super) fn emit_built_txn(index: i32) -> i32;
-        pub(super) fn emit_txn(txn_read_ptr: *const u8, txn_read_len: usize) -> i32;
+        pub(super) fn emit_built_txn(index: i32, out_buff_ptr: *mut u8, out_buff_len: usize)
+        -> i32;
+        pub(super) fn emit_txn(
+            txn_read_ptr: *const u8,
+            txn_read_len: usize,
+            out_buff_ptr: *mut u8,
+            out_buff_len: usize,
+        ) -> i32;
         pub(super) fn emit_event(
             name_ptr: *const u8,
             name_len: usize,
@@ -476,6 +497,29 @@ mod host_defined_functions {
             data_len: usize,
         ) -> i32;
     }
+}
+
+// `TraceDataType` codes from xrpld's host ABI.
+const TRACE_INT64: i32 = 1;
+const TRACE_XFLOAT: i32 = 3;
+const TRACE_ACCOUNT: i32 = 4;
+const TRACE_AMOUNT: i32 = 5;
+const TRACE_AS_HEX: i32 = 6;
+const TRACE_AS_TEXT: i32 = 7;
+
+/// `HostError::Unimplemented`, for functions xrpld no longer provides.
+const HOST_UNIMPLEMENTED: i32 = -1;
+
+/// xrpld has one `trace` import that takes a data type and returns nothing.
+unsafe fn trace_typed(
+    msg_ptr: *const u8,
+    msg_len: usize,
+    data_type: i32,
+    data_ptr: *const u8,
+    data_len: usize,
+) -> i32 {
+    unsafe { host_defined_functions::trace(msg_ptr, msg_len, data_type, data_ptr, data_len) };
+    0
 }
 
 /// Implementation of host bindings for WASM targets.
@@ -1198,8 +1242,8 @@ impl HostBindings for WasmHostBindings {
     ) -> i32 {
         unsafe {
             host_defined_functions::float_set(
-                exponent,
                 mantissa,
+                exponent,
                 out_buff,
                 out_buff_len,
                 rounding_mode,
@@ -1341,16 +1385,15 @@ impl HostBindings for WasmHostBindings {
         out_buff_len: usize,
         rounding_mode: i32,
     ) -> i32 {
-        unsafe {
-            host_defined_functions::float_root(
-                in_buff,
-                in_buff_len,
-                root,
-                out_buff,
-                out_buff_len,
-                rounding_mode,
-            )
-        }
+        let _ = (
+            in_buff,
+            in_buff_len,
+            root,
+            out_buff,
+            out_buff_len,
+            rounding_mode,
+        );
+        HOST_UNIMPLEMENTED
     }
 
     unsafe fn float_log(
@@ -1361,15 +1404,8 @@ impl HostBindings for WasmHostBindings {
         out_buff_len: usize,
         rounding_mode: i32,
     ) -> i32 {
-        unsafe {
-            host_defined_functions::float_log(
-                in_buff,
-                in_buff_len,
-                out_buff,
-                out_buff_len,
-                rounding_mode,
-            )
-        }
+        let _ = (in_buff, in_buff_len, out_buff, out_buff_len, rounding_mode);
+        HOST_UNIMPLEMENTED
     }
 
     unsafe fn trace(
@@ -1380,19 +1416,33 @@ impl HostBindings for WasmHostBindings {
         data_read_len: usize,
         as_hex: i32,
     ) -> i32 {
+        let data_type = if as_hex != 0 {
+            TRACE_AS_HEX
+        } else {
+            TRACE_AS_TEXT
+        };
         unsafe {
-            host_defined_functions::trace(
+            trace_typed(
                 msg_read_ptr,
                 msg_read_len,
+                data_type,
                 data_read_ptr,
                 data_read_len,
-                as_hex,
             )
         }
     }
 
     unsafe fn trace_num(&self, msg_read_ptr: *const u8, msg_read_len: usize, number: i64) -> i32 {
-        unsafe { host_defined_functions::trace_num(msg_read_ptr, msg_read_len, number) }
+        let bytes = number.to_le_bytes();
+        unsafe {
+            trace_typed(
+                msg_read_ptr,
+                msg_read_len,
+                TRACE_INT64,
+                bytes.as_ptr(),
+                bytes.len(),
+            )
+        }
     }
 
     unsafe fn trace_account(
@@ -1403,9 +1453,10 @@ impl HostBindings for WasmHostBindings {
         account_len: usize,
     ) -> i32 {
         unsafe {
-            host_defined_functions::trace_account(
+            trace_typed(
                 msg_read_ptr,
                 msg_read_len,
+                TRACE_ACCOUNT,
                 account_ptr,
                 account_len,
             )
@@ -1420,9 +1471,10 @@ impl HostBindings for WasmHostBindings {
         opaque_float_len: usize,
     ) -> i32 {
         unsafe {
-            host_defined_functions::trace_opaque_float(
+            trace_typed(
                 msg_read_ptr,
                 msg_read_len,
+                TRACE_XFLOAT,
                 opaque_float_ptr,
                 opaque_float_len,
             )
@@ -1437,7 +1489,13 @@ impl HostBindings for WasmHostBindings {
         amount_len: usize,
     ) -> i32 {
         unsafe {
-            host_defined_functions::trace_amount(msg_read_ptr, msg_read_len, amount_ptr, amount_len)
+            trace_typed(
+                msg_read_ptr,
+                msg_read_len,
+                TRACE_AMOUNT,
+                amount_ptr,
+                amount_len,
+            )
         }
     }
 
@@ -1672,11 +1730,31 @@ impl HostBindings for WasmHostBindings {
     }
 
     unsafe fn emit_built_txn(&self, index: i32) -> i32 {
-        unsafe { host_defined_functions::emit_built_txn(index) }
+        let mut ter = [0u8; 4];
+        let len =
+            unsafe { host_defined_functions::emit_built_txn(index, ter.as_mut_ptr(), ter.len()) };
+        if len < 0 {
+            len
+        } else {
+            i32::from_le_bytes(ter)
+        }
     }
 
     unsafe fn emit_txn(&self, txn_read_ptr: *const u8, txn_read_len: usize) -> i32 {
-        unsafe { host_defined_functions::emit_txn(txn_read_ptr, txn_read_len) }
+        let mut ter = [0u8; 4];
+        let len = unsafe {
+            host_defined_functions::emit_txn(
+                txn_read_ptr,
+                txn_read_len,
+                ter.as_mut_ptr(),
+                ter.len(),
+            )
+        };
+        if len < 0 {
+            len
+        } else {
+            i32::from_le_bytes(ter)
+        }
     }
 
     unsafe fn emit_event(

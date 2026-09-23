@@ -7,9 +7,9 @@ use xrpl_wasm_stdlib::core::current_tx::contract_call::{ContractCall, get_curren
 use xrpl_wasm_stdlib::core::current_tx::traits::TransactionCommonFields;
 use xrpl_wasm_stdlib::core::submit::inner_objects::build_memo;
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
+use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
 use xrpl_wasm_stdlib::host::{add_txn_field, build_txn, emit_built_txn};
 use xrpl_wasm_stdlib::sfield;
-use xrpl_wasm_stdlib::core::types::transaction_type::TransactionType;
 
 // ============================================================================
 // Constants
@@ -36,78 +36,80 @@ mod buffer_sizes {
 // ============================================================================
 
 /// Builds a complete memos array from individual memo buffers
-/// 
+///
 /// # Arguments
 /// * `buffer` - Output buffer for the complete memos array
 /// * `memo_buffers` - Slice of memo data and their lengths
-/// 
+///
 /// # Returns
 /// Total length of the memos array including the end marker
 fn build_memos_array(
     buffer: &mut [u8; buffer_sizes::MEMOS_ARRAY],
-    memo_buffers: &[(&[u8], usize)]
+    memo_buffers: &[(&[u8], usize)],
 ) -> usize {
     let mut position = 0;
-    
+
     // Copy each memo into the array
     for (memo_data, memo_length) in memo_buffers {
         buffer[position..position + memo_length].copy_from_slice(&memo_data[..*memo_length]);
         position += memo_length;
     }
-    
+
     // Terminate the array
     buffer[position] = markers::ARRAY_END;
     position + 1
 }
 
 /// Adds the amount field to the transaction
-/// 
+///
 /// # Arguments
 /// * `txn_index` - Transaction builder index
 /// * `amount_drops` - Amount in drops (192 in this example)
-/// 
+///
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_amount_field(txn_index: i32) -> i32 {
     // 192 drops encoded as XRPL Amount
-    const AMOUNT_BYTES: [u8; 8] = [
-        0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0
-    ];
-    
-    unsafe { add_txn_field(
-        txn_index,
-        sfield::Amount.into(),
-        AMOUNT_BYTES.as_ptr(),
-        AMOUNT_BYTES.len()
-    ) }
+    const AMOUNT_BYTES: [u8; 8] = [0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0];
+
+    unsafe {
+        add_txn_field(
+            txn_index,
+            sfield::Amount.into(),
+            AMOUNT_BYTES.as_ptr(),
+            AMOUNT_BYTES.len(),
+        )
+    }
 }
 
 /// Adds the destination field to the transaction
-/// 
+///
 /// # Arguments
 /// * `txn_index` - Transaction builder index
 /// * `destination` - Destination account ID
-/// 
+///
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_destination_field(txn_index: i32, destination: &AccountID) -> i32 {
     let mut dest_buffer = [0u8; buffer_sizes::DESTINATION];
     dest_buffer[0] = 0x14; // Length prefix for 20-byte account
     dest_buffer[1..21].copy_from_slice(&destination.0);
-    
-    unsafe { add_txn_field(
-        txn_index,
-        sfield::Destination.into(),
-        dest_buffer.as_ptr(),
-        dest_buffer.len()
-    ) }
+
+    unsafe {
+        add_txn_field(
+            txn_index,
+            sfield::Destination.into(),
+            dest_buffer.as_ptr(),
+            dest_buffer.len(),
+        )
+    }
 }
 
 /// Adds the memos field to the transaction
-/// 
+///
 /// # Arguments
 /// * `txn_index` - Transaction builder index
-/// 
+///
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_memos_field(txn_index: i32) -> i32 {
@@ -130,7 +132,7 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
         unsafe { at(base, pos) },
         Some(b"invoice"),
         Some(b"INV-2024-001"),
-        Some(b"text/plain")
+        Some(b"text/plain"),
     );
     pos += len1;
 
@@ -138,7 +140,7 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
         unsafe { at(base, pos) },
         Some(b"note"),
         Some(b"Payment for consulting services"),
-        Some(b"text/plain")
+        Some(b"text/plain"),
     );
     pos += len2;
 
@@ -146,20 +148,17 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
         unsafe { at(base, pos) },
         None,
         Some(b"Additional reference: Project Alpha"),
-        None
+        None,
     );
     pos += len3;
 
     // Terminate the array
-    unsafe { *base.add(pos) = markers::ARRAY_END; }
+    unsafe {
+        *base.add(pos) = markers::ARRAY_END;
+    }
     pos += 1;
 
-    unsafe { add_txn_field(
-        txn_index,
-        sfield::Memos.into(),
-        base,
-        pos
-    ) }
+    unsafe { add_txn_field(txn_index, sfield::Memos.into(), base, pos) }
 }
 
 // ============================================================================
@@ -167,13 +166,13 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
 // ============================================================================
 
 /// Main hook function that builds and emits a payment transaction with memos
-/// 
+///
 /// This function:
 /// 1. Retrieves the current contract call context
 /// 2. Builds a payment transaction
 /// 3. Adds amount, destination, and memos fields
 /// 4. Emits the completed transaction
-/// 
+///
 /// # Returns
 /// - 0 on success
 /// - Negative error code on failure

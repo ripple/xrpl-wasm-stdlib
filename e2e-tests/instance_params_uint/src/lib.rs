@@ -4,16 +4,16 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_num};
-use xrpl_wasm_stdlib::host::{instance_param};
-use xrpl_wasm_stdlib::core::params::instance::{get_instance_param};
+use xrpl_wasm_stdlib::core::params::instance::get_instance_param;
 use xrpl_wasm_stdlib::core::type_codes::{
-    STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64, STI_UINT128, 
-    STI_UINT160, STI_UINT192, STI_UINT256
+    STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64, STI_UINT128, STI_UINT160, STI_UINT192,
+    STI_UINT256,
 };
 use xrpl_wasm_stdlib::core::types::uint::Hash160;
 use xrpl_wasm_stdlib::core::types::uint::Hash192;
 use xrpl_wasm_stdlib::core::types::uint::Hash256;
+use xrpl_wasm_stdlib::host::instance_param;
+use xrpl_wasm_stdlib::host::trace::{DataRepr, trace, trace_data, trace_num};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn instance_params_uint() -> i32 {
@@ -32,7 +32,7 @@ pub extern "C" fn instance_params_uint() -> i32 {
     // TODO: replace with require
     if value != 255 {
         let _ = trace("UINT8 Parameter Error: Invalid Value");
-        return -1; 
+        return -1;
     }
 
     // UINT16
@@ -51,9 +51,9 @@ pub extern "C" fn instance_params_uint() -> i32 {
     // TODO: replace with require
     if value != 65535 {
         let _ = trace("UINT16 Parameter Error: Invalid Value");
-        return -1; 
+        return -1;
     }
-    
+
     // UINT32
     let value = match get_instance_param::<u32>(2) {
         Ok(a) => a,
@@ -104,7 +104,12 @@ pub extern "C" fn instance_params_uint() -> i32 {
     let _ = trace_data("UINT128 Hex:", &buf, DataRepr::AsHex);
 
     // TODO: replace with require
-    if buf != [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01] {
+    if buf
+        != [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01,
+        ]
+    {
         let _ = trace("UINT128 Parameter Error: Invalid Value");
         return -1;
     }
@@ -123,7 +128,8 @@ pub extern "C" fn instance_params_uint() -> i32 {
 
     // TODO: replace with require
     let expected190: [u8; 20] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected190 {
         let _ = trace("UINT160 Parameter Error: Invalid Value");
@@ -144,7 +150,8 @@ pub extern "C" fn instance_params_uint() -> i32 {
 
     // TODO: replace with require
     let expected192: [u8; 24] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected192 {
         let _ = trace("UINT192 Parameter Error: Invalid Value");
@@ -165,10 +172,9 @@ pub extern "C" fn instance_params_uint() -> i32 {
 
     // TODO: replace with require
     let expected256: [u8; 32] = [
-        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0,
-        0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F, 0xC8,
-        0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10,
-        0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90, 0x2C, 0x25
+        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0, 0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F,
+        0xC8, 0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10, 0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90,
+        0x2C, 0x25,
     ];
     if *buf != expected256 {
         let _ = trace("UINT256 Parameter Error: Invalid Value");

@@ -1,4 +1,4 @@
-const xrpl = require("xrpl")
+const xrpl = require("@transia/xrpl")
 
 const oracleWallet = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
   algorithm: xrpl.ECDSA.secp256k1,

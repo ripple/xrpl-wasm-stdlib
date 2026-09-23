@@ -70,6 +70,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "erc20"
+version = "1.0.0"
+dependencies = [
+ "xrpl-wasm-stdlib",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

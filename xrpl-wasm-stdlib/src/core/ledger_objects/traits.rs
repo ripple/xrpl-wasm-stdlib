@@ -187,7 +187,7 @@ pub trait CurrentEscrowFields: CurrentLedgerObjectCommonFields {
 
     /// The WASM code that is executing.
     fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
-        current_ledger_object::get_field_optional(sfield::FinishFunction)
+        current_ledger_object::get_field_optional(sfield::Bytecode)
     }
 
     /// Retrieves the contract `data` from the current escrow object.
@@ -355,7 +355,7 @@ pub trait EscrowFields: LedgerObjectCommonFields {
 
     /// The WASM code that is executing.
     fn get_finish_function(&self) -> Result<Option<StandardBlob>> {
-        ledger_object::get_field_optional(self.get_slot_num(), sfield::FinishFunction)
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::Bytecode)
     }
 
     /// Retrieves the contract data from the specified ledger object.
@@ -1036,7 +1036,7 @@ mod tests {
             // get_source_tag
             expect_current_field(&mut mock, sfield::SourceTag, 4, 1);
             // get_finish_function - StandardBlob uses 1024 bytes
-            expect_current_field(&mut mock, sfield::FinishFunction, 1024, 1);
+            expect_current_field(&mut mock, sfield::Bytecode, 1024, 1);
 
             let _guard = setup_mock(mock);
 
@@ -1088,7 +1088,7 @@ mod tests {
                 .returning(|_, _, _| FIELD_NOT_FOUND);
             // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
             mock.expect_get_current_ledger_obj_field()
-                .with(eq(sfield::FinishFunction), always(), eq(1024))
+                .with(eq(sfield::Bytecode), always(), eq(1024))
                 .times(1)
                 .returning(|_, _, _| 0);
 
@@ -1222,7 +1222,7 @@ mod tests {
             // get_source_tag
             expect_ledger_field(&mut mock, 1, sfield::SourceTag, 4, 1);
             // get_finish_function - StandardBlob uses 1024 bytes
-            expect_ledger_field(&mut mock, 1, sfield::FinishFunction, 1024, 1);
+            expect_ledger_field(&mut mock, 1, sfield::Bytecode, 1024, 1);
 
             let _guard = setup_mock(mock);
 
@@ -1274,7 +1274,7 @@ mod tests {
                 .returning(|_, _, _, _| FIELD_NOT_FOUND);
             // get_finish_function - variable size field, returns 0 for empty (Some with len=0) - StandardBlob uses 1024 bytes
             mock.expect_get_ledger_obj_field()
-                .with(eq(1), eq(sfield::FinishFunction), always(), eq(1024))
+                .with(eq(1), eq(sfield::Bytecode), always(), eq(1024))
                 .times(1)
                 .returning(|_, _, _, _| 0);
 

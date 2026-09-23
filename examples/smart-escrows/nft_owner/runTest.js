@@ -1,4 +1,4 @@
-const xrpl = require("xrpl")
+const xrpl = require("@transia/xrpl")
 
 async function test(testContext) {
   const { deploy, finish, client, submit, sourceWallet, destWallet } =

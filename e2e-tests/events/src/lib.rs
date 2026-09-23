@@ -3,10 +3,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
+use xrpl_wasm_stdlib::core::event::codec_v3::{EventBuffer, event_add};
 use xrpl_wasm_stdlib::core::types::account_id::AccountID;
-use xrpl_wasm_stdlib::core::event::codec_v3::{
-    EventBuffer, event_add
-};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn events() -> i32 {
@@ -33,9 +31,8 @@ pub extern "C" fn events() -> i32 {
 
     // STI_ACCOUNT
     const ACCOUNT: [u8; 20] = [
-        0x59, 0x69, 0x15, 0xCF, 0xDE, 0xEE, 0x3A, 0x69,
-        0x5B, 0x3E, 0xFD, 0x6B, 0xDA, 0x9A, 0xC7, 0x88,
-        0xA3, 0x68, 0xB7, 0xB
+        0x59, 0x69, 0x15, 0xCF, 0xDE, 0xEE, 0x3A, 0x69, 0x5B, 0x3E, 0xFD, 0x6B, 0xDA, 0x9A, 0xC7,
+        0x88, 0xA3, 0x68, 0xB7, 0xB,
     ];
     let account = AccountID(ACCOUNT);
     if event_add::<AccountID>(&mut buf, "destination", &account).is_err() {
@@ -90,7 +87,7 @@ pub extern "C" fn events() -> i32 {
     // STI_ISSUE (XRP)
     // STI_ISSUE (IOU)
     // STI_ISSUE (MPT)
-    
+
     if buf.emit("event1").is_err() {
         return -1;
     }
