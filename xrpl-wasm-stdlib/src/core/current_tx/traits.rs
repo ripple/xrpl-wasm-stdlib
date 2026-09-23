@@ -98,7 +98,7 @@ pub trait TransactionCommonFields {
     /// * `Ok(u32)` - The computation allowance value in platform-defined units
     /// * `Err(Error)` - If the field cannot be retrieved or has an unexpected size
     fn get_computation_allowance(&self) -> Result<u32> {
-        get_field(sfield::ComputationAllowance)
+        get_field(sfield::Gas)
     }
 
     /// Retrieves the fee amount from the current transaction.
@@ -1045,7 +1045,7 @@ mod tests {
                 // get_transaction_type
                 expect_tx_field(&mut mock, sfield::TransactionType, 2, 1);
                 // get_computation_allowance
-                expect_tx_field(&mut mock, sfield::ComputationAllowance, 4, 1);
+                expect_tx_field(&mut mock, sfield::Gas, 4, 1);
                 // get_fee
                 expect_tx_field(&mut mock, sfield::Fee, AMOUNT_SIZE, 1);
                 // get_sequence
@@ -1085,7 +1085,7 @@ mod tests {
                     .returning(|_, _, _| 0);
                 // get_computation_allowance - returns 0 (zero length)
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| 0);
                 // get_fee - returns 0 (zero length)
@@ -1149,7 +1149,7 @@ mod tests {
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_computation_allowance
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| FIELD_NOT_FOUND);
                 // get_fee
@@ -1218,7 +1218,7 @@ mod tests {
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_computation_allowance
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INTERNAL_ERROR);
                 // get_fee
@@ -1287,7 +1287,7 @@ mod tests {
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_computation_allowance
                 mock.expect_get_tx_field()
-                    .with(eq(sfield::ComputationAllowance), always(), eq(4))
+                    .with(eq(sfield::Gas), always(), eq(4))
                     .times(1)
                     .returning(|_, _, _| INVALID_FIELD);
                 // get_fee

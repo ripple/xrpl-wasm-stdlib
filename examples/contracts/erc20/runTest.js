@@ -273,7 +273,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("init"),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Fee: "10000000",
     Parameters: [
       {
@@ -381,7 +381,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("mint"),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Fee: "10000000",
     Parameters: [
       {
@@ -422,7 +422,7 @@ async function test(testContext) {
     Account: destWallet.address,
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("approve"),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Fee: "10000000",
     Parameters: [
       {
@@ -483,7 +483,7 @@ async function test(testContext) {
     Account: sourceWallet.address,
     ContractAccount: contractAccount,
     FunctionName: xrpl.convertStringToHex("transfer_from"),
-    ComputationAllowance: 1000000,
+    Gas: 1000000,
     Fee: "10000000",
     Parameters: [
       {
