@@ -1,0 +1,125 @@
+# Advisory (never blocks PRs): once a week, regenerate every xrpld-derived
+# file against the upstream branch HEADs instead of the pinned commits in
+# test.yml, and file/update a GitHub issue if anything drifted. Fixing it means
+# bumping XRPLD_DOCKER_IMAGE / XRPLD_CONTRACT_COMMIT in test.yml, rerunning the
+# three scripts/generate-*.sh, and committing.
+#
+# Each check exits 0 (up to date), 1 (drift), or 2 (generator failed: network,
+# upstream branch renamed, parser broken). Only real drift files an issue; a
+# generator failure just fails the run so a transient outage never asks a
+# maintainer to bump pins for nothing.
+name: Upstream xrpld drift
+
+permissions:
+  contents: read
+  issues: write
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+  workflow_dispatch:
+
+env:
+  # Branch HEADs, overriding the pins scripts/lib/xrpld-pins.sh would otherwise use.
+  XRPLD_ESCROW_REF: ripple/se/supported
+  XRPLD_CONTRACT_REF: xrplf/smart-contracts
+  ISSUE_LABEL: upstream-drift
+  ISSUE_TITLE: "xrpld upstream drift: generated files need regeneration"
+
+jobs:
+  check_upstream_drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Use Node.js v24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      # Each check records its exit code instead of failing the step, so the
+      # report step below can tell drift (1) from a generator error (2).
+      - name: sfield.rs / type_codes.rs vs upstream
+        id: sfields
+        run: |
+          rc=0; ./scripts/generate-sfields.sh --check || rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: tx_flags.rs vs upstream
+        id: tx_flags
+        run: |
+          rc=0; ./scripts/generate-tx-flags.sh --check || rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: objects/generated/ vs upstream
+        id: ledger_objects
+        run: |
+          rc=0; ./scripts/generate-ledger-objects.sh --check || rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Report (open/update/close the drift issue)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RC_SFIELDS: ${{ steps.sfields.outputs.rc }}
+          RC_TX_FLAGS: ${{ steps.tx_flags.outputs.rc }}
+          RC_LEDGER_OBJECTS: ${{ steps.ledger_objects.outputs.rc }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          label() {
+            case "$1" in
+              0) echo "✅ up to date" ;;
+              1) echo "❌ drift" ;;
+              *) echo "⚠️ generator error (exit $1)" ;;
+            esac
+          }
+          drift=0; error=0
+          for rc in "$RC_SFIELDS" "$RC_TX_FLAGS" "$RC_LEDGER_OBJECTS"; do
+            [[ "$rc" == "1" ]] && drift=1
+            [[ "$rc" != "0" && "$rc" != "1" ]] && error=1
+          done
+
+          existing="$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number')"
+
+          if [[ "$drift" -eq 1 ]]; then
+            gh label create "$ISSUE_LABEL" --force \
+              --description "Generated files have drifted from xrpld upstream branch HEADs" \
+              --color D93F0B
+
+            body="$(cat <<EOF
+          The weekly upstream drift check found that regenerating against xrpld branch HEADs
+          (\`$XRPLD_ESCROW_REF\` / \`$XRPLD_CONTRACT_REF\`) no longer matches the checked-in generated files.
+          PR CI is still green because it pins to the commits in \`.github/workflows/test.yml\`.
+
+          | Generator | Result |
+          | --- | --- |
+          | \`generate-sfields.sh\` (sfield.rs, type_codes.rs) | $(label "$RC_SFIELDS") |
+          | \`generate-tx-flags.sh\` (tx_flags.rs) | $(label "$RC_TX_FLAGS") |
+          | \`generate-ledger-objects.sh\` (objects/generated/) | $(label "$RC_LEDGER_OBJECTS") |
+
+          Diffs are in the run log: $RUN_URL
+
+          **To resolve:** bump \`XRPLD_DOCKER_IMAGE\` (needs a \`rippleci/xrpld\` image for the new
+          \`ripple/se/supported\` commit) and \`XRPLD_CONTRACT_COMMIT\` in \`test.yml\`, run the three
+          \`./scripts/generate-*.sh\`, review the diff, and commit. This issue is closed automatically
+          by the next clean run.
+          EOF
+          )"
+
+            if [[ -n "$existing" ]]; then
+              gh issue comment "$existing" --body "$body"
+              echo "Updated existing issue #$existing"
+            else
+              gh issue create --title "$ISSUE_TITLE" --label "$ISSUE_LABEL" --body "$body"
+            fi
+            exit 1
+          fi
+
+          if [[ "$error" -eq 1 ]]; then
+            echo "::error::A generator failed (sfields=$RC_SFIELDS tx_flags=$RC_TX_FLAGS ledger_objects=$RC_LEDGER_OBJECTS); see the step logs. No drift issue filed."
+            exit 1
+          fi
+
+          if [[ -n "$existing" ]]; then
+            gh issue close "$existing" --comment "Upstream drift check is clean again: $RUN_URL"
+          fi
+          echo "Generated files match upstream branch HEADs."

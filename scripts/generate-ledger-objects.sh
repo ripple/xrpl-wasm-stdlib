@@ -20,9 +20,13 @@
 #   ./scripts/generate-ledger-objects.sh [rippled-source] [output-root]
 #   ./scripts/generate-ledger-objects.sh --check [rippled-source]
 #
-# With --check, the files are regenerated into a temp copy and diffed against what's
-# committed; the script fails on any drift and leaves the working tree unchanged. This
-# is the CI drift gate (run by run-all.sh and the GitHub Actions workflow).
+# The rippled source defaults to the commit CI pins (the XRPLD_DOCKER_IMAGE tag in
+# .github/workflows/test.yml, resolved by scripts/lib/xrpld-pins.sh). Override it
+# with the first argument, or XRPLD_ESCROW_REF=<branch|tag|sha>.
+#
+# With --check, the files are regenerated in place, diffed against the current working-tree contents (not git),
+# and restored; the script fails on any drift and leaves the working tree unchanged.
+# This is the CI drift gate (run by run-all.sh and the check_generated job).
 
 set -euo pipefail
 
@@ -31,17 +35,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
+source "$SCRIPT_DIR/lib/xrpld-pins.sh"
+source "$SCRIPT_DIR/lib/check-generated.sh"
+
 CHECK=0
 if [[ "${1:-}" == "--check" ]]; then
     CHECK=1
     shift
 fi
 
-# Default rippled source (can be overridden with the first argument, or the
-# RIPPLED_BRANCH env var for just swapping the branch/tag/commit of the
-# default XRPLF/rippled repo).
-DEFAULT_SOURCE="https://github.com/XRPLF/rippled/tree/${RIPPLED_BRANCH:-ripple/se/supported}"
-RIPPLED_SOURCE="${1:-$DEFAULT_SOURCE}"
+# Default rippled source: the commit CI tests against (see lib/xrpld-pins.sh).
+# Override with the first argument, or XRPLD_ESCROW_REF=<branch|tag|sha>.
+RIPPLED_SOURCE="${1:-$(xrpld_escrow_source)}"
 
 # Output root (can be overridden with the second argument in generate mode). Per-entry
 # files are written under <OUTPUT_ROOT>/xrpl-common-stdlib/src/objects/generated/.
@@ -55,39 +60,16 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
+# The generator writes in place and runs `rustfmt --edition 2024` on its own output.
+regenerate() {
+    node tools/generateLedgerObjects.js "$RIPPLED_SOURCE" "$REPO_ROOT"
+}
+
 if [[ "$CHECK" -eq 1 ]]; then
     echo "🔍 Checking generated ledger-object files are up to date..."
     echo "📦 rippled source: $RIPPLED_SOURCE"
-
-    # Save the current contents so we can restore them after regenerating (the
-    # generator writes in place; a passing check must never leave the tree dirty).
-    TMP_DIR=$(mktemp -d)
-    trap 'rm -rf "$TMP_DIR"' EXIT
-    cp -R "$GENERATED_DIR" "$TMP_DIR/generated.before"
-
-    echo "🔧 Regenerating ledger-object files from rippled..."
-    node tools/generateLedgerObjects.js "$RIPPLED_SOURCE" "$REPO_ROOT"
-
-    DRIFT=0
-    if ! diff -rq "$TMP_DIR/generated.before" "$GENERATED_DIR" > /dev/null; then
-        echo "❌ $GENERATED_DIR is out of date"
-        diff -ru "$TMP_DIR/generated.before" "$GENERATED_DIR" || true
-        DRIFT=1
-    fi
-
-    # Restore the original directory regardless of outcome.
-    rm -rf "$GENERATED_DIR"
-    cp -R "$TMP_DIR/generated.before" "$GENERATED_DIR"
-
-    if [[ "$DRIFT" -ne 0 ]]; then
-        echo ""
-        echo "❌ Generated ledger-object files are out of date."
-        echo "💡 Run ./scripts/generate-ledger-objects.sh and commit the result."
-        exit 1
-    fi
-
-    echo "✅ Generated ledger-object files are up to date!"
-    exit 0
+    check_generated regenerate "./scripts/generate-ledger-objects.sh" "$GENERATED_DIR"
+    exit $?
 fi
 
 echo "🔧 Generating ledger-object field accessor traits..."
@@ -95,8 +77,6 @@ echo "📦 rippled source: $RIPPLED_SOURCE"
 echo "📝 Output root:    $OUTPUT_ROOT"
 echo ""
 
-# Run the generator. It writes xrpl-common-stdlib/src/objects/generated/*.rs and
-# runs `rustfmt --edition 2024` on its own output.
 node tools/generateLedgerObjects.js "$RIPPLED_SOURCE" "$OUTPUT_ROOT"
 
 echo ""
