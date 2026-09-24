@@ -1,0 +1,9 @@
+[package]
+name = "copy-rippled-fixture"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+hex = { workspace = true }
+regex = { workspace = true }
