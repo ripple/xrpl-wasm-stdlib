@@ -82,6 +82,16 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptedBalance)
     }
 
+    /// The IssuerKeyMirrorEpoch field (Optional).
+    fn issuer_key_mirror_epoch(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerKeyMirrorEpoch)
+    }
+
+    /// The AuditorKeyMirrorEpoch field (Optional).
+    fn auditor_key_mirror_epoch(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorKeyMirrorEpoch)
+    }
+
     /// The holder's ElGamal public key for confidential balances. Present when the holder has a
     /// confidential balance.
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
@@ -162,6 +172,16 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::AuditorEncryptedBalance)
     }
 
+    /// The IssuerKeyMirrorEpoch field (Optional).
+    fn issuer_key_mirror_epoch(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::IssuerKeyMirrorEpoch)
+    }
+
+    /// The AuditorKeyMirrorEpoch field (Optional).
+    fn auditor_key_mirror_epoch(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::AuditorKeyMirrorEpoch)
+    }
+
     /// The holder's ElGamal public key for confidential balances. Present when the holder has a
     /// confidential balance.
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
@@ -216,6 +236,8 @@ mod tests {
         assert!(obj.confidential_balance_version().is_ok());
         assert!(obj.issuer_encrypted_balance().is_ok());
         assert!(obj.auditor_encrypted_balance().is_ok());
+        assert!(obj.issuer_key_mirror_epoch().is_ok());
+        assert!(obj.auditor_key_mirror_epoch().is_ok());
         assert!(obj.holder_encryption_key().is_ok());
     }
 
@@ -230,5 +252,7 @@ mod tests {
         assert!(obj.mpt_amount().unwrap().is_none());
         assert!(obj.locked_amount().unwrap().is_none());
         assert!(obj.confidential_balance_version().unwrap().is_none());
+        assert!(obj.issuer_key_mirror_epoch().unwrap().is_none());
+        assert!(obj.auditor_key_mirror_epoch().unwrap().is_none());
     }
 }

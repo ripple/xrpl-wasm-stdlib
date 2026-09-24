@@ -54,7 +54,7 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Owner)
     }
 
-    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is
+    /// A sequential identifier for `Loan` ledger entries, incremented each time a new loan is
     /// created by this `LoanBroker`.
     fn loan_sequence(&self) -> Result<u32> {
         ledger_object::get_field(self.get_slot_num(), sfield::LoanSequence)
@@ -71,12 +71,12 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::ManagementFeeRate)
     }
 
-    /// The number of active loans issued by the LoanBroker.
+    /// The number of active loans issued by the `LoanBroker`.
     fn owner_count(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::OwnerCount)
     }
 
-    /// The total asset amount the protocol owes the vault, including interest.
+    /// The principal asset amount the protocol owes the vault.
     fn debt_total(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::DebtTotal)
     }
@@ -150,7 +150,7 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Owner)
     }
 
-    /// A sequential identifier for `Loan` ledger entires, incremented each time a new loan is
+    /// A sequential identifier for `Loan` ledger entries, incremented each time a new loan is
     /// created by this `LoanBroker`.
     fn loan_sequence(&self) -> Result<u32> {
         current_ledger_object::get_field(sfield::LoanSequence)
@@ -167,12 +167,12 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::ManagementFeeRate)
     }
 
-    /// The number of active loans issued by the LoanBroker.
+    /// The number of active loans issued by the `LoanBroker`.
     fn owner_count(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::OwnerCount)
     }
 
-    /// The total asset amount the protocol owes the vault, including interest.
+    /// The principal asset amount the protocol owes the vault.
     fn debt_total(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::DebtTotal)
     }
