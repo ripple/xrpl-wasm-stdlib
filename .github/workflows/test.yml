@@ -83,8 +83,13 @@ jobs:
       - name: Check generated ledger-object files are up to date
         run: ./scripts/generate-ledger-objects.sh --check
 
+  # Disabled: rippled's ripple/se/supported branch replaced HostFuncWrapper.h's
+  # `using X_proto = ret(params);` typedefs with a WasmHostFunctionsImpl class, so
+  # compareHostFunctions.js's regex-based parser finds nothing there and fails.
+  # Will be fixed via https://github.com/ripple/xrpl-wasm-stdlib/pull/293
   host_function_audit:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v7
 

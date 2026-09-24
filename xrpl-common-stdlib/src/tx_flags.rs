@@ -57,6 +57,13 @@ pub(crate) const tfMPTUnauthorize: u32 = 0x00000001;
 
 pub(crate) const tfMPTLock: u32 = 0x00000001;
 pub(crate) const tfMPTUnlock: u32 = 0x00000002;
+pub(crate) const tfMPTSetCanLock: u32 = 0x00000004;
+pub(crate) const tfMPTSetRequireAuth: u32 = 0x00000008;
+pub(crate) const tfMPTSetCanEscrow: u32 = 0x00000010;
+pub(crate) const tfMPTSetCanTrade: u32 = 0x00000020;
+pub(crate) const tfMPTSetCanTransfer: u32 = 0x00000040;
+pub(crate) const tfMPTSetCanClawback: u32 = 0x00000080;
+pub(crate) const tfMPTSetCanHoldConfidentialBalance: u32 = 0x00000100;
 
 pub(crate) const tfSellNFToken: u32 = 0x00000001;
 
@@ -106,22 +113,15 @@ pub(crate) const tfCodeImmutable: u32 = 0x00020000;
 pub(crate) const tfABIImmutable: u32 = 0x00040000;
 pub(crate) const tfUndeletable: u32 = 0x00080000;
 
-pub(crate) const tmfMPTCanEnableCanLock: u32 = 0x00000002;
-pub(crate) const tmfMPTCanEnableRequireAuth: u32 = 0x00000004;
-pub(crate) const tmfMPTCanEnableCanEscrow: u32 = 0x00000008;
-pub(crate) const tmfMPTCanEnableCanTrade: u32 = 0x00000010;
-pub(crate) const tmfMPTCanEnableCanTransfer: u32 = 0x00000020;
-pub(crate) const tmfMPTCanEnableCanClawback: u32 = 0x00000040;
-pub(crate) const tmfMPTCanMutateMetadata: u32 = 0x00010000;
-pub(crate) const tmfMPTCanMutateTransferFee: u32 = 0x00020000;
-pub(crate) const tmfMPTCannotEnableCanHoldConfidentialBalance: u32 = 0x00000080;
-pub(crate) const tmfMPTSetCanLock: u32 = 0x00000001;
-pub(crate) const tmfMPTSetRequireAuth: u32 = 0x00000002;
-pub(crate) const tmfMPTSetCanEscrow: u32 = 0x00000004;
-pub(crate) const tmfMPTSetCanTrade: u32 = 0x00000008;
-pub(crate) const tmfMPTSetCanTransfer: u32 = 0x00000010;
-pub(crate) const tmfMPTSetCanClawback: u32 = 0x00000020;
-pub(crate) const tmfMPTSetCanHoldConfidentialBalance: u32 = 0x00000040;
+pub(crate) const tifMPTCanLock: u32 = 0x00000002;
+pub(crate) const tifMPTRequireAuth: u32 = 0x00000004;
+pub(crate) const tifMPTCanEscrow: u32 = 0x00000008;
+pub(crate) const tifMPTCanTrade: u32 = 0x00000010;
+pub(crate) const tifMPTCanTransfer: u32 = 0x00000020;
+pub(crate) const tifMPTCanClawback: u32 = 0x00000040;
+pub(crate) const tifMPTMetadata: u32 = 0x00010000;
+pub(crate) const tifMPTTransferFee: u32 = 0x00020000;
+pub(crate) const tifMPTCanHoldConfidentialBalance: u32 = 0x00000080;
 pub(crate) const tfTrustLine: u32 = 0x00000004;
 pub(crate) const tfWithdrawSubTx: u32 = tfLPToken
     | tfSingleAsset
