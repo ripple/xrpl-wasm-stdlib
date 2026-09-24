@@ -127,7 +127,7 @@ canonically-ordered account pair produce the same result either way.
 
 `./scripts/run-tests.sh` (and therefore `./scripts/run-all.sh`) targets the local node by default, and manages it for you: it starts a rippled node in Docker via `./scripts/docker-rippled.sh`, pinned to the exact `XRPLD_DOCKER_IMAGE` tag CI uses (see `.github/workflows/test.yml` — the single place that tag is defined; `docker-rippled.sh` reads it from there rather than duplicating it). This matters because the npm packages in `package.json` (`xrpl`, `ripple-binary-codec`) are built against a specific rippled field/transaction definition set — testing against a rippled build that has drifted from that pin (e.g. a locally-built binary from a different branch or commit) can fail with cryptic errors like `Field 'X' found in disallowed location`, because field codes shifted underneath the JS encoder.
 
-Before starting Docker, `docker-rippled.sh` checks whether something is already listening on `ws://localhost:6006` (a container from a previous run, a rippled you started yourself, a native build) and reuses it instead — Docker isn't required at all if you already have rippled running.
+Before starting Docker, `docker-rippled.sh` checks whether something is already listening on `ws://localhost:6006` (a container from a previous run, a rippled you started yourself, a native build) and reuses it instead — Docker isn't required at all if you already have rippled running. Its own container is only reused if it runs the image tag CI currently pins; after an image bump the stale container is replaced automatically.
 
 Override the default with an environment variable:
 
@@ -140,7 +140,7 @@ DEVNET=true ./scripts/run-tests.sh        # use WASM Devnet instead
 The Docker container (`xrpld-service`) is left running between invocations for faster iteration. Manage it directly with:
 
 ```shell
-./scripts/docker-rippled.sh start   # idempotent - reuses a healthy container, or any rippled already on port 6006
+./scripts/docker-rippled.sh start   # idempotent - reuses a healthy container on the pinned image, or any rippled already on port 6006
 ./scripts/docker-rippled.sh status
 ./scripts/docker-rippled.sh logs    # container logs + inspect output, e.g. after a failure
 ./scripts/docker-rippled.sh stop
