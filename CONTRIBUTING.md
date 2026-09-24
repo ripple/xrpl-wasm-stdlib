@@ -146,6 +146,21 @@ The Docker container (`xrpld-service`) is left running between invocations for f
 ./scripts/docker-rippled.sh stop
 ```
 
+### Bumping the xrpld pin
+
+`XRPLD_DOCKER_IMAGE` and `XRPLD_CONTRACT_COMMIT` in `.github/workflows/test.yml` pin the xrpld commits that both the
+integration tests and the code generators (`sfield.rs`, `type_codes.rs`, `tx_flags.rs`, `objects/generated/`)
+use. To move them:
+
+1. Update both values. The Docker tag must be a `ripple/se/supported` commit that `rippleci/xrpld` has
+   published an image for; `XRPLD_CONTRACT_COMMIT` is a commit on `xrplf/smart-contracts`.
+2. Run `./scripts/generate-sfields.sh`, `./scripts/generate-tx-flags.sh`, and
+   `./scripts/generate-ledger-objects.sh`, review the diff, and commit it alongside the pin change. The
+   `check_generated` CI job fails if the two are out of sync.
+
+The weekly `upstream-drift.yml` workflow compares the generated files against the xrpld branch HEADs and
+opens an `upstream-drift` issue when a bump is due; it never blocks PRs.
+
 ### Debugging and Development
 
 **Web UI for manual testing:**

@@ -11,7 +11,15 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
+  # xrpld (rippled) pins. Both are read by scripts/lib/xrpld-pins.sh, so the
+  # generators (sfield.rs, type_codes.rs, tx_flags.rs, objects/generated/) are
+  # regenerated against exactly the rippled these tests run on. When bumping
+  # either, rerun all three generate-*.sh scripts and commit the result --
+  # the check_generated job fails otherwise.
+  #   XRPLD_DOCKER_IMAGE tag  = Smart Escrow xrpld commit   (ripple/se/supported)
+  #   XRPLD_CONTRACT_COMMIT   = Smart Contract xrpld commit (xrplf/smart-contracts)
   XRPLD_DOCKER_IMAGE: rippleci/xrpld:21560cdf82d02771709d6befedb6b192211cf399
+  XRPLD_CONTRACT_COMMIT: 97cbef72df4f95211cccf6eaf32d714c74f654ec
 
 jobs:
   pre-commit:
@@ -70,7 +78,13 @@ jobs:
       - name: Check WASM contract exports
         run: ./scripts/check-wasm-exports.sh
 
-  check_ledger_objects_generated:
+  # Generated Rust must match the xrpld commits pinned in `env:` above. It goes
+  # red when a pin is bumped without regenerating, a generated file is
+  # hand-edited, or (the one non-pinned input) the xrpl-dev-portal pages that
+  # generateLedgerObjects.js scrapes for doc comments change. Drift against the
+  # upstream branch HEADs is tracked by the scheduled upstream-drift.yml workflow
+  # instead, so it never blocks PRs.
+  check_generated:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -80,7 +94,13 @@ jobs:
         with:
           node-version: 24.x
 
-      - name: Check generated ledger-object files are up to date
+      - name: Check sfield.rs / type_codes.rs are up to date
+        run: ./scripts/generate-sfields.sh --check
+
+      - name: Check tx_flags.rs is up to date
+        run: ./scripts/generate-tx-flags.sh --check
+
+      - name: Check objects/generated/ is up to date
         run: ./scripts/generate-ledger-objects.sh --check
 
   # Disabled: rippled's ripple/se/supported branch replaced HostFuncWrapper.h's
