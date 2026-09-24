@@ -34,11 +34,13 @@ echo "   You can optionally install pre-commit locally for development:"
 echo "   - macOS: brew install pre-commit && pre-commit install"
 echo "   - pip: pip install pre-commit && pre-commit install"
 
-# Install Node.js dependencies if needed for host function audit
+# Install Node.js dependencies (host function audit, sfield/tx-flag generation, integration tests)
 if command -v node &> /dev/null; then
-    echo "✅ Node.js found for host function audit"
+    echo "✅ Node.js found: $(node --version)"
+    echo "📦 Installing npm dependencies..."
+    npm ci
 else
-    echo "⚠️  Node.js not found. Host function audit will be skipped."
+    echo "⚠️  Node.js not found. Host function audit and integration tests will be skipped."
 fi
 
 echo "✅ Setup complete!"
