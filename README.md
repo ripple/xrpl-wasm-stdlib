@@ -55,6 +55,24 @@ fn releases_above_ten_xrp() {
 
 Anything you leave unset gets a default. See [the crate's README](https://github.com/ripple/xrpl-wasm-stdlib/tree/main/xrpl-stdlib-test-utils) for the full builder.
 
+### Running the examples' integration tests
+
+Each example under `examples/smart-escrows/` has an integration test that submits real transactions to a rippled node:
+
+```shell
+./scripts/run-tests.sh                                     # all examples + e2e contracts
+./scripts/run-tests.sh examples/smart-escrows/hello_world   # a single example
+```
+
+If rippled is already running on `ws://localhost:6006` (your own instance, or a container left over from a previous run), that's reused automatically — no Docker needed. Otherwise this starts a local rippled in Docker, pinned to the exact image [CI uses](.github/workflows/test.yml), so your results match CI without any manual node setup. Override with:
+
+| Variable         | Effect                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `DEVNET=true`    | Test against WASM Devnet (`wss://wasm.devnet.rippletest.net:51233`) instead               |
+| `NO_DOCKER=true` | Force-skip Docker; use a rippled you're already running yourself on `ws://localhost:6006` |
+
+The Docker node is left running across test runs for speed; stop it with `./scripts/docker-rippled.sh stop` when you're done. See [`scripts/README.md`](./scripts/README.md) and [`CONTRIBUTING.md`](./CONTRIBUTING.md) for more on the local dev/test scripts.
+
 ## Documentation
 
 | Section                                                                                                       | Description                                     |
