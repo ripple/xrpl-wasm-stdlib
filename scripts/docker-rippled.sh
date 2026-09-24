@@ -32,11 +32,14 @@ require_docker() {
 get_image() {
     # Single source of truth: the image tag CI pins in test.yml. Reading it here
     # means this script can never drift from what CI actually verified against.
-    grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" | sed -E 's/^[[:space:]]*XRPLD_DOCKER_IMAGE:[[:space:]]*//'
+    # `|| true` so a missing key yields "" for the caller to report, instead of
+    # `set -e` aborting silently inside the caller's assignment.
+    { grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" || true; } | sed -E 's/^[[:space:]]*XRPLD_DOCKER_IMAGE:[[:space:]]*//'
 }
 
 is_healthy() {
-    docker inspect --format="{{.State.Health.Status}}" "$CONTAINER_NAME" 2>/dev/null | grep -q "healthy"
+    # Exact match: a bare `grep healthy` would also match the "unhealthy" state.
+    [[ "$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)" == "healthy" ]]
 }
 
 # True if something is already accepting connections on the rippled WS port,
@@ -47,9 +50,27 @@ is_port_open() {
 }
 
 start() {
+    local image
+    image="$(get_image)"
+    if [[ -z "$image" ]]; then
+        echo "❌ Could not read XRPLD_DOCKER_IMAGE from $WORKFLOW_FILE" >&2
+        exit 1
+    fi
+
     if is_healthy; then
-        echo "✅ $CONTAINER_NAME is already running and healthy."
-        return 0
+        # Only reuse the container if it runs the image CI currently pins. Otherwise a
+        # container left over from before an image bump would silently test against
+        # the old rippled.
+        local running_image
+        running_image="$(docker inspect --format='{{.Config.Image}}' "$CONTAINER_NAME" 2>/dev/null || true)"
+        if [[ "$running_image" == "$image" ]]; then
+            echo "✅ $CONTAINER_NAME is already running and healthy."
+            return 0
+        fi
+        # Remove it before the port check below, or the stale container would count as
+        # "something already listening on the port" and get reused anyway.
+        echo "♻️  $CONTAINER_NAME is running $running_image but CI pins $image - restarting."
+        docker rm -f "$CONTAINER_NAME" &> /dev/null || true
     fi
 
     if is_port_open; then
@@ -61,13 +82,6 @@ start() {
 
     # A stopped/unhealthy container from a previous run shouldn't block a fresh start.
     docker rm -f "$CONTAINER_NAME" &> /dev/null || true
-
-    local image
-    image="$(get_image)"
-    if [[ -z "$image" ]]; then
-        echo "❌ Could not read XRPLD_DOCKER_IMAGE from $WORKFLOW_FILE" >&2
-        exit 1
-    fi
 
     echo "🐳 Starting $CONTAINER_NAME from $image ..."
     docker run --detach --rm \
