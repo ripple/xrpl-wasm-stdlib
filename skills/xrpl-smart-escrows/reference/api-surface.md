@@ -54,6 +54,7 @@ pub trait TransactionCommonFields {
     fn get_fee(&self) -> Result<Amount>;
     fn get_sequence(&self) -> Result<u32>;
     fn get_account_txn_id(&self) -> Result<Option<Hash256>>;
+    fn get_delegate(&self) -> Result<Option<AccountID>>;
     fn get_flags(&self) -> Result<Option<u32>>;
     fn get_last_ledger_sequence(&self) -> Result<Option<u32>>;
     fn get_network_id(&self) -> Result<Option<u32>>;
@@ -183,6 +184,8 @@ delegate_id(account, authorize)
 deposit_preauth_id(account, authorize)
 did_id(account_id)
 escrow_id(owner, seq)
+loan_broker_id(owner, seq)
+loan_id(loan_broker_id, seq)
 mpt_issuance_id(owner, seq)
 mptoken_id(mptid, holder)
 nft_offer_id(owner, seq)
@@ -191,6 +194,7 @@ oracle_id(owner, document_id)
 paychan_id(account, destination, seq)
 permissioned_domain_id(account, seq)
 signers_id(account_id)
+sponsorship_id(sponsor, sponsee)
 ticket_id(owner, seq)
 trustline_id(account1, account2, currency)
 vault_id(account, seq)

@@ -13,7 +13,7 @@
 //! - `float_from_stamount` / `float_from_stnumber` - Convert XRP ledger types to float format
 //! - `float_to_int` / `float_to_mant_exp` - Convert float to integer or decomposed form
 //! - `float_add` / `float_sub` / `float_mult` / `float_div` - Arithmetic
-//! - `float_pow` / `float_root` - Mathematical functions
+//! - `float_pow` - Mathematical functions
 //! - `float_cmp` - Comparison operations
 //!
 //! All operations support explicit rounding modes; see [`RoundingMode`].

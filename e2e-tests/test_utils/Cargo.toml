@@ -4,7 +4,6 @@ version = "0.8.0"
 edition = "2024"
 description = "Test utilities for XRPL WASM e2e tests"
 license = "ISC"
-# Do not publish this crate
 publish = false
 
 [lib]
