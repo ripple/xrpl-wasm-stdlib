@@ -77,6 +77,60 @@ async function test(testContext) {
     expect: "tecBYTECODE_REJECTED",
   })
 
+  // Malformed memos must reject without persisting Phase 1 state.
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      { Memo: { MemoType: xrpl.convertStringToHex("counterpart_escrow") } },
+    ],
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "",
+        },
+      },
+    ],
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "deadbeef",
+        },
+      },
+    ],
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: finalSwap2Result.escrowId + "ffff",
+        },
+      },
+    ],
+  })
+
   // atomic_swap1 phase 1 BEFORE atomic_swap2 phase 2 (counterpart alive).
   const responseFinalSwap1Phase1 = await finishEscrow(
     testContext,
