@@ -63,7 +63,7 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 ./scripts/generate-ledger-objects.sh
 ```
 
-Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`, `scripts/cargo-deny.sh` (RustSec advisories on the library workspace; advisory-only in CI until the first clean run).
+Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`, `scripts/wasm-opt.sh` (called by `build.sh`; see below), `scripts/cargo-deny.sh` (RustSec advisories on the library workspace; advisory-only in CI until the first clean run).
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -Dclippy::all` on staged Rust files, plus prettier with `--no-semi --tab-width 2` for JS/MD/YAML.
 
@@ -150,6 +150,18 @@ panic = "abort"     # no_std can't unwind; also avoids pulling in a panic handle
 ```
 
 The library defines a custom `#[panic_handler]` for `target_arch = "wasm32"` (in `xrpl-common-stdlib/src/lib.rs`) that calls `core::arch::wasm32::unreachable()`. Dev profile uses `panic = "unwind"` so unit tests can run on the host.
+
+`scripts/build.sh` finishes by running `scripts/wasm-opt.sh`, which rewrites the **release** artifacts of both WASM workspaces in place with Binaryen's `wasm-opt` (~30% smaller, which matters because rippled charges gas per instruction and caps contract size). In place, rather than a separate `.opt.wasm`, so `tests/runSingleTest.js`, `ui/embed-wasm.sh`, and the gas benchmark all exercise the bytes that would ship on-ledger; a sidecar `<name>.wasm.opt-stamp` holding the optimized file's hash makes reruns skip modules cargo didn't relink. Debug artifacts are left alone.
+
+The flag set is `-Oz --mvp-features --enable-sign-ext --enable-mutable-globals --strip-debug --strip-producers`. Starting from `--mvp-features` and re-enabling exactly sign-extension and mutable-globals is deliberate: that pair _is_ `wasm32v1-none`, and it stops wasm-opt from emitting post-MVP instructions (bulk memory, SIMD, reference types) that rippled's engine would reject. Don't widen it without checking what the host actually accepts.
+
+The step is **mandatory** — it never silently skips. `scripts/wasm-opt.sh` resolves a `wasm-opt` from `$WASM_OPT`, then `PATH`, then `$CARGO_HOME/bin`; finding none it runs `cargo install wasm-opt --version <pin> --locked` and fails the build if that fails. The pinned crate version lives in that script and is the single source of truth: `scripts/setup.sh` and both CI workflows call `./scripts/wasm-opt.sh --ensure-tool` to resolve/install up front rather than stalling a build mid-way. CI's `~/.cargo/bin` cache carries the compiled binary between runs.
+
+The `wasm-opt` crate isn't a reimplementation — its binary links Binaryen's real `wasm_opt_main`, so it's the upstream CLI with upstream flags, just built from source (needs a C++17 toolchain, a few minutes on first install). It tracks Binaryen **116** while upstream is at 133; output measured within 0.4% of 132 on every example, so the lag costs nothing that matters. It's pinned because a different Binaryen means different bytes, which means different numbers out of `scripts/benchmark-gas.sh`. A native Binaryen already on `PATH` wins over the pin — respecting a developer's install beats a multi-minute compile, and CI pins itself by installing the crate version explicitly.
+
+Note that `cargo install` is invoked with `RUSTFLAGS=""`: the repo-wide `-Dwarnings` would otherwise fail the build on any warning in a third-party crate.
+
+Other knobs: `SKIP_WASM_OPT=true` (the one deliberate opt-out), `WASM_OPT_NO_INSTALL=true` (fail rather than auto-install), `WASM_OPT=<path>`, `WASM_OPT_FLAGS="..."`. The script also takes explicit dirs/files as arguments.
 
 ## Writing a contract
 
