@@ -1,7 +1,7 @@
 //! Generates `xrpl-common-stdlib/src/host/host_bindings_trait.rs` and
 //! `host_bindings_list.rs` from the `host_functions! { ... }` block in rippled's
-//! `crates/xrpl-host-functions/src/lib.rs`. See
-//! `docs/superpowers/specs/2026-09-29-host-bindings-generator-design.md`.
+//! `crates/xrpl-host-functions/src/lib.rs`. See `scripts/generate-host-bindings.sh` for how it is
+//! invoked and pinned.
 
 pub mod docs;
 pub mod emit;
