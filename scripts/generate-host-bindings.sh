@@ -63,7 +63,7 @@ fi
 
 generate_into() {
     mkdir -p "$1"
-    cargo run --quiet --manifest-path tools/generate-host-bindings/Cargo.toml -- \
+    cargo run --locked --quiet --manifest-path tools/generate-host-bindings/Cargo.toml -- \
         "$TMP_DIR/lib.rs" "$1" --source-label "$RIPPLED_SOURCE"
 }
 

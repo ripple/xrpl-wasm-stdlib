@@ -39,7 +39,8 @@ fn run() -> Result<(), String> {
         .map_err(|e| format!("writing {}: {e}", list_path.display()))?;
 
     // The repo has no rustfmt.toml, so formatting does not depend on where the files sit —
-    // `--check` mode formats into a temp dir and diffs against the committed files.
+    // rustfmt-format the files just written (the wrapper script's `--check` mode writes them
+    // to a temp dir and diffs against the committed files).
     let status = Command::new("rustfmt")
         .args(["--edition", "2024"])
         .arg(&trait_path)
