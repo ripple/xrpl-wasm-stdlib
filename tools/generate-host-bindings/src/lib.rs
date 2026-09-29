@@ -3,6 +3,7 @@
 //! `crates/xrpl-host-functions/src/lib.rs`. See
 //! `docs/superpowers/specs/2026-09-29-host-bindings-generator-design.md`.
 
+pub mod docs;
 pub mod lower;
 pub mod parse;
 
