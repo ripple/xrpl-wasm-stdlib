@@ -57,20 +57,19 @@ start() {
         exit 1
     fi
 
-    if is_healthy; then
-        # Only reuse the container if it runs the image CI currently pins. Otherwise a
-        # container left over from before an image bump would silently test against
-        # the old rippled.
-        local running_image
-        running_image="$(docker inspect --format='{{.Config.Image}}' "$CONTAINER_NAME" 2>/dev/null || true)"
-        if [[ "$running_image" == "$image" ]]; then
-            echo "✅ $CONTAINER_NAME is already running and healthy."
-            return 0
-        fi
-        # Remove it before the port check below, or the stale container would count as
-        # "something already listening on the port" and get reused anyway.
+    # Only reuse the container if it runs the image CI currently pins. Otherwise a
+    # container left over from before an image bump would silently test against the
+    # old rippled. Check the image whatever the health state, and remove a stale
+    # container before the port check below: one that's still starting (or unhealthy)
+    # can already have the port open and would be reused via that fallback.
+    local running_image
+    running_image="$(docker inspect --format='{{.Config.Image}}' "$CONTAINER_NAME" 2>/dev/null || true)"
+    if [[ -n "$running_image" && "$running_image" != "$image" ]]; then
         echo "♻️  $CONTAINER_NAME is running $running_image but CI pins $image - restarting."
         docker rm -f "$CONTAINER_NAME" &> /dev/null || true
+    elif is_healthy; then
+        echo "✅ $CONTAINER_NAME is already running and healthy."
+        return 0
     fi
 
     if is_port_open; then
