@@ -99,11 +99,11 @@ The name `xrpl-wasm-stdlib` refers to the **repository** and to the old pre-spli
 
 This is the single most important pattern in the repo. `xrpl-common-stdlib/src/host/mod.rs` selects one of three implementations of the same `HostBindings` trait (defined in `host_bindings_trait.rs`) via `cfg`-gated `include!`:
 
-| Config                                                       | Included file            | Purpose                                                                                        |
-| ------------------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `cfg(target_arch = "wasm32")`                                | `host_bindings_wasm.rs`  | Real FFI `extern "C"` declarations — used in production WASM builds.                           |
-| `cfg(any(test, feature = "test-host-bindings"))` on non-WASM | `host_bindings_test.rs`  | `mockall`-generated mocks — lets unit/coverage tests on the native target stub host functions. |
-| Plain `cargo build` on non-WASM                              | `host_bindings_empty.rs` | No-op stubs that just allow native builds to compile (functions panic if called).              |
+| Config                                                       | Included file            | Purpose                                                                                                                              |
+| ------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `cfg(target_arch = "wasm32")`                                | `host_bindings_wasm.rs`  | Real FFI `extern "C"` declarations — used in production WASM builds.                                                                 |
+| `cfg(any(test, feature = "test-host-bindings"))` on non-WASM | `host_bindings_test.rs`  | `mockall`-generated mocks — lets unit/coverage tests on the native target stub host functions.                                       |
+| Plain `cargo build` on non-WASM                              | `host_bindings_empty.rs` | Stubs that do nothing and return their last argument (usually a buffer length) as `i32`, so native builds compile and doc tests run. |
 
 Consequences:
 

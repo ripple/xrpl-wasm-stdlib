@@ -2,10 +2,11 @@
 // Source: https://github.com/XRPLF/rippled/tree/21560cdf82d02771709d6befedb6b192211cf399
 // Regenerate with ./scripts/generate-host-bindings.sh (CI runs it with --check).
 
-/// Invokes `$callback!` once with the wire signature of every host function, in rippled's
-/// declaration order, as `fn name(param: Ty, ...) -> Ret;` items where `Ret` is `i32` or `()`.
+/// Calls `$callback!` once, passing it the wire signature of every host function in rippled's
+/// declaration order. Each signature is a `fn name(param: Ty, ...) -> Ret;` item where `Ret` is
+/// `i32` or `()`.
 ///
-/// The one list the three `HostBindings` implementations expand from.
+/// This is the single list that the wasm, stub and mock implementations all expand from.
 macro_rules! for_each_host_function {
     ($callback:ident) => {
         $callback! {

@@ -1,5 +1,6 @@
-//! Runs the generator over the real, pinned rippled source. Pins today's 63-function ABI as a
-//! regression and proves every declaration lowers.
+//! Runs the generator over a saved copy of rippled's real `lib.rs`
+//! (`fixtures/rippled_host_functions_lib.rs`). This pins today's 63-function ABI as a
+//! regression test and checks that every declaration in it can be lowered and emitted.
 
 use std::collections::BTreeSet;
 

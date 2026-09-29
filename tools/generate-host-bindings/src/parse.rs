@@ -6,12 +6,12 @@ use syn::{
     Expr, FnArg, GenericArgument, Item, Lit, Pat, PathArguments, ReturnType, TraitItemFn, Type,
 };
 
-/// A parameter type exactly as rippled declares it. Wire lowering lives in `lower.rs`.
+/// A parameter type as rippled declares it. `lower.rs` turns these into wire types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Declared {
     I32,
     I64,
-    /// Travels as a `(ptr, len)` region of four little-endian bytes, not as a scalar.
+    /// Passed as a `(ptr, len)` region holding four little-endian bytes, not as a scalar.
     U32,
     /// `&[u8]`
     Bytes,
@@ -23,7 +23,8 @@ pub enum Declared {
     TraceDataType,
 }
 
-/// The `HostResult<T>` payload, which decides the wasm result and the doc text.
+/// What `T` is in a declaration's `HostResult<T>`. This decides whether the wasm import has a
+/// result and which "Returns" text the trait docs get.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Return {
     /// `HostResult<usize>`: the length written to an output region.
@@ -42,9 +43,9 @@ pub struct Param {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostFunction {
-    /// The declaration's Rust name (`get_ledger_sqn`); only used to rewrite doc links.
+    /// The declaration's Rust name, e.g. `get_ledger_sqn`. Only used to rewrite doc links.
     pub rust_name: String,
-    /// The `#[wasm_name]` import name (`ldgr_index`): our trait method name.
+    /// The `#[wasm_name]` import name, e.g. `ldgr_index`. Becomes our trait method name.
     pub wasm_name: String,
     pub gas: u64,
     /// Doc lines exactly as written after `///`, leading space included.

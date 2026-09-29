@@ -4,15 +4,16 @@
 
 /// Every host function the XRPL wasm host exposes to a smart contract, at the wire (FFI) level.
 ///
-/// One method per declaration in rippled's `host_functions!` block
-/// (`crates/xrpl-host-functions/src/lib.rs`), in declaration order, named by its wasm import
-/// name. Regions (`&[u8]`, `&mut [u8]`, `&str`, `u32`) travel as `(ptr, len)` pairs; `i32` and
-/// `i64` pass through; every fallible call returns an `i32` that is non-negative on success
-/// and a negative `crate::host::error_codes` value on failure.
+/// There is one method per declaration in rippled's `host_functions!` block
+/// (`crates/xrpl-host-functions/src/lib.rs`), in the same order, named after its wasm import
+/// name. Byte regions (`&[u8]`, `&mut [u8]`, `&str`, `u32`) are passed as a `(ptr, len)` pair;
+/// `i32` and `i64` are passed as-is. Every call that can fail returns an `i32`: zero or
+/// positive on success, or a negative `crate::host::error_codes` value on failure.
 ///
-/// Implemented by `WasmHostBindings` (real FFI, wasm32 only), the no-op stubs in
-/// `host_bindings_empty.rs` (plain native builds), and `MockHostBindings` (mockall, tests).
-#[allow(unused)] // To remove warn when compiled for non-WASM targets
+/// Implemented by `WasmHostBindings` (real FFI, wasm32 only) and `MockHostBindings` (mockall,
+/// tests). Plain native builds use the free-function stubs in `host_bindings_empty.rs`
+/// instead, which do not implement this trait.
+#[allow(unused)] // Nothing calls the trait on non-wasm targets.
 #[cfg_attr(
     all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")),
     mockall::automock

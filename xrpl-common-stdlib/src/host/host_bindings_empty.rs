@@ -1,9 +1,12 @@
-// Stub implementations for plain native builds (`cargo build`, doc tests): every host
-// function exists and returns its last argument as an `i32` — a buffer length, for most —
-// so code that only needs to compile and run trivially on the host works without a mock.
-// Expands from the generated `for_each_host_function!` list (host_bindings_list.rs).
+// Stub host functions for plain native builds (`cargo build`, doc tests). Every host function
+// exists, does nothing, and returns its last argument as an `i32`. For most functions that
+// last argument is an output buffer length, so callers see "the whole buffer was written".
+// This lets code compile and run on the host without setting up a mock.
+//
+// Everything here is expanded from the generated `for_each_host_function!` list
+// (host_bindings_list.rs), so it needs no changes when rippled adds a host function.
 
-/// What a stub reports: its last argument, as the wire `i32`.
+/// Converts a stub's last argument into the `i32` it returns.
 trait StubArg {
     fn to_i32(self) -> i32;
 }
@@ -33,7 +36,7 @@ impl StubArg for *mut u8 {
     }
 }
 
-/// Lifts that `i32` into the declared return type: `i32`, or `()` for `trace`.
+/// Converts that `i32` into the function's declared return type: `i32`, or `()` for `trace`.
 trait StubReturn {
     fn from_i32(value: i32) -> Self;
 }
@@ -60,7 +63,7 @@ macro_rules! stub_host_functions {
             }
         )*
     };
-    // Tail recursion to the last parameter name.
+    // `@last a, b, c` drops parameters from the front until only the last one is left.
     (@last) => { 0i32 };
     (@last $last:ident) => { StubArg::to_i32($last) };
     (@last $head:ident, $($rest:ident),+) => { stub_host_functions!(@last $($rest),+) };

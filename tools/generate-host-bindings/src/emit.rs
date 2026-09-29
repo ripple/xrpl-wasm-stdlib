@@ -1,4 +1,5 @@
-//! Renders the two generated files. Output is pre-`rustfmt`; the binary formats it.
+//! Renders the two generated files as text. The output is not yet formatted; `main.rs` runs
+//! `rustfmt` on it after writing.
 
 use std::collections::HashMap;
 
@@ -15,10 +16,11 @@ fn header(source_label: &str) -> String {
 }
 
 const LIST_DOC: &str = "\
-/// Invokes `$callback!` once with the wire signature of every host function, in rippled's
-/// declaration order, as `fn name(param: Ty, ...) -> Ret;` items where `Ret` is `i32` or `()`.
+/// Calls `$callback!` once, passing it the wire signature of every host function in rippled's
+/// declaration order. Each signature is a `fn name(param: Ty, ...) -> Ret;` item where `Ret` is
+/// `i32` or `()`.
 ///
-/// The one list the three `HostBindings` implementations expand from.
+/// This is the single list that the wasm, stub and mock implementations all expand from.
 ";
 
 /// `host_bindings_list.rs`: the `for_each_host_function!` callback macro.
@@ -44,15 +46,16 @@ pub fn emit_list(fns: &[HostFunction], source_label: &str) -> Result<String, Str
 const TRAIT_PREAMBLE: &str = "\
 /// Every host function the XRPL wasm host exposes to a smart contract, at the wire (FFI) level.
 ///
-/// One method per declaration in rippled's `host_functions!` block
-/// (`crates/xrpl-host-functions/src/lib.rs`), in declaration order, named by its wasm import
-/// name. Regions (`&[u8]`, `&mut [u8]`, `&str`, `u32`) travel as `(ptr, len)` pairs; `i32` and
-/// `i64` pass through; every fallible call returns an `i32` that is non-negative on success
-/// and a negative `crate::host::error_codes` value on failure.
+/// There is one method per declaration in rippled's `host_functions!` block
+/// (`crates/xrpl-host-functions/src/lib.rs`), in the same order, named after its wasm import
+/// name. Byte regions (`&[u8]`, `&mut [u8]`, `&str`, `u32`) are passed as a `(ptr, len)` pair;
+/// `i32` and `i64` are passed as-is. Every call that can fail returns an `i32`: zero or
+/// positive on success, or a negative `crate::host::error_codes` value on failure.
 ///
-/// Implemented by `WasmHostBindings` (real FFI, wasm32 only), the no-op stubs in
-/// `host_bindings_empty.rs` (plain native builds), and `MockHostBindings` (mockall, tests).
-#[allow(unused)] // To remove warn when compiled for non-WASM targets
+/// Implemented by `WasmHostBindings` (real FFI, wasm32 only) and `MockHostBindings` (mockall,
+/// tests). Plain native builds use the free-function stubs in `host_bindings_empty.rs`
+/// instead, which do not implement this trait.
+#[allow(unused)] // Nothing calls the trait on non-wasm targets.
 #[cfg_attr(
     all(any(test, feature = \"test-host-bindings\"), not(target_arch = \"wasm32\")),
     mockall::automock
@@ -60,7 +63,8 @@ const TRAIT_PREAMBLE: &str = "\
 pub trait HostBindings {
 ";
 
-/// `host_bindings_trait.rs`: the viewable trait.
+/// `host_bindings_trait.rs`: the `HostBindings` trait, with docs, that people read and rustdoc
+/// renders.
 pub fn emit_trait(fns: &[HostFunction], source_label: &str) -> Result<String, String> {
     let rust_to_wasm: HashMap<String, String> = fns
         .iter()
@@ -169,10 +173,11 @@ mod tests {
         let fns = parse_host_functions(SNIPPET).unwrap();
         let expected = format!(
             "{HEADER}
-/// Invokes `$callback!` once with the wire signature of every host function, in rippled's
-/// declaration order, as `fn name(param: Ty, ...) -> Ret;` items where `Ret` is `i32` or `()`.
+/// Calls `$callback!` once, passing it the wire signature of every host function in rippled's
+/// declaration order. Each signature is a `fn name(param: Ty, ...) -> Ret;` item where `Ret` is
+/// `i32` or `()`.
 ///
-/// The one list the three `HostBindings` implementations expand from.
+/// This is the single list that the wasm, stub and mock implementations all expand from.
 macro_rules! for_each_host_function {{
     ($callback:ident) => {{
         $callback! {{

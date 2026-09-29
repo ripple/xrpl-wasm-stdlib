@@ -38,8 +38,11 @@ HOST_DIR="xrpl-common-stdlib/src/host"
 GENERATED_FILES=("host_bindings_trait.rs" "host_bindings_list.rs")
 
 pinned_commit() {
-    # Same single source of truth scripts/docker-rippled.sh reads.
-    grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" | sed -E 's/^.*://'
+    # Read the image the same way scripts/docker-rippled.sh does, then keep only the tag
+    # (the part after the last colon), which is the rippled commit hash.
+    local image
+    image="$(grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" | sed -E 's/^[[:space:]]*XRPLD_DOCKER_IMAGE:[[:space:]]*//')"
+    echo "${image##*:}"
 }
 
 DEFAULT_REF="${RIPPLED_REF:-$(pinned_commit)}"

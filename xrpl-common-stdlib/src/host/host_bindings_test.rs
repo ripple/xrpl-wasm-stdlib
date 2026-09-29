@@ -1,25 +1,23 @@
-#[cfg(not(target_arch = "wasm32"))]
+// The mock implementation of the host functions, used by `cargo test` and by crates that
+// enable the `test-host-bindings` feature. `mod.rs` only `include!`s this file on native
+// targets under that cfg, so nothing in here needs its own `#[cfg]`.
 use crate::host::host_bindings_trait::{HostBindings, MockHostBindings};
 use std::cell::RefCell;
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub struct MockGuard;
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 impl Drop for MockGuard {
     fn drop(&mut self) {
         clear_mock_host_bindings();
     }
 }
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn setup_mock(mock: MockHostBindings) -> MockGuard {
     set_mock_host_bindings(mock);
     MockGuard
 }
 
-// Create a default mock with stub return values matching the old host_bindings_for_testing.rs
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+// Creates a mock with a permissive default expectation for every host function.
 pub fn create_default_mock() -> MockHostBindings {
     let mut mock = MockHostBindings::new();
     apply_default_expectations(&mut mock);
@@ -34,7 +32,6 @@ pub fn create_default_mock() -> MockHostBindings {
 /// mockall checks expectations in the order they were registered, so registering
 /// scenario-specific expectations before calling this function lets them take priority over
 /// the unconditional defaults added here.
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     // Ledger info functions - return small positive values
     mock.expect_ldgr_index()
@@ -197,38 +194,35 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     mock.expect_trace().returning(|_, _, _, _, _| ());
 }
 
-// #[cfg(test)]
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 thread_local! {
     static MOCK_STATE: RefCell<Option<MockHostBindings>> = RefCell::new(Some(create_default_mock()));
 }
 
 // Helper functions to manage the mock state
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn set_mock_host_bindings(mock: MockHostBindings) {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = Some(mock);
     });
 }
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn clear_mock_host_bindings() {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = None;
     });
 }
 
-// Dispatches every host function to the thread-local mock. Expands from the generated
-// `for_each_host_function!` list (host_bindings_list.rs).
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+// Defines a free function for every host function that forwards to the thread-local mock.
+// Expanded from the generated `for_each_host_function!` list (host_bindings_list.rs), so it
+// needs no changes when rippled adds a host function.
 macro_rules! dispatch_to_mock {
     ($( fn $name:ident($($param:ident: $param_ty:ty),*) -> $ret:ty; )*) => {
         $(
             #[allow(clippy::too_many_arguments, clippy::missing_safety_doc, clippy::unused_unit)]
             pub unsafe fn $name($($param: $param_ty),*) -> $ret {
                 MOCK_STATE.with(|state| {
-                    // The mock is always present thanks to the thread-local's default initializer;
-                    // if a test cleared it, fail with a clear message rather than a null deref.
+                    // The thread-local starts out holding a default mock, so this is only `None`
+                    // if a test called `clear_mock_host_bindings` and then kept calling host
+                    // functions. Fail with a clear message in that case.
                     let mock = state.borrow();
                     let mock_ref = mock.as_ref().expect("MockHostBindings not initialized");
                     unsafe { mock_ref.$name($($param),*) }
@@ -237,7 +231,6 @@ macro_rules! dispatch_to_mock {
         )*
     };
 }
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 for_each_host_function!(dispatch_to_mock);
 
 #[cfg(test)]
@@ -425,9 +418,10 @@ mod tests {
     }
 }
 
-/// Every function in the generated list must have a default in [`apply_default_expectations`].
-/// When rippled adds a host function and the files are regenerated, this is what fails until
-/// the default is written — mockall panics with "No matching expectation found".
+/// Checks that [`apply_default_expectations`] covers every function in the generated list, by
+/// calling each one once against the default mock. When rippled adds a host function and the
+/// list is regenerated, this test fails (mockall panics with "No matching expectation found")
+/// until a default for the new function is added.
 #[cfg(test)]
 mod default_expectation_coverage {
     use super::*;

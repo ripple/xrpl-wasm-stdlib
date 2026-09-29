@@ -1,15 +1,19 @@
-//! Lowers a declaration to its wasm wire signature. rippled's own macro documents the rules
-//! (`crates/xrpl-host-functions/src/lib.rs`, "Two rules hold over every declaration"):
-//! `i32`/`i64` pass through; `&[u8]`, `&str`, `&mut [u8]` **and `u32`** are `(ptr, len)`
-//! regions; `TraceDataType` is an `i32` code; `HostResult<()>` has no result, everything else
-//! is one `i32`.
+//! Turns a parsed declaration into its wasm wire signature: the raw pointer/integer parameters
+//! the wasm import actually has.
+//!
+//! The rules come from rippled's own macro docs (`crates/xrpl-host-functions/src/lib.rs`,
+//! "Two rules hold over every declaration"):
+//! - `i32` and `i64` are passed as-is.
+//! - `&[u8]`, `&str`, `&mut [u8]` **and `u32`** are passed as a `(ptr, len)` pair.
+//! - `TraceDataType` is passed as an `i32` code.
+//! - `HostResult<()>` has no wasm result; every other `HostResult<_>` is one `i32`.
 
 use std::collections::HashSet;
 
 use crate::parse::{Declared, HostFunction, Return};
 
-/// One wasm-level parameter of a host import, in our Rust spelling (`usize` for lengths,
-/// which is `i32` on wasm32).
+/// One parameter of a wasm import, written as our Rust code spells it. Lengths are `usize`,
+/// which is 32 bits on wasm32.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WireParam {
     pub name: String,

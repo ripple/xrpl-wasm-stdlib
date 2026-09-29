@@ -1,10 +1,11 @@
-// The real FFI implementation of `HostBindings`, for wasm32 targets. Expands from the
-// generated `for_each_host_function!` list (host_bindings_list.rs), so adding a host
-// function upstream changes nothing here.
+// The real FFI implementation of `HostBindings`, used on wasm32 targets. Everything here is
+// expanded from the generated `for_each_host_function!` list (host_bindings_list.rs), so when
+// rippled adds a host function nothing in this file needs to change.
 use crate::host::host_bindings_trait::HostBindings;
 
-/// Hides the raw imports so every caller goes through the wrappers below, which is what lets
-/// `host_bindings_test.rs` / `host_bindings_empty.rs` swap in for non-wasm targets.
+/// The raw `extern "C"` imports. They are private to this module so that the rest of the crate
+/// must go through the wrappers below; that is what lets `host_bindings_test.rs` and
+/// `host_bindings_empty.rs` provide same-named wrappers on non-wasm targets.
 mod host_defined_functions {
     macro_rules! declare_host_imports {
         ($( fn $name:ident($($param:ident: $param_ty:ty),*) -> $ret:ty; )*) => {
@@ -35,8 +36,8 @@ macro_rules! impl_wasm_host_bindings {
             )*
         }
 
-        // Free-function wrappers — `host::ldgr_index(...)` etc. — the API the rest of the
-        // crate calls, so the implementation can be swapped per target.
+        // Free-function wrappers such as `host::ldgr_index(...)`. This is the API the rest of
+        // the crate calls; each target provides its own set of these functions.
         $(
             #[allow(clippy::too_many_arguments, clippy::missing_safety_doc, clippy::unused_unit)]
             pub unsafe fn $name($($param: $param_ty),*) -> $ret {

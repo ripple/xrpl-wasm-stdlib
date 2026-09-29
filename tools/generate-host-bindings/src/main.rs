@@ -38,9 +38,10 @@ fn run() -> Result<(), String> {
     fs::write(&list_path, generated.list_rs)
         .map_err(|e| format!("writing {}: {e}", list_path.display()))?;
 
-    // The repo has no rustfmt.toml, so formatting does not depend on where the files sit —
-    // rustfmt-format the files just written (the wrapper script's `--check` mode writes them
-    // to a temp dir and diffs against the committed files).
+    // Format the files we just wrote so they match what `cargo fmt` would produce. The wrapper
+    // script's `--check` mode writes them to a temp dir and diffs them against the committed
+    // files, so this is safe: the repo has no rustfmt.toml, and formatting therefore does not
+    // depend on which directory the files are in.
     let status = Command::new("rustfmt")
         .args(["--edition", "2024"])
         .arg(&trait_path)

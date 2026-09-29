@@ -1,11 +1,13 @@
-//! Makes rippled's doc comments valid in our crate. rippled links to its own items —
-//! `[`HostFunctions::get_tx_array_len`]`, `[`HASH_LEN`]`, `[`FloatOrdering`]` — which do not
-//! exist here and would be `unresolved link` warnings under `cargo doc`.
+//! Fixes up rippled's doc comments so they are valid in our crate. rippled's docs link to its
+//! own items — `[`HostFunctions::get_tx_array_len`]`, `[`HASH_LEN`]`, `[`FloatOrdering`]` —
+//! which do not exist here. Left alone, they would produce `unresolved link` warnings under
+//! `cargo doc`.
 
 use std::collections::HashMap;
 
-/// Rewrites one doc line: `[`HostFunctions::<rust>`]` becomes `[`HostBindings::<wasm>`]`
-/// when `<rust>` is a known declaration; every other `[`X`]` becomes plain `` `X` ``.
+/// Rewrites one doc line. A `[`HostFunctions::<rust>`]` link becomes `[`HostBindings::<wasm>`]`
+/// when `<rust>` is a declaration we know about. Any other `[`X`]` link is turned into the plain
+/// code span `` `X` ``. Real markdown links (`[`X`](url)`, `[`X`][ref]`) are left alone.
 pub fn rewrite_doc_line(line: &str, rust_to_wasm: &HashMap<String, String>) -> String {
     const OPEN: &str = "[`";
     const CLOSE: &str = "`]";
@@ -33,7 +35,7 @@ pub fn rewrite_doc_line(line: &str, rust_to_wasm: &HashMap<String, String>) -> S
             Some(wasm) => out.push_str(&format!("[`HostBindings::{wasm}`]")),
             None => out.push_str(&format!("`{target}`")),
         }
-        rest = &rest[start + OPEN.len() + len + CLOSE.len()..];
+        rest = &rest[after..];
     }
     out.push_str(rest);
     out
