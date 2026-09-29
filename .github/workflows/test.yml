@@ -83,18 +83,14 @@ jobs:
       - name: Check generated ledger-object files are up to date
         run: ./scripts/generate-ledger-objects.sh --check
 
-  # Disabled: rippled's ripple/se/supported branch replaced HostFuncWrapper.h's
-  # `using X_proto = ret(params);` typedefs with a WasmHostFunctionsImpl class, so
-  # compareHostFunctions.js's regex-based parser finds nothing there and fails.
-  # Will be fixed via https://github.com/ripple/xrpl-wasm-stdlib/pull/293
-  host_function_audit:
+  check_host_bindings_generated:
     runs-on: ubuntu-latest
-    if: false
     steps:
       - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
 
-      - name: Run host function audit
-        run: ./scripts/host-function-audit.sh
+      - name: Check generated host-binding files are up to date
+        run: ./scripts/generate-host-bindings.sh --check
 
   # Advisory-only experiment (issue #126). Left out of run-all.sh so contributors
   # without cargo-deny can still run the local suite. continue-on-error: the first

@@ -12,11 +12,12 @@ Smart escrow WASM modules export `extern "C" fn escrow_finish() -> i32`. Returni
 
 ## Three Cargo workspaces (intentional, do not merge)
 
-| Workspace | Path                   | Members                                                                             |
-| --------- | ---------------------- | ----------------------------------------------------------------------------------- |
-| Library   | `/Cargo.toml` (root)   | `xrpl-common-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-stdlib-test-utils` |
-| Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                                              |
-| E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates                                  |
+| Workspace | Path                                      | Members                                                                                                                        |
+| --------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Library   | `/Cargo.toml` (root)                      | `xrpl-common-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-stdlib-test-utils`                                            |
+| Examples  | `examples/Cargo.toml`                     | all `examples/smart-escrows/*` cdylibs                                                                                         |
+| E2E tests | `e2e-tests/Cargo.toml`                    | host-function probe contracts + native test crates                                                                             |
+| Tooling   | `tools/generate-host-bindings/Cargo.toml` | standalone `publish = false` bin (not a workspace; root `exclude`s it) — covered by `clippy.sh`, `fmt.sh`, `build-and-test.sh` |
 
 The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they target `wasm32v1-none` with `crate-type = ["cdylib"]`. Build/clippy scripts `cd` into each workspace separately — if you add a new top-level workspace, mirror that in `scripts/build.sh` and `scripts/clippy.sh`.
 
@@ -25,7 +26,7 @@ The root workspace explicitly `exclude`s `examples` and `e2e-tests` because they
 All scripts assume you have run `./scripts/setup.sh` once. They mirror the GitHub Actions workflow in `.github/workflows/test.yml` and set `RUSTFLAGS="-Dwarnings"`.
 
 ```shell
-# Full CI suite locally (clippy, fmt, host-function audit, wasm-exports check, build+test, markdown, e2e)
+# Full CI suite locally (clippy, fmt, host-bindings drift check, wasm-exports check, build+test, markdown, e2e)
 ./scripts/run-all.sh
 
 # Build everything (native + wasm32v1-none for both examples/ and e2e-tests/, debug + release)
@@ -61,9 +62,13 @@ DEVNET=true ./scripts/run-tests.sh                         # run against wss://w
 
 # Regenerate objects/generated/ (per-entry ledger-object field traits) from rippled (requires Node.js)
 ./scripts/generate-ledger-objects.sh
+
+# Regenerate host/host_bindings_trait.rs + host_bindings_list.rs from rippled's host ABI (Rust; no Node.js)
+./scripts/generate-host-bindings.sh            # defaults to the rippled commit pinned in XRPLD_DOCKER_IMAGE
+./scripts/generate-host-bindings.sh --check    # CI drift gate (also run by run-all.sh)
 ```
 
-Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/host-function-audit.sh` (see below), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`, `scripts/cargo-deny.sh` (RustSec advisories on the library workspace; advisory-only in CI until the first clean run).
+Other scripts not part of the primary workflow above: `scripts/benchmark-gas.sh`, `scripts/check-wasm-exports.sh`, `scripts/docs.sh` (builds and deploys the GitHub Pages docs/UI site), `scripts/run-markdown.sh`, `scripts/validate-ui.sh`, `scripts/cargo-deny.sh` (RustSec advisories on the library workspace; advisory-only in CI until the first clean run).
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -Dclippy::all` on staged Rust files, plus prettier with `--no-semi --tab-width 2` for JS/MD/YAML.
 
@@ -104,7 +109,7 @@ Consequences:
 
 - `lib.rs` uses `#![cfg_attr(target_arch = "wasm32", no_std)]` — code is `no_std` only when targeting WASM; native builds get `std` so `cargo test` works. This applies to both `xrpl-common-stdlib` and `xrpl-escrow-stdlib`.
 - To exercise stdlib code from another crate's tests (e.g. `e2e-tests/`, `xrpl-escrow-stdlib`), enable the `test-host-bindings` feature on `xrpl-common-stdlib` — `dev-dependencies` aren't enough because mockall must be available when the lib is consumed as a regular dep. `xrpl-stdlib-test-utils` wraps this feature and its mocks behind higher-level scenario builders; prefer it over hand-rolling mock setups in new tests.
-- Anything new added to `HostBindings` must be implemented in all three files. CI's `scripts/host-function-audit.sh` compares the trait against rippled's exports — keep them in sync.
+- Nothing in `HostBindings` is hand-edited: `host_bindings_trait.rs` and `host_bindings_list.rs` (the `for_each_host_function!` signature list) are **generated** by `tools/generate-host-bindings` from the `host_functions! { ... }` block in rippled's `crates/xrpl-host-functions/src/lib.rs` — run `./scripts/generate-host-bindings.sh`; CI runs it with `--check`. The three implementations are hand-written `macro_rules!` callbacks over that list (`declare_host_imports` + `impl_wasm_host_bindings` in `host_bindings_wasm.rs`, `stub_host_functions` in `host_bindings_empty.rs`, `dispatch_to_mock` in `host_bindings_test.rs`) and never change when a function is added. The one hand-written thing that must follow an addition is `apply_default_expectations` in `host_bindings_test.rs` — the generated `every_host_function_has_a_default_expectation` test fails until it does. Wire lowering is mechanical from the declared types, per rippled's own macro docs: `&[u8]`/`&str`/`u32` → `(*const u8, usize)`, `&mut [u8]` → `(*mut u8, usize)`, `i32`/`TraceDataType` → `i32`, `i64` → `i64`, `HostResult<()>` → no result, any other `HostResult<_>` → `i32`. Method names are the `#[wasm_name]` import names; parameter names derive from rippled's (`out` → `out_ptr`, `out_len`). rippled's `///` docs are carried verbatim (intra-doc links rewritten to `HostBindings::<wasm_name>` or demoted to code spans). The generator defaults to the rippled commit pinned in `XRPLD_DOCKER_IMAGE` (`.github/workflows/test.yml`) so the bindings, the e2e node and the drift gate describe one commit; `RIPPLED_REF=<branch|sha>` overrides. An unsupported declared type is a generator **error** — extend `parse.rs`/`lower.rs`, never hand-patch the output.
 
 ## Architecture: layering inside `xrpl-common-stdlib`
 
@@ -116,7 +121,7 @@ src/
 ├── ctx/               # SmartFeatureContext trait — narrow contract shared by all feature-specific entry-point contexts
 ├── current_tx/        # EscrowFinish marker + traits → typed access to the current TX's fields
 ├── fields/            # Field decoding traits/helpers shared across XRPL field types, incl. locator.rs (nested-field locator paths)
-├── host/              # Low-level layer: HostBindings trait + 3 impls, error codes, trace, field_helpers
+├── host/              # Low-level layer: HostBindings trait (GENERATED) + host_bindings_list.rs (GENERATED) + 3 macro-callback impls, error codes, trace
 ├── objects/            # Cached ledger entry access: generated/ (per-entry <Entry>Fields traits + structs), ArrayObject, AnyObject, cache.rs (cache_le), traits
 ├── ledger_entry_ids.rs # Compute ledger entry IDs (escrow_id, oracle_id, credential_id, accountroot_id, amm_id, ...)
 ├── types/             # AccountID, Amount, Hash{128,160,192,256}, Blob, NFT, OpaqueFloat, Number, constants.rs, etc.
