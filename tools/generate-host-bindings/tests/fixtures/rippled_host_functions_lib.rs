@@ -1,21 +1,18 @@
-//! The list of functions a smart contract (running as wasm) can call on the host.
-//! Each function is declared exactly once, in this file.
+//! The wasm host ABI: the one place it is declared.
 //!
-//! The `host_functions!` block at the bottom of the file lists those functions. From that
-//! list, the macro generates two things: the [`HostFunctions`] trait, which a host
-//! implements, and the [`HostFunctionSpec`] table, which a wasm engine uses to register the
-//! functions.
+//! `host_functions!` turns the declaration block at the bottom of this file into the
+//! [`HostFunctions`] trait a host implements and the [`HostFunctionSpec`] table a
+//! wasm engine registers from.
 //!
-//! The file has two parts. The hand-written part holds the types the declarations are
-//! written in: [`HostError`], [`TraceDataType`], [`FloatOrdering`], [`HostResult`] and
-//! [`HASH_LEN`]. Everything else is generated from the declarations. The generated code only
-//! refers to names that appear in this file, so the two parts connect only through the
-//! block at the bottom.
+//! The split: hand-written here is the vocabulary the declarations are written in —
+//! [`HostError`], [`TraceDataType`], [`FloatOrdering`], [`HostResult`], [`HASH_LEN`] —
+//! and everything derived from the declarations is generated. The expansion names
+//! nothing this file does not, so the two sides meet only in the block below.
 //!
-//! Three items are used by the generated code without appearing in any declaration:
-//! [`WasmValType`], which the generated wasm signatures are written in, and
-//! `FromWasmRegion` and `FromWasmScalar`, which `wasmi_glue!` uses to convert arguments
-//! coming from wasm.
+//! Three items cross that split the other way, named by the expansion but by no
+//! declaration: [`WasmValType`], which the derived wasm signatures are spelled in,
+//! and `FromWasmRegion`/`FromWasmScalar`, which `wasmi_glue!` builds a marshalled
+//! argument through.
 
 #![no_std]
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]

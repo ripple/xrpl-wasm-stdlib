@@ -1,6 +1,11 @@
-//! Runs the generator over a saved copy of rippled's real `lib.rs`
+//! Runs the generator over a verbatim copy of rippled's real `lib.rs`
 //! (`fixtures/rippled_host_functions_lib.rs`). This pins today's 63-function ABI as a
 //! regression test and checks that every declaration in it can be lowered and emitted.
+//!
+//! Do not edit the fixture by hand. `scripts/generate-host-bindings.sh` overwrites it with the
+//! file from the pinned rippled commit on every run, and `--check` fails if the two differ.
+//! When the pin moves and the set of host functions changes, update `EXPECTED_WASM_NAMES`
+//! below to match.
 
 use std::collections::BTreeSet;
 

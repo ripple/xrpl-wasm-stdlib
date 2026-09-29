@@ -7,6 +7,10 @@
 # implementations (wasm / empty / test) are hand-written macros that expand from the list,
 # so they need no regeneration.
 #
+# It also refreshes the generator's test fixture
+# (tools/generate-host-bindings/tests/fixtures/rippled_host_functions_lib.rs) with a verbatim
+# copy of the rippled file it just read, so the fixture always matches the pinned commit.
+#
 # Usage:
 #   ./scripts/generate-host-bindings.sh [rippled-source]
 #   ./scripts/generate-host-bindings.sh --check [rippled-source]
@@ -16,9 +20,10 @@
 # the e2e node and this drift gate all describe one commit. RIPPLED_REF=<branch|sha>
 # overrides just the ref.
 #
-# With --check, the files are generated into a temp dir and diffed against what's committed;
-# the script fails on any drift and leaves the working tree unchanged. This is the CI drift
-# gate (run by run-all.sh and the GitHub Actions workflow).
+# With --check, the files are generated into a temp dir and diffed against what's committed
+# (the fixture is diffed against the fetched rippled file); the script fails on any drift and
+# leaves the working tree unchanged. This is the CI drift gate (run by run-all.sh and the
+# GitHub Actions workflow).
 
 set -euo pipefail
 
@@ -36,6 +41,7 @@ WORKFLOW_FILE=".github/workflows/test.yml"
 ABI_FILE="crates/xrpl-host-functions/src/lib.rs"
 HOST_DIR="xrpl-common-stdlib/src/host"
 GENERATED_FILES=("host_bindings_trait.rs" "host_bindings_list.rs")
+FIXTURE="tools/generate-host-bindings/tests/fixtures/rippled_host_functions_lib.rs"
 
 pinned_commit() {
     # Read the image the same way scripts/docker-rippled.sh does, then keep only the tag
@@ -81,6 +87,10 @@ if [[ "$CHECK" -eq 1 ]]; then
             DRIFT=1
         fi
     done
+    if ! diff -u "$FIXTURE" "$TMP_DIR/lib.rs"; then
+        echo "❌ $FIXTURE no longer matches the pinned rippled source"
+        DRIFT=1
+    fi
 
     if [[ "$DRIFT" -ne 0 ]]; then
         echo ""
@@ -94,6 +104,10 @@ fi
 
 echo "🔧 Generating host-binding files..."
 generate_into "$HOST_DIR"
+cp "$TMP_DIR/lib.rs" "$FIXTURE"
 echo "✅ Wrote ${GENERATED_FILES[*]} to $HOST_DIR"
+echo "✅ Refreshed $FIXTURE"
+echo "💡 If the set of host functions changed, update EXPECTED_WASM_NAMES in"
+echo "   tools/generate-host-bindings/tests/fixture.rs (its test will fail until you do)."
 echo "💡 host_bindings_wasm.rs / host_bindings_empty.rs / host_bindings_test.rs expand from the list and need no changes,"
 echo "   except apply_default_expectations in host_bindings_test.rs when a function was added."
