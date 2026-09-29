@@ -27,6 +27,10 @@ rustup default stable
 echo "📦 Adding wasm32v1-none target..."
 rustup target add wasm32v1-none
 
+# Up front, since installing the crate compiles Binaryen from source.
+echo "📦 Ensuring wasm-opt (Binaryen) is available..."
+./scripts/wasm-opt.sh --ensure-tool
+
 # Note: Pre-commit checks are handled by GitHub Actions using pre-commit/action@v3.0.1
 # Local pre-commit installation is optional for development convenience
 echo "ℹ️  Pre-commit checks are handled by GitHub Actions"

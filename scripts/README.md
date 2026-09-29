@@ -29,7 +29,7 @@ You can also run individual test suites:
 ### Main Scripts
 
 - **`build-and-test.sh`** - Build and test the native workspace, build WASM examples, and run craft
-- **`build.sh`** - Build all examples (accepts `release` argument for release builds)
+- **`build.sh`** - Build all examples (accepts `release` argument for release builds), then shrink the release WASM via `wasm-opt.sh`
 
 ### Helper Scripts
 
@@ -40,6 +40,7 @@ You can also run individual test suites:
 - **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses; also used by CI itself, so this is the only place the container's `docker run`/health-check/logs logic lives (`start`/`stop`/`status`/`logs`)
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
 - **`cargo-deny.sh`** - Check RustSec advisories on the library workspace (requires `cargo-deny`)
+- **`wasm-opt.sh`** - Shrink the built release contracts in place with Binaryen's `wasm-opt` (run automatically at the end of `build.sh`; auto-installs a pinned `wasm-opt` via cargo if none is found, and fails the build if it can't; exits quietly when there's no release WASM to optimize). `--ensure-tool` resolves/installs the tool without optimizing anything.
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
 
@@ -177,6 +178,7 @@ Actions workflows, ensuring perfect consistency between local and CI environment
 - **Pre-commit not found**: Run `./scripts/setup.sh` to install dependencies
 - **Node.js required**: Install Node.js for the host function audit, or skip that script
 - **WASM target missing**: The scripts automatically install the `wasm32v1-none` target
+- **Build pauses on "installing wasm-opt via cargo"**: expected on a machine with no `wasm-opt`; it compiles Binaryen from source once (a few minutes, needs a C++17 toolchain). Install a native Binaryen instead (`brew install binaryen` / `apt-get install binaryen`) to skip the compile, or set `SKIP_WASM_OPT=true` to build without the optimization step
 - **Docker not found / daemon not reachable**: Install/start Docker, or set `NO_DOCKER=true` (use your own local rippled) or `DEVNET=true` (use WASM Devnet)
 
 ## Script Dependencies
@@ -185,6 +187,7 @@ Actions workflows, ensuring perfect consistency between local and CI environment
 setup.sh (run first)
 ├── build-and-test.sh
 ├── build.sh
+    └── wasm-opt.sh (required; auto-installs a pinned wasm-opt via cargo)
 ├── check-wasm-exports.sh
 ├── clippy.sh
 ├── run-tests.sh

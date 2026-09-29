@@ -134,6 +134,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      # Compiles Binaryen on a cache miss; lands in the cached ~/.cargo/bin.
+      - name: Ensure wasm-opt
+        run: ./scripts/wasm-opt.sh --ensure-tool
+
       - name: Run build and test
         run: ./scripts/build-and-test.sh
 
@@ -183,6 +187,9 @@ jobs:
       - name: Install Node dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Ensure wasm-opt
+        run: ./scripts/wasm-opt.sh --ensure-tool
 
       - name: Start rippled in Docker
         run: ./scripts/docker-rippled.sh start
