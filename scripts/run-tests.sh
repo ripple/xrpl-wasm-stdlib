@@ -19,10 +19,12 @@ npm ls --silent > /dev/null 2>&1 || npm ci
 # the same image CI uses. Override with:
 #   DEVNET=true      - test against wss://wasm.devnet.rippletest.net:51233 instead
 #   NO_DOCKER=true   - force-skip Docker; test against a rippled you're already running yourself
+#   SKIP_RIPPLED_BUILD_CHECK=true - don't fail when the local rippled isn't built from the commit CI pins
 if [[ "${DEVNET:-}" == "true" ]]; then
     echo "🌐 DEVNET set - skipping local Docker rippled."
 elif [[ "${NO_DOCKER:-false}" == "true" ]]; then
     echo "⚙️  NO_DOCKER set - assuming rippled is already running on ws://localhost:6006."
+    scripts/docker-rippled.sh verify
 else
     scripts/docker-rippled.sh start
 fi
