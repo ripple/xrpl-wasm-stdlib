@@ -14,7 +14,7 @@ WORKFLOW_FILE=".github/workflows/test.yml"
 RIPPLED_WS_PORT=6006
 
 usage() {
-    echo "Usage: $0 {start|stop|status|logs}"
+    echo "Usage: $0 {start|stop|status|logs|verify}"
     exit 1
 }
 
@@ -49,6 +49,55 @@ is_port_open() {
     (: < "/dev/tcp/127.0.0.1/$RIPPLED_WS_PORT") 2>/dev/null
 }
 
+# Prints the commit rippled on the WS port was built from (server_info's `git.hash`),
+# or nothing if it can't be read: `git` is only returned on admin connections, and
+# Node's built-in WebSocket needs Node 22+. Uses no npm packages.
+get_running_hash() {
+    command -v node &> /dev/null || return 0
+    node -e '
+        if (typeof WebSocket === "undefined") process.exit(1);
+        setTimeout(() => process.exit(1), 10000);
+        const ws = new WebSocket(`ws://127.0.0.1:${process.argv[1]}`);
+        ws.onopen = () => ws.send(JSON.stringify({ command: "server_info" }));
+        ws.onmessage = (e) => {
+            console.log(JSON.parse(e.data).result?.info?.git?.hash ?? "");
+            process.exit(0);
+        };
+        ws.onerror = () => process.exit(1);
+    ' "$RIPPLED_WS_PORT" 2>/dev/null || true
+}
+
+# Fail if the rippled answering on the WS port isn't built from the commit CI pins.
+# The image check in start() only covers our own container; this also covers a
+# rippled we didn't start (a native build, another container). Skipped - not failed -
+# when the pinned tag isn't a commit hash or the running build can't be read.
+verify_build() {
+    if [[ "${SKIP_RIPPLED_BUILD_CHECK:-false}" == "true" ]]; then
+        echo "⚠️  SKIP_RIPPLED_BUILD_CHECK set - not verifying the rippled build."
+        return 0
+    fi
+
+    local image expected actual
+    image="$(get_image)"
+    expected="${image##*:}"
+    if [[ ! "$expected" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "ℹ️  Pinned tag '$expected' isn't a commit hash - skipping rippled build check."
+        return 0
+    fi
+
+    actual="$(get_running_hash)"
+    if [[ -z "$actual" ]]; then
+        echo "⚠️  Couldn't read git.hash from server_info on ws://localhost:$RIPPLED_WS_PORT (needs Node 22+ and an admin connection) - skipping rippled build check."
+        return 0
+    fi
+    if [[ "$actual" != "$expected" ]]; then
+        echo "❌ rippled on ws://localhost:$RIPPLED_WS_PORT is built from $actual, but CI pins $expected ($image)." >&2
+        echo "   Stop it and rerun to use the pinned Docker image, or set SKIP_RIPPLED_BUILD_CHECK=true to test against it anyway." >&2
+        exit 1
+    fi
+    echo "✅ rippled build matches the pinned commit ($expected)."
+}
+
 start() {
     local image
     image="$(get_image)"
@@ -69,11 +118,13 @@ start() {
         docker rm -f "$CONTAINER_NAME" &> /dev/null || true
     elif is_healthy; then
         echo "✅ $CONTAINER_NAME is already running and healthy."
+        verify_build
         return 0
     fi
 
     if is_port_open; then
         echo "✅ Something is already listening on ws://localhost:$RIPPLED_WS_PORT - assuming rippled is already running; skipping Docker."
+        verify_build
         return 0
     fi
 
@@ -104,6 +155,7 @@ start() {
         elapsed=$(( elapsed + 5 ))
     done
     echo "✅ $CONTAINER_NAME is healthy."
+    verify_build
 }
 
 stop() {
@@ -131,5 +183,6 @@ case "${1:-}" in
     stop) stop ;;
     status) status ;;
     logs) logs ;;
+    verify) verify_build ;;
     *) usage ;;
 esac
