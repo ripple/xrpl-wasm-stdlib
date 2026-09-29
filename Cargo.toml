@@ -9,6 +9,7 @@ members = [
 exclude = [
     "examples",
     "e2e-tests",
+    "tools/generate-host-bindings",
 ]
 
 [workspace.package]

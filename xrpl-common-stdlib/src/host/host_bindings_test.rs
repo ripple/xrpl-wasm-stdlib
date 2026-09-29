@@ -1,25 +1,23 @@
-#[cfg(not(target_arch = "wasm32"))]
+// The mock implementation of the host functions, used by `cargo test` and by crates that
+// enable the `test-host-bindings` feature. `mod.rs` only `include!`s this file on native
+// targets under that cfg, so nothing in here needs its own `#[cfg]`.
 use crate::host::host_bindings_trait::{HostBindings, MockHostBindings};
 use std::cell::RefCell;
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub struct MockGuard;
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 impl Drop for MockGuard {
     fn drop(&mut self) {
         clear_mock_host_bindings();
     }
 }
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn setup_mock(mock: MockHostBindings) -> MockGuard {
     set_mock_host_bindings(mock);
     MockGuard
 }
 
-// Create a default mock with stub return values matching the old host_bindings_for_testing.rs
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
+// Creates a mock with a permissive default expectation for every host function.
 pub fn create_default_mock() -> MockHostBindings {
     let mut mock = MockHostBindings::new();
     apply_default_expectations(&mut mock);
@@ -34,7 +32,6 @@ pub fn create_default_mock() -> MockHostBindings {
 /// mockall checks expectations in the order they were registered, so registering
 /// scenario-specific expectations before calling this function lets them take priority over
 /// the unconditional defaults added here.
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     // Ledger info functions - return small positive values
     mock.expect_ldgr_index()
@@ -197,43 +194,35 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     mock.expect_trace().returning(|_, _, _, _, _| ());
 }
 
-// #[cfg(test)]
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 thread_local! {
     static MOCK_STATE: RefCell<Option<MockHostBindings>> = RefCell::new(Some(create_default_mock()));
 }
 
 // Helper functions to manage the mock state
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn set_mock_host_bindings(mock: MockHostBindings) {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = Some(mock);
     });
 }
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
 pub fn clear_mock_host_bindings() {
     MOCK_STATE.with(|state| {
         *state.borrow_mut() = None;
     });
 }
 
-#[cfg(all(any(test, feature = "test-host-bindings"), not(target_arch = "wasm32")))]
-// Macro to generate stub functions for non-WASM targets
-// These functions delegate to the MockHostBindings in MOCK_STATE
-macro_rules! export_host_functions {
-    ($(
-        $(#[$attr:meta])*
-        fn $name:ident($($param:ident: $param_ty:ty),*) -> $ret:ty;
-    )*) => {
+// Defines a free function for every host function that forwards to the thread-local mock.
+// Expanded from the generated `for_each_host_function!` list (host_bindings_list.rs), so it
+// needs no changes when rippled adds a host function.
+macro_rules! dispatch_to_mock {
+    ($( fn $name:ident($($param:ident: $param_ty:ty),*) -> $ret:ty; )*) => {
         $(
-            #[allow(clippy::too_many_arguments)]
-            #[allow(clippy::missing_safety_doc)]
-            $(#[$attr])*
+            #[allow(clippy::too_many_arguments, clippy::missing_safety_doc, clippy::unused_unit)]
             pub unsafe fn $name($($param: $param_ty),*) -> $ret {
-                MOCK_STATE.with(|state|  {
-                    // The mock should always be present due to default initialization
-                    // If it's not, panic with a clear error message
+                MOCK_STATE.with(|state| {
+                    // The thread-local starts out holding a default mock, so this is only `None`
+                    // if a test called `clear_mock_host_bindings` and then kept calling host
+                    // functions. Fail with a clear message in that case.
                     let mock = state.borrow();
                     let mock_ref = mock.as_ref().expect("MockHostBindings not initialized");
                     unsafe { mock_ref.$name($($param),*) }
@@ -242,89 +231,7 @@ macro_rules! export_host_functions {
         )*
     };
 }
-
-// Re-export all host functions as public functions for use by the rest of the codebase
-// For non-WASM targets, these are stub implementations that panic
-// The actual test implementations using MockHostBindings are in the tests module below
-
-// Generate all the stub functions
-export_host_functions! {
-    // Host Function Category: ledger and transaction info
-    fn ldgr_index(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn parent_ldgr_time(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn parent_ldgr_hash(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn base_fee(out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn amendment_enabled(amendment_ptr: *const u8, amendment_len: usize) -> i32;
-    fn cache_le(id_ptr: *const u8, id_len: usize, cache_num: i32) -> i32;
-    fn tx_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn home_le_field(field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn le_field(cache_num: i32, field: i32, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn tx_inner(locator_ptr: *const u8, locator_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn home_le_inner(locator_ptr: *const u8, locator_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn le_inner(cache_num: i32, locator_ptr: *const u8, locator_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn tx_arr_len(field: i32) -> i32;
-    fn home_le_arr_len(field: i32) -> i32;
-    fn le_arr_len(cache_num: i32, field: i32) -> i32;
-    fn tx_inner_arr_len(locator_ptr: *const u8, locator_len: usize) -> i32;
-    fn home_le_inner_arr_len(locator_ptr: *const u8, locator_len: usize) -> i32;
-    fn le_inner_arr_len(cache_num: i32, locator_ptr: *const u8, locator_len: usize) -> i32;
-
-    // Host Function Category: update current ledger entry
-    fn set_data(data_ptr: *const u8, data_len: usize) -> i32;
-
-    // Host Function Category: hash and ledger entry ID computation
-    fn sha512_half(data_ptr: *const u8, data_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn check_sig(message_ptr: *const u8, message_len: usize, signature_ptr: *const u8, signature_len: usize, pubkey_ptr: *const u8, pubkey_len: usize) -> i32;
-    fn accountroot_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn amm_id(issue1_ptr: *const u8, issue1_len: usize, issue2_ptr: *const u8, issue2_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn check_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn credential_id(subject_ptr: *const u8, subject_len: usize, issuer_ptr: *const u8, issuer_len: usize, cred_type_ptr: *const u8, cred_type_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn delegate_id(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn deposit_preauth_id(account_ptr: *const u8, account_len: usize, authorize_ptr: *const u8, authorize_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn did_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn escrow_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn trustline_id(account1_ptr: *const u8, account1_len: usize, account2_ptr: *const u8, account2_len: usize, currency_ptr: *const u8, currency_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn mpt_issuance_id(issuer_ptr: *const u8, issuer_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn mptoken_id(mptid_ptr: *const u8, mptid_len: usize, holder_ptr: *const u8, holder_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_offer_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn offer_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn oracle_id(account_ptr: *const u8, account_len: usize, document_id_ptr: *const u8, document_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn paychan_id(account_ptr: *const u8, account_len: usize, destination_ptr: *const u8, destination_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn permissioned_domain_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn signers_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn ticket_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn vault_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn sponsorship_id(sponsor_ptr: *const u8, sponsor_len: usize, sponsee_ptr: *const u8, sponsee_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn loan_broker_id(owner_ptr: *const u8, owner_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn loan_id(loan_broker_id_ptr: *const u8, loan_broker_id_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-
-    // Host Function Category: NFT
-    fn nft_uri(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_issuer(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_taxon(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-    fn nft_flags(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
-    fn nft_xfer_fee(nft_id_ptr: *const u8, nft_id_len: usize) -> i32;
-    fn nft_serial(nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
-
-    // Host Function Category: FLOAT
-    fn float_from_int(in_int: i64, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_from_uint(in_uint_ptr: *const u8, in_uint_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_from_mant_exp(mantissa: i64, exponent: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_from_stamount(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_from_stnumber(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_to_int(in_buff: *const u8, in_buff_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_to_mant_exp(in_buff: *const u8, in_buff_len: usize, mant_buff: *mut u8, mant_buff_len: usize, exp_buff: *mut u8, exp_buff_len: usize) -> i32;
-    fn float_cmp(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize) -> i32;
-    fn float_add(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_sub(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_mult(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_div(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-
-    // Host Function Category: TRACE
-    fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();
-
-}
+for_each_host_function!(dispatch_to_mock);
 
 #[cfg(test)]
 mod tests {
@@ -509,4 +416,56 @@ mod tests {
         assert_eq!(time, 888);
         assert_eq!(fee, 777);
     }
+}
+
+/// Checks that [`apply_default_expectations`] covers every function in the generated list, by
+/// calling each one once against the default mock. When rippled adds a host function and the
+/// list is regenerated, this test fails (mockall panics with "No matching expectation found")
+/// until a default for the new function is added.
+#[cfg(test)]
+mod default_expectation_coverage {
+    use super::*;
+
+    trait ZeroArg {
+        fn zero() -> Self;
+    }
+    impl ZeroArg for i32 {
+        fn zero() -> Self {
+            0
+        }
+    }
+    impl ZeroArg for i64 {
+        fn zero() -> Self {
+            0
+        }
+    }
+    impl ZeroArg for usize {
+        fn zero() -> Self {
+            0
+        }
+    }
+    impl ZeroArg for *const u8 {
+        fn zero() -> Self {
+            core::ptr::null()
+        }
+    }
+    impl ZeroArg for *mut u8 {
+        fn zero() -> Self {
+            core::ptr::null_mut()
+        }
+    }
+
+    macro_rules! call_every_host_function {
+        ($( fn $name:ident($($param:ident: $param_ty:ty),*) -> $ret:ty; )*) => {
+            #[test]
+            #[allow(clippy::let_unit_value)]
+            fn every_host_function_has_a_default_expectation() {
+                let _guard = setup_mock(create_default_mock());
+                $(
+                    let _: $ret = unsafe { super::$name($(<$param_ty as ZeroArg>::zero()),*) };
+                )*
+            }
+        };
+    }
+    for_each_host_function!(call_every_host_function);
 }

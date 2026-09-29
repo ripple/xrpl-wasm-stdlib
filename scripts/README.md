@@ -38,7 +38,7 @@ You can also run individual test suites:
 - **`run-markdown.sh`** - Execute bash code blocks in Markdown files
 - **`run-tests.sh`** - Run integration tests for examples and end-to-end tests (reuses a running rippled, else starts one in Docker; see below)
 - **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses; also used by CI itself, so this is the only place the container's `docker run`/health-check/logs logic lives (`start`/`stop`/`status`/`logs`)
-- **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
+- **`generate-host-bindings.sh`** - Regenerate the host-binding trait + wire-signature list from rippled's host ABI (Rust generator; `--check` is the CI drift gate)
 - **`cargo-deny.sh`** - Check RustSec advisories on the library workspace (requires `cargo-deny`)
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
@@ -163,7 +163,7 @@ To add more custom mappings, edit the `customFieldTypes` object in `tools/genera
 
 - **Rust**: Stable toolchain (installed automatically by `setup.sh`)
 - **Pre-commit**: For running pre-commit hooks (installed by `setup.sh`)
-- **Node.js**: Required for host function audit, gas benchmark, and integration test scripts
+- **Node.js**: Required for sfield/tx-flag/ledger-object generation, gas benchmark, and integration test scripts
 - **Docker**: Required for `run-tests.sh`'s default local rippled (skip with `NO_DOCKER=true` or `DEVNET=true`)
 
 ## GitHub Actions Compatibility
@@ -175,7 +175,7 @@ Actions workflows, ensuring perfect consistency between local and CI environment
 
 - **Permission denied**: Run `chmod +x scripts/*.sh` to make scripts executable
 - **Pre-commit not found**: Run `./scripts/setup.sh` to install dependencies
-- **Node.js required**: Install Node.js for the host function audit, or skip that script
+- **Node.js required**: Install Node.js for the sfield/tx-flag/ledger-object generators, or skip those scripts
 - **WASM target missing**: The scripts automatically install the `wasm32v1-none` target
 - **Docker not found / daemon not reachable**: Install/start Docker, or set `NO_DOCKER=true` (use your own local rippled) or `DEVNET=true` (use WASM Devnet)
 
@@ -190,7 +190,7 @@ setup.sh (run first)
 ├── run-tests.sh
     └── ../build.sh (dependency)
 ├── fmt.sh
-├── host-function-audit.sh (requires Node.js)
+├── generate-host-bindings.sh
 ├── cargo-deny.sh (requires cargo-deny; library workspace only; not in run-all.sh while advisory-only)
 └── run-markdown.sh
 ```

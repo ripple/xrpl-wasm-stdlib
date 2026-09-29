@@ -273,13 +273,13 @@ mod coverage_tests {
     /// targets with stub host functions. It's used to measure code coverage
     /// of xrpl-common-stdlib.
     ///
-    /// Note: The host functions return dummy values (from host_bindings_for_testing.rs),
+    /// Note: On native targets the host functions are the stubs in `host_bindings_empty.rs`, which return dummy values,
     /// so this test verifies that the code *runs*, not that it's *correct*.
     /// Correctness is verified by the real integration tests against rippled.
     #[test]
     fn test_finish_exercises_all_host_functions() {
-        // On non-wasm targets, escrow_finish() uses host_bindings_for_testing.rs
-        // which provides stub implementations of all host functions.
+        // On non-wasm targets, escrow_finish() calls the stubs in `host_bindings_empty.rs`,
+        // which do nothing and return their last argument.
         let result = escrow_finish();
 
         // The escrow_finish() function returns 1 on success, or a negative error code.

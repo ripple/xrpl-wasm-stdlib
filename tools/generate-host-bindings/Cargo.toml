@@ -1,0 +1,13 @@
+[package]
+name = "generate-host-bindings"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Generates xrpl-common-stdlib's HostBindings trait and wire-signature list from rippled's host_functions! block"
+
+[dependencies]
+syn = { version = "3.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+
+# Standalone package: the root workspace `exclude`s this directory (see /Cargo.toml).
+[workspace]

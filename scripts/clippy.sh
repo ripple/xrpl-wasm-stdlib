@@ -28,4 +28,7 @@ cd e2e-tests
 cargo clippy --workspace --target wasm32v1-none --all-features -- -Dclippy::all
 cd ..
 
+echo "🔍 Running Clippy on tools/generate-host-bindings..."
+cargo clippy --manifest-path tools/generate-host-bindings/Cargo.toml --all-targets -- -Dclippy::all
+
 echo "✅ Clippy linting passed!"
