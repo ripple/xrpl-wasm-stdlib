@@ -18,6 +18,13 @@ pub fn rewrite_doc_line(line: &str, rust_to_wasm: &HashMap<String, String>) -> S
             break;
         };
         let target = &rest[start + OPEN.len()..start + OPEN.len() + len];
+        let after = start + OPEN.len() + len + CLOSE.len();
+        if rest[after..].starts_with(['(', '[']) {
+            // Real markdown link or reference link: keep verbatim.
+            out.push_str(&rest[..after]);
+            rest = &rest[after..];
+            continue;
+        }
         out.push_str(&rest[..start]);
         match target
             .strip_prefix(METHOD_PREFIX)
@@ -79,6 +86,17 @@ mod tests {
             ),
             " [`HostBindings::ldgr_index`] and `FloatOrdering` here"
         );
+    }
+
+    #[test]
+    fn leaves_inline_and_reference_links_verbatim() {
+        for line in [
+            " [`Foo`](https://x) tail",
+            " [`HostFunctions::get_ledger_sqn`](url) tail",
+            " [`Foo`][r] tail",
+        ] {
+            assert_eq!(rewrite_doc_line(line, &map()), line);
+        }
     }
 
     #[test]
