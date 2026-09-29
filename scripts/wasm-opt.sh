@@ -1,8 +1,8 @@
 #!/bin/bash
 # Shrink built release WASM contracts in place with Binaryen's wasm-opt (~30%).
 # A sidecar `<name>.wasm.opt-stamp` holds the optimized hash so reruns skip
-# modules cargo didn't relink. Mandatory: installs wasm-opt if missing, fails if
-# it can't.
+# modules cargo didn't relink. Installs wasm-opt if missing and fails if it
+# can't, but exits 0 when there's simply no release WASM to optimize.
 #
 # Usage:
 #   ./scripts/wasm-opt.sh                      # optimize the default release dirs
@@ -103,14 +103,14 @@ fi
 
 # Release only; debug builds stay unstripped for troubleshooting.
 TARGETS=("$@")
+EXPLICIT_TARGETS=true
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
+    EXPLICIT_TARGETS=false
     TARGETS=(
         "examples/target/wasm32v1-none/release"
         "e2e-tests/target/wasm32v1-none/release"
     )
 fi
-
-echo "🗜️  Optimizing WASM with $($WASM_OPT --version)..."
 
 hash_of() {
     if command -v shasum &> /dev/null; then
@@ -129,16 +129,24 @@ for target in "${TARGETS[@]}"; do
         done < <(find "$target" -maxdepth 1 -name '*.wasm' | sort)
     elif [[ -f "$target" ]]; then
         WASM_FILES+=("$target")
-    else
-        echo "❌ $target not found - build the WASM workspaces first."
+    elif [[ "$EXPLICIT_TARGETS" == "true" ]]; then
+        echo "❌ $target not found."
         exit 1
     fi
 done
 
+# Nothing to do is only an error when the caller named the targets; with the
+# defaults it just means no release WASM was built (e.g. a debug-only build).
 if [[ ${#WASM_FILES[@]} -eq 0 ]]; then
-    echo "❌ No .wasm files found to optimize in: ${TARGETS[*]}"
-    exit 1
+    if [[ "$EXPLICIT_TARGETS" == "true" ]]; then
+        echo "❌ No .wasm files found in: ${TARGETS[*]}"
+        exit 1
+    fi
+    echo "   No release WASM found - nothing to optimize."
+    exit 0
 fi
+
+echo "🗜️  Optimizing WASM with $($WASM_OPT --version)..."
 
 total_before=0
 total_after=0

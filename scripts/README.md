@@ -40,7 +40,7 @@ You can also run individual test suites:
 - **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses; also used by CI itself, so this is the only place the container's `docker run`/health-check/logs logic lives (`start`/`stop`/`status`/`logs`)
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
 - **`cargo-deny.sh`** - Check RustSec advisories on the library workspace (requires `cargo-deny`)
-- **`wasm-opt.sh`** - Shrink the built release contracts in place with Binaryen's `wasm-opt` (run automatically at the end of `build.sh`; auto-installs a pinned `wasm-opt` via cargo if none is found, and fails the build if it can't). `--ensure-tool` resolves/installs the tool without optimizing anything.
+- **`wasm-opt.sh`** - Shrink the built release contracts in place with Binaryen's `wasm-opt` (run automatically at the end of `build.sh`; auto-installs a pinned `wasm-opt` via cargo if none is found, and fails the build if it can't; exits quietly when there's no release WASM to optimize). `--ensure-tool` resolves/installs the tool without optimizing anything.
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
 
