@@ -120,6 +120,14 @@ hash_of() {
     fi
 }
 
+# The stamp covers the optimizer and its flags as well as the bytes, so that
+# editing WASM_OPT_FLAGS or moving to a different wasm-opt re-optimizes a module
+# cargo hasn't relinked.
+OPT_SIG="$($WASM_OPT --version) | ${FLAGS[*]}"
+stamp_value() {
+    echo "$(hash_of "$1") | $OPT_SIG"
+}
+
 # maxdepth 1: deps/ and build/ below the profile dir hold intermediates.
 WASM_FILES=()
 for target in "${TARGETS[@]}"; do
@@ -158,7 +166,7 @@ for wasm in "${WASM_FILES[@]}"; do
     stamp="$wasm.opt-stamp"
     before=$(wc -c < "$wasm" | tr -d ' ')
 
-    if [[ -f "$stamp" ]] && [[ "$(cat "$stamp")" == "$(hash_of "$wasm")" ]]; then
+    if [[ -f "$stamp" ]] && [[ "$(cat "$stamp")" == "$(stamp_value "$wasm")" ]]; then
         echo "   ⏭️  $name (already optimized, ${before} bytes)"
         skipped=$((skipped + 1))
         total_before=$((total_before + before))
@@ -175,7 +183,7 @@ for wasm in "${WASM_FILES[@]}"; do
     mv "$tmp" "$wasm"
 
     after=$(wc -c < "$wasm" | tr -d ' ')
-    hash_of "$wasm" > "$stamp"
+    stamp_value "$wasm" > "$stamp"
     optimized=$((optimized + 1))
     total_before=$((total_before + before))
     total_after=$((total_after + after))
