@@ -1,8 +1,11 @@
 #!/bin/bash
 # Shrink built release WASM contracts in place with Binaryen's wasm-opt (~30%).
-# A sidecar `<name>.wasm.opt-stamp` holds the optimized hash so reruns skip
-# modules cargo didn't relink. Installs wasm-opt if missing and fails if it
-# can't, but exits 0 when there's simply no release WASM to optimize.
+# Installs wasm-opt if missing or off the pin, and fails if it can't, but exits
+# 0 when there's simply no release WASM to optimize.
+#
+# No result caching: cargo re-uplifts the profile-dir .wasm from deps/ on every
+# build (our in-place write breaks its hardlink), so each build.sh run is
+# already exactly one pass over pristine output.
 #
 # Usage:
 #   ./scripts/wasm-opt.sh                      # optimize the default release dirs
@@ -33,8 +36,12 @@ if [[ "${1:-}" == "--ensure-tool" ]]; then
 fi
 
 # Pinned: a different Binaryen means different bytes, and different gas numbers
-# out of scripts/benchmark-gas.sh.
+# out of scripts/benchmark-gas.sh. The crate is versioned 0.<binaryen>.<patch>.
 WASM_OPT_CRATE_VERSION="0.116.1"
+PINNED_BINARYEN_VERSION="$(echo "$WASM_OPT_CRATE_VERSION" | cut -d. -f2)"
+
+WASM_OPT_USER_SET=false
+[[ -n "${WASM_OPT:-}" ]] && WASM_OPT_USER_SET=true
 
 CARGO_BIN="${CARGO_HOME:-$HOME/.cargo}/bin"
 resolve_wasm_opt() {
@@ -54,17 +61,19 @@ resolve_wasm_opt() {
     return 1
 }
 
-if ! resolve_wasm_opt; then
+binaryen_version_of() {
+    "$1" --version 2>/dev/null | grep -oE '[0-9]+' | head -1
+}
+
+install_pinned_wasm_opt() {
     if [[ "${WASM_OPT_NO_INSTALL:-false}" == "true" ]]; then
-        echo "❌ wasm-opt not found and WASM_OPT_NO_INSTALL=true."
+        echo "❌ Need wasm-opt v$WASM_OPT_CRATE_VERSION but WASM_OPT_NO_INSTALL=true."
         echo "   Install Binaryen (brew install binaryen | apt-get install binaryen),"
         echo "   or run: cargo install wasm-opt --version $WASM_OPT_CRATE_VERSION --locked"
         exit 1
     fi
-
-    echo "📦 wasm-opt not found - installing wasm-opt v$WASM_OPT_CRATE_VERSION via cargo..."
-    echo "   (this compiles Binaryen from source and takes a few minutes the first time;"
-    echo "    it needs a C++17 toolchain. Set WASM_OPT_NO_INSTALL=true to opt out.)"
+    echo "   (compiles Binaryen from source, a few minutes; needs a C++17 toolchain."
+    echo "    Set WASM_OPT_NO_INSTALL=true to opt out.)"
     # Cleared because the repo-wide -Dwarnings would fail on third-party crates.
     if ! RUSTFLAGS="" cargo install wasm-opt --version "$WASM_OPT_CRATE_VERSION" --locked; then
         echo "❌ Failed to install wasm-opt via cargo."
@@ -72,9 +81,32 @@ if ! resolve_wasm_opt; then
         echo "   and re-run, or set SKIP_WASM_OPT=true to build without optimization."
         exit 1
     fi
+}
+
+if ! resolve_wasm_opt; then
+    echo "📦 wasm-opt not found - installing wasm-opt v$WASM_OPT_CRATE_VERSION via cargo..."
+    install_pinned_wasm_opt
     if ! resolve_wasm_opt; then
         echo "❌ cargo install succeeded but wasm-opt is still not on PATH or in $CARGO_BIN."
         exit 1
+    fi
+fi
+
+# A cargo-managed wasm-opt must actually match the pin. CI caches ~/.cargo/bin
+# under a key derived from Cargo.lock, which a pin bump here doesn't change, so
+# without this the old binary would silently survive the bump. A system Binaryen
+# (brew/apt) is deliberately left alone - see AGENTS.md.
+if [[ "$WASM_OPT_USER_SET" == "false" && "$WASM_OPT" -ef "$CARGO_BIN/wasm-opt" ]]; then
+    have="$(binaryen_version_of "$WASM_OPT")"
+    if [[ "$have" != "$PINNED_BINARYEN_VERSION" ]]; then
+        echo "♻️  cargo-installed wasm-opt is Binaryen $have, pin wants $PINNED_BINARYEN_VERSION - reinstalling..."
+        install_pinned_wasm_opt
+        have="$(binaryen_version_of "$WASM_OPT")"
+        if [[ "$have" != "$PINNED_BINARYEN_VERSION" ]]; then
+            echo "❌ Installed wasm-opt v$WASM_OPT_CRATE_VERSION but got Binaryen $have, expected $PINNED_BINARYEN_VERSION."
+            echo "   If the crate no longer versions as 0.<binaryen>.<patch>, fix PINNED_BINARYEN_VERSION in this script."
+            exit 1
+        fi
     fi
 fi
 
@@ -112,22 +144,6 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     )
 fi
 
-hash_of() {
-    if command -v shasum &> /dev/null; then
-        shasum -a 256 "$1" | cut -d' ' -f1
-    else
-        sha256sum "$1" | cut -d' ' -f1
-    fi
-}
-
-# The stamp covers the optimizer and its flags as well as the bytes, so that
-# editing WASM_OPT_FLAGS or moving to a different wasm-opt re-optimizes a module
-# cargo hasn't relinked.
-OPT_SIG="$($WASM_OPT --version) | ${FLAGS[*]}"
-stamp_value() {
-    echo "$(hash_of "$1") | $OPT_SIG"
-}
-
 # maxdepth 1: deps/ and build/ below the profile dir hold intermediates.
 WASM_FILES=()
 for target in "${TARGETS[@]}"; do
@@ -158,21 +174,10 @@ echo "🗜️  Optimizing WASM with $($WASM_OPT --version)..."
 
 total_before=0
 total_after=0
-optimized=0
-skipped=0
 
 for wasm in "${WASM_FILES[@]}"; do
     name="$(basename "$wasm")"
-    stamp="$wasm.opt-stamp"
     before=$(wc -c < "$wasm" | tr -d ' ')
-
-    if [[ -f "$stamp" ]] && [[ "$(cat "$stamp")" == "$(stamp_value "$wasm")" ]]; then
-        echo "   ⏭️  $name (already optimized, ${before} bytes)"
-        skipped=$((skipped + 1))
-        total_before=$((total_before + before))
-        total_after=$((total_after + before))
-        continue
-    fi
 
     tmp="$wasm.opt.tmp"
     if ! "$WASM_OPT" "${FLAGS[@]}" "$wasm" -o "$tmp"; then
@@ -183,13 +188,9 @@ for wasm in "${WASM_FILES[@]}"; do
     mv "$tmp" "$wasm"
 
     after=$(wc -c < "$wasm" | tr -d ' ')
-    stamp_value "$wasm" > "$stamp"
-    optimized=$((optimized + 1))
     total_before=$((total_before + before))
     total_after=$((total_after + after))
     echo "   ✅ $name: ${before} -> ${after} bytes ($(( (before - after) * 100 / (before > 0 ? before : 1) ))% smaller)"
 done
 
-if [[ $total_before -gt 0 ]]; then
-    echo "🗜️  wasm-opt: ${optimized} optimized, ${skipped} unchanged; ${total_before} -> ${total_after} bytes total"
-fi
+echo "🗜️  wasm-opt: ${#WASM_FILES[@]} contracts, ${total_before} -> ${total_after} bytes total"
