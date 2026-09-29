@@ -54,14 +54,6 @@ jobs:
       - name: Run Clippy linting
         run: ./scripts/clippy.sh
 
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Run formatting check
-        run: ./scripts/fmt.sh
-
   check_wasm_exports:
     runs-on: ubuntu-latest
     steps:
@@ -91,6 +83,14 @@ jobs:
 
       - name: Check generated host-binding files are up to date
         run: ./scripts/generate-host-bindings.sh --check
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run formatting check
+        run: ./scripts/fmt.sh
 
   # Advisory-only experiment (issue #126). Left out of run-all.sh so contributors
   # without cargo-deny can still run the local suite. continue-on-error: the first
