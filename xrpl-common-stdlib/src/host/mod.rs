@@ -49,14 +49,22 @@ impl From<RoundingMode> for i32 {
 
 // This setup allows us to keep all host functions in the `host::` namespace, but vary the implementation based on
 // target and build profiles.
-// 1) `host_bindings_trait.rs` defines the trait that specifies the host functions available to WASM smart contracts.
+// 1) `host_bindings_trait.rs` (GENERATED from rippled) defines the trait that specifies the host functions
+//    available to WASM smart contracts, and `host_bindings_list.rs` (GENERATED) defines the
+//    `for_each_host_function!` macro carrying the same signatures, which the three implementations expand from.
+//    Regenerate both with ./scripts/generate-host-bindings.sh; CI runs it with --check.
 // 2a) When cargo is executed with `test` or with the `test-host-bindings` feature, `host_bindings_test.rs` is included,
-//     which provides stub implementations for coverage testing.
+//     which dispatches to a mockall `MockHostBindings`.
 // 2b) When `cargo build` is executed, then `host_bindings_empty.rs` is included, which provides a no-op implementation
 //     that simply allows the build to pass when the target is not Wasm32.
 // 2c) When `cargo build --target wasm32v1-none` (or any Wasm target) is executed, then `host_bindings_wasm.rs` is
 //     included, which provides the actual host function implementations.
+// The generated signatures mirror rippled's wire arity (up to 8 params + `&self`), hence the allow.
+#[allow(clippy::too_many_arguments)]
 pub mod host_bindings_trait;
+
+// macro_rules! are textually scoped, so the list must precede the three include!s below.
+include!("host_bindings_list.rs");
 
 #[cfg(all(
     not(any(test, feature = "test-host-bindings")),
