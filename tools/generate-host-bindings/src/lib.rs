@@ -4,6 +4,7 @@
 //! `docs/superpowers/specs/2026-09-29-host-bindings-generator-design.md`.
 
 pub mod docs;
+pub mod emit;
 pub mod lower;
 pub mod parse;
 
