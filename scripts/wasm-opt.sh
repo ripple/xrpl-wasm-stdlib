@@ -115,13 +115,11 @@ if [[ "$ENSURE_ONLY" == "true" ]]; then
     exit 0
 fi
 
-# MVP + sign-ext + mutable-globals is exactly wasm32v1-none. Don't widen it:
-# post-MVP instructions (bulk memory, SIMD, reftypes) would be rejected by the
-# target and by rippled's engine.
+# Narrower than wasm32v1-none on purpose: rippled rejects sign-extension with
+# temINVALID_BYTECODE, and -Oz will happily introduce it.
 DEFAULT_WASM_OPT_FLAGS=(
     -Oz
     --mvp-features
-    --enable-sign-ext
     --enable-mutable-globals
     --strip-debug
     --strip-producers
