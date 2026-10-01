@@ -115,12 +115,13 @@ if [[ "$ENSURE_ONLY" == "true" ]]; then
     exit 0
 fi
 
-# Narrower than wasm32v1-none on purpose: rippled rejects sign-extension with
-# temINVALID_BYTECODE, and -Oz will happily introduce it.
+# Pure MVP, narrower than wasm32v1-none on purpose: rippled's wasmi engine turns
+# every post-MVP proposal off for consensus determinism, so anything extra is a
+# temINVALID_BYTECODE on-ledger. Mirrors wasm_engine() in rippled's
+# crates/xrpl-wasm-vm/src/vm.rs - see AGENTS.md before touching.
 DEFAULT_WASM_OPT_FLAGS=(
     -Oz
     --mvp-features
-    --enable-mutable-globals
     --strip-debug
     --strip-producers
 )
