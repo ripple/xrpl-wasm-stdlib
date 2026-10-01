@@ -44,8 +44,10 @@ use crate::host::Result;
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::amount::Amount;
-use crate::types::blob::SignatureBlob;
+use crate::types::blob::{SignatureBlob, StandardBlob};
+use crate::types::memo::Memo;
 use crate::types::public_key::PublicKey;
+use crate::types::signer::Signer;
 use crate::types::transaction_type::TransactionType;
 use crate::types::uint::Hash256;
 
@@ -334,6 +336,134 @@ pub trait TransactionCommonFields {
     fn get_txn_signature(&self) -> Result<SignatureBlob> {
         get_field(sfield::TxnSignature)
     }
+
+    /// Returns how many entries the `Memos` array holds.
+    ///
+    /// `Memos` is optional, so a transaction without one yields `Ok(0)` rather than an error. Pair
+    /// with [`get_memo`](Self::get_memo) to walk the array:
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+    /// use xrpl_common_stdlib::host::Result;
+    /// # fn demo(tx: &impl TransactionCommonFields) {
+    /// if let Result::Ok(count) = tx.get_memos_len() {
+    ///     for i in 0..count {
+    ///         if let Result::Ok(Some(memo)) = tx.get_memo(i) {
+    ///             # let _ = memo.memo_data;
+    ///         }
+    ///     }
+    /// }
+    /// # }
+    /// ```
+    fn get_memos_len(&self) -> Result<u32> {
+        array_len_or_zero(self.path().field(sfield::Memos).array_len())
+    }
+
+    /// Reads entry `index` of the `Memos` array.
+    ///
+    /// Returns `Ok(None)` when `index` is at or past [`get_memos_len`](Self::get_memos_len), so
+    /// `get_memo(0)` on a transaction with no memos is `Ok(None)`, not an error. Each of the memo's
+    /// three fields is optional: a field that is present but empty is `Some` with `len == 0`, and
+    /// only a missing field is `None`.
+    ///
+    /// The host path is `Memos -> index -> MemoType|MemoData|MemoFormat`. The `Memo` wrapper
+    /// object seen in JSON is *not* a path segment: the host rejects it with "field not found", so
+    /// array entries are indexed straight into their leaf fields (the same shape as `Signers`).
+    fn get_memo(&self, index: u32) -> Result<Option<Memo>> {
+        let in_range = match self.get_memos_len() {
+            Result::Ok(len) => index < len,
+            Result::Err(e) => return Result::Err(e),
+        };
+        if !in_range {
+            return Result::Ok(None);
+        }
+        let entry = self.path().field(sfield::Memos).index(index);
+        let memo_type = match entry
+            .clone()
+            .field(sfield::MemoType)
+            .get_optional::<StandardBlob>()
+        {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let memo_data = match entry
+            .clone()
+            .field(sfield::MemoData)
+            .get_optional::<StandardBlob>()
+        {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let memo_format = match entry
+            .field(sfield::MemoFormat)
+            .get_optional::<StandardBlob>()
+        {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        Result::Ok(Some(Memo {
+            memo_type,
+            memo_data,
+            memo_format,
+        }))
+    }
+
+    /// Returns how many entries the `Signers` array holds.
+    ///
+    /// `Signers` is only present on multi-signed transactions; a single-signed transaction yields
+    /// `Ok(0)` rather than an error. Pair with [`get_signer`](Self::get_signer) to walk the array.
+    fn get_signers_len(&self) -> Result<u32> {
+        array_len_or_zero(self.path().field(sfield::Signers).array_len())
+    }
+
+    /// Reads entry `index` of the `Signers` array.
+    ///
+    /// Returns `Ok(None)` when `index` is at or past [`get_signers_len`](Self::get_signers_len).
+    /// rippled requires `Account`, `TxnSignature`, and `SigningPubKey` on every signer, so all
+    /// three are read as required fields and a missing one is an error.
+    ///
+    /// The host path is `Signers -> index -> Account|TxnSignature|SigningPubKey`; as with `Memos`,
+    /// the `Signer` wrapper object seen in JSON is not a path segment.
+    fn get_signer(&self, index: u32) -> Result<Option<Signer>> {
+        let in_range = match self.get_signers_len() {
+            Result::Ok(len) => index < len,
+            Result::Err(e) => return Result::Err(e),
+        };
+        if !in_range {
+            return Result::Ok(None);
+        }
+        let entry = self.path().field(sfield::Signers).index(index);
+        let account = match entry.clone().field(sfield::Account).get::<AccountID>() {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let txn_signature = match entry
+            .clone()
+            .field(sfield::TxnSignature)
+            .get::<SignatureBlob>()
+        {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        let signing_pub_key = match entry.field(sfield::SigningPubKey).get::<PublicKey>() {
+            Result::Ok(v) => v,
+            Result::Err(e) => return Result::Err(e),
+        };
+        Result::Ok(Some(Signer {
+            account,
+            txn_signature,
+            signing_pub_key,
+        }))
+    }
+}
+
+/// Treats an absent optional array as empty: the host reports a missing `Memos`/`Signers` field as
+/// `FieldNotFound`, which for a length query means "zero entries". Other errors pass through.
+fn array_len_or_zero(len: Result<u32>) -> Result<u32> {
+    match len {
+        Result::Err(crate::host::Error::FieldNotFound) => Result::Ok(0),
+        other => other,
+    }
 }
 
 #[cfg(test)]
@@ -383,6 +513,254 @@ mod tests {
             .index(0)
             .get::<u32>();
         assert!(result.is_ok());
+    }
+
+    /// Tests for the `Memos`/`Signers` array accessors. The locator the builder sends is checked
+    /// by length (one 4-byte segment per `field`/`index`) and, where it matters which leaf field is
+    /// being read, by decoding the last segment back out of the locator bytes.
+    mod tx_arrays {
+        use crate::current_tx::traits::TransactionCommonFields;
+        use crate::current_tx::traits::tests::TestTransaction;
+        use crate::host::error_codes::{FIELD_NOT_FOUND, SOME_ERROR};
+        use crate::host::host_bindings_trait::MockHostBindings;
+        use crate::host::setup_mock;
+        use crate::host::{Error, Result};
+        use crate::sfield;
+        use crate::types::account_id::ACCOUNT_ID_SIZE;
+        use crate::types::blob::{DEFAULT_BLOB_SIZE, SIGNATURE_BLOB_SIZE};
+        use crate::types::public_key::PUBLIC_KEY_BUFFER_SIZE;
+        use mockall::predicate::{always, eq};
+
+        /// Locator byte count for `Memos -> i -> <leaf>` (no `Memo` wrapper segment).
+        const MEMO_LEAF_LOCATOR_LEN: usize = 3 * 4;
+        /// Locator byte count for `Signers -> i -> <leaf>`.
+        const SIGNER_LEAF_LOCATOR_LEN: usize = 3 * 4;
+
+        /// Decode the last 4-byte segment of a locator — the leaf field code the builder asked for.
+        fn last_segment(locator_ptr: *const u8, locator_len: usize) -> i32 {
+            let bytes = unsafe { core::slice::from_raw_parts(locator_ptr, locator_len) };
+            let tail: [u8; 4] = bytes[locator_len - 4..].try_into().unwrap();
+            i32::from_le_bytes(tail)
+        }
+
+        /// Fill the host's output buffer with `fill` for `n` bytes and report `n` written.
+        fn write_out(out_ptr: *mut u8, out_len: usize, n: usize, fill: u8) -> i32 {
+            assert!(n <= out_len, "mock would overrun the caller's buffer");
+            let out = unsafe { core::slice::from_raw_parts_mut(out_ptr, out_len) };
+            out[..n].fill(fill);
+            n as i32
+        }
+
+        #[test]
+        fn memos_len_is_zero_when_array_absent() {
+            let mut mock = MockHostBindings::new();
+            // A top-level array is a one-segment locator (4 bytes).
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| FIELD_NOT_FOUND);
+            let _guard = setup_mock(mock);
+
+            assert_eq!(TestTransaction.get_memos_len().unwrap(), 0);
+        }
+
+        #[test]
+        fn memos_len_passes_other_errors_through() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| SOME_ERROR);
+            let _guard = setup_mock(mock);
+
+            assert!(matches!(
+                TestTransaction.get_memos_len(),
+                Result::Err(Error::NoMemoryExported)
+            ));
+        }
+
+        #[test]
+        fn memo_out_of_range_is_none_without_reading_fields() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 1);
+            // No `tx_inner` expectation: an out-of-range index must not touch the host again.
+            let _guard = setup_mock(mock);
+
+            assert!(TestTransaction.get_memo(1).unwrap().is_none());
+        }
+
+        #[test]
+        fn memo_on_absent_array_is_none() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| FIELD_NOT_FOUND);
+            let _guard = setup_mock(mock);
+
+            assert!(TestTransaction.get_memo(0).unwrap().is_none());
+        }
+
+        #[test]
+        fn memo_zero_length_data_is_some_and_empty() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 1);
+            // Memos -> 0 -> <leaf>: MemoType and MemoFormat are absent, MemoData is
+            // present with zero bytes. All three reads use the StandardBlob buffer.
+            mock.expect_tx_inner()
+                .with(
+                    always(),
+                    eq(MEMO_LEAF_LOCATOR_LEN),
+                    always(),
+                    eq(DEFAULT_BLOB_SIZE),
+                )
+                .times(3)
+                .returning(
+                    |loc_ptr, loc_len, _, _| match last_segment(loc_ptr, loc_len) {
+                        code if code == i32::from(sfield::MemoData) => 0,
+                        _ => FIELD_NOT_FOUND,
+                    },
+                );
+            let _guard = setup_mock(mock);
+
+            let memo = TestTransaction.get_memo(0).unwrap().unwrap();
+            assert!(memo.memo_type.is_none());
+            assert!(memo.memo_format.is_none());
+            let data = memo
+                .memo_data
+                .expect("present-but-empty MemoData stays Some");
+            assert_eq!(data.len, 0);
+        }
+
+        #[test]
+        fn memo_reads_all_three_fields_without_a_wrapper_segment() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 2);
+            mock.expect_tx_inner()
+                .with(
+                    always(),
+                    eq(MEMO_LEAF_LOCATOR_LEN),
+                    always(),
+                    eq(DEFAULT_BLOB_SIZE),
+                )
+                .times(3)
+                .returning(|loc_ptr, loc_len, out_ptr, out_len| {
+                    let bytes = unsafe { core::slice::from_raw_parts(loc_ptr, loc_len) };
+                    // Segments: Memos, index, leaf — no `Memo` wrapper.
+                    let seg =
+                        |i: usize| i32::from_le_bytes(bytes[i * 4..i * 4 + 4].try_into().unwrap());
+                    assert_eq!(seg(0), i32::from(sfield::Memos));
+                    assert_eq!(seg(1), 1, "index segment");
+                    let leaf = seg(2);
+                    if leaf == i32::from(sfield::MemoType) {
+                        write_out(out_ptr, out_len, 4, 0xAA)
+                    } else if leaf == i32::from(sfield::MemoData) {
+                        write_out(out_ptr, out_len, 32, 0xBB)
+                    } else if leaf == i32::from(sfield::MemoFormat) {
+                        write_out(out_ptr, out_len, 10, 0xCC)
+                    } else {
+                        panic!("unexpected leaf field {leaf}")
+                    }
+                });
+            let _guard = setup_mock(mock);
+
+            let memo = TestTransaction.get_memo(1).unwrap().unwrap();
+            let memo_type = memo.memo_type.unwrap();
+            assert_eq!(memo_type.as_slice(), &[0xAA; 4]);
+            let memo_data = memo.memo_data.unwrap();
+            assert_eq!(memo_data.as_slice(), &[0xBB; 32]);
+            let memo_format = memo.memo_format.unwrap();
+            assert_eq!(memo_format.as_slice(), &[0xCC; 10]);
+        }
+
+        #[test]
+        fn signers_len_is_zero_when_array_absent() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| FIELD_NOT_FOUND);
+            let _guard = setup_mock(mock);
+
+            assert_eq!(TestTransaction.get_signers_len().unwrap(), 0);
+        }
+
+        #[test]
+        fn signer_out_of_range_is_none() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 2);
+            let _guard = setup_mock(mock);
+
+            assert!(TestTransaction.get_signer(2).unwrap().is_none());
+        }
+
+        #[test]
+        fn signer_reads_one_full_entry_without_a_wrapper_segment() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 1);
+            // Signers -> 0 -> <leaf>: each leaf has its own buffer size, so match on the
+            // locator length and dispatch on the leaf code.
+            mock.expect_tx_inner()
+                .with(always(), eq(SIGNER_LEAF_LOCATOR_LEN), always(), always())
+                .times(3)
+                .returning(|loc_ptr, loc_len, out_ptr, out_len| {
+                    let leaf = last_segment(loc_ptr, loc_len);
+                    if leaf == i32::from(sfield::Account) {
+                        assert_eq!(out_len, ACCOUNT_ID_SIZE);
+                        write_out(out_ptr, out_len, ACCOUNT_ID_SIZE, 0x11)
+                    } else if leaf == i32::from(sfield::TxnSignature) {
+                        assert_eq!(out_len, SIGNATURE_BLOB_SIZE);
+                        // A real DER signature is shorter than the 72-byte buffer.
+                        write_out(out_ptr, out_len, 70, 0x22)
+                    } else if leaf == i32::from(sfield::SigningPubKey) {
+                        assert_eq!(out_len, PUBLIC_KEY_BUFFER_SIZE);
+                        write_out(out_ptr, out_len, PUBLIC_KEY_BUFFER_SIZE, 0x33)
+                    } else {
+                        panic!("unexpected leaf field {leaf}")
+                    }
+                });
+            let _guard = setup_mock(mock);
+
+            let signer = TestTransaction.get_signer(0).unwrap().unwrap();
+            assert_eq!(signer.account.0, [0x11; ACCOUNT_ID_SIZE]);
+            assert_eq!(signer.txn_signature.as_slice(), &[0x22; 70]);
+            assert_eq!(signer.signing_pub_key.0, [0x33; PUBLIC_KEY_BUFFER_SIZE]);
+        }
+
+        #[test]
+        fn signer_with_missing_required_field_is_an_error() {
+            let mut mock = MockHostBindings::new();
+            mock.expect_tx_inner_arr_len()
+                .with(always(), eq(4usize))
+                .times(1)
+                .returning(|_, _| 1);
+            // Account is the first field read; a missing one is an error, not `None`.
+            mock.expect_tx_inner()
+                .with(always(), eq(SIGNER_LEAF_LOCATOR_LEN), always(), always())
+                .times(1)
+                .returning(|_, _, _, _| FIELD_NOT_FOUND);
+            let _guard = setup_mock(mock);
+
+            assert!(matches!(
+                TestTransaction.get_signer(0),
+                Result::Err(Error::FieldNotFound)
+            ));
+        }
     }
 
     mod transaction_common_fields {

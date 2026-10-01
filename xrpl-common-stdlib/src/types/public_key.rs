@@ -1,3 +1,6 @@
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, decode_exact};
+use crate::types::decode_error::DecodeError;
+
 pub const PUBLIC_KEY_BUFFER_SIZE: usize = 33;
 
 /// A 33-byte public key for secp256k1 and ed25519 DSA types.
@@ -38,6 +41,28 @@ impl From<&[u8]> for PublicKey {
         PublicKey(key_bytes)
     }
 }
+
+/// `FieldDecoder` for a public key read as a field in its own right (for example
+/// `Signers[i].SigningPubKey`): the host must write exactly 33 bytes.
+///
+/// The top-level `SigningPubKey` is deliberately *not* read this way — it is legitimately empty on
+/// a multi-signed transaction, so `get_signing_pub_key` decodes it as a blob and maps the empty
+/// case to `None`.
+impl FieldDecoder for PublicKey {
+    type Buffer = [u8; PUBLIC_KEY_BUFFER_SIZE];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        [0u8; PUBLIC_KEY_BUFFER_SIZE]
+    }
+
+    #[inline]
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        decode_exact(buf, bytes_written)
+    }
+}
+
+impl FromCurrentTx for PublicKey {}
 
 #[cfg(test)]
 mod test_public_key {

@@ -16,11 +16,8 @@ const EXPECTED_CONDITION: [u8; 39] = [
 const EXPECTED_FULFILLMENT: [u8; 7] = [0xA0, 0x05, 0x80, 0x03, 0x73, 0x68, 0x68];
 
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host;
-use xrpl_common_stdlib::host::trace::{
-    trace, trace_acct, trace_acct_buf, trace_amt, trace_hex, trace_num,
-};
+use xrpl_common_stdlib::host::trace::{trace, trace_acct, trace_amt, trace_hex, trace_num};
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::transaction_type::TransactionType;
@@ -134,151 +131,114 @@ pub extern "C" fn escrow_finish() -> i32 {
         }
 
         // Memos array (optional) - require at least one memo for testing
-        let array_len = match escrow_finish.path().field(sfield::Memos).array_len() {
-            host::Result::Ok(len) => len as i32,
-            host::Result::Err(e) => {
-                trace_num("  Error getting Memos array len, error_code = ", e as i64);
-                e.code()
-            }
-        };
+        let memos_len = escrow_finish.get_memos_len().unwrap();
         test_utils::assert!(
-            array_len > 0,
+            memos_len > 0,
             "At least one Memo should be present for testing"
         );
-        trace_num("  Memos array len:", array_len as i64);
+        trace_num("  Memos array len:", memos_len as i64);
 
-        // A one-segment locator counts a top-level array, so it agrees with the host's dedicated
-        // top-level call — which is why contracts need no separate top-level accessor.
+        // All three ways of counting a top-level array must agree: the typed accessor, a
+        // one-segment locator, and the host's dedicated top-level call — which is why contracts
+        // need no separate top-level accessor.
         test_utils::assert_eq!(
-            array_len,
+            memos_len,
+            escrow_finish
+                .path()
+                .field(sfield::Memos)
+                .array_len()
+                .unwrap(),
+            "get_memos_len should match path().array_len() for a top-level array"
+        );
+        test_utils::assert_eq!(
+            memos_len as i32,
             unsafe { host::tx_arr_len(sfield::Memos.into()) },
             "Locator array_len should match tx_arr_len for a top-level array"
         );
 
-        for i in 0..array_len {
-            let mut memo_buf = [0u8; 1024];
-            let mut locator = Locator::new();
-            locator.pack(sfield::Memos);
-            locator.pack(i);
-            locator.pack(sfield::Memo);
-            locator.pack(sfield::MemoType);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    memo_buf.as_mut_ptr(),
-                    memo_buf.len(),
-                )
+        // Wire shape: Memos -> i -> MemoType|MemoData|MemoFormat. The JSON `Memo` wrapper is not
+        // a path segment.
+        for i in 0..memos_len {
+            let memo = match escrow_finish.get_memo(i) {
+                host::Result::Ok(Some(memo)) => memo,
+                host::Result::Ok(None) => {
+                    trace_num("  get_memo returned None for in-range index:", i as i64);
+                    panic!()
+                }
+                host::Result::Err(e) => {
+                    trace_num("  Error getting Memo, error_code = ", e as i64);
+                    panic!()
+                }
             };
             trace_num("    Memo #:", i as i64);
-            if output_len > 0 {
-                trace_hex("      MemoType:", &memo_buf[..output_len as usize]);
+            // runTest.js sends a memo with all three fields populated; a silently-empty decode
+            // (which an earlier shape of this test let through) must fail here.
+            test_utils::assert!(
+                memo.memo_type.is_some() && memo.memo_data.is_some() && memo.memo_format.is_some(),
+                "every memo field should decode"
+            );
+            if let Some(memo_type) = &memo.memo_type {
+                trace_hex("      MemoType:", memo_type.as_slice());
             }
-
-            locator.repack_last(sfield::MemoData);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    memo_buf.as_mut_ptr(),
-                    memo_buf.len(),
-                )
-            };
-            if output_len > 0 {
-                trace_hex("      MemoData:", &memo_buf[..output_len as usize]);
+            if let Some(memo_data) = &memo.memo_data {
+                trace_hex("      MemoData:", memo_data.as_slice());
             }
-
-            locator.repack_last(sfield::MemoFormat);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    memo_buf.as_mut_ptr(),
-                    memo_buf.len(),
-                )
-            };
-            if output_len > 0 {
-                trace_hex("      MemoFormat:", &memo_buf[..output_len as usize]);
+            if let Some(memo_format) = &memo.memo_format {
+                trace_hex("      MemoFormat:", memo_format.as_slice());
             }
         }
 
-        // Signers array (optional) - require at least one signer for testing
-        // TODO: Use this logic to fix https://github.com/ripple/xrpl-wasm-stdlib/issues/90
-        let array_len = unsafe { host::tx_arr_len(sfield::Signers.into()) };
+        // Reading past the end is `None`, not an error.
+        test_utils::assert!(
+            escrow_finish.get_memo(memos_len).unwrap().is_none(),
+            "get_memo past the end should be None"
+        );
+
+        // Signers array - this test finishes with a multi-signed transaction, so require at
+        // least one signer.
+        let signers_len = escrow_finish.get_signers_len().unwrap();
         #[cfg(target_arch = "wasm32")]
         assert!(
-            array_len > 0,
+            signers_len > 0,
             "At least one Signer should be present for testing"
         );
-        trace_num("  Signers array len:", array_len as i64);
+        trace_num("  Signers array len:", signers_len as i64);
+        test_utils::assert_eq!(
+            signers_len as i32,
+            unsafe { host::tx_arr_len(sfield::Signers.into()) },
+            "get_signers_len should match tx_arr_len for a top-level array"
+        );
 
-        for i in 0..array_len {
-            let mut buf = [0x00; 128];
-            let mut locator = Locator::new();
-            locator.pack(sfield::Signers);
-            locator.pack(i);
-            // Try without Signer wrapper - maybe the structure is different
-            locator.pack(sfield::Account);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    buf.as_mut_ptr(),
-                    buf.len(),
-                )
+        // Wire shape: Signers -> i -> Account|TxnSignature|SigningPubKey (same as Memos: no
+        // `Signer` wrapper segment).
+        for i in 0..signers_len {
+            let signer = match escrow_finish.get_signer(i) {
+                host::Result::Ok(Some(signer)) => signer,
+                host::Result::Ok(None) => {
+                    trace_num("  get_signer returned None for in-range index:", i as i64);
+                    panic!()
+                }
+                host::Result::Err(e) => {
+                    trace_num("  Error getting Signer, error_code = ", e as i64);
+                    panic!()
+                }
             };
-            if output_len < 0 {
-                trace_num("  cannot get Account, error:", output_len as i64);
-                panic!()
-            }
             trace_num("    Signer #:", i as i64);
-            // Account should be 20 bytes
-            trace_num("     Account length:", output_len as i64);
-            if output_len == 20 {
-                trace_acct_buf("     Account:", &buf[..20].try_into().unwrap());
-            } else {
-                trace_hex(
-                    "     Account (unexpected length):",
-                    &buf[..output_len as usize],
-                );
-                panic!()
-            }
-
-            locator.repack_last(sfield::TxnSignature);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    buf.as_mut_ptr(),
-                    buf.len(),
-                )
-            };
-            if output_len < 0 {
-                trace_num("  cannot get TxnSignature, error:", output_len as i64);
-                panic!()
-            }
-            trace_hex("     TxnSignature:", &buf[..output_len as usize]);
-
-            locator.repack_last(sfield::SigningPubKey);
-            let output_len = unsafe {
-                host::tx_inner(
-                    locator.as_ptr(),
-                    locator.num_packed_bytes(),
-                    buf.as_mut_ptr(),
-                    buf.len(),
-                )
-            };
-            if output_len < 0 {
-                trace_num(
-                    "     Error getting SigningPubKey. error_code = ",
-                    output_len as i64,
-                );
-                panic!()
-            }
-            // SigningPubKey should be 33 bytes (compressed public key)
-            trace_num("     SigningPubKey length:", output_len as i64);
-            trace_hex("     SigningPubKey:", &buf[..output_len as usize]);
+            trace_acct("     Account:", &signer.account);
+            trace_num(
+                "     TxnSignature length:",
+                signer.txn_signature.len() as i64,
+            );
+            trace_hex("     TxnSignature:", signer.txn_signature.as_slice());
+            // SigningPubKey is always a 33-byte compressed public key inside a Signer.
+            trace_hex("     SigningPubKey:", &signer.signing_pub_key.0);
         }
+
+        // Reading past the end is `None`, not an error.
+        test_utils::assert!(
+            escrow_finish.get_signer(signers_len).unwrap().is_none(),
+            "get_signer past the end should be None"
+        );
 
         // TxnSignature - only present for single-signed transactions
         // Multi-signed transactions use Signers array instead

@@ -62,25 +62,40 @@ pub trait TransactionCommonFields {
     fn get_signing_pub_key(&self) -> Result<Option<PublicKey>>;
     fn get_ticket_sequence(&self) -> Result<Option<u32>>;
     fn get_txn_signature(&self) -> Result<SignatureBlob>;
+    // Transaction-level arrays: length + index (no_std, so no Vec)
+    fn get_memos_len(&self) -> Result<u32>;              // Ok(0) when Memos is absent
+    fn get_memo(&self, i: u32) -> Result<Option<Memo>>;  // None when i >= len
+    fn get_signers_len(&self) -> Result<u32>;            // Ok(0) on single-signed txs
+    fn get_signer(&self, i: u32) -> Result<Option<Signer>>;
 }
 ```
 
 `EscrowFinishFields` adds: `get_owner()`, `get_offer_sequence()`, `get_condition()`, `get_fulfillment()` — the Owner/OfferSequence/Condition/Fulfillment identifying which `EscrowCreate` this finish targets.
 
-Variable-length data (Memos, arrays) isn't exposed as a typed method — read it via `Locator`:
+### Memos and Signers
+
+`Memos` and `Signers` are read by length + index. `xrpl_common_stdlib::types::memo::Memo` has three `Option<StandardBlob>` fields (`memo_type`, `memo_data`, `memo_format`); a present-but-empty field is `Some` with `len == 0`, only a missing field is `None`. `xrpl_common_stdlib::types::signer::Signer` has `account: AccountID`, `txn_signature: SignatureBlob`, `signing_pub_key: PublicKey` — all required.
 
 ```rust
-use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::tx_inner;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::types::memo::Memo;
 
-let mut locator = Locator::new();
-locator.pack(sfield::Memos);
-locator.pack(0);                    // index 0
-locator.pack(sfield::MemoData);
-let rc = unsafe {
-    tx_inner(locator.as_ptr(), locator.num_packed_bytes(), buf.as_mut_ptr(), buf.len())
+// First memo's MemoData, or reject when there is no memo / no MemoData
+let data = match ctx.tx().get_memo(0) {
+    Ok(Some(Memo { memo_data: Some(data), .. })) => data,
+    Ok(_) => return FinishResult::reject(),
+    Err(e) => return e.code().into(),
 };
+
+// Walk every signer of a multi-signed EscrowFinish
+for i in 0..ctx.tx().get_signers_len().unwrap_or(0) {
+    if let Ok(Some(signer)) = ctx.tx().get_signer(i) {
+        trace_acct("signer:", &signer.account);
+    }
+}
 ```
+
+Other nested fields are reached through the path builder, `ctx.tx().path().field(..).index(..).field(..).get::<T>()`, or via the lower-level `Locator` + `tx_inner` when you need manual control. Wire shapes: `Memos -> i -> MemoType|MemoData|MemoFormat` and `Signers -> i -> Account|TxnSignature|SigningPubKey`. The per-entry JSON wrapper objects (`Memo`, `Signer`) are not path segments.
 
 ## Reading the escrow being finished — `ctx.escrow()`
 
