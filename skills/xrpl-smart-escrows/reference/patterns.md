@@ -177,27 +177,24 @@ Key idea: every `EscrowFinish` call re-enters this function from scratch — sta
 
 ## 6. Cross-escrow atomic swap — `atomic_swap`
 
-Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `Locator` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
+Two escrows, each finished separately, each checking the _other's_ state via a ledger entry ID stored in a memo or in its own `Data` field. Demonstrates `get_memo(0)` for reading tx memos and `Escrow::new(slot)` for inspecting a counterpart escrow.
 
 ```rust
-use xrpl_common_stdlib::fields::locator::Locator;
-use xrpl_common_stdlib::host::tx_inner;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::cache_le;
-use xrpl_common_stdlib::sfield;
+use xrpl_common_stdlib::types::memo::Memo;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 
-// Read Memos[0].MemoData from the current EscrowFinish tx (e.g. the counterpart's ledger entry ID)
-let mut locator = Locator::new();
-locator.pack(sfield::Memos);
-locator.pack(0);
-locator.pack(sfield::MemoData);
-let mut counterpart_id = [0u8; 32];
-let rc = unsafe {
-    tx_inner(locator.as_ptr(), locator.num_packed_bytes(),
-        counterpart_id.as_mut_ptr(), counterpart_id.len())
+// Read Memos[0].MemoData from the current EscrowFinish tx (the counterpart's ledger entry ID)
+let memo = match ctx.tx().get_memo(0) {
+    xrpl_common_stdlib::host::Result::Ok(Some(Memo { memo_data: Some(data), .. })) => data,
+    _ => return xrpl_escrow_stdlib::FinishResult::reject(),
 };
-if rc < 0 { return xrpl_escrow_stdlib::FinishResult::reject(); }
+if memo.len != XRPL_LEDGER_ENTRY_ID_SIZE { return xrpl_escrow_stdlib::FinishResult::reject(); }
+let counterpart_id: [u8; XRPL_LEDGER_ENTRY_ID_SIZE] = memo.data[..XRPL_LEDGER_ENTRY_ID_SIZE].try_into().unwrap();
 
 // Load the counterpart escrow and read its fields
 let counterpart_slot = match cache_le(&counterpart_id) {
