@@ -22,6 +22,20 @@
 //!       .get::<u32>();
 //!   # let _ = data; }
 //!   ```
+//!
+//!   Confirmed wire shapes for the two transaction-level arrays (pinned by the
+//!   `trace_escrow_finish` e2e test against rippled):
+//!
+//!   - `Memos -> i -> MemoType | MemoData | MemoFormat`
+//!   - `Signers -> i -> Account | TxnSignature | SigningPubKey`
+//!
+//!   In both cases the per-entry wrapper object seen in JSON (`Memo`, `Signer`) is **not** a path
+//!   segment: the host answers "field not found" if it is included. Index straight into the leaf.
+//!
+//!   Contracts rarely need to spell these out:
+//!   [`get_memo`](crate::current_tx::traits::TransactionCommonFields::get_memo) and
+//!   [`get_signer`](crate::current_tx::traits::TransactionCommonFields::get_signer) wrap them in
+//!   typed [`Memo`](crate::types::memo::Memo) / [`Signer`](crate::types::signer::Signer) values.
 //! - [`Locator`] itself is the lower-level buffer: [`pack`](Locator::pack) values in and pass
 //!   [`as_ptr`](Locator::as_ptr) / [`num_packed_bytes`](Locator::num_packed_bytes) to a raw host
 //!   call. Prefer the builder unless you need that manual control.
@@ -178,7 +192,6 @@ fn array_len_for(
 ///             .path()
 ///             .field(sfield::Memos)
 ///             .index(i)
-///             .field(sfield::Memo)
 ///             .field(sfield::MemoType)
 ///             .get::<StandardBlob>();
 ///         # let _ = memo_type;
@@ -883,9 +896,9 @@ mod tests {
             .with(always(), eq(4usize))
             .times(1)
             .returning(|_, _| 2);
-        // Two reads of Memos[i].Memo.MemoType -> 16 bytes of path.
+        // Two reads of Memos[i].MemoType -> 12 bytes of path (no `Memo` wrapper segment).
         mock.expect_tx_inner()
-            .with(always(), eq(16usize), always(), always())
+            .with(always(), eq(12usize), always(), always())
             .times(2)
             .returning(|_, _, _, out_buff_len| out_buff_len as i32);
         let _guard = setup_mock(mock);
@@ -898,7 +911,6 @@ mod tests {
                 .clone()
                 .field(sfield::Memos)
                 .index(i)
-                .field(sfield::Memo)
                 .field(sfield::MemoType)
                 .get::<StandardBlob>();
             assert!(memo_type.is_ok());

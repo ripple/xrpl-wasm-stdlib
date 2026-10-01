@@ -3,19 +3,16 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::fields::locator::Locator;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
-use xrpl_common_stdlib::host::tx_inner;
-use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
 use xrpl_common_stdlib::ledger_entry_ids::XRPL_LEDGER_ENTRY_ID_SIZE;
 use xrpl_common_stdlib::objects::cache_le;
 use xrpl_common_stdlib::objects::traits::EscrowFields;
-use xrpl_common_stdlib::sfield;
-use xrpl_common_stdlib::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
-use xrpl_common_stdlib::types::contract_data::{
-    ContractData, XRPL_CONTRACT_DATA_SIZE as TX_CONTRACT_DATA_SIZE,
-};
+use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::types::memo::Memo;
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow::Escrow;
@@ -52,40 +49,6 @@ fn is_valid_atomic_swap2_wasm(wasm_bytes: &[u8]) -> bool {
 }
 */
 
-/// Extracts the first memo from the transaction.
-///
-/// This function uses a Locator to navigate the transaction structure:
-/// - Memos[0].MemoData contains the counterpart escrow ledger entry ID
-/// - Returns the memo data as a byte array and its length
-/// - Used to get the 32-byte ledger entry ID of the counterpart escrow
-#[unsafe(no_mangle)]
-pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
-    let mut data: ContractData = ContractData {
-        data: [0u8; TX_CONTRACT_DATA_SIZE],
-        len: 0,
-    };
-    let mut locator = Locator::new();
-    locator.pack(sfield::Memos);
-    locator.pack(0);
-    locator.pack(sfield::MemoData);
-    let result_code = unsafe {
-        tx_inner(
-            locator.as_ptr(),
-            locator.num_packed_bytes(),
-            data.data.as_mut_ptr(),
-            data.data.len(),
-        )
-    };
-
-    match result_code {
-        result_code if result_code > 0 => Ok(Some((data, result_code as usize))),
-        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
-        // same as an absent field and let the caller decide.
-        0 => Ok(None),
-        result_code => Err(Error::from_code(result_code)),
-    }
-}
-
 /// Phase 1: Initialization - validate counterpart escrow and set timing deadline.
 ///
 /// This function:
@@ -95,30 +58,32 @@ pub fn get_first_memo() -> Result<Option<(ContractData, usize)>> {
 /// 4. Retrieves CancelAfter as the swap deadline
 /// 5. Stores the counterpart ledger entry ID + deadline in the data field
 /// 6. Returns 0 to wait for Phase 2
-fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
+fn phase1_initialize(ctx: &EscrowFinishContext) -> i32 {
     trace_num("Phase 1: Initialization", 0);
+    let current_escrow: &CurrentEscrow = ctx.escrow();
 
-    // Extract the counterpart escrow ledger entry ID from transaction memo
-    let (memo, memo_len) = match get_first_memo() {
-        Ok(v) => match v {
-            Some(v) => v,
-            None => {
-                trace_num(
-                    "No memo provided - atomic swap requires counterpart reference",
-                    0,
-                );
-                return VALIDATION_FAILED;
-            }
-        },
+    // Extract the counterpart escrow ledger entry ID from Memos[0].MemoData
+    let memo = match ctx.tx().get_memo(0) {
+        Ok(Some(Memo {
+            memo_data: Some(data),
+            ..
+        })) => data,
+        Ok(_) => {
+            trace_num(
+                "No memo provided - atomic swap requires counterpart reference",
+                0,
+            );
+            return VALIDATION_FAILED;
+        }
         Err(e) => {
             trace_num("Error getting first memo:", e.code() as i64);
             return e.code();
         }
     };
 
-    // Validate memo contains a full 32-byte ledger entry ID
-    if memo_len != XRPL_LEDGER_ENTRY_ID_SIZE {
-        trace_num("Memo too short, expected 32 bytes, got:", memo_len as i64);
+    // Validate memo contains a full 32-byte ledger entry ID (an empty MemoData fails here too)
+    if memo.len != XRPL_LEDGER_ENTRY_ID_SIZE {
+        trace_num("Memo too short, expected 32 bytes, got:", memo.len as i64);
         return VALIDATION_FAILED;
     }
 
@@ -242,7 +207,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     trace_num("Current escrow CancelAfter:", cancel_after as i64);
 
     // Build new data field: counterpart ledger entry ID (32 bytes) + CancelAfter (4 bytes)
-    let mut new_data = xrpl_common_stdlib::types::contract_data::ContractData {
+    let mut new_data = ContractData {
         data: [0u8; XRPL_CONTRACT_DATA_SIZE],
         len: 0,
     };
@@ -278,7 +243,7 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
 /// 2. Gets the current ledger time
 /// 3. Validates that current time < CancelAfter (within deadline)
 /// 4. Returns 1 (success) if within deadline, 0 (failure) if expired
-fn phase2_complete(current_data: &xrpl_common_stdlib::types::contract_data::ContractData) -> i32 {
+fn phase2_complete(current_data: &ContractData) -> i32 {
     trace_num("Phase 2: Timing validation", 0);
 
     // Validate data field contains at least 36 bytes (32 bytes ledger entry ID + 4 bytes timing)
@@ -346,7 +311,7 @@ fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
             // If the data field doesn't exist, this is Phase 1
             if e.code() == xrpl_common_stdlib::host::error_codes::FIELD_NOT_FOUND {
                 trace_num("No data field found - this is Phase 1", 0);
-                return phase1_initialize(current_escrow);
+                return phase1_initialize(&ctx);
             }
             trace_num("Error getting current escrow data:", e.code() as i64);
             return e.code();
@@ -359,7 +324,7 @@ fn atomic_swap1_finish(ctx: EscrowFinishContext) -> i32 {
     // Phase 1: data.len == 0 (no state stored yet)
     // Phase 2: data.len >= 36 (contains counterpart ledger entry ID + timing data)
     if current_data.len == 0 {
-        phase1_initialize(current_escrow)
+        phase1_initialize(&ctx)
     } else {
         phase2_complete(&current_data)
     }

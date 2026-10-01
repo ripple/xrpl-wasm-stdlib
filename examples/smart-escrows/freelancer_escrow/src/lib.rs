@@ -5,14 +5,12 @@ extern crate std;
 
 use xrpl_common_stdlib::ctx::SmartFeatureContext;
 use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::chain::parent_ledger_time;
 use xrpl_common_stdlib::host::trace::trace_num;
-use xrpl_common_stdlib::host::tx_inner;
 use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::types::memo::Memo;
 use xrpl_escrow_stdlib::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_escrow_stdlib::ledger_objects::escrow_storage::{EscrowStorage, load_data, save_data};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
@@ -190,31 +188,19 @@ impl EscrowStorage for State {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn read_intent() -> Result<Intent> {
-    let mut buf = [0u8; 1];
-    let mut locator = Locator::new();
-    locator.pack(sfield::Memos);
-    locator.pack(0);
-    locator.pack(sfield::MemoData);
-    let code = unsafe {
-        tx_inner(
-            locator.as_ptr(),
-            locator.num_packed_bytes(),
-            buf.as_mut_ptr(),
-            buf.len(),
-        )
+fn read_intent(tx: &impl TransactionCommonFields) -> Result<Intent> {
+    // The intent is the first byte of Memos[0].MemoData. A missing memo, a missing MemoData,
+    // or a present-but-empty one (protocol-valid input) all mean no intent was supplied,
+    // which is an invalid request for this contract — same as an unrecognized intent byte.
+    let data = match tx.get_memo(0) {
+        Ok(Some(Memo {
+            memo_data: Some(data),
+            ..
+        })) => data,
+        Ok(_) => return Err(Error::InvalidParams),
+        Err(e) => return Err(e),
     };
-    if code <= 0 {
-        // Zero length is a present-but-empty memo (protocol-valid input): no intent byte
-        // was provided, which is an invalid request for this contract — same as an
-        // unrecognized intent byte below.
-        return Err(if code == 0 {
-            Error::InvalidParams
-        } else {
-            Error::from_code(code)
-        });
-    }
-    match Intent::from_byte(buf[0]) {
+    match data.as_slice().first().and_then(|b| Intent::from_byte(*b)) {
         Some(intent) => Ok(intent),
         None => Err(Error::InvalidParams),
     }
@@ -269,7 +255,7 @@ fn escrow(ctx: EscrowFinishContext) -> FinishResult {
         Some(state) => state,
         None => return FinishResult::reject(),
     };
-    let intent = try_or_trace!(read_intent(), "intent");
+    let intent = try_or_trace!(read_intent(tx), "intent");
 
     let role = match identify(tx_account, client, freelancer, state.arbitrator()) {
         Some(r) => r,

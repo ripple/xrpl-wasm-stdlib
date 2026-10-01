@@ -3,64 +3,38 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_common_stdlib::fields::locator::Locator;
+use xrpl_common_stdlib::ctx::SmartFeatureContext;
+use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
 use xrpl_common_stdlib::host::trace::{trace_hex, trace_num};
-use xrpl_common_stdlib::host::tx_inner;
-use xrpl_common_stdlib::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_common_stdlib::sfield;
-use xrpl_common_stdlib::types::contract_data::{ContractData, XRPL_CONTRACT_DATA_SIZE};
+use xrpl_common_stdlib::host::{Result::Err, Result::Ok};
+use xrpl_common_stdlib::types::memo::Memo;
 use xrpl_common_stdlib::types::nft::{NFT_ID_SIZE, NFToken};
 use xrpl_escrow_stdlib::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 
-#[unsafe(no_mangle)]
-pub fn get_first_memo() -> Result<Option<ContractData>> {
-    let mut data: ContractData = ContractData {
-        data: [0u8; XRPL_CONTRACT_DATA_SIZE],
-        len: 0,
-    };
-    let mut locator = Locator::new();
-    locator.pack(sfield::Memos);
-    locator.pack(0);
-    locator.pack(sfield::MemoData);
-    let result_code = unsafe {
-        tx_inner(
-            locator.as_ptr(),
-            locator.num_packed_bytes(),
-            data.data.as_mut_ptr(),
-            data.data.len(),
-        )
-    };
-
-    match result_code {
-        result_code if result_code > 0 => {
-            Ok(Some(data)) // <-- Move the buffer into an AccountID
-        }
-        // Zero length is a present-but-empty memo (protocol-valid input); treat it the
-        // same as an absent field and let the caller decide.
-        0 => Ok(None),
-        result_code => Err(Error::from_code(result_code)),
-    }
-}
-
 #[smart_escrow]
 fn nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult {
-    let memo: ContractData = match get_first_memo() {
-        Ok(v) => {
-            match v {
-                Some(v) => v,
-                None => return FinishResult::reject(), // <-- Do not execute the escrow.
-            }
-        }
+    // The NFT to check is carried in Memos[0].MemoData. No memo, no MemoData, or too few
+    // bytes for an NFT ID all reject the finish.
+    let memo = match ctx.tx().get_memo(0) {
+        Ok(Some(Memo {
+            memo_data: Some(data),
+            ..
+        })) => data,
+        Ok(_) => return FinishResult::reject(), // <-- Do not execute the escrow.
         Err(e) => {
             trace_num("Error getting first memo:", e.code() as i64);
             return e.code().into(); // <-- Do not execute the escrow.
         }
     };
+    if memo.len < NFT_ID_SIZE {
+        trace_num("MemoData too short for an NFT ID, got:", memo.len as i64);
+        return FinishResult::reject();
+    }
 
     // Extract NFT ID from memo (first 32 bytes) and create NFToken
-    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..32].try_into().unwrap();
+    let nft_id_bytes: [u8; NFT_ID_SIZE] = memo.data[0..NFT_ID_SIZE].try_into().unwrap();
     let nft_token = NFToken::new(nft_id_bytes);
     trace_hex("NFT ID from memo:", nft_token.as_bytes());
 
