@@ -431,7 +431,7 @@ checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 
 [[package]]
 name = "xrpl-common-stdlib"
-version = "0.9.0"
+version = "0.10.0-dev"
 dependencies = [
  "mockall",
  "trybuild",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "xrpl-escrow-stdlib"
-version = "0.9.0"
+version = "0.10.0-dev"
 dependencies = [
  "mockall",
  "trybuild",
@@ -450,7 +450,7 @@ dependencies = [
 
 [[package]]
 name = "xrpl-macros"
-version = "0.9.0"
+version = "0.10.0-dev"
 dependencies = [
  "bs58",
  "proc-macro2",
@@ -462,7 +462,7 @@ dependencies = [
 
 [[package]]
 name = "xrpl-stdlib-test-utils"
-version = "0.9.0"
+version = "0.10.0-dev"
 dependencies = [
  "mockall",
  "xrpl-common-stdlib",
