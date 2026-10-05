@@ -19,12 +19,32 @@ async function submit(tx, wallet, debug = false) {
 
 async function fundWallet(wallet = undefined) {
   if (!(client.url.includes("localhost") || client.url.includes("127.0.0.1"))) {
-    const walletToFund = wallet || xrpl.Wallet.generate()
-    const result = await client.fundWallet(walletToFund, {
-      faucetHost: "wasm-devnet-faucet.dev.ripplex.io",
-      faucetPath: "/accounts",
-    })
-    return result.wallet
+    // This faucet ignores `destination` and returns a new funded account with
+    // its seed, so client.fundWallet() (which expects `account.classicAddress`
+    // for the wallet it sent) can't be used.
+    if (wallet) throw new Error("Devnet faucet cannot fund an existing wallet")
+    const response = await fetch(
+      "https://wasm-devnet-faucet.dev.ripplex.io/accounts",
+      { method: "POST" },
+    )
+    if (!response.ok) {
+      throw new Error(
+        `Faucet request failed: ${response.status} ${await response.text()}`,
+      )
+    }
+    const walletToFund = xrpl.Wallet.fromSeed(
+      (await response.json()).account.secret,
+    )
+    for (let i = 0; i < 30; i++) {
+      try {
+        if (Number(await client.getXrpBalance(walletToFund.address)) > 0)
+          return walletToFund
+      } catch {
+        // Account not created yet.
+      }
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+    throw new Error(`Faucet did not fund ${walletToFund.address} within 30s`)
   }
   const master = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
     algorithm: xrpl.ECDSA.secp256k1,
