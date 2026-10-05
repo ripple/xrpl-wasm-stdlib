@@ -1,11 +1,15 @@
-const xrpl = require("xrpl")
-
-const notary = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
-  algorithm: xrpl.ECDSA.secp256k1,
-})
-
 async function test(testContext) {
-  const { sourceWallet, deploy, finish, destWallet, finishEscrow } = testContext
+  const {
+    sourceWallet,
+    deploy,
+    finish,
+    destWallet,
+    finishEscrow,
+    getTestAccount,
+  } = testContext
+
+  // NOTARY_ACCOUNT in src/lib.rs.
+  const notary = await getTestAccount(testContext, sourceWallet)
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
