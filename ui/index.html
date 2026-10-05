@@ -78,7 +78,7 @@
                   type="radio"
                   id="devnet"
                   name="network"
-                  value="wss://wasm.devnet.rippletest.net:51233"
+                  value="wss://wasm-devnet.dev.ripplex.io:51233"
                   checked
                 />
                 <label for="devnet">WASM Devnet</label>
@@ -736,9 +736,9 @@
 
         if (
           selectedNetwork &&
-          selectedNetwork.includes("wasm.devnet.rippletest.net")
+          selectedNetwork.includes("wasm-devnet.dev.ripplex.io")
         ) {
-          return `http://custom.xrpl.org/wasm.devnet.rippletest.net/transactions/${hash}`
+          return `http://custom.xrpl.org/wasm-devnet.dev.ripplex.io/transactions/${hash}`
         } else if (
           selectedNetwork &&
           (selectedNetwork.includes("localhost") ||
@@ -748,7 +748,7 @@
         }
 
         // Default to devnet explorer if network detection fails
-        return `http://custom.xrpl.org/wasm.devnet.rippletest.net/transactions/${hash}`
+        return `http://custom.xrpl.org/wasm-devnet.dev.ripplex.io/transactions/${hash}`
       }
 
       function logWithExplorer(message, hash = null) {

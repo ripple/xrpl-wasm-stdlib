@@ -17,7 +17,7 @@ npm ls --silent > /dev/null 2>&1 || npm ci
 # By default, tests run against a local rippled. scripts/docker-rippled.sh reuses one
 # that's already running on ws://localhost:6006, or else starts one in Docker, pinned to
 # the same image CI uses. Override with:
-#   DEVNET=true      - test against wss://wasm.devnet.rippletest.net:51233 instead
+#   DEVNET=true      - test against wss://wasm-devnet.dev.ripplex.io:51233 instead
 #   NO_DOCKER=true   - force-skip Docker; test against a rippled you're already running yourself
 if [[ "${DEVNET:-}" == "true" ]]; then
     echo "🌐 DEVNET set - skipping local Docker rippled."
@@ -51,7 +51,7 @@ run_integration_test() {
     echo "🔧 Running integration test for $contract_name in $dir"
     exit_code=0
     if [[ "${DEVNET:-}" == "true" || -n "${DEVNET:-}" ]]; then
-        node tests/runSingleTest.js "$dir" "$wasm_file_release" "wss://wasm.devnet.rippletest.net:51233"
+        node tests/runSingleTest.js "$dir" "$wasm_file_release" "wss://wasm-devnet.dev.ripplex.io:51233"
         exit_code=$?
     else
         node tests/runSingleTest.js "$dir" "$wasm_file_release"

@@ -23,7 +23,7 @@ finishing the escrow, `FinishResult::reject()` denies it, and host errors are pr
 
 ## Step-by-step: Use on WASM Devnet
 
-This guide uses the public Devnet WASM endpoint at `wss://wasm.devnet.rippletest.net:51233`.
+This guide uses the public Devnet WASM endpoint at `wss://wasm-devnet.dev.ripplex.io:51233`.
 
 ### 1. Install dependencies
 
