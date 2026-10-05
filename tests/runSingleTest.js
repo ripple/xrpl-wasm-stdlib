@@ -20,7 +20,10 @@ async function submit(tx, wallet, debug = false) {
 async function fundWallet(wallet = undefined) {
   if (!(client.url.includes("localhost") || client.url.includes("127.0.0.1"))) {
     const walletToFund = wallet || xrpl.Wallet.generate()
-    const result = await client.fundWallet(walletToFund)
+    const result = await client.fundWallet(walletToFund, {
+      faucetHost: "wasm-devnet-faucet.dev.ripplex.io",
+      faucetPath: "/accounts",
+    })
     return result.wallet
   }
   const master = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
