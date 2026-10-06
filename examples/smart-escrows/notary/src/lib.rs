@@ -14,7 +14,7 @@ use xrpl_macros::smart_escrow;
 
 // The notary account that is authorized to complete escrows
 // Using example notary account for testing
-const NOTARY_ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const NOTARY_ACCOUNT: AccountID = r_address!("rsbUa8MS622mhhcDPXW6CcaGD3zYcojdQ4");
 
 #[smart_escrow]
 fn notary_finish(ctx: EscrowFinishContext) -> i32 {

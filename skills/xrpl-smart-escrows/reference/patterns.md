@@ -14,7 +14,7 @@ use xrpl_common_stdlib::types::account_id::AccountID;
 use xrpl_escrow_stdlib::EscrowFinishContext;
 use xrpl_macros::{r_address, smart_escrow};
 
-const NOTARY_ACCOUNT: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const NOTARY_ACCOUNT: AccountID = r_address!("rsbUa8MS622mhhcDPXW6CcaGD3zYcojdQ4");
 
 #[smart_escrow]
 fn notary_finish(ctx: EscrowFinishContext) -> i32 {
@@ -45,7 +45,7 @@ use xrpl_macros::r_address;
 use xrpl_escrow_stdlib::{EscrowFinishContext, FinishResult};
 use xrpl_macros::smart_escrow;
 
-const ORACLE_OWNER: AccountID = r_address!("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+const ORACLE_OWNER: AccountID = r_address!("rsbUa8MS622mhhcDPXW6CcaGD3zYcojdQ4");
 const ORACLE_DOCUMENT_ID: u32 = 1;
 
 fn get_price_from_oracle(slot: i32) -> Result<u64> {

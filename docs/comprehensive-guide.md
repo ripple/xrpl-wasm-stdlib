@@ -613,7 +613,7 @@ These examples demonstrate:
 
 | Network         | Endpoint                                 | Purpose             |
 | --------------- | ---------------------------------------- | ------------------- |
-| **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing |
+| **WASM Devnet** | `wss://wasm-devnet.dev.ripplex.io:51233` | Integration testing |
 | **Local Node**  | `ws://localhost:6006`                    | Local Development   |
 
 Follow the instructions [here](https://xrpl.org/docs/infrastructure/installation/build-on-linux-mac-windows) with [this branch](https://github.com/XRPLF/rippled/tree/ripple/se/supported) if you would like to build and run rippled locally.

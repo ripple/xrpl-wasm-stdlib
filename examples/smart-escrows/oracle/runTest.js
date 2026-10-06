@@ -1,9 +1,5 @@
 const xrpl = require("xrpl")
 
-const oracleWallet = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
-  algorithm: xrpl.ECDSA.secp256k1,
-})
-
 async function test(testContext) {
   const {
     deploy,
@@ -15,7 +11,11 @@ async function test(testContext) {
     finishEscrow,
     expectResult,
     getLedgerCloseTimeIso,
+    getTestAccount,
   } = testContext
+
+  // ORACLE_OWNER in src/lib.rs.
+  const oracleWallet = await getTestAccount(testContext, sourceWallet)
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
 

@@ -45,7 +45,7 @@ const ORACLE_DOCUMENT_ID: i32 = 1;
 
 ## Step-by-step: Use on WASM Devnet
 
-This guide uses the public Devnet WASM endpoint at `wss://wasm.devnet.rippletest.net:51233`.
+This guide uses the public Devnet WASM endpoint at `wss://wasm-devnet.dev.ripplex.io:51233`.
 
 ### 1. Install dependencies
 

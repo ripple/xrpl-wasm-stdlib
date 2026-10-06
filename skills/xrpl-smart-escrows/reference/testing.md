@@ -64,7 +64,7 @@ Run it:
 ```shell
 ./scripts/run-tests.sh                                     # every example + e2e contract with a runTest.js
 ./scripts/run-tests.sh examples/smart-escrows/hello_world   # single contract
-DEVNET=true ./scripts/run-tests.sh                          # against wss://wasm.devnet.rippletest.net:51233 instead of local rippled
+DEVNET=true ./scripts/run-tests.sh                          # against wss://wasm-devnet.dev.ripplex.io:51233 instead of local rippled
 ```
 
 Requires a running rippled node with the Smart Escrow amendment (local default: `ws://localhost:6006`; build from `XRPLF/rippled` branch with WASM support, or point at the WASM Devnet).

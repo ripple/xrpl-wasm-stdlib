@@ -20,6 +20,43 @@
 
 const fs = require("fs")
 const path = require("path")
+const xrpl = require("xrpl")
+
+// Fixed account hard-coded as NOTARY_ACCOUNT / ORACLE_OWNER in the notary and
+// oracle examples. Test-only: the seed is public. Not the genesis account,
+// which some networks delete or blackhole.
+const TEST_ACCOUNT_SEED = "sEd7QeySwsxDj4ixFYko58Z68xHYKk4"
+
+/**
+ * Return the fixed test account wallet, first topping it up from `funder`
+ * if its balance is below `minXrp` (or it does not exist yet). Tops up by
+ * `2 * minXrp` so repeated runs do not pay it every time.
+ */
+async function getTestAccount(ctx, funder, minXrp = 25) {
+  const wallet = xrpl.Wallet.fromSeed(TEST_ACCOUNT_SEED)
+  let balance = 0
+  try {
+    balance = Number(await ctx.client.getXrpBalance(wallet.address))
+  } catch {
+    // Account not created yet.
+  }
+  if (balance < minXrp) {
+    expectResult(
+      await ctx.submit(
+        {
+          TransactionType: "Payment",
+          Account: funder.address,
+          Destination: wallet.address,
+          Amount: xrpl.xrpToDrops(2 * minXrp),
+        },
+        funder,
+      ),
+      "tesSUCCESS",
+      "Payment (fund test account)",
+    )
+  }
+  return wallet
+}
 
 /**
  * Submit an `EscrowFinish` and assert on its result code.
@@ -153,4 +190,5 @@ module.exports = {
   getLedgerCloseTime,
   getLedgerCloseTimeIso,
   loadWasmHex,
+  getTestAccount,
 }

@@ -1,6 +1,13 @@
 async function test(testContext) {
-  const { client, finish, submit, sourceWallet, destWallet, expectResult } =
-    testContext
+  const {
+    client,
+    finish,
+    submit,
+    sourceWallet,
+    destWallet,
+    expectResult,
+    getLedgerCloseTime,
+  } = testContext
 
   // Condition must be in full crypto-condition format (39 bytes), not just
   // the hash: A0258020<32-byte-hash>810100
@@ -11,7 +18,9 @@ async function test(testContext) {
   const close_time = (
     await client.request({ command: "ledger", ledger_index: "closed" })
   ).result.ledger.close_time
-  const finishAfter = close_time + (process.env.DEVNET ? 3 : 0)
+  // Devnet close times have 10s resolution, so a small offset can already be
+  // in the past when EscrowCreate applies (tecNO_PERMISSION).
+  const finishAfter = close_time + (process.env.DEVNET ? 20 : 0)
 
   const createResponse = await submit(
     {
@@ -30,6 +39,10 @@ async function test(testContext) {
   )
   expectResult(createResponse, "tesSUCCESS", "EscrowCreate")
   const offerSequence = createResponse.result.tx_json.Sequence
+
+  while ((await getLedgerCloseTime(client)) <= finishAfter) {
+    await new Promise((r) => setTimeout(r, 1000))
+  }
 
   const response = await submit(
     {

@@ -68,7 +68,7 @@ If rippled is already running on `ws://localhost:6006` (your own instance, or a 
 
 | Variable         | Effect                                                                                    |
 | ---------------- | ----------------------------------------------------------------------------------------- |
-| `DEVNET=true`    | Test against WASM Devnet (`wss://wasm.devnet.rippletest.net:51233`) instead               |
+| `DEVNET=true`    | Test against WASM Devnet (`wss://wasm-devnet.dev.ripplex.io:51233`) instead               |
 | `NO_DOCKER=true` | Force-skip Docker; use a rippled you're already running yourself on `ws://localhost:6006` |
 
 The Docker node is left running across test runs for speed; stop it with `./scripts/docker-rippled.sh stop` when you're done. See [`scripts/README.md`](./scripts/README.md) and [`CONTRIBUTING.md`](./CONTRIBUTING.md) for more on the local dev/test scripts.

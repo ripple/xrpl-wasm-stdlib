@@ -123,7 +123,7 @@ canonically-ordered account pair produce the same result either way.
 | Network         | Endpoint                                 | Purpose               |
 | --------------- | ---------------------------------------- | --------------------- |
 | **Local Node**  | `ws://localhost:6006`                    | Development (default) |
-| **WASM Devnet** | `wss://wasm.devnet.rippletest.net:51233` | Integration testing   |
+| **WASM Devnet** | `wss://wasm-devnet.dev.ripplex.io:51233` | Integration testing   |
 
 `./scripts/run-tests.sh` (and therefore `./scripts/run-all.sh`) targets the local node by default, and manages it for you: it starts a rippled node in Docker via `./scripts/docker-rippled.sh`, pinned to the exact `XRPLD_DOCKER_IMAGE` tag CI uses (see `.github/workflows/test.yml` — the single place that tag is defined; `docker-rippled.sh` reads it from there rather than duplicating it). This matters because the npm packages in `package.json` (`xrpl`, `ripple-binary-codec`) are built against a specific rippled field/transaction definition set — testing against a rippled build that has drifted from that pin (e.g. a locally-built binary from a different branch or commit) can fail with cryptic errors like `Field 'X' found in disallowed location`, because field codes shifted underneath the JS encoder.
 
@@ -192,7 +192,7 @@ The `#[smart_escrow]` macro generates the `extern "C" fn escrow_finish() -> i32`
 ```javascript
 const CONFIG = {
   wasmPath: "./target/wasm32v1-none/release/my_example.wasm",
-  rippledHost: process.env.RIPPLED_HOST || "wasm.devnet.rippletest.net",
+  rippledHost: process.env.RIPPLED_HOST || "wasm-devnet.dev.ripplex.io",
   testAccount: "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH",
 }
 
