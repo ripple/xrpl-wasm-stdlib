@@ -1,4 +1,5 @@
 use crate::types::account_id::AccountID;
+use crate::types::uint::UInt192;
 
 pub const MPT_ID_SIZE: usize = 24;
 pub const MPT_SEQUENCE_NUM_SIZE: usize = 4;
@@ -16,7 +17,7 @@ pub const MPT_SEQUENCE_NUM_SIZE: usize = 4;
 /// - `Debug, Clone`: Standard traits for development and consistency
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub struct MptId([u8; MPT_ID_SIZE]);
+pub struct MptId(UInt192);
 
 impl MptId {
     /// Creates a new MptId from a sequence number and an issuer account ID.
@@ -29,44 +30,57 @@ impl MptId {
         // Set the issuer account ID (last 20 bytes)
         bytes[4..MPT_ID_SIZE].copy_from_slice(&issuer.0);
 
-        MptId(bytes)
+        MptId(UInt192::from(bytes))
     }
 
     /// Gets the sequence number part of the MptId.
     pub fn get_sequence_num(&self) -> u32 {
         // Transform the first 4 bytes of self.0 into a u32.
-        u32::from_be_bytes([self.0[0], self.0[1], self.0[2], self.0[3]])
+        let b = self.0.as_bytes();
+        u32::from_be_bytes([b[0], b[1], b[2], b[3]])
     }
 
     /// Gets the issuer account ID part of the MptId.
     pub fn get_issuer(&self) -> AccountID {
         // Transform the last 20 bytes of self.0 into an AccountID.
         let mut account_bytes = [0u8; 20]; // AccountID is 20 bytes
-        account_bytes.copy_from_slice(&self.0[4..24]); // Extract bytes 4-23 (20 bytes total)
+        account_bytes.copy_from_slice(&self.0.as_bytes()[4..24]); // Extract bytes 4-23 (20 bytes total)
         AccountID::from(account_bytes)
     }
 
     /// Gets the raw bytes of the MptId.
     pub fn as_bytes(&self) -> &[u8; 24] {
-        &self.0
+        self.0.as_bytes()
     }
 
     pub fn as_ptr(&self) -> *const u8 {
-        self.0.as_ptr()
+        self.0.0.as_ptr()
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.0.0.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.iter().all(|&byte| byte == 0)
+        self.0.0.iter().all(|&byte| byte == 0)
     }
 }
 
 impl From<[u8; 24]> for MptId {
     fn from(value: [u8; 24]) -> Self {
+        MptId(UInt192::from(value))
+    }
+}
+
+impl From<UInt192> for MptId {
+    fn from(value: UInt192) -> Self {
         MptId(value)
+    }
+}
+
+impl From<MptId> for UInt192 {
+    fn from(value: MptId) -> Self {
+        value.0
     }
 }
 
@@ -148,6 +162,14 @@ mod tests {
 
         let non_empty = MptId::new(1, AccountID::from([0u8; 20]));
         assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_mpt_id_uint192_round_trip() {
+        let mpt_id = MptId::new(42, AccountID::from([0xAA; 20]));
+        let uint: UInt192 = mpt_id.into();
+        assert_eq!(uint.as_bytes(), mpt_id.as_bytes());
+        assert_eq!(MptId::from(uint), mpt_id);
     }
 
     #[test]

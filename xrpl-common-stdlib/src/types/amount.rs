@@ -624,7 +624,7 @@ mod tests {
         const CURRENCY_BYTES: [u8; 20] = [0xEF; 20];
         const ISSUER_BYTES: [u8; 20] = [0x12; 20];
 
-        // Create the OpaqueFloat bytes manually
+        // Create the IOUNumber bytes manually
         // IOU format: [1/type][1/sign][8/exponent][54/mantissa]
         let mut iou_number_bytes = [0u8; 8];
 

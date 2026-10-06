@@ -15,12 +15,11 @@ use crate::types::decode_error::DecodeError;
 ///
 /// ## Derived Traits
 ///
+/// - `Copy`: Cheap for the sizes in use (at most 32 bytes)
 /// - `PartialEq, Eq`: Essential for comparisons and use in collections
 /// - `Debug, Clone`: Standard traits for development and consistency
-///
-/// Note: `Copy` is intentionally not derived because `N` can be arbitrarily large.
 #[repr(C)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UInt<const N: usize>(pub [u8; N]);
 
 impl<const N: usize> From<[u8; N]> for UInt<N> {
@@ -164,7 +163,7 @@ mod tests {
         let uint1 = UInt::<4>::from(bytes);
 
         // Copy it (implicit copy due to Copy trait)
-        let uint2 = uint1.clone();
+        let uint2 = uint1;
 
         // Both should be usable and equal
         assert_eq!(uint1, uint2);
