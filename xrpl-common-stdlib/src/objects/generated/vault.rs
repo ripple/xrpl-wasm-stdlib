@@ -8,8 +8,9 @@ use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::blob::StandardBlob;
 use crate::types::issue::Issue;
+use crate::types::mpt_id::MptId;
 use crate::types::number::Number;
-use crate::types::uint::{Hash192, Hash256};
+use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to Vault objects in any ledger.
 pub trait VaultFields: LedgerObjectCommonFields {
@@ -82,7 +83,7 @@ pub trait VaultFields: LedgerObjectCommonFields {
     }
 
     /// The identifier of the share `MPTokenIssuance` object.
-    fn share_mpt_id(&self) -> Result<Hash192> {
+    fn share_mpt_id(&self) -> Result<MptId> {
         ledger_object::get_field(self.get_slot_num(), sfield::ShareMPTID)
     }
 
@@ -198,7 +199,7 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The identifier of the share `MPTokenIssuance` object.
-    fn share_mpt_id(&self) -> Result<Hash192> {
+    fn share_mpt_id(&self) -> Result<MptId> {
         current_ledger_object::get_field(sfield::ShareMPTID)
     }
 
