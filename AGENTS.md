@@ -14,7 +14,7 @@ Smart escrow WASM modules export `extern "C" fn escrow_finish() -> i32`. Returni
 
 | Workspace | Path                   | Members                                                                             |
 | --------- | ---------------------- | ----------------------------------------------------------------------------------- |
-| Library   | `/Cargo.toml` (root)   | `xrpl-common-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-stdlib-test-utils` |
+| Library   | `/Cargo.toml` (root)   | `xrpl-common-stdlib`, `xrpl-macros`, `xrpl-escrow-stdlib`, `xrpl-stdlib-test-utils`, `tools/compare_gas_results` |
 | Examples  | `examples/Cargo.toml`  | all `examples/smart-escrows/*` cdylibs                                              |
 | E2E tests | `e2e-tests/Cargo.toml` | host-function probe contracts + native test crates                                  |
 
