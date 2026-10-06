@@ -7,7 +7,8 @@ use crate::objects::{current_ledger_object, ledger_object};
 use crate::sfield;
 use crate::types::account_id::AccountID;
 use crate::types::blob::StandardBlob;
-use crate::types::uint::{Hash192, Hash256};
+use crate::types::mpt_id::MptId;
+use crate::types::uint::Hash256;
 
 /// Trait providing access to fields specific to MPToken objects in any ledger.
 pub trait MPTokenFields: LedgerObjectCommonFields {
@@ -17,7 +18,7 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
     }
 
     /// The `MPTokenIssuance` identifier.
-    fn mptoken_issuance_id(&self) -> Result<Hash192> {
+    fn mptoken_issuance_id(&self) -> Result<MptId> {
         ledger_object::get_field(self.get_slot_num(), sfield::MPTokenIssuanceID)
     }
 
@@ -107,7 +108,7 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
     }
 
     /// The `MPTokenIssuance` identifier.
-    fn mptoken_issuance_id(&self) -> Result<Hash192> {
+    fn mptoken_issuance_id(&self) -> Result<MptId> {
         current_ledger_object::get_field(sfield::MPTokenIssuanceID)
     }
 

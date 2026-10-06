@@ -1,4 +1,6 @@
+use crate::fields::decoder::{FieldDecoder, FromCurrentTx, FromLedger};
 use crate::types::account_id::AccountID;
+use crate::types::decode_error::DecodeError;
 use crate::types::uint::UInt192;
 
 pub const MPT_ID_SIZE: usize = 24;
@@ -83,6 +85,25 @@ impl From<MptId> for UInt192 {
         value.0
     }
 }
+
+/// `FieldDecoder` for MPT IDs: decodes as a [`UInt192`], failing if the host wrote a different
+/// number of bytes.
+impl FieldDecoder for MptId {
+    type Buffer = [u8; MPT_ID_SIZE];
+
+    #[inline]
+    fn empty_buffer() -> Self::Buffer {
+        UInt192::empty_buffer()
+    }
+
+    #[inline]
+    fn decode(buf: Self::Buffer, bytes_written: usize) -> core::result::Result<Self, DecodeError> {
+        UInt192::decode(buf, bytes_written).map(MptId)
+    }
+}
+
+impl FromCurrentTx for MptId {}
+impl FromLedger for MptId {}
 
 impl From<(u32, AccountID)> for MptId {
     fn from(value: (u32, AccountID)) -> Self {

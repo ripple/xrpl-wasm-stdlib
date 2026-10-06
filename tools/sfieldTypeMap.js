@@ -73,6 +73,8 @@ const customFieldTypes = {
   SigningPubKey: "PublicKeyBlob",
   TxnSignature: "SignatureBlob",
   URI: "UriBlob",
+  MPTokenIssuanceID: "MptId",
+  ShareMPTID: "MptId",
 }
 
 // Resolves the Rust type for a given sfield name + its XRPL wire type, giving

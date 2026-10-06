@@ -8,6 +8,7 @@ use crate::types::blob::{
 };
 use crate::types::currency::Currency;
 use crate::types::issue::Issue;
+use crate::types::mpt_id::MptId;
 use crate::types::number::Number;
 use crate::types::transaction_type::TransactionType;
 use crate::types::uint::{Hash128, Hash160, Hash192, Hash256};
@@ -465,8 +466,8 @@ pub const Hashes: SField<Unmapped, 1245186> = SField::new();
 pub const Amendments: SField<Unmapped, 1245187> = SField::new();
 pub const NFTokenOffers: SField<Unmapped, 1245188> = SField::new();
 pub const CredentialIDs: SField<Unmapped, 1245189> = SField::new();
-pub const MPTokenIssuanceID: SField<Hash192, 1376257> = SField::new();
-pub const ShareMPTID: SField<Hash192, 1376258> = SField::new();
+pub const MPTokenIssuanceID: SField<MptId, 1376257> = SField::new();
+pub const ShareMPTID: SField<MptId, 1376258> = SField::new();
 pub const TakerPaysMPT: SField<Hash192, 1376259> = SField::new();
 pub const TakerGetsMPT: SField<Hash192, 1376260> = SField::new();
 pub const LockingChainIssue: SField<Issue, 1572865> = SField::new();
