@@ -560,6 +560,12 @@
       // ---------------------------------------------------------------------
       const STORAGE_PREFIX = "xrpl_wasm_ui"
 
+      // xrpl.js can't infer this faucet from the network ID.
+      const DEVNET_FAUCET = {
+        faucetHost: "wasm-devnet-faucet.dev.ripplex.io",
+        faucetPath: "/accounts",
+      }
+
       function getSelectedNetwork() {
         return document.querySelector('input[name="network"]:checked')?.value
       }
@@ -1121,8 +1127,7 @@
 
             fundedWallet = wallet
           } else {
-            // Use fundWallet for testnets
-            const result = await client.fundWallet(wallet)
+            const result = await client.fundWallet(wallet, DEVNET_FAUCET)
             fundedWallet = result.wallet
           }
 
@@ -1180,8 +1185,8 @@
 
             log(`Funded account with 1000 XRP`)
           } else {
-            await client.fundWallet(selectedAccount)
-            log(`Funded account via testnet faucet`)
+            await client.fundWallet(selectedAccount, DEVNET_FAUCET)
+            log(`Funded account via Devnet faucet`)
           }
 
           await updateAccountsList()
