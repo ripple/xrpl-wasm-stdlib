@@ -194,9 +194,12 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
         };
 
         // Verify proper account reversal: first(A→B) ↔ current(B→A)
-        if first_account.0 != current_destination.0 {
-            trace_hex("First escrow account:", &first_account.0);
-            trace_hex("Current escrow destination:", &current_destination.0);
+        if first_account != current_destination {
+            trace_hex("First escrow account:", first_account.as_bytes());
+            trace_hex(
+                "Current escrow destination:",
+                current_destination.as_bytes(),
+            );
             trace_num(
                 "Account reversal validation failed - accounts don't match",
                 0,
@@ -204,9 +207,9 @@ fn atomic_swap2_finish(ctx: EscrowFinishContext) -> i32 {
             return VALIDATION_FAILED;
         }
 
-        if first_destination.0 != current_account.0 {
-            trace_hex("First escrow destination:", &first_destination.0);
-            trace_hex("Current escrow account:", &current_account.0);
+        if first_destination != current_account {
+            trace_hex("First escrow destination:", first_destination.as_bytes());
+            trace_hex("Current escrow account:", current_account.as_bytes());
             trace_num(
                 "Account reversal validation failed - destinations don't match",
                 0,
