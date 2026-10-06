@@ -1,0 +1,2 @@
+[alias]
+compare-gas-results = "run -q --bin compare-gas-results --"

@@ -101,7 +101,7 @@ node tools/gasBenchmark.js all
 ### Generate Comparison Report
 
 ```bash
-node tools/compareGasResults.js
+cargo compare-gas-results
 ```
 
 ### Compare Two Branches
@@ -117,7 +117,7 @@ git checkout main
 ./scripts/benchmark-gas.sh
 
 # 4. Generate comparison report
-node tools/compareGasResults.js
+cargo compare-gas-results
 ```
 
 ### Benchmark Multiple Contracts
