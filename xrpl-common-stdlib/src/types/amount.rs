@@ -6,6 +6,7 @@ use crate::types::account_id::AccountID;
 use crate::types::currency::Currency;
 use crate::types::decode_error::DecodeError;
 use crate::types::iou_number::IOUNumber;
+use crate::types::issue::{IouIssue, Issue, MptIssue, XrpIssue};
 use crate::types::mpt_id::MptId;
 
 pub const AMOUNT_SIZE: usize = 48;
@@ -110,6 +111,42 @@ pub enum Amount {
 const MASK_57_BIT: u64 = 0x01FFFFFFFFFFFFFFu64;
 
 impl Amount {
+    /// Returns the [`Issue`] (XRP, IOU, or MPT) of this amount.
+    pub fn issue(&self) -> Issue {
+        match self {
+            Amount::XRP { .. } => Issue::XRP(XrpIssue {}),
+            Amount::IOU {
+                issuer, currency, ..
+            } => Issue::IOU(IouIssue::new(*issuer, *currency)),
+            Amount::MPT { mpt_id, .. } => Issue::MPT(MptIssue::new(*mpt_id)),
+        }
+    }
+
+    /// Returns the issuer of an IOU or MPT amount, or `None` for XRP.
+    pub fn issuer(&self) -> Option<AccountID> {
+        match self {
+            Amount::XRP { .. } => None,
+            Amount::IOU { issuer, .. } => Some(*issuer),
+            Amount::MPT { mpt_id, .. } => Some(mpt_id.get_issuer()),
+        }
+    }
+
+    /// Returns the currency of an IOU amount, or `None` for XRP and MPT.
+    pub fn currency(&self) -> Option<Currency> {
+        match self {
+            Amount::IOU { currency, .. } => Some(*currency),
+            _ => None,
+        }
+    }
+
+    /// Returns the MPT ID of an MPT amount, or `None` for XRP and IOU.
+    pub fn mpt_id(&self) -> Option<MptId> {
+        match self {
+            Amount::MPT { mpt_id, .. } => Some(*mpt_id),
+            _ => None,
+        }
+    }
+
     /// Converts a Amount to STAmount bytes format.
     ///
     /// All Amount types return a 48-byte array for consistency with the XRPL STAmount format.
@@ -778,5 +815,38 @@ mod tests {
 
         let parsed_large_xrp = Amount::from_bytes(&large_xrp_bytes).unwrap();
         assert_eq!(parsed_large_xrp, large_xrp);
+    }
+
+    #[test]
+    fn test_accessors() {
+        let issuer = AccountID::from([1u8; 20]);
+        let currency = Currency::from([2u8; 20]);
+        let mpt_id = MptId::new(7, issuer);
+
+        let xrp = Amount::XRP { num_drops: 1 };
+        assert_eq!(xrp.issue(), Issue::XRP(XrpIssue {}));
+        assert_eq!(xrp.issuer(), None);
+        assert_eq!(xrp.currency(), None);
+        assert_eq!(xrp.mpt_id(), None);
+
+        let iou = Amount::IOU {
+            amount: IOUNumber::from([0u8; 8]),
+            issuer,
+            currency,
+        };
+        assert_eq!(iou.issue(), Issue::IOU(IouIssue::new(issuer, currency)));
+        assert_eq!(iou.issuer(), Some(issuer));
+        assert_eq!(iou.currency(), Some(currency));
+        assert_eq!(iou.mpt_id(), None);
+
+        let mpt = Amount::MPT {
+            num_units: 1,
+            is_positive: true,
+            mpt_id,
+        };
+        assert_eq!(mpt.issue(), Issue::MPT(MptIssue::new(mpt_id)));
+        assert_eq!(mpt.issuer(), Some(issuer));
+        assert_eq!(mpt.currency(), None);
+        assert_eq!(mpt.mpt_id(), Some(mpt_id));
     }
 }

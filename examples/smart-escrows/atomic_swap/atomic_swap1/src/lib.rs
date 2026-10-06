@@ -209,18 +209,21 @@ fn phase1_initialize(current_escrow: &CurrentEscrow) -> i32 {
     };
 
     // ATOMIC SWAP VALIDATION: Verify inverted account correlations
-    if current_account.0 != counterpart_destination.0 {
-        trace_hex("Current account:", &current_account.0);
+    if current_account != counterpart_destination {
+        trace_hex("Current account:", current_account.as_bytes());
         trace_hex(
             "Expected counterpart destination:",
-            &counterpart_destination.0,
+            counterpart_destination.as_bytes(),
         );
         return VALIDATION_FAILED;
     }
 
-    if current_destination.0 != counterpart_account.0 {
-        trace_hex("Current destination:", &current_destination.0);
-        trace_hex("Expected counterpart account:", &counterpart_account.0);
+    if current_destination != counterpart_account {
+        trace_hex("Current destination:", current_destination.as_bytes());
+        trace_hex(
+            "Expected counterpart account:",
+            counterpart_account.as_bytes(),
+        );
         return VALIDATION_FAILED;
     }
 
