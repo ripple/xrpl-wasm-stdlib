@@ -4,7 +4,8 @@ members = [
     "xrpl-common-stdlib",
     "xrpl-macros",
     "xrpl-escrow-stdlib",
-    "xrpl-stdlib-test-utils"
+    "xrpl-stdlib-test-utils",
+    "tools/copy_rippled_fixture",
 ]
 exclude = [
     "examples",
@@ -17,6 +18,8 @@ repository = "https://github.com/ripple/xrpl-wasm-stdlib"
 
 [workspace.dependencies]
 mockall = "0.15.0"
+hex = "0.4"
+regex = "1"
 
 [profile.release]
 opt-level = "s"   # Optimize for size
