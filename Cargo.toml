@@ -4,7 +4,8 @@ members = [
     "xrpl-common-stdlib",
     "xrpl-macros",
     "xrpl-escrow-stdlib",
-    "xrpl-stdlib-test-utils"
+    "xrpl-stdlib-test-utils",
+    "tools/rippled_source",
 ]
 exclude = [
     "examples",
@@ -17,6 +18,7 @@ repository = "https://github.com/ripple/xrpl-wasm-stdlib"
 
 [workspace.dependencies]
 mockall = "0.15.0"
+ureq = "2"
 
 [profile.release]
 opt-level = "s"   # Optimize for size
