@@ -1,0 +1,2 @@
+[alias]
+generate-test-host-bindings = "run -q --bin generate-test-host-bindings --"
