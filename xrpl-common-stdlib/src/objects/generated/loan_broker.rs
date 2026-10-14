@@ -104,6 +104,11 @@ pub trait LoanBrokerFields: LedgerObjectCommonFields {
     fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::CoverRateLiquidation)
     }
+
+    /// The DomainID field (Optional).
+    fn domain_id(&self) -> Result<Option<Hash256>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::DomainID)
+    }
 }
 
 /// Trait providing access to fields specific to the current LoanBroker object.
@@ -200,6 +205,11 @@ pub trait CurrentLoanBrokerFields: CurrentLedgerObjectCommonFields {
     fn cover_rate_liquidation(&self) -> Result<Option<u32>> {
         current_ledger_object::get_field_optional(sfield::CoverRateLiquidation)
     }
+
+    /// The DomainID field (Optional).
+    fn domain_id(&self) -> Result<Option<Hash256>> {
+        current_ledger_object::get_field_optional(sfield::DomainID)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -254,6 +264,7 @@ mod tests {
         assert!(obj.cover_available().is_ok());
         assert!(obj.cover_rate_minimum().is_ok());
         assert!(obj.cover_rate_liquidation().is_ok());
+        assert!(obj.domain_id().is_ok());
     }
 
     #[test]
@@ -268,5 +279,6 @@ mod tests {
         assert!(obj.owner_count().unwrap().is_none());
         assert!(obj.cover_rate_minimum().unwrap().is_none());
         assert!(obj.cover_rate_liquidation().unwrap().is_none());
+        assert!(obj.domain_id().unwrap().is_none());
     }
 }

@@ -32,6 +32,7 @@ mod ripple_state;
 mod signer_list;
 mod sponsorship;
 mod ticket;
+mod transaction_proposal;
 mod vault;
 mod xchain_owned_claim_id;
 mod xchain_owned_create_account_claim_id;
@@ -66,6 +67,9 @@ pub use ripple_state::{CurrentRippleStateFields, RippleState, RippleStateFields}
 pub use signer_list::{CurrentSignerListFields, SignerList, SignerListFields};
 pub use sponsorship::{CurrentSponsorshipFields, Sponsorship, SponsorshipFields};
 pub use ticket::{CurrentTicketFields, Ticket, TicketFields};
+pub use transaction_proposal::{
+    CurrentTransactionProposalFields, TransactionProposal, TransactionProposalFields,
+};
 pub use vault::{CurrentVaultFields, Vault, VaultFields};
 pub use xchain_owned_claim_id::{
     CurrentXChainOwnedClaimIDFields, XChainOwnedClaimID, XChainOwnedClaimIDFields,
