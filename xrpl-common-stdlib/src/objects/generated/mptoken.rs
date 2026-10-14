@@ -97,6 +97,11 @@ pub trait MPTokenFields: LedgerObjectCommonFields {
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::HolderEncryptionKey)
     }
+
+    /// The RecoveryKey field (Optional).
+    fn recovery_key(&self) -> Result<Option<StandardBlob>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::RecoveryKey)
+    }
 }
 
 /// Trait providing access to fields specific to the current MPToken object.
@@ -187,6 +192,11 @@ pub trait CurrentMPTokenFields: CurrentLedgerObjectCommonFields {
     fn holder_encryption_key(&self) -> Result<Option<StandardBlob>> {
         current_ledger_object::get_field_optional(sfield::HolderEncryptionKey)
     }
+
+    /// The RecoveryKey field (Optional).
+    fn recovery_key(&self) -> Result<Option<StandardBlob>> {
+        current_ledger_object::get_field_optional(sfield::RecoveryKey)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -239,6 +249,7 @@ mod tests {
         assert!(obj.issuer_key_mirror_epoch().is_ok());
         assert!(obj.auditor_key_mirror_epoch().is_ok());
         assert!(obj.holder_encryption_key().is_ok());
+        assert!(obj.recovery_key().is_ok());
     }
 
     #[test]

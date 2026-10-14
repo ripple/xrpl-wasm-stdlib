@@ -81,7 +81,9 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LossUnrealized)
     }
 
-    /// The identifier of the share `MPTokenIssuance` object.
+    /// The identifier of the share MPTokenIssuance object. The `Vault` entry doesn't store a total
+    /// share count; the `OutstandingAmount` field of the share issuance is the vault's total
+    /// outstanding shares.
     fn share_mpt_id(&self) -> Result<Hash192> {
         ledger_object::get_field(self.get_slot_num(), sfield::ShareMPTID)
     }
@@ -197,7 +199,9 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::LossUnrealized)
     }
 
-    /// The identifier of the share `MPTokenIssuance` object.
+    /// The identifier of the share MPTokenIssuance object. The `Vault` entry doesn't store a total
+    /// share count; the `OutstandingAmount` field of the share issuance is the vault's total
+    /// outstanding shares.
     fn share_mpt_id(&self) -> Result<Hash192> {
         current_ledger_object::get_field(sfield::ShareMPTID)
     }
