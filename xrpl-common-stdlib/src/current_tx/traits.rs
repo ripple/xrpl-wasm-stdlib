@@ -81,19 +81,20 @@ pub trait TransactionCommonFields {
     /// Starts a path rooted at `Memos[0].MemoData` — the common convention contracts use to pass
     /// caller-supplied data in a transaction, since XRPL transactions have no dedicated "input
     /// data" field. Chain a terminal ([`get`](TxPathBuilder::get) /
-    /// [`get_optional`](TxPathBuilder::get_optional)) to decode it as whatever type the contract
-    /// expects (e.g. a fixed-size `Blob<N>` for a short tag, or [`ContractData`] for a larger
-    /// payload).
+    /// [`get_optional`](TxPathBuilder::get_optional)) to decode it as a blob sized for what the
+    /// contract expects: a fixed-size `Blob<N>` for a short tag, or [`StandardBlob`] for a
+    /// variable-length payload. Memo data is a plain transaction blob; do not decode it as
+    /// `ContractData`, which is reserved for the escrow's own `Data` ledger field.
     ///
     /// ```no_run
     /// use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
-    /// use xrpl_common_stdlib::types::contract_data::ContractData;
+    /// use xrpl_common_stdlib::types::blob::StandardBlob;
     /// # fn demo(tx: &impl TransactionCommonFields) {
-    /// let memo = tx.first_memo_data().get_optional::<ContractData>();
+    /// let memo = tx.first_memo_data().get_optional::<StandardBlob>();
     /// # let _ = memo; }
     /// ```
     ///
-    /// [`ContractData`]: crate::types::contract_data::ContractData
+    /// [`StandardBlob`]: crate::types::blob::StandardBlob
     fn first_memo_data(&self) -> TxPathBuilder {
         self.path()
             .field(sfield::Memos)
