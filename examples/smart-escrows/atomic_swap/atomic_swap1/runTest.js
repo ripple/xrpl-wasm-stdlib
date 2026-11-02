@@ -77,6 +77,50 @@ async function test(testContext) {
     expect: "tecBYTECODE_REJECTED",
   })
 
+  // Malformed memos must reject without persisting Phase 1 state: no Memos,
+  // a Memo without MemoData, a MemoData that is too short, and one that is too
+  // long. An empty-string MemoData is not covered here because xrpl.js rejects
+  // it client-side (`isHex("")` is false), so it can never reach the contract.
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      { Memo: { MemoType: xrpl.convertStringToHex("counterpart_escrow") } },
+    ],
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: "deadbeef",
+        },
+      },
+    ],
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: finalSwap1Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("counterpart_escrow"),
+          MemoData: finalSwap2Result.escrowId + "ffff",
+        },
+      },
+    ],
+  })
+
   // atomic_swap1 phase 1 BEFORE atomic_swap2 phase 2 (counterpart alive).
   const responseFinalSwap1Phase1 = await finishEscrow(
     testContext,

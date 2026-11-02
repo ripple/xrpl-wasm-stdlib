@@ -27,14 +27,14 @@ The Rust code demonstrates how to interact with XRPL NFT objects and escrow data
 - `nft_owner_finish(ctx: EscrowFinishContext) -> FinishResult`: Main entry point that determines escrow unlock
   status. Annotated with `#[smart_escrow]`, which generates the `extern "C" fn escrow_finish() -> i32` export the XRPL
   host calls.
-- `get_first_memo()`: Extracts the first memo data from the transaction
+- `get_first_memo(tx)`: Reads `Memos[0].MemoData` from the finish transaction as a `StandardBlob`
 - NFT ownership verification using `nft_uri()` from the XRPL standard library
 
 ## How it Works
 
 The contract follows this workflow:
 
-1. **Extract NFT ID**: Reads the first 32 bytes from the transaction memo as the NFT ID
+1. **Extract NFT ID**: Reads `Memos[0].MemoData`; it must be exactly 32 bytes (short, empty, absent, or extra-long memos are rejected)
 2. **Get Destination**: Retrieves the destination account from the current escrow
 3. **Verify Ownership**: Checks if the destination account owns the specified NFT
 4. **Return Result**: Returns `1` (true) if owned, error code otherwise
@@ -43,7 +43,7 @@ Pseudo-code:
 
 ```
 function finish() {
-    nftId = getFirstMemo()[0:32]
+    nftId = getFirstMemo() // must be exactly 32 bytes
     destination = getCurrentEscrow().destination
     return hasNFT(destination, nftId)
 }
@@ -137,8 +137,8 @@ The contract handles various error scenarios:
 
 | Scenario                     | Behavior        | Return Code |
 | ---------------------------- | --------------- | ----------- |
-| Missing memo                 | Escrow fails    | `0`         |
-| Invalid memo format          | Escrow fails    | Error code  |
+| Missing or empty memo        | Escrow fails    | `0`         |
+| Memo not exactly 32 bytes    | Escrow fails    | `0`         |
 | NFT not found                | Escrow fails    | Error code  |
 | NFT not owned by destination | Escrow fails    | Error code  |
 | Valid NFT ownership          | Escrow succeeds | `1`         |
@@ -153,7 +153,7 @@ This project is intentionally kept as an independent Rust project, separate from
 
 ## Security Considerations
 
-- **Memo Validation**: Contract assumes first 32 bytes of memo contain valid NFT ID
+- **Memo Validation**: Contract requires `MemoData` to be exactly 32 bytes
 - **Ownership Verification**: Relies on XRPL ledger state for NFT ownership
 - **Error Propagation**: Fails safely when NFT data is unavailable
 - **Input Sanitization**: Limited validation of memo data format

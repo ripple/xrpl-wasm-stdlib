@@ -13,6 +13,35 @@ async function test(testContext) {
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
+  // Reject before an NFT exists: no Memos, a Memo without MemoData, and a
+  // MemoData that is too short (the oversize case runs once an NFT ID exists).
+  // An empty-string MemoData is not covered because xrpl.js rejects it
+  // client-side (`isHex("")` is false), so it can never reach the contract.
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: escrowResult.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: escrowResult.sequence,
+    Memos: [{ Memo: { MemoType: xrpl.convertStringToHex("nft_id") } }],
+    expect: "tecBYTECODE_REJECTED",
+  })
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: escrowResult.sequence,
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("nft_id"),
+          MemoData: "deadbeef",
+        },
+      },
+    ],
+    expect: "tecBYTECODE_REJECTED",
+  })
+
   // Mint an NFT owned by sourceWallet.
   const mintResponse = await submit(
     {
@@ -35,6 +64,21 @@ async function test(testContext) {
       },
     },
   ]
+
+  // Oversized MemoData is rejected too.
+  await finishEscrow(testContext, sourceWallet, {
+    Owner: sourceWallet.address,
+    OfferSequence: escrowResult.sequence,
+    Memos: [
+      {
+        Memo: {
+          MemoType: xrpl.convertStringToHex("nft_id"),
+          MemoData: nftId + "ffff",
+        },
+      },
+    ],
+    expect: "tecBYTECODE_REJECTED",
+  })
 
   // destWallet does not yet own the NFT — finish must reject.
   await finishEscrow(testContext, sourceWallet, {

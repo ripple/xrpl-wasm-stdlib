@@ -78,6 +78,30 @@ pub trait TransactionCommonFields {
         TxPathBuilder::for_current_tx()
     }
 
+    /// Starts a path rooted at `Memos[0].MemoData` — the common convention contracts use to pass
+    /// caller-supplied data in a transaction, since XRPL transactions have no dedicated "input
+    /// data" field. Chain a terminal ([`get`](TxPathBuilder::get) /
+    /// [`get_optional`](TxPathBuilder::get_optional)) to decode it as a blob sized for what the
+    /// contract expects: a fixed-size `Blob<N>` for a short tag, or [`StandardBlob`] for a
+    /// variable-length payload. Memo data is a plain transaction blob; do not decode it as
+    /// `ContractData`, which is reserved for the escrow's own `Data` ledger field.
+    ///
+    /// ```no_run
+    /// use xrpl_common_stdlib::current_tx::traits::TransactionCommonFields;
+    /// use xrpl_common_stdlib::types::blob::StandardBlob;
+    /// # fn demo(tx: &impl TransactionCommonFields) {
+    /// let memo = tx.first_memo_data().get_optional::<StandardBlob>();
+    /// # let _ = memo; }
+    /// ```
+    ///
+    /// [`StandardBlob`]: crate::types::blob::StandardBlob
+    fn first_memo_data(&self) -> TxPathBuilder {
+        self.path()
+            .field(sfield::Memos)
+            .index(0)
+            .field(sfield::MemoData)
+    }
+
     /// Retrieves the account field from the current transaction.
     ///
     /// This field identifies (Required) The unique address of the account that initiated the
@@ -383,6 +407,40 @@ mod tests {
             .index(0)
             .get::<u32>();
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn first_memo_data_builds_memos_0_memo_data_path() {
+        use crate::host::setup_mock;
+
+        // `first_memo_data()` must encode Memos[0].MemoData -> three 4-byte segments = 12
+        // bytes, then read through `tx_inner` exactly like a hand-written `.path()` chain.
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner()
+            .with(always(), eq(12usize), always(), eq(4usize))
+            .times(1)
+            .returning(|_, _, _, _| 4);
+        let _guard = setup_mock(mock);
+
+        let result = TestTransaction.first_memo_data().get::<u32>();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn first_memo_data_get_optional_returns_none_when_absent() {
+        use crate::host::error_codes::FIELD_NOT_FOUND;
+        use crate::host::setup_mock;
+
+        let mut mock = MockHostBindings::new();
+        mock.expect_tx_inner()
+            .with(always(), eq(12usize), always(), eq(4usize))
+            .times(1)
+            .returning(|_, _, _, _| FIELD_NOT_FOUND);
+        let _guard = setup_mock(mock);
+
+        let result = TestTransaction.first_memo_data().get_optional::<u32>();
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
     }
 
     mod transaction_common_fields {

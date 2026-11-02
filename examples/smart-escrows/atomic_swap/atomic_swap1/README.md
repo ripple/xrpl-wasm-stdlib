@@ -200,4 +200,4 @@ flowchart TD
 
 ## Important Notes
 
-⚠️ **Memo Format**: The memo must contain exactly the 32-byte ledger entry ID of the counterpart escrow. Extra data is ignored but should be avoided.
+⚠️ **Memo Format**: The memo must contain exactly the 32-byte ledger entry ID of the counterpart escrow. Extra data is rejected.
