@@ -12,6 +12,7 @@ cd "$REPO_ROOT"
 CONTAINER_NAME="xrpld-service"
 WORKFLOW_FILE=".github/workflows/test.yml"
 RIPPLED_WS_PORT=6006
+RIPPLED_RPC_PORT=5005
 
 usage() {
     echo "Usage: $0 {start|stop|status|logs|verify}"
@@ -49,22 +50,27 @@ is_port_open() {
     (: < "/dev/tcp/127.0.0.1/$RIPPLED_WS_PORT") 2>/dev/null
 }
 
-# Prints the commit rippled on the WS port was built from (server_info's `git.hash`),
-# or nothing if it can't be read: `git` is only returned on admin connections, and
-# Node's built-in WebSocket needs Node 22+. Uses no npm packages.
+# Prints the commit the running rippled was built from (server_info's `git.hash`),
+# or nothing if it can't be read. Plain shell only - no Node, no WebSocket client:
+#   1. `docker exec <container> xrpld server_info` when the container is ours. Same
+#      command as the health check, so it works as soon as the node answers at all.
+#   2. Otherwise JSON-RPC over curl on the RPC port, which also covers a rippled we
+#      didn't start (a native build, another container) as long as it exposes that
+#      port. `git` is only returned on admin connections.
 get_running_hash() {
-    command -v node &> /dev/null || return 0
-    node -e '
-        if (typeof WebSocket === "undefined") process.exit(1);
-        setTimeout(() => process.exit(1), 10000);
-        const ws = new WebSocket(`ws://127.0.0.1:${process.argv[1]}`);
-        ws.onopen = () => ws.send(JSON.stringify({ command: "server_info" }));
-        ws.onmessage = (e) => {
-            console.log(JSON.parse(e.data).result?.info?.git?.hash ?? "");
-            process.exit(0);
-        };
-        ws.onerror = () => process.exit(1);
-    ' "$RIPPLED_WS_PORT" 2>/dev/null || true
+    local json=""
+    if docker inspect "$CONTAINER_NAME" &> /dev/null; then
+        json="$(docker exec "$CONTAINER_NAME" xrpld server_info 2>/dev/null || true)"
+    fi
+    if [[ -z "$json" ]] && command -v curl &> /dev/null; then
+        json="$(curl --silent --max-time 10 --data '{"method":"server_info"}' \
+            "http://127.0.0.1:$RIPPLED_RPC_PORT" 2>/dev/null || true)"
+    fi
+    # Strip whitespace so the CLI's pretty-printed JSON and the RPC's compact JSON
+    # parse the same way, then take `hash` from inside the `git` object only -
+    # `validated_ledger` has a `hash` too.
+    printf '%s' "$json" | tr -d '[:space:]' \
+        | sed -n 's/.*"git":{[^}]*"hash":"\([0-9a-f]\{40\}\)".*/\1/p'
 }
 
 # Fail if the rippled answering on the WS port isn't built from the commit CI pins.
@@ -87,7 +93,7 @@ verify_build() {
 
     actual="$(get_running_hash)"
     if [[ -z "$actual" ]]; then
-        echo "⚠️  Couldn't read git.hash from server_info on ws://localhost:$RIPPLED_WS_PORT (needs Node 22+ and an admin connection) - skipping rippled build check."
+        echo "⚠️  Couldn't read git.hash from server_info (via docker exec, or JSON-RPC on http://localhost:$RIPPLED_RPC_PORT - which needs an admin connection) - skipping rippled build check."
         return 0
     fi
     if [[ "$actual" != "$expected" ]]; then
@@ -135,7 +141,7 @@ start() {
 
     echo "🐳 Starting $CONTAINER_NAME from $image ..."
     docker run --detach --rm \
-        -p 5005:5005 -p 6006:6006 \
+        -p "$RIPPLED_RPC_PORT:$RIPPLED_RPC_PORT" -p "$RIPPLED_WS_PORT:$RIPPLED_WS_PORT" \
         --volume "$REPO_ROOT/.ci-config/:/etc/xrpld/" \
         --name "$CONTAINER_NAME" \
         --health-cmd="xrpld server_info || exit 1" \
