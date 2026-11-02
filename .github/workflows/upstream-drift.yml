@@ -1,8 +1,8 @@
 # Advisory (never blocks PRs): once a week, regenerate every xrpld-derived
 # file against the upstream branch HEADs instead of the pinned commits in
 # test.yml, and file/update a GitHub issue if anything drifted. Fixing it means
-# bumping XRPLD_DOCKER_IMAGE / XRPLD_CONTRACT_COMMIT in test.yml, rerunning the
-# three scripts/generate-*.sh, and committing.
+# bumping XRPLD_DOCKER_IMAGE / XRPLD_CONTRACT_COMMIT / XRPL_DEV_PORTAL_COMMIT in
+# test.yml, rerunning the three scripts/generate-*.sh, and committing.
 #
 # Each check exits 0 (up to date), 1 (drift), or 2 (generator failed: network,
 # upstream branch renamed, parser broken). Only real drift files an issue; a
@@ -23,6 +23,7 @@ env:
   # Branch HEADs, overriding the pins scripts/lib/xrpld-pins.sh would otherwise use.
   XRPLD_ESCROW_REF: ripple/se/supported
   XRPLD_CONTRACT_REF: xrplf/smart-contracts
+  XRPL_DEV_PORTAL_REF: master
   ISSUE_LABEL: upstream-drift
   ISSUE_TITLE: "xrpld upstream drift: generated files need regeneration"
 
@@ -30,10 +31,10 @@ jobs:
   check_upstream_drift:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Use Node.js v24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24.x
 
@@ -86,8 +87,9 @@ jobs:
               --color D93F0B
 
             body="$(cat <<EOF
-          The weekly upstream drift check found that regenerating against xrpld branch HEADs
-          (\`$XRPLD_ESCROW_REF\` / \`$XRPLD_CONTRACT_REF\`) no longer matches the checked-in generated files.
+          The weekly upstream drift check found that regenerating against the upstream branch HEADs
+          (xrpld \`$XRPLD_ESCROW_REF\` / \`$XRPLD_CONTRACT_REF\`, xrpl-dev-portal \`$XRPL_DEV_PORTAL_REF\`)
+          no longer matches the checked-in generated files.
           PR CI is still green because it pins to the commits in \`.github/workflows/test.yml\`.
 
           | Generator | Result |
@@ -99,7 +101,7 @@ jobs:
           Diffs are in the run log: $RUN_URL
 
           **To resolve:** bump \`XRPLD_DOCKER_IMAGE\` (needs a \`rippleci/xrpld\` image for the new
-          \`ripple/se/supported\` commit) and \`XRPLD_CONTRACT_COMMIT\` in \`test.yml\`, run the three
+          \`ripple/se/supported\` commit), \`XRPLD_CONTRACT_COMMIT\`, and \`XRPL_DEV_PORTAL_COMMIT\` in \`test.yml\`, run the three
           \`./scripts/generate-*.sh\`, review the diff, and commit. This issue is closed automatically
           by the next clean run.
           EOF

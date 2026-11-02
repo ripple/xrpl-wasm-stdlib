@@ -4,9 +4,9 @@
 # This regenerates xrpl-common-stdlib/src/objects/generated/ (one file per ledger
 # entry, plus mod.rs) from rippled's include/xrpl/protocol/detail/ledger_entries.macro
 # (field lists) and include/xrpl/protocol/detail/sfields.macro (field Rust types, via
-# the shared tools/sfieldTypeMap.js). Doc comments are fetched live from the
-# xrpl-dev-portal ledger-entry-types docs. See tools/generateLedgerObjects.js for the
-# parsing and emission logic.
+# the shared tools/sfieldTypeMap.js). Doc comments are fetched from the xrpl-dev-portal
+# ledger-entry-types docs at the pinned XRPL_DEV_PORTAL_COMMIT. See
+# tools/generateLedgerObjects.js for the parsing and emission logic.
 #
 # Escrow is generated slot-only: the slot-based `EscrowFields` trait + `Escrow` struct
 # are emitted here, but its current-object accessors and the host-mutable `Data`
@@ -22,7 +22,9 @@
 #
 # The rippled source defaults to the commit CI pins (the XRPLD_DOCKER_IMAGE tag in
 # .github/workflows/test.yml, resolved by scripts/lib/xrpld-pins.sh). Override it
-# with the first argument, or XRPLD_ESCROW_REF=<branch|tag|sha>.
+# with the first argument, or XRPLD_ESCROW_REF=<branch|tag|sha>. The doc-comment
+# source defaults to XRPL_DEV_PORTAL_COMMIT from the same file; override it with
+# XRPL_DEV_PORTAL_REF=<branch|tag|sha>.
 #
 # With --check, the files are regenerated in place, diffed against the current working-tree contents (not git),
 # and restored; the script fails on any drift and leaves the working tree unchanged.
@@ -48,6 +50,10 @@ fi
 # Override with the first argument, or XRPLD_ESCROW_REF=<branch|tag|sha>.
 RIPPLED_SOURCE="${1:-$(xrpld_escrow_source)}"
 
+# xrpl-dev-portal ref for doc comments, passed to the generator through the environment.
+XRPL_DEV_PORTAL_REF="$(xrpl_dev_portal_ref)"
+export XRPL_DEV_PORTAL_REF
+
 # Output root (can be overridden with the second argument in generate mode). Per-entry
 # files are written under <OUTPUT_ROOT>/xrpl-common-stdlib/src/objects/generated/.
 OUTPUT_ROOT="${2:-$REPO_ROOT}"
@@ -68,12 +74,14 @@ regenerate() {
 if [[ "$CHECK" -eq 1 ]]; then
     echo "🔍 Checking generated ledger-object files are up to date..."
     echo "📦 rippled source: $RIPPLED_SOURCE"
+    echo "📖 docs source:    xrpl-dev-portal@$XRPL_DEV_PORTAL_REF"
     check_generated regenerate "./scripts/generate-ledger-objects.sh" "$GENERATED_DIR"
     exit $?
 fi
 
 echo "🔧 Generating ledger-object field accessor traits..."
 echo "📦 rippled source: $RIPPLED_SOURCE"
+echo "📖 docs source:    xrpl-dev-portal@$XRPL_DEV_PORTAL_REF"
 echo "📝 Output root:    $OUTPUT_ROOT"
 echo ""
 

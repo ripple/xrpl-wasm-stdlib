@@ -7,9 +7,10 @@
 # docker-rippled.sh):
 #   Smart Escrow source   (ripple/se/supported)   -> the tag of XRPLD_DOCKER_IMAGE (an xrpld commit sha)
 #   Smart Contract source (xrplf/smart-contracts) -> XRPLD_CONTRACT_COMMIT
+#   xrpl-dev-portal docs  (master)                -> XRPL_DEV_PORTAL_COMMIT (ledger-object doc comments)
 #
-# Override either with an env var holding any git ref (branch, tag, or sha):
-#   XRPLD_ESCROW_REF=ripple/se/supported XRPLD_CONTRACT_REF=xrplf/smart-contracts
+# Override any of them with an env var holding any git ref (branch, tag, or sha):
+#   XRPLD_ESCROW_REF=ripple/se/supported XRPLD_CONTRACT_REF=xrplf/smart-contracts XRPL_DEV_PORTAL_REF=master
 # (This SDK supports both the Smart Escrow and Smart Contract xrpld sources; the
 # generators merge fields/flags from the two.)
 # That is what the scheduled upstream-drift workflow does to compare against
@@ -49,6 +50,24 @@ xrpld_pinned_contract_commit() {
         return 1
     fi
     echo "$sha"
+}
+
+xrpl_pinned_dev_portal_commit() {
+    local sha
+    sha="$(_xrpld_pin_from_workflow XRPL_DEV_PORTAL_COMMIT)"
+    if [[ -z "$sha" ]]; then
+        echo "❌ Could not read XRPL_DEV_PORTAL_COMMIT from $XRPLD_PINS_WORKFLOW_FILE" >&2
+        return 1
+    fi
+    echo "$sha"
+}
+
+# The git ref of XRPLF/xrpl-dev-portal to scrape ledger-object doc comments from
+# (generateLedgerObjects.js reads it from the XRPL_DEV_PORTAL_REF env var).
+xrpl_dev_portal_ref() {
+    local ref
+    ref="${XRPL_DEV_PORTAL_REF:-$(xrpl_pinned_dev_portal_commit)}" || return 1
+    echo "$ref"
 }
 
 xrpld_escrow_source() {

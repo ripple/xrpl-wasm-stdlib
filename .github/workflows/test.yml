@@ -11,15 +11,17 @@ on:
 # Make sure CI fails on all warnings, including Clippy lints
 env:
   RUSTFLAGS: "-Dwarnings"
-  # xrpld (rippled) pins. Both are read by scripts/lib/xrpld-pins.sh, so the
+  # Upstream pins. All three are read by scripts/lib/xrpld-pins.sh, so the
   # generators (sfield.rs, type_codes.rs, tx_flags.rs, objects/generated/) are
   # regenerated against exactly the rippled these tests run on. When bumping
-  # either, rerun all three generate-*.sh scripts and commit the result --
+  # any of them, rerun all three generate-*.sh scripts and commit the result --
   # the check_generated job fails otherwise.
   #   XRPLD_DOCKER_IMAGE tag  = Smart Escrow xrpld commit   (ripple/se/supported)
   #   XRPLD_CONTRACT_COMMIT   = Smart Contract xrpld commit (xrplf/smart-contracts)
+  #   XRPL_DEV_PORTAL_COMMIT  = xrpl-dev-portal commit the ledger-object doc comments are scraped from
   XRPLD_DOCKER_IMAGE: rippleci/xrpld:21560cdf82d02771709d6befedb6b192211cf399
   XRPLD_CONTRACT_COMMIT: 97cbef72df4f95211cccf6eaf32d714c74f654ec
+  XRPL_DEV_PORTAL_COMMIT: 41478c9faea94103646998e6f59fca3a27cd99ce
 
 jobs:
   pre-commit:
@@ -78,12 +80,10 @@ jobs:
       - name: Check WASM contract exports
         run: ./scripts/check-wasm-exports.sh
 
-  # Generated Rust must match the xrpld commits pinned in `env:` above. It goes
-  # red when a pin is bumped without regenerating, a generated file is
-  # hand-edited, or (the one non-pinned input) the xrpl-dev-portal pages that
-  # generateLedgerObjects.js scrapes for doc comments change. Drift against the
-  # upstream branch HEADs is tracked by the scheduled upstream-drift.yml workflow
-  # instead, so it never blocks PRs.
+  # Generated Rust must match the upstream commits pinned in `env:` above. It
+  # goes red only when a pin is bumped without regenerating or a generated file
+  # is hand-edited. Drift against the upstream branch HEADs is tracked by the
+  # scheduled upstream-drift.yml workflow instead, so it never blocks PRs.
   check_generated:
     runs-on: ubuntu-latest
     steps:
