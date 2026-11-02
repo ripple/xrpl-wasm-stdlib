@@ -87,5 +87,5 @@ Add `trace`/`trace_num` calls on both success and failure paths during developme
 ## Full local CI
 
 ```shell
-./scripts/run-all.sh    # clippy, fmt, host-function audit, wasm-exports check, build+test, markdown lint, e2e
+./scripts/run-all.sh    # clippy, fmt, host-bindings drift check, wasm-exports check, build+test, markdown lint, e2e
 ```

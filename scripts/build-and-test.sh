@@ -26,4 +26,7 @@ echo "🧪 Running native workspace tests..."
 # Run tests on the native workspace
 cargo test --workspace
 
+echo "🧪 Running generate-host-bindings tests..."
+cargo test --manifest-path tools/generate-host-bindings/Cargo.toml
+
 echo "✅ Build and test workflow completed successfully!"
