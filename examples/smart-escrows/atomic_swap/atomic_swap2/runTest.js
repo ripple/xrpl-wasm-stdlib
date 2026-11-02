@@ -1,5 +1,13 @@
 async function test(testContext) {
-  const { deploy, finish, submit, sourceWallet, destWallet } = testContext
+  const {
+    deploy,
+    finish,
+    sourceWallet,
+    destWallet,
+    finishEscrow,
+    expectEscrowConsumed,
+    expectEscrowSurvived,
+  } = testContext
 
   // Test atomic_swap2 two-phase execution:
   // Phase 1: Data field validation and timing initialization
@@ -10,131 +18,50 @@ async function test(testContext) {
   const firstEscrowResult = await deploy(sourceWallet, destWallet, finish)
 
   // Create atomic_swap2 escrow with first escrow's ledger entry ID in data field
-  const atomicSwap2Result = await deploy(
-    destWallet,
-    sourceWallet,
-    finish,
-    firstEscrowResult.escrowId, // 32-byte ledger entry ID in data field
-  )
+  const atomicSwap2Result = await deploy(destWallet, sourceWallet, finish, {
+    Data: firstEscrowResult.escrowId, // 32-byte ledger entry ID
+  })
 
-  // Phase 1: First finish attempt should initialize timing and return tecBYTECODE_REJECTED
-  // The contract returns 0 to indicate "wait for phase 2", but data update persists
-  const txPhase1 = {
-    TransactionType: "EscrowFinish",
-    Account: destWallet.address,
+  // Phase 1: contract returns 0 → tecBYTECODE_REJECTED, but data update persists
+  // and the escrow must survive (the contract signals "wait for phase 2").
+  const responsePhase1 = await finishEscrow(testContext, destWallet, {
     Owner: destWallet.address,
-    OfferSequence: parseInt(atomicSwap2Result.sequence),
-    Gas: 1000000,
-  }
+    OfferSequence: atomicSwap2Result.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
+  expectEscrowSurvived(responsePhase1, "atomic_swap2 phase 1")
 
-  const responsePhase1 = await submit(txPhase1, destWallet)
-
-  if (responsePhase1.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "\nPhase 1 expected tecBYTECODE_REJECTED, got:",
-      responsePhase1.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Verify the escrow still exists (wasn't finished)
-  const escrowStillExists = !responsePhase1.result.meta.AffectedNodes.some(
-    (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
-  )
-  if (!escrowStillExists) {
-    console.error(
-      "\nPhase 1 incorrectly finished the escrow - it should still exist",
-    )
-    process.exit(1)
-  }
-
-  // Phase 2: Second finish attempt should validate timing and succeed
-  const txPhase2 = {
-    TransactionType: "EscrowFinish",
-    Account: destWallet.address,
+  // Phase 2: timing now validates, finish succeeds.
+  const responsePhase2 = await finishEscrow(testContext, destWallet, {
     Owner: destWallet.address,
-    OfferSequence: parseInt(atomicSwap2Result.sequence),
-    Gas: 1000000,
-  }
+    OfferSequence: atomicSwap2Result.sequence,
+  })
+  expectEscrowConsumed(responsePhase2, "atomic_swap2 phase 2")
 
-  const responsePhase2 = await submit(txPhase2, destWallet)
-
-  // Phase 2 should succeed and finish the escrow (since we're within deadline)
-  if (responsePhase2.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nPhase 2 failed unexpectedly:",
-      responsePhase2.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Verify the escrow was finished
-  const escrowConsumed = responsePhase2.result.meta.AffectedNodes.some(
-    (node) => node.DeletedNode && node.DeletedNode.LedgerEntryType === "Escrow",
-  )
-  if (!escrowConsumed) {
-    console.error("\nPhase 2 should have finished the escrow but didn't")
-    process.exit(1)
-  }
-
-  // Security test: Try to create atomic_swap2 with invalid data
+  // Security test: reject when Data length is not the expected 32 bytes.
   try {
-    const invalidDataEscrow = await deploy(
-      destWallet,
-      sourceWallet,
-      finish,
-      "INVALID_DATA_NOT_32_BYTES", // Wrong size data
-    )
-
-    const txInvalidData = {
-      TransactionType: "EscrowFinish",
-      Account: destWallet.address,
+    const invalidDataEscrow = await deploy(destWallet, sourceWallet, finish, {
+      Data: "INVALID_DATA_NOT_32_BYTES",
+    })
+    await finishEscrow(testContext, destWallet, {
       Owner: destWallet.address,
-      OfferSequence: parseInt(invalidDataEscrow.sequence),
-      Gas: 1000000,
-    }
-
-    const responseInvalidData = await submit(txInvalidData, destWallet)
-
-    // Should fail due to invalid data field length
-    if (
-      responseInvalidData.result.meta.TransactionResult !==
-      "tecBYTECODE_REJECTED"
-    ) {
-      console.error(
-        "\nSecurity test failed: escrow with invalid data should have been rejected:",
-        responseInvalidData.result.meta.TransactionResult,
-      )
-      process.exit(1)
-    }
+      OfferSequence: invalidDataEscrow.sequence,
+      expect: "tecBYTECODE_REJECTED",
+    })
   } catch (error) {
-    // If deploy itself fails, that's also acceptable
+    // deploy() itself rejecting is also acceptable
   }
 
-  // Security test: Try to reference non-existent escrow
+  // Security test: reject when Data references a non-existent escrow.
   const fakeId = "A".repeat(64) // 32 bytes of 0xAA
-  const fakeRefEscrow = await deploy(destWallet, sourceWallet, finish, fakeId)
-
-  const txFakeRef = {
-    TransactionType: "EscrowFinish",
-    Account: destWallet.address,
+  const fakeRefEscrow = await deploy(destWallet, sourceWallet, finish, {
+    Data: fakeId,
+  })
+  await finishEscrow(testContext, destWallet, {
     Owner: destWallet.address,
-    OfferSequence: parseInt(fakeRefEscrow.sequence),
-    Gas: 1000000,
-  }
-
-  const responseFakeRef = await submit(txFakeRef, destWallet)
-
-  // Should fail due to non-existent referenced escrow
-  if (
-    responseFakeRef.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "\nSecurity test failed: escrow with fake reference should have been rejected:",
-      responseFakeRef.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+    OfferSequence: fakeRefEscrow.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
 
   console.log("Success!")
 }

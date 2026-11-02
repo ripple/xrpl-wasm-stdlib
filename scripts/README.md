@@ -29,15 +29,18 @@ You can also run individual test suites:
 ### Main Scripts
 
 - **`build-and-test.sh`** - Build and test the native workspace, build WASM examples, and run craft
-- **`build.sh`** - Build all examples (accepts `release` argument for release builds)
+- **`build.sh`** - Build all examples (accepts `release` argument for release builds), then shrink the release WASM via `wasm-opt.sh`
 
 ### Helper Scripts
 
 - **`clippy.sh`** - Run Clippy linting on both native and WASM workspaces
 - **`fmt.sh`** - Check Rust code formatting
 - **`run-markdown.sh`** - Execute bash code blocks in Markdown files
-- **`run-tests.sh`** - Run integration tests for examples and end-to-end tests
+- **`run-tests.sh`** - Run integration tests for examples and end-to-end tests (reuses a running rippled, else starts one in Docker; see below)
+- **`docker-rippled.sh`** - Start/stop/check a local rippled node in Docker, pinned to the same image CI uses; also used by CI itself, so this is the only place the container's `docker run`/health-check/logs logic lives (`start`/`stop`/`status`/`logs`)
 - **`host-function-audit.sh`** - Audit host functions against XRPLd (requires Node.js)
+- **`cargo-deny.sh`** - Check RustSec advisories on the library workspace (requires `cargo-deny`)
+- **`wasm-opt.sh`** - Shrink the built release contracts in place with Binaryen's `wasm-opt` (run automatically at the end of `build.sh`; auto-installs a pinned `wasm-opt` via cargo if none is found, and fails the build if it can't; exits quietly when there's no release WASM to optimize). `--ensure-tool` resolves/installs the tool without optimizing anything.
 - **`benchmark-gas.sh`** - Measure and compare gas costs of optimized helper functions
 - **`generate-sfields.sh`** - Generate type-safe SField constants from rippled source (requires Node.js)
 
@@ -59,14 +62,29 @@ You can also run individual test suites:
 # Run only clippy checks
 ./scripts/clippy.sh
 
-# Run only integration tests
+# Run only integration tests (reuses a running rippled, else auto-starts one in Docker)
 ./scripts/run-tests.sh
+
+# Run integration tests against a rippled you're already running yourself
+NO_DOCKER=true ./scripts/run-tests.sh
+
+# Run integration tests against WASM Devnet instead
+DEVNET=true ./scripts/run-tests.sh
+
+# Manage the local Docker rippled directly
+./scripts/docker-rippled.sh start   # no-op if rippled is already reachable on port 6006
+./scripts/docker-rippled.sh status
+./scripts/docker-rippled.sh logs
+./scripts/docker-rippled.sh stop
 
 # Run gas benchmarks (requires local rippled instance)
 ./scripts/benchmark-gas.sh
 
 # Generate SField constants from rippled source
 ./scripts/generate-sfields.sh
+
+# Check RustSec advisories (install cargo-deny first)
+./scripts/cargo-deny.sh
 ```
 
 ## Environment Variables
@@ -78,6 +96,11 @@ export RUSTFLAGS="-Dwarnings"
 ```
 
 This matches the CI environment and ensures warnings are treated as errors.
+
+`run-tests.sh` additionally respects:
+
+- **`DEVNET=true`** - test against WASM Devnet instead of a local node
+- **`NO_DOCKER=true`** - skip the automatic Docker rippled and test against a rippled you're already running yourself on `ws://localhost:6006`
 
 ## Gas Benchmark Script
 
@@ -141,7 +164,8 @@ To add more custom mappings, edit the `customFieldTypes` object in `tools/genera
 
 - **Rust**: Stable toolchain (installed automatically by `setup.sh`)
 - **Pre-commit**: For running pre-commit hooks (installed by `setup.sh`)
-- **Node.js**: Required for host function audit and gas benchmark scripts
+- **Node.js**: Required for host function audit, gas benchmark, and integration test scripts
+- **Docker**: Required for `run-tests.sh`'s default local rippled (skip with `NO_DOCKER=true` or `DEVNET=true`)
 
 ## GitHub Actions Compatibility
 
@@ -154,6 +178,8 @@ Actions workflows, ensuring perfect consistency between local and CI environment
 - **Pre-commit not found**: Run `./scripts/setup.sh` to install dependencies
 - **Node.js required**: Install Node.js for the host function audit, or skip that script
 - **WASM target missing**: The scripts automatically install the `wasm32v1-none` target
+- **Build pauses on "installing wasm-opt via cargo"**: expected on a machine with no `wasm-opt`; it compiles Binaryen from source once (a few minutes, needs a C++17 toolchain). Install a native Binaryen instead (`brew install binaryen` / `apt-get install binaryen`) to skip the compile, or set `SKIP_WASM_OPT=true` to build without the optimization step
+- **Docker not found / daemon not reachable**: Install/start Docker, or set `NO_DOCKER=true` (use your own local rippled) or `DEVNET=true` (use WASM Devnet)
 
 ## Script Dependencies
 
@@ -161,12 +187,14 @@ Actions workflows, ensuring perfect consistency between local and CI environment
 setup.sh (run first)
 ├── build-and-test.sh
 ├── build.sh
+    └── wasm-opt.sh (required; auto-installs a pinned wasm-opt via cargo)
 ├── check-wasm-exports.sh
 ├── clippy.sh
 ├── run-tests.sh
     └── ../build.sh (dependency)
 ├── fmt.sh
 ├── host-function-audit.sh (requires Node.js)
+├── cargo-deny.sh (requires cargo-deny; library workspace only; not in run-all.sh while advisory-only)
 └── run-markdown.sh
 ```
 

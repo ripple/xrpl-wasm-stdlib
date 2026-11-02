@@ -1,7 +1,8 @@
 const xrpl = require("xrpl")
 
 async function test(testContext) {
-  const { deploy, submit, sourceWallet, finish } = testContext
+  const { deploy, submit, sourceWallet, finish, finishEscrow, expectResult } =
+    testContext
 
   // Mint an NFT with distinctive fields so the WASM contract can assert typed getters.
   const nftMint = {
@@ -16,24 +17,15 @@ async function test(testContext) {
       xrpl.NFTokenMintFlags.tfTransferable,
   }
   const mintResponse = await submit(nftMint, sourceWallet)
-  if (mintResponse.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nFailed to mint NFT:",
-      mintResponse.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  expectResult(mintResponse, "tesSUCCESS", "NFTokenMint")
   const nftId = mintResponse.result.meta.nftoken_id
 
-  // This escrow should always succeed
-  // If it fails, something in rippled is broken
+  // This escrow should always succeed. If it fails, something in rippled
+  // is broken.
   const { sequence } = await deploy(sourceWallet, sourceWallet, finish)
-  const tx = {
-    TransactionType: "EscrowFinish",
-    Account: sourceWallet.address,
+  await finishEscrow(testContext, sourceWallet, {
     Owner: sourceWallet.address,
     OfferSequence: sequence,
-    Gas: 1000000,
     Memos: [
       {
         Memo: {
@@ -42,15 +34,7 @@ async function test(testContext) {
         },
       },
     ],
-  }
-  const response = await submit(tx, sourceWallet)
-  if (response.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nFailed to finish escrow:",
-      response.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  })
 }
 
 module.exports = { test }

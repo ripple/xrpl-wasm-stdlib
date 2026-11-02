@@ -57,13 +57,24 @@ function translateExpr(expr) {
   return expr.trim().replace(/~/g, "!")
 }
 
-// Parses LedgerFormats.h into a Map<lsfName, hexValue>. These ledger-object
-// flags are looked up when a TF_FLAG aliases one instead of giving its own
-// literal (e.g. TF_FLAG(tfMPTCanLock, lsfMPTCanLock)).
+// Parses LedgerFormats.h into a Map<lsName, hexValue>. These ledger-object
+// flags are looked up when a TF_FLAG (or a TxFlags.h trailer constant) aliases
+// one instead of giving its own literal (e.g. TF_FLAG(tfMPTCanLock,
+// lsfMPTCanLock), or `tifMPTCanLock = lsifMPTCanLock`). Two shapes are
+// scanned for: `LSF_FLAG(lsfName, 0x...)` entries inside the ledger-object
+// XMACRO table, and standalone `inline constexpr std::uint32_t lsifName =
+// 0x...;` declarations outside it (e.g. the MPTokenIssuance ImmutableFlags
+// block) -- rippled uses the bare-constant form for flag families that don't
+// belong to the per-ledger-object XMACRO.
 function parseLsfMap(ledgerFormatsFileStripped) {
   const map = new Map()
   for (const [, name, value] of ledgerFormatsFileStripped.matchAll(
     /LSF_FLAG\(\s*(ls[a-zA-Z0-9]+)\s*,\s*(0x[0-9a-fA-F]+)\s*\)/g,
+  )) {
+    map.set(name, value)
+  }
+  for (const [, name, value] of ledgerFormatsFileStripped.matchAll(
+    /inline constexpr std::uint32_t\s+(ls[a-zA-Z0-9]+)\s*=\s*(0x[0-9a-fA-F]+)\s*;/g,
   )) {
     map.set(name, value)
   }
@@ -212,10 +223,12 @@ async function main() {
     ),
   ])
 
-  // Ledger-object flags (lsf*/lsmf*) that some TF_FLAG entries alias instead
-  // of giving their own literal, e.g. TF_FLAG(tfMPTCanLock, lsfMPTCanLock).
-  // Merged upfront since either source's TF_FLAG table may reference either
-  // side's lsf names, and the values are stable ledger-level constants.
+  // Ledger-object flags (lsf*/lsif*/lsmf*) that some TF_FLAG entries or
+  // TxFlags.h trailer constants alias instead of giving their own literal,
+  // e.g. TF_FLAG(tfMPTCanLock, lsfMPTCanLock) or `tifMPTCanLock =
+  // lsifMPTCanLock`. Merged upfront since either source's TxFlags.h may
+  // reference either side's ls* names, and the values are stable
+  // ledger-level constants.
   const baseLsfMap = parseLsfMap(baseLedgerFormats)
   const contractLsfMap = parseLsfMap(contractLedgerFormats)
   const { merged: lsfMap, added: lsfAdded } = mergeMaps(

@@ -56,4 +56,7 @@ else
 fi
 cd ..
 
+echo "🗜️  Optimizing release WASM..."
+./scripts/wasm-opt.sh
+
 echo "✅ Build completed successfully!"

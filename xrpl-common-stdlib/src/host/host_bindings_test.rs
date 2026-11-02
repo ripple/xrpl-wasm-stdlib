@@ -145,6 +145,12 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
     mock.expect_vault_id()
         .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_sponsorship_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_loan_broker_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
+    mock.expect_loan_id()
+        .returning(|_, _, _, _, _, out_buff_len| out_buff_len as i32);
 
     // NFT functions
     mock.expect_nft_uri()
@@ -185,8 +191,6 @@ pub fn apply_default_expectations(mock: &mut MockHostBindings) {
     mock.expect_float_div()
         .returning(|_, _, _, _, _, out_buff_len, _| out_buff_len as i32);
     mock.expect_float_pow()
-        .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
-    mock.expect_float_root()
         .returning(|_, _, _, _, out_buff_len, _| out_buff_len as i32);
 
     // Trace
@@ -290,6 +294,9 @@ export_host_functions! {
     fn signers_id(account_ptr: *const u8, account_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn ticket_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
     fn vault_id(account_ptr: *const u8, account_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn sponsorship_id(sponsor_ptr: *const u8, sponsor_len: usize, sponsee_ptr: *const u8, sponsee_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_broker_id(owner_ptr: *const u8, owner_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
+    fn loan_id(loan_broker_id_ptr: *const u8, loan_broker_id_len: usize, sequence_ptr: *const u8, sequence_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn nft_uri(account_ptr: *const u8, account_len: usize, nft_id_ptr: *const u8, nft_id_len: usize, out_buff_ptr: *mut u8, out_buff_len: usize) -> i32;
@@ -313,7 +320,6 @@ export_host_functions! {
     fn float_mult(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_div(in_buff1: *const u8, in_buff1_len: usize, in_buff2: *const u8, in_buff2_len: usize, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
     fn float_pow(in_buff: *const u8, in_buff_len: usize, pow: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
-    fn float_root(in_buff: *const u8, in_buff_len: usize, root: i32, out_buff: *mut u8, out_buff_len: usize, rounding_mode: i32) -> i32;
 
     // Host Function Category: TRACE
     fn trace(msg_read_ptr: *const u8, msg_read_len: usize, data_type: i32, data_read_ptr: *const u8, data_read_len: usize) -> ();

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Smart Escrow example that unlocks when the ledger sequence number reaches a minimum threshold"
 license = "ISC"
+publish = false
 
 
 [lib]

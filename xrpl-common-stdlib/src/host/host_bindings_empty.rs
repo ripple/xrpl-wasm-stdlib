@@ -132,6 +132,9 @@ export_host_functions! {
     fn signers_id(_account_ptr: *const u8, _account_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn ticket_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
     fn vault_id(_account_ptr: *const u8, _account_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn sponsorship_id(_sponsor_ptr: *const u8, _sponsor_len: usize, _sponsee_ptr: *const u8, _sponsee_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn loan_broker_id(_owner_ptr: *const u8, _owner_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
+    fn loan_id(_loan_broker_id_ptr: *const u8, _loan_broker_id_len: usize, _sequence_ptr: *const u8, _sequence_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
 
     // Host Function Category: NFT
     fn nft_uri(_account_ptr: *const u8, _account_len: usize, _nft_id_ptr: *const u8, _nft_id_len: usize, _out_buff_ptr: *mut u8, _out_buff_len: usize) -> i32;
@@ -155,7 +158,6 @@ export_host_functions! {
     fn float_mult(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_div(_in_buff1: *const u8, _in_buff1_len: usize, _in_buff2: *const u8, _in_buff2_len: usize, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
     fn float_pow(_in_buff: *const u8, _in_buff_len: usize, _pow: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
-    fn float_root(_in_buff: *const u8, _in_buff_len: usize, _root: i32, _out_buff: *mut u8, _out_buff_len: usize, _rounding_mode: i32) -> i32;
 
 }
 

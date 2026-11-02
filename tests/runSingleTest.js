@@ -84,6 +84,7 @@ async function main() {
     const finish = getBytecodeFromFile(wasmSource)
 
     const { deploy } = require("./deployWasmCode.js")
+    const harness = require("./harness.js")
 
     console.log(`Running test in directory: ${targetDir}`)
     const runTestPath = path.resolve(targetDir, "runTest.js")
@@ -99,6 +100,10 @@ async function main() {
       fundWallet,
       deploy,
       finish,
+      // Shared harness helpers (see tests/harness.js).
+      // finishEscrow, expectResult, expectEscrowConsumed, expectEscrowSurvived,
+      // getLedgerCloseTime, getLedgerCloseTimeIso, loadWasmHex.
+      ...harness,
     }
 
     let failed = false

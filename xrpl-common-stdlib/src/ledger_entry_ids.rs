@@ -1101,6 +1101,189 @@ pub fn vault_id(account: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
     })
 }
 
+/// Generates a sponsorship ledger entry ID for a given sponsor and sponsee in the XRP
+/// Ledger.
+///
+/// Sponsorship ledger entry IDs are used to reference sponsorship entries in the XRP
+/// Ledger's state data. This function uses the generic `create_id_from_host_call`
+/// helper to manage the FFI interaction.
+///
+/// # Arguments
+///
+/// * `sponsor` - Reference to an `AccountID` representing the sponsoring account
+/// * `sponsee` - Reference to an `AccountID` representing the sponsored account
+///
+/// # Returns
+///
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte sponsorship ledger
+///   entry ID. On failure, returns an `Error` with the corresponding error code.
+///
+/// # Safety
+///
+/// This function makes unsafe FFI calls to the host environment through
+/// the `host::sponsorship_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
+///
+/// # Example
+///
+/// ```rust
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::ledger_entry_ids::sponsorship_id;
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   let sponsor: AccountID =
+///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+///   let sponsee: AccountID =
+///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+///   match sponsorship_id(&sponsor, &sponsee) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       trace_hex("Generated ledger entry ID", &id);
+///     }
+///     xrpl_common_stdlib::host::Result::Err(e) => {
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
+///     }
+///   }
+///   Ok(())
+///}
+/// ```
+pub fn sponsorship_id(sponsor: &AccountID, sponsee: &AccountID) -> Result<LedgerEntryIdBytes> {
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::sponsorship_id(
+            sponsor.0.as_ptr(),
+            sponsor.0.len(),
+            sponsee.0.as_ptr(),
+            sponsee.0.len(),
+            id_buffer_ptr,
+            id_buffer_len,
+        )
+    })
+}
+
+/// Generates a loan broker ledger entry ID for a given owner and sequence in the XRP
+/// Ledger.
+///
+/// Loan broker ledger entry IDs are used to reference loan broker entries in the XRP
+/// Ledger's state data. This function uses the generic `create_id_from_host_call`
+/// helper to manage the FFI interaction.
+///
+/// # Arguments
+///
+/// * `owner` - Reference to an `AccountID` representing the loan broker's owner
+/// * `seq` - The account sequence associated with the loan broker entry
+///
+/// # Returns
+///
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte loan broker ledger
+///   entry ID. On failure, returns an `Error` with the corresponding error code.
+///
+/// # Safety
+///
+/// This function makes unsafe FFI calls to the host environment through
+/// the `host::loan_broker_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
+///
+/// # Example
+///
+/// ```rust
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::ledger_entry_ids::loan_broker_id;
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   let account: AccountID =
+///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+///   let sequence = 12345;
+///   match loan_broker_id(&account, sequence) {
+///     xrpl_common_stdlib::host::Result::Ok(id) => {
+///       trace_hex("Generated ledger entry ID", &id);
+///     }
+///     xrpl_common_stdlib::host::Result::Err(e) => {
+///       trace_num("Error assembling ledger entry ID", e.code() as i64);
+///     }
+///   }
+///   Ok(())
+///}
+/// ```
+pub fn loan_broker_id(owner: &AccountID, seq: u32) -> Result<LedgerEntryIdBytes> {
+    let seq_bytes = seq.to_le_bytes();
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::loan_broker_id(
+            owner.0.as_ptr(),
+            owner.0.len(),
+            seq_bytes.as_ptr(),
+            seq_bytes.len(),
+            id_buffer_ptr,
+            id_buffer_len,
+        )
+    })
+}
+
+/// Generates a loan ledger entry ID for a given loan broker id and sequence in the XRP
+/// Ledger.
+///
+/// Loan ledger entry IDs are used to reference loan entries in the XRP Ledger's state
+/// data. This function uses the generic `create_id_from_host_call` helper to manage
+/// the FFI interaction.
+///
+/// # Arguments
+///
+/// * `loan_broker_id` - The 32-byte ledger entry ID of the loan's `LoanBroker`
+/// * `seq` - The sequence number associated with the loan entry
+///
+/// # Returns
+///
+/// * `Result<LedgerEntryIdBytes>` - On success, returns a 32-byte loan ledger entry ID.
+///   On failure, returns an `Error` with the corresponding error code.
+///
+/// # Safety
+///
+/// This function makes unsafe FFI calls to the host environment through
+/// the `host::loan_id` function, though the unsafe code is contained
+/// within the closure passed to `create_id_from_host_call`.
+///
+/// # Example
+///
+/// ```rust
+/// use xrpl_common_stdlib::types::account_id::AccountID;
+/// use xrpl_common_stdlib::ledger_entry_ids::{loan_broker_id, loan_id};
+/// use xrpl_common_stdlib::host::trace::{ trace_hex, trace_num };
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   let account: AccountID =
+///       AccountID::from(*b"\xd5\xb9\x84VP\x9f \xb5'\x9d\x1eJ.\xe8\xb2\xaa\x82\xaec\xe3");
+///   match loan_broker_id(&account, 12345) {
+///     xrpl_common_stdlib::host::Result::Ok(broker_id) => {
+///       match loan_id(&broker_id, 1) {
+///         xrpl_common_stdlib::host::Result::Ok(id) => {
+///           trace_hex("Generated ledger entry ID", &id);
+///         }
+///         xrpl_common_stdlib::host::Result::Err(e) => {
+///           trace_num("Error assembling ledger entry ID", e.code() as i64);
+///         }
+///       }
+///     }
+///     xrpl_common_stdlib::host::Result::Err(e) => {
+///       trace_num("Error assembling loan broker ledger entry ID", e.code() as i64);
+///     }
+///   }
+///   Ok(())
+///}
+/// ```
+pub fn loan_id(loan_broker_id: &LedgerEntryIdBytes, seq: u32) -> Result<LedgerEntryIdBytes> {
+    let seq_bytes = seq.to_le_bytes();
+    create_id_from_host_call(|id_buffer_ptr, id_buffer_len| unsafe {
+        host::loan_id(
+            loan_broker_id.as_ptr(),
+            loan_broker_id.len(),
+            seq_bytes.as_ptr(),
+            seq_bytes.len(),
+            id_buffer_ptr,
+            id_buffer_len,
+        )
+    })
+}
+
 /// Generic helper function to create a ledger entry ID by calling a host function.
 ///
 /// This function handles the common tasks of:
@@ -1328,6 +1511,22 @@ mod tests {
     id_test!(vault_id_tests, expect_vault_id, 4, 6, {
         let account = AccountID::from([0xBB; 20]);
         vault_id(&account, 12345)
+    });
+
+    id_test!(sponsorship_id_tests, expect_sponsorship_id, 4, 6, {
+        let sponsor = AccountID::from([0xBB; 20]);
+        let sponsee = AccountID::from([0xCC; 20]);
+        sponsorship_id(&sponsor, &sponsee)
+    });
+
+    id_test!(loan_broker_id_tests, expect_loan_broker_id, 4, 6, {
+        let owner = AccountID::from([0xBB; 20]);
+        loan_broker_id(&owner, 12345)
+    });
+
+    id_test!(loan_id_tests, expect_loan_id, 4, 6, {
+        let loan_broker_id: LedgerEntryIdBytes = [0xBB; 32];
+        loan_id(&loan_broker_id, 1)
     });
 
     #[test]

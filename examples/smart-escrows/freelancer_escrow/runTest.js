@@ -8,35 +8,33 @@ const INTENT_UNDISPUTE = 3
 const ARB_RULE_FREELANCER = INTENT_CONFIRM
 const ARB_RULE_CLIENT = INTENT_DISPUTE
 
-function escrowFinishTx(senderAddr, ownerAddr, sequence, intent) {
-  return {
-    TransactionType: "EscrowFinish",
-    Account: senderAddr,
-    Owner: ownerAddr,
-    OfferSequence: parseInt(sequence),
-    Gas: 1000000,
-    Memos: [
-      {
-        Memo: {
-          MemoType: convertStringToHex("intent"),
-          MemoData: intent.toString(16).padStart(2, "0"),
-        },
+function intentMemo(intent) {
+  return [
+    {
+      Memo: {
+        MemoType: convertStringToHex("intent"),
+        MemoData: intent.toString(16).padStart(2, "0"),
       },
-    ],
-  }
+    },
+  ]
 }
 
 async function test(testContext) {
-  const { client, submit, finish, sourceWallet, destWallet, fundWallet } =
-    testContext
+  const {
+    deploy,
+    finish,
+    sourceWallet,
+    destWallet,
+    fundWallet,
+    finishEscrow,
+    getLedgerCloseTime,
+    client,
+  } = testContext
+
   const arbWallet = await fundWallet()
   console.log(`Arbitrator: ${arbWallet.address}`)
 
-  const ledger = await client.request({
-    command: "ledger",
-    ledger_index: "validated",
-  })
-  const close_time = ledger.result.ledger.close_time
+  const close_time = await getLedgerCloseTime(client)
 
   // 27-byte Data layout:
   //  0..20  arbitrator AccountID
@@ -47,392 +45,138 @@ async function test(testContext) {
   buf.writeUInt32LE(close_time + 30 * 60, 20)
   const data = buf.toString("hex")
 
-  async function createEscrow(escrowData) {
-    const res = await submit(
-      {
-        TransactionType: "EscrowCreate",
-        Account: sourceWallet.address,
-        Amount: "500000",
-        Destination: destWallet.address,
-        CancelAfter: close_time + 3600,
-        Bytecode: finish,
-        Data: escrowData,
-      },
-      sourceWallet,
-    )
-    if (res.result.meta.TransactionResult !== "tesSUCCESS") {
-      console.error("EscrowCreate failed:", res.result.meta.TransactionResult)
-      process.exit(1)
-    }
-    return res.result.tx_json.Sequence
-  }
+  const createEscrow = (escrowData) =>
+    deploy(sourceWallet, destWallet, finish, {
+      Data: escrowData,
+      Amount: "500000",
+      cancelAfterOffset: 3600,
+    }).then((r) => r.sequence)
 
-  // Happy path
+  // Local shorthand: submit an EscrowFinish carrying an intent memo.
+  const finishWithIntent = (sender, seq, intent, expect) =>
+    finishEscrow(testContext, sender, {
+      Owner: sourceWallet.address,
+      OfferSequence: seq,
+      Memos: intentMemo(intent),
+      expect,
+    })
+
+  // === Happy path: both parties confirm ===
   console.log("\nBoth parties confirm")
   const seq1 = await createEscrow(data)
-  // don't let arb / random wallet do confirm side effects
-  const randomConfirm = await submit(
-    escrowFinishTx(
-      arbWallet.address,
-      sourceWallet.address,
-      seq1,
-      INTENT_CONFIRM,
-    ),
+
+  await finishWithIntent(
     arbWallet,
+    seq1,
+    INTENT_CONFIRM,
+    "tecBYTECODE_REJECTED",
   )
-  if (randomConfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected invalid wallet to be refused confirmation, got:",
-      randomConfirm.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer confirms. Should get rejected as client hasn't confirmed.
-  const freelancerConfirm = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq1,
-      INTENT_CONFIRM,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq1,
+    INTENT_CONFIRM,
+    "tecBYTECODE_REJECTED",
   )
-  if (
-    freelancerConfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "Expected waiting for client after freelancer confirm, got:",
-      freelancerConfirm.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer deconfirms — FREELANCER_CONFIRMED back to 0.
-  const freelancerDeconfirm = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq1,
-      INTENT_DECONFIRM,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq1,
+    INTENT_DECONFIRM,
+    "tecBYTECODE_REJECTED",
   )
-  if (
-    freelancerDeconfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "Expected hold after freelancer deconfirm, got:",
-      freelancerDeconfirm.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer re-confirms.
-  const freelancerReconfirm = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq1,
-      INTENT_CONFIRM,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq1,
+    INTENT_CONFIRM,
+    "tecBYTECODE_REJECTED",
   )
-  if (
-    freelancerReconfirm.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "Expected hold after freelancer re-confirm, got:",
-      freelancerReconfirm.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  await finishWithIntent(sourceWallet, seq1, INTENT_CONFIRM, "tesSUCCESS")
 
-  // Both confirm and escrow release
-  const bothConfirm = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq1,
-      INTENT_CONFIRM,
-    ),
-    sourceWallet,
-  )
-  if (bothConfirm.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "Expected release after both confirm, got:",
-      bothConfirm.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // === Dispute path — arbitrator rules for freelancer ===
+  // === Dispute path: arbitrator rules for freelancer ===
   console.log("\n--- Dispute path: arbitrator resolves for freelancer ---")
   const seq2 = await createEscrow(data)
-
-  // Client raises a dispute — clears confirm flags, sets DISPUTING_PARTY=client.
-  const raiseDispute = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq2,
-      INTENT_DISPUTE,
-    ),
+  await finishWithIntent(
     sourceWallet,
+    seq2,
+    INTENT_DISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (raiseDispute.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected hold after raising dispute, got:",
-      raiseDispute.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer tries to resolve the client's dispute — only the disputing party can withdraw.
-  const wrongResolver = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq2,
-      INTENT_DISPUTE,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq2,
+    INTENT_DISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (wrongResolver.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected non-disputer resolution to be rejected, got:",
-      wrongResolver.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  await finishWithIntent(arbWallet, seq2, ARB_RULE_FREELANCER, "tesSUCCESS")
 
-  // Arbitrator rules in favor of the freelancer — escrow releases.
-  const arbResolve = await submit(
-    escrowFinishTx(
-      arbWallet.address,
-      sourceWallet.address,
-      seq2,
-      ARB_RULE_FREELANCER,
-    ),
-    arbWallet,
-  )
-  if (arbResolve.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "Expected arbitrator to release escrow, got:",
-      arbResolve.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // === Deadline auto-release — freelancer confirms past deadline ===
+  // === Deadline auto-release: freelancer confirms past deadline ===
   console.log("\n--- Deadline path: freelancer confirms past deadline ---")
   const pastBuf = Buffer.alloc(27)
   pastBuf.set(decodeAccountID(arbWallet.address))
-  pastBuf.writeUInt32LE(close_time - 1, 20) // deadline already in the past
-  const dataPast = pastBuf.toString("hex")
-  const seq3 = await createEscrow(dataPast)
+  pastBuf.writeUInt32LE(close_time - 1, 20)
+  const seq3 = await createEscrow(pastBuf.toString("hex"))
+  await finishWithIntent(destWallet, seq3, INTENT_CONFIRM, "tesSUCCESS")
 
-  // Freelancer confirms alone — past deadline + freelancer_confirmed = release.
-  const deadlineRelease = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq3,
-      INTENT_CONFIRM,
-    ),
-    destWallet,
-  )
-  if (deadlineRelease.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "Expected deadline auto-release, got:",
-      deadlineRelease.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // === Escrow 4: Arbitrator rules for client — escrow locked until CancelAfter ===
+  // === Arbitrator rules for client — escrow locked until CancelAfter ===
   console.log("\n--- Arbitrator rules for client ---")
   const seq4 = await createEscrow(data)
-
-  // Freelancer raises a dispute.
-  const raiseDispute2 = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq4,
-      INTENT_DISPUTE,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq4,
+    INTENT_DISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (raiseDispute2.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected hold after raising dispute, got:",
-      raiseDispute2.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Arbitrator rules for client — escrow locked, DISPUTING_PARTY set to ARB_LOCK.
-  const arbRuleClient = await submit(
-    escrowFinishTx(
-      arbWallet.address,
-      sourceWallet.address,
-      seq4,
-      ARB_RULE_CLIENT,
-    ),
+  await finishWithIntent(
     arbWallet,
+    seq4,
+    ARB_RULE_CLIENT,
+    "tecBYTECODE_REJECTED",
   )
-  if (arbRuleClient.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected lock after arb rules for client, got:",
-      arbRuleClient.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer tries to finish after the arb ruling — should be blocked.
-  const freelancerBlocked = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq4,
-      INTENT_DISPUTE,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq4,
+    INTENT_DISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (
-    freelancerBlocked.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "Expected freelancer to be blocked after arb ruling, got:",
-      freelancerBlocked.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
 
-  // === Escrow 5: Self-resolve — disputing party withdraws with INTENT_UNDISPUTE ===
+  // === Self-resolve: disputing party withdraws ===
   console.log("\n--- Self-resolve: disputing party withdraws ---")
   const seq5 = await createEscrow(data)
-
-  // Client raises a dispute.
-  const raiseDispute3 = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq5,
-      INTENT_DISPUTE,
-    ),
+  await finishWithIntent(
     sourceWallet,
+    seq5,
+    INTENT_DISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (raiseDispute3.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected hold after raising dispute, got:",
-      raiseDispute3.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Freelancer tries to undispute the client's dispute — only the disputing party can withdraw.
-  const wrongUndispute = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq5,
-      INTENT_UNDISPUTE,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq5,
+    INTENT_UNDISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (wrongUndispute.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected non-disputer undispute to be rejected, got:",
-      wrongUndispute.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Client withdraws their own dispute — back to pending.
-  const selfResolve = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq5,
-      INTENT_UNDISPUTE,
-    ),
+  await finishWithIntent(
     sourceWallet,
+    seq5,
+    INTENT_UNDISPUTE,
+    "tecBYTECODE_REJECTED",
   )
-  if (selfResolve.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.error(
-      "Expected hold after self-resolve (back to pending), got:",
-      selfResolve.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // Both confirm — escrow releases now that dispute is cleared.
-  const confirmAfterResolve = await submit(
-    escrowFinishTx(
-      destWallet.address,
-      sourceWallet.address,
-      seq5,
-      INTENT_CONFIRM,
-    ),
+  await finishWithIntent(
     destWallet,
+    seq5,
+    INTENT_CONFIRM,
+    "tecBYTECODE_REJECTED",
   )
-  if (
-    confirmAfterResolve.result.meta.TransactionResult !== "tecBYTECODE_REJECTED"
-  ) {
-    console.error(
-      "Expected hold waiting for client after freelancer confirm, got:",
-      confirmAfterResolve.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  await finishWithIntent(sourceWallet, seq5, INTENT_CONFIRM, "tesSUCCESS")
 
-  const releaseAfterResolve = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq5,
-      INTENT_CONFIRM,
-    ),
-    sourceWallet,
-  )
-  if (releaseAfterResolve.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "Expected release after both confirm post-resolve, got:",
-      releaseAfterResolve.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
-
-  // === Escrow 6: Late dispute — auto-release takes precedence ===
-  // Simulates: freelancer previously confirmed (Data[25]=1), deadline has passed.
-  // A client INTENT_DISPUTE must release rather than enter Disputed state.
+  // === Late dispute: deadline + freelancer_confirmed → release ===
   console.log(
     "\n--- Late dispute: deadline + freelancer_confirmed → release ---",
   )
   const lateDisputeBuf = Buffer.alloc(27)
   lateDisputeBuf.set(decodeAccountID(arbWallet.address))
-  lateDisputeBuf.writeUInt32LE(close_time - 1, 20) // deadline already in the past
-  lateDisputeBuf[25] = 1 // freelancer_confirmed=1, simulates a prior INTENT_CONFIRM
+  lateDisputeBuf.writeUInt32LE(close_time - 1, 20)
+  lateDisputeBuf[25] = 1 // freelancer_confirmed=1
   const seq6 = await createEscrow(lateDisputeBuf.toString("hex"))
-
-  const lateDispute = await submit(
-    escrowFinishTx(
-      sourceWallet.address,
-      sourceWallet.address,
-      seq6,
-      INTENT_DISPUTE,
-    ),
-    sourceWallet,
-  )
-  if (lateDispute.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "Expected auto-release on late dispute (deadline + freelancer_confirmed), got:",
-      lateDispute.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+  await finishWithIntent(sourceWallet, seq6, INTENT_DISPUTE, "tesSUCCESS")
 }
 
 module.exports = { test }

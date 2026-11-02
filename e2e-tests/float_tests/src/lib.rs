@@ -10,7 +10,7 @@ use xrpl_common_stdlib::fields::locator::Locator;
 use xrpl_common_stdlib::host::trace::{trace, trace_float, trace_hex, trace_num};
 use xrpl_common_stdlib::host::{
     RoundingMode, cache_le, float_add, float_cmp, float_div, float_from_int, float_from_mant_exp,
-    float_from_uint, float_mult, float_pow, float_root, float_sub, le_arr_len, le_field, le_inner,
+    float_from_uint, float_mult, float_pow, float_sub, le_arr_len, le_field, le_inner,
 };
 use xrpl_common_stdlib::sfield;
 use xrpl_common_stdlib::types::iou_number::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
@@ -316,68 +316,6 @@ fn test_float_pow() {
     );
 }
 
-fn test_float_root() {
-    trace("\n$$$ test_float_root $$$");
-
-    let mut f9: [u8; 8] = [0u8; 8];
-    unsafe { float_from_int(9, f9.as_mut_ptr(), 8, RoundingMode::ToNearest.into()) };
-    let mut f_compute: [u8; 8] = [0u8; 8];
-    unsafe {
-        float_root(
-            f9.as_ptr(),
-            8,
-            2,
-            f_compute.as_mut_ptr(),
-            8,
-            RoundingMode::ToNearest.into(),
-        )
-    };
-    trace_float("  float sqrt of 9:", &f_compute);
-    unsafe {
-        float_root(
-            f9.as_ptr(),
-            8,
-            3,
-            f_compute.as_mut_ptr(),
-            8,
-            RoundingMode::ToNearest.into(),
-        )
-    };
-    trace_float("  float cbrt of 9:", &f_compute);
-
-    let mut f1000000: [u8; 8] = [0u8; 8];
-    unsafe {
-        float_from_int(
-            1000000,
-            f1000000.as_mut_ptr(),
-            8,
-            RoundingMode::ToNearest.into(),
-        )
-    };
-    unsafe {
-        float_root(
-            f1000000.as_ptr(),
-            8,
-            3,
-            f_compute.as_mut_ptr(),
-            8,
-            RoundingMode::ToNearest.into(),
-        )
-    };
-    trace_float("  float cbrt of 1000000:", &f_compute);
-    unsafe {
-        float_root(
-            f1000000.as_ptr(),
-            8,
-            6,
-            f_compute.as_mut_ptr(),
-            8,
-            RoundingMode::ToNearest.into(),
-        )
-    };
-    trace_float("  float 6th root of 1000000:", &f_compute);
-}
-
 fn test_float_negate() {
     trace("\n$$$ test_float_negate $$$");
 
@@ -466,7 +404,6 @@ pub extern "C" fn escrow_finish() -> i32 {
     test_float_add_subtract();
     test_float_mult_divide();
     test_float_pow();
-    test_float_root();
     test_float_negate();
     test_float_invert();
 

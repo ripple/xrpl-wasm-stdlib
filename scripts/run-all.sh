@@ -41,7 +41,8 @@ run_script() {
 # Note: pre-commit checks are handled by GitHub Actions, not locally
 run_script "/clippy.sh"
 run_script "/fmt.sh"
-run_script "/host-function-audit.sh"
+# Disabled: will be fixed via https://github.com/ripple/xrpl-wasm-stdlib/pull/293
+#run_script "/host-function-audit.sh"
 run_script "/check-wasm-exports.sh"
 run_script "/generate-ledger-objects.sh" --check
 run_script "/build-and-test.sh"

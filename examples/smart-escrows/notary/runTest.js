@@ -5,45 +5,22 @@ const notary = xrpl.Wallet.fromSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb", {
 })
 
 async function test(testContext) {
-  const { submit, sourceWallet, deploy, finish, destWallet } = testContext
+  const { sourceWallet, deploy, finish, destWallet, finishEscrow } = testContext
 
   const escrowResult = await deploy(sourceWallet, destWallet, finish)
 
-  const txFail = {
-    TransactionType: "EscrowFinish",
-    Account: sourceWallet.address,
+  // Non-notary submitter is rejected.
+  await finishEscrow(testContext, sourceWallet, {
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(escrowResult.sequence),
-    Gas: 1000000,
-  }
+    OfferSequence: escrowResult.sequence,
+    expect: "tecBYTECODE_REJECTED",
+  })
 
-  // Submitting EscrowFinish transaction...
-  // This should fail since the notary isn't sending this transaction
-  const responseFail = await submit(txFail, sourceWallet)
-
-  if (responseFail.result.meta.TransactionResult !== "tecBYTECODE_REJECTED") {
-    console.log("\nEscrow finished successfully????")
-    process.exit(1)
-  }
-
-  const tx = {
-    TransactionType: "EscrowFinish",
-    Account: notary.address,
+  // Notary succeeds.
+  await finishEscrow(testContext, notary, {
     Owner: sourceWallet.address,
-    OfferSequence: parseInt(escrowResult.sequence),
-    Gas: 1000000,
-  }
-
-  // Submitting EscrowFinish transaction...
-  const response = await submit(tx, notary)
-
-  if (response.result.meta.TransactionResult !== "tesSUCCESS") {
-    console.error(
-      "\nFailed to finish escrow:",
-      response.result.meta.TransactionResult,
-    )
-    process.exit(1)
-  }
+    OfferSequence: escrowResult.sequence,
+  })
 }
 
 module.exports = { test }

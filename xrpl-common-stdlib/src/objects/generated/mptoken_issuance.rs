@@ -114,6 +114,16 @@ pub trait MPTokenIssuanceFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorEncryptionKey)
     }
 
+    /// The IssuerKeyEpoch field (Optional).
+    fn issuer_key_epoch(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::IssuerKeyEpoch)
+    }
+
+    /// The AuditorKeyEpoch field (Optional).
+    fn auditor_key_epoch(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::AuditorKeyEpoch)
+    }
+
     /// The total amount of this token that is currently held in confidential balances.
     fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
         ledger_object::get_field_optional(
@@ -228,6 +238,16 @@ pub trait CurrentMPTokenIssuanceFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::AuditorEncryptionKey)
     }
 
+    /// The IssuerKeyEpoch field (Optional).
+    fn issuer_key_epoch(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::IssuerKeyEpoch)
+    }
+
+    /// The AuditorKeyEpoch field (Optional).
+    fn auditor_key_epoch(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::AuditorKeyEpoch)
+    }
+
     /// The total amount of this token that is currently held in confidential balances.
     fn confidential_outstanding_amount(&self) -> Result<Option<u64>> {
         current_ledger_object::get_field_optional(sfield::ConfidentialOutstandingAmount)
@@ -285,6 +305,8 @@ mod tests {
         assert!(obj.reference_holding().is_ok());
         assert!(obj.issuer_encryption_key().is_ok());
         assert!(obj.auditor_encryption_key().is_ok());
+        assert!(obj.issuer_key_epoch().is_ok());
+        assert!(obj.auditor_key_epoch().is_ok());
         assert!(obj.confidential_outstanding_amount().is_ok());
     }
 
@@ -303,6 +325,8 @@ mod tests {
         assert!(obj.domain_id().unwrap().is_none());
         assert!(obj.immutable_flags().unwrap().is_none());
         assert!(obj.reference_holding().unwrap().is_none());
+        assert!(obj.issuer_key_epoch().unwrap().is_none());
+        assert!(obj.auditor_key_epoch().unwrap().is_none());
         assert!(obj.confidential_outstanding_amount().unwrap().is_none());
     }
 }

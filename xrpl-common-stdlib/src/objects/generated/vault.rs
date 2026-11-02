@@ -55,24 +55,28 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field(self.get_slot_num(), sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on
+    /// loan`.<ul><li>_Cash-basis vaults_: Potential interest from scheduled, unpaid loans doesn't
+    /// count toward the total. </li><li>_Instant interest recognition vaults_: Potential interest
+    /// from scheduled, unpaid loans does count toward the total.</li></ul>
     fn assets_total(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::AssetsMaximum)
     }
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a
-    /// protocol connected to the vault can modify this attribute.
+    /// protocol connected to the vault can modify this attribute.<ul><li>_Cash-basis vaults_:
+    /// Unrealized losses from interest aren't included in this value. </li><li>_Instant interest
+    /// recognition vaults_: Unrealized losses from interest are included in this value.</li></ul>
     fn loss_unrealized(&self) -> Result<Option<Number>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LossUnrealized)
     }
@@ -97,9 +101,29 @@ pub trait VaultFields: LedgerObjectCommonFields {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::Scale)
     }
 
-    /// The LEVersion field (Optional).
+    /// Indicates what type of accounting the vault uses. `1` indicates the vault uses cash-basis
+    /// accounting. If this field is omitted, the vault uses instant interest recognition
+    /// accounting.
     fn le_version(&self) -> Result<Option<u8>> {
         ledger_object::get_field_optional(self.get_slot_num(), sfield::LEVersion)
+    }
+
+    /// Indicates the kind of vault. `1` is a closed-ended vault. If this field is omitted, it's an
+    /// open-ended vault.
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::VaultKind)
+    }
+
+    /// _(Closed-ended vaults only)_ The time, in seconds since the Ripple Epoch, when the vault's
+    /// subscription window closes and its investment period begins.
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::SubscriptionDate)
+    }
+
+    /// _(Closed-ended vaults only)_ The time, in seconds since the Ripple Epoch, when the vault's
+    /// investment period ends and depositors can redeem their shares.
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        ledger_object::get_field_optional(self.get_slot_num(), sfield::RedemptionDate)
     }
 }
 
@@ -147,24 +171,28 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field(sfield::Asset)
     }
 
-    /// The total value of the vault.
+    /// The total value of the vault. Calculated as: `assets available + assets on
+    /// loan`.<ul><li>_Cash-basis vaults_: Potential interest from scheduled, unpaid loans doesn't
+    /// count toward the total. </li><li>_Instant interest recognition vaults_: Potential interest
+    /// from scheduled, unpaid loans does count toward the total.</li></ul>
     fn assets_total(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsTotal)
     }
 
-    /// The asset amount that is available in the vault.
+    /// The amount of assets available for loans and withdrawals.
     fn assets_available(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsAvailable)
     }
 
-    /// The maximum asset amount that can be held in the vault. If set to 0, this indicates there is
-    /// no cap.
+    /// The maximum amount of assets that can be deposited into the vault. Set to `0` for no cap.
     fn assets_maximum(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::AssetsMaximum)
     }
 
     /// The potential loss amount that is not yet realized, expressed as the vault's asset. Only a
-    /// protocol connected to the vault can modify this attribute.
+    /// protocol connected to the vault can modify this attribute.<ul><li>_Cash-basis vaults_:
+    /// Unrealized losses from interest aren't included in this value. </li><li>_Instant interest
+    /// recognition vaults_: Unrealized losses from interest are included in this value.</li></ul>
     fn loss_unrealized(&self) -> Result<Option<Number>> {
         current_ledger_object::get_field_optional(sfield::LossUnrealized)
     }
@@ -189,9 +217,29 @@ pub trait CurrentVaultFields: CurrentLedgerObjectCommonFields {
         current_ledger_object::get_field_optional(sfield::Scale)
     }
 
-    /// The LEVersion field (Optional).
+    /// Indicates what type of accounting the vault uses. `1` indicates the vault uses cash-basis
+    /// accounting. If this field is omitted, the vault uses instant interest recognition
+    /// accounting.
     fn le_version(&self) -> Result<Option<u8>> {
         current_ledger_object::get_field_optional(sfield::LEVersion)
+    }
+
+    /// Indicates the kind of vault. `1` is a closed-ended vault. If this field is omitted, it's an
+    /// open-ended vault.
+    fn vault_kind(&self) -> Result<Option<u8>> {
+        current_ledger_object::get_field_optional(sfield::VaultKind)
+    }
+
+    /// _(Closed-ended vaults only)_ The time, in seconds since the Ripple Epoch, when the vault's
+    /// subscription window closes and its investment period begins.
+    fn subscription_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::SubscriptionDate)
+    }
+
+    /// _(Closed-ended vaults only)_ The time, in seconds since the Ripple Epoch, when the vault's
+    /// investment period ends and depositors can redeem their shares.
+    fn redemption_date(&self) -> Result<Option<u32>> {
+        current_ledger_object::get_field_optional(sfield::RedemptionDate)
     }
 }
 
@@ -246,6 +294,9 @@ mod tests {
         assert!(obj.loss_unrealized().is_ok());
         assert!(obj.scale().is_ok());
         assert!(obj.le_version().is_ok());
+        assert!(obj.vault_kind().is_ok());
+        assert!(obj.subscription_date().is_ok());
+        assert!(obj.redemption_date().is_ok());
     }
 
     #[test]
@@ -258,5 +309,8 @@ mod tests {
 
         assert!(obj.scale().unwrap().is_none());
         assert!(obj.le_version().unwrap().is_none());
+        assert!(obj.vault_kind().unwrap().is_none());
+        assert!(obj.subscription_date().unwrap().is_none());
+        assert!(obj.redemption_date().unwrap().is_none());
     }
 }

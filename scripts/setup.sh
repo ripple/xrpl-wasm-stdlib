@@ -27,6 +27,10 @@ rustup default stable
 echo "📦 Adding wasm32v1-none target..."
 rustup target add wasm32v1-none
 
+# Up front, since installing the crate compiles Binaryen from source.
+echo "📦 Ensuring wasm-opt (Binaryen) is available..."
+./scripts/wasm-opt.sh --ensure-tool
+
 # Note: Pre-commit checks are handled by GitHub Actions using pre-commit/action@v3.0.1
 # Local pre-commit installation is optional for development convenience
 echo "ℹ️  Pre-commit checks are handled by GitHub Actions"
@@ -34,11 +38,13 @@ echo "   You can optionally install pre-commit locally for development:"
 echo "   - macOS: brew install pre-commit && pre-commit install"
 echo "   - pip: pip install pre-commit && pre-commit install"
 
-# Install Node.js dependencies if needed for host function audit
+# Install Node.js dependencies (host function audit, sfield/tx-flag generation, integration tests)
 if command -v node &> /dev/null; then
-    echo "✅ Node.js found for host function audit"
+    echo "✅ Node.js found: $(node --version)"
+    echo "📦 Installing npm dependencies..."
+    npm ci
 else
-    echo "⚠️  Node.js not found. Host function audit will be skipped."
+    echo "⚠️  Node.js not found. Host function audit and integration tests will be skipped."
 fi
 
 echo "✅ Setup complete!"
