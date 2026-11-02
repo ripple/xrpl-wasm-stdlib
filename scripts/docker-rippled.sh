@@ -12,9 +12,10 @@ cd "$REPO_ROOT"
 CONTAINER_NAME="xrpld-service"
 WORKFLOW_FILE=".github/workflows/test.yml"
 RIPPLED_WS_PORT=6006
+RIPPLED_RPC_PORT=5005
 
 usage() {
-    echo "Usage: $0 {start|stop|status|logs}"
+    echo "Usage: $0 {start|stop|status|logs|verify}"
     exit 1
 }
 
@@ -32,11 +33,14 @@ require_docker() {
 get_image() {
     # Single source of truth: the image tag CI pins in test.yml. Reading it here
     # means this script can never drift from what CI actually verified against.
-    grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" | sed -E 's/^[[:space:]]*XRPLD_DOCKER_IMAGE:[[:space:]]*//'
+    # `|| true` so a missing key yields "" for the caller to report, instead of
+    # `set -e` aborting silently inside the caller's assignment.
+    { grep -m1 'XRPLD_DOCKER_IMAGE:' "$WORKFLOW_FILE" || true; } | sed -E 's/^[[:space:]]*XRPLD_DOCKER_IMAGE:[[:space:]]*//'
 }
 
 is_healthy() {
-    docker inspect --format="{{.State.Health.Status}}" "$CONTAINER_NAME" 2>/dev/null | grep -q "healthy"
+    # Exact match: a bare `grep healthy` would also match the "unhealthy" state.
+    [[ "$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)" == "healthy" ]]
 }
 
 # True if something is already accepting connections on the rippled WS port,
@@ -46,14 +50,87 @@ is_port_open() {
     (: < "/dev/tcp/127.0.0.1/$RIPPLED_WS_PORT") 2>/dev/null
 }
 
+# Prints the commit the running rippled was built from (server_info's `git.hash`),
+# or nothing if it can't be read. Plain shell only - no Node, no WebSocket client:
+#   1. `docker exec <container> xrpld server_info` when the container is ours. Same
+#      command as the health check, so it works as soon as the node answers at all.
+#   2. Otherwise JSON-RPC over curl on the RPC port, which also covers a rippled we
+#      didn't start (a native build, another container) as long as it exposes that
+#      port. `git` is only returned on admin connections.
+get_running_hash() {
+    local json=""
+    if docker inspect "$CONTAINER_NAME" &> /dev/null; then
+        json="$(docker exec "$CONTAINER_NAME" xrpld server_info 2>/dev/null || true)"
+    fi
+    if [[ -z "$json" ]] && command -v curl &> /dev/null; then
+        json="$(curl --silent --max-time 10 --data '{"method":"server_info"}' \
+            "http://127.0.0.1:$RIPPLED_RPC_PORT" 2>/dev/null || true)"
+    fi
+    # Strip whitespace so the CLI's pretty-printed JSON and the RPC's compact JSON
+    # parse the same way, then take `hash` from inside the `git` object only -
+    # `validated_ledger` has a `hash` too.
+    printf '%s' "$json" | tr -d '[:space:]' \
+        | sed -n 's/.*"git":{[^}]*"hash":"\([0-9a-f]\{40\}\)".*/\1/p'
+}
+
+# Fail if the rippled answering on the WS port isn't built from the commit CI pins.
+# The image check in start() only covers our own container; this also covers a
+# rippled we didn't start (a native build, another container). Skipped - not failed -
+# when the pinned tag isn't a commit hash or the running build can't be read.
+verify_build() {
+    if [[ "${SKIP_RIPPLED_BUILD_CHECK:-false}" == "true" ]]; then
+        echo "⚠️  SKIP_RIPPLED_BUILD_CHECK set - not verifying the rippled build."
+        return 0
+    fi
+
+    local image expected actual
+    image="$(get_image)"
+    expected="${image##*:}"
+    if [[ ! "$expected" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "ℹ️  Pinned tag '$expected' isn't a commit hash - skipping rippled build check."
+        return 0
+    fi
+
+    actual="$(get_running_hash)"
+    if [[ -z "$actual" ]]; then
+        echo "⚠️  Couldn't read git.hash from server_info (via docker exec, or JSON-RPC on http://localhost:$RIPPLED_RPC_PORT - which needs an admin connection) - skipping rippled build check."
+        return 0
+    fi
+    if [[ "$actual" != "$expected" ]]; then
+        echo "❌ rippled on ws://localhost:$RIPPLED_WS_PORT is built from $actual, but CI pins $expected ($image)." >&2
+        echo "   Stop it and rerun to use the pinned Docker image, or set SKIP_RIPPLED_BUILD_CHECK=true to test against it anyway." >&2
+        exit 1
+    fi
+    echo "✅ rippled build matches the pinned commit ($expected)."
+}
+
 start() {
-    if is_healthy; then
+    local image
+    image="$(get_image)"
+    if [[ -z "$image" ]]; then
+        echo "❌ Could not read XRPLD_DOCKER_IMAGE from $WORKFLOW_FILE" >&2
+        exit 1
+    fi
+
+    # Only reuse the container if it runs the image CI currently pins. Otherwise a
+    # container left over from before an image bump would silently test against the
+    # old rippled. Check the image whatever the health state, and remove a stale
+    # container before the port check below: one that's still starting (or unhealthy)
+    # can already have the port open and would be reused via that fallback.
+    local running_image
+    running_image="$(docker inspect --format='{{.Config.Image}}' "$CONTAINER_NAME" 2>/dev/null || true)"
+    if [[ -n "$running_image" && "$running_image" != "$image" ]]; then
+        echo "♻️  $CONTAINER_NAME is running $running_image but CI pins $image - restarting."
+        docker rm -f "$CONTAINER_NAME" &> /dev/null || true
+    elif is_healthy; then
         echo "✅ $CONTAINER_NAME is already running and healthy."
+        verify_build
         return 0
     fi
 
     if is_port_open; then
         echo "✅ Something is already listening on ws://localhost:$RIPPLED_WS_PORT - assuming rippled is already running; skipping Docker."
+        verify_build
         return 0
     fi
 
@@ -62,16 +139,9 @@ start() {
     # A stopped/unhealthy container from a previous run shouldn't block a fresh start.
     docker rm -f "$CONTAINER_NAME" &> /dev/null || true
 
-    local image
-    image="$(get_image)"
-    if [[ -z "$image" ]]; then
-        echo "❌ Could not read XRPLD_DOCKER_IMAGE from $WORKFLOW_FILE" >&2
-        exit 1
-    fi
-
     echo "🐳 Starting $CONTAINER_NAME from $image ..."
     docker run --detach --rm \
-        -p 5005:5005 -p 6006:6006 \
+        -p "$RIPPLED_RPC_PORT:$RIPPLED_RPC_PORT" -p "$RIPPLED_WS_PORT:$RIPPLED_WS_PORT" \
         --volume "$REPO_ROOT/.ci-config/:/etc/xrpld/" \
         --name "$CONTAINER_NAME" \
         --health-cmd="xrpld server_info || exit 1" \
@@ -91,6 +161,7 @@ start() {
         elapsed=$(( elapsed + 5 ))
     done
     echo "✅ $CONTAINER_NAME is healthy."
+    verify_build
 }
 
 stop() {
@@ -118,5 +189,6 @@ case "${1:-}" in
     stop) stop ;;
     status) status ;;
     logs) logs ;;
+    verify) verify_build ;;
     *) usage ;;
 esac
