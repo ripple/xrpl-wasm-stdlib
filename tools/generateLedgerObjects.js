@@ -26,8 +26,11 @@ const {
   BLOB_TYPES,
 } = require("./sfieldTypeMap")
 
-const XRPL_DEV_PORTAL_RAW =
-  "https://raw.githubusercontent.com/XRPLF/xrpl-dev-portal/master/docs/references/protocol/ledger-data/ledger-entry-types"
+// Doc comments are scraped from xrpl-dev-portal at the ref in XRPL_DEV_PORTAL_REF
+// (scripts/generate-ledger-objects.sh sets it to the commit pinned in test.yml so
+// the output is deterministic; `master` is only the fallback for direct invocation).
+const XRPL_DEV_PORTAL_REF = process.env.XRPL_DEV_PORTAL_REF || "master"
+const XRPL_DEV_PORTAL_RAW = `https://raw.githubusercontent.com/XRPLF/xrpl-dev-portal/${XRPL_DEV_PORTAL_REF}/docs/references/protocol/ledger-data/ledger-entry-types`
 
 ////////////////////////////////////////////////////////////////////////
 //  ledger_entries.macro parsing
